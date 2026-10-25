@@ -1,0 +1,8 @@
+{
+  "package": "core",
+  "gates": [],
+  "allow": [
+    "pwsh -NoProfile -File .claude/skills/test-skills/scripts/Get-SkillUsage.ps1*",
+    "pwsh .claude/skills/test-skills/scripts/Get-SkillUsage.ps1*"
+  ]
+}

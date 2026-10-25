@@ -1,0 +1,3 @@
+name: ai-sdlc-core
+version: "1.0.0"
+description: The AI-SDLC core for every repository - workflow skills, review agents, hooks, core gates and the handbook.

@@ -1,0 +1,34 @@
+{
+  "present": [
+    ".claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1",
+    ".claude/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1",
+    ".claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml",
+    ".claude/skills/ai-sdlc-handbook/references/layout.md",
+    ".claude/skills/github-pull-requests/scripts/New-PullRequest.ps1",
+    ".claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1",
+    ".claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1",
+    ".claude/skills/github-pull-requests/scripts/Initialize-GitHub.ps1",
+    ".claude/skills/github-actions-conventions/SKILL.md",
+    ".claude/skills/write-pipeline/SKILL.md",
+    ".claude/skills/github-issue-conventions/SKILL.md",
+    ".claude/skills/check-pr-contract/scripts/Check-PrStoryContract.ps1",
+    ".claude/skills/check-pr-contract/scripts/Invoke-IssuePreflight.ps1",
+    ".claude/settings.json"
+  ],
+  "absent": [
+    ".claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1",
+    ".claude/skills/github-pull-requests/scripts/Register-Pipelines.ps1",
+    ".claude/skills/ai-sdlc-gates/assets/pipelines",
+    ".claude/skills/test-first-dotnet",
+    ".claude/skills/dotnet-gates",
+    ".claude/skills/dotnet-code-graph",
+    ".claude/skills/csharp-generation-smells",
+    ".claude/skills/bicep-conventions",
+    ".claude/skills/blazor-conventions",
+    ".claude/skills/draw-customer-journey",
+    ".claude/skills/write-platform-note",
+    ".claude/skills/sonarcloud-mcp",
+    ".mcp.json",
+    ".claude/agents/code-reviewer.md"
+  ]
+}

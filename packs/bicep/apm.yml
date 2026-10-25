@@ -1,0 +1,3 @@
+name: ai-sdlc-bicep
+version: "1.0.0"
+description: The Bicep pack - Bicep conventions for infrastructure templates.

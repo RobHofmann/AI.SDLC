@@ -1,0 +1,185 @@
+# The pull request workflow of AI.SDLC. A ruleset on main makes its checks required for every pull
+# request, and a push to main runs it once more. A push to another branch starts no run of its own, so
+# a pull request push runs once. A release tag is only as good as this run, because every consumer
+# repository takes the tagged files as they are.
+#
+# The work runs as parallel jobs, because hosted runners start in parallel: the Pester tests split into
+# shares, one job per test consumer and pass, and the shared AI-SDLC job. The run takes as long as its
+# slowest job. The shared AI-SDLC job runs every gate once: the gates of the core and of each pack, and
+# the repoGates of aisdlc.json. So no other job lists a gate step by hand.
+#
+# GitHub-hosted runners only. A public repository never runs a self-hosted runner, because a pull
+# request from a fork could run code on it. Every third-party action is pinned to a full commit SHA.
+name: pr
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# The pinned test modules. Change a version here and the module cache key changes with it.
+env:
+  PESTER_VERSION: "5.7.1"
+  POWERSHELL_YAML_VERSION: "0.4.12"
+
+jobs:
+  pester:
+    name: "Pester: ${{ matrix.folder }} ${{ matrix.shard }}/${{ matrix.shards }}"
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      # core holds the most and the slowest test files, so it runs as four shares; packs runs as two
+      # and tools as one. Together the shares of a folder run each test file once (-Shards and -Shard
+      # of the runner).
+      matrix:
+        include:
+          - { folder: core, shards: 4, shard: 1 }
+          - { folder: core, shards: 4, shard: 2 }
+          - { folder: core, shards: 4, shard: 3 }
+          - { folder: core, shards: 4, shard: 4 }
+          - { folder: packs, shards: 2, shard: 1 }
+          - { folder: packs, shards: 2, shard: 2 }
+          - { folder: tools, shards: 1, shard: 1 }
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: "PowerShell modules: restore Pester and powershell-yaml"
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.local/share/powershell/Modules
+          key: psmodules-${{ runner.os }}-pester-${{ env.PESTER_VERSION }}-yaml-${{ env.POWERSHELL_YAML_VERSION }}
+
+      - name: "PowerShell modules: install what the cache did not hold"
+        shell: pwsh
+        run: |
+          $pester = [version]$env:PESTER_VERSION
+          $yaml = [version]$env:POWERSHELL_YAML_VERSION
+          $needPester = -not (Get-Module -ListAvailable Pester | Where-Object { $_.Version -eq $pester })
+          $needYaml = -not (Get-Module -ListAvailable powershell-yaml | Where-Object { $_.Version -eq $yaml })
+          if ($needPester -or $needYaml) { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted }
+          if ($needPester) { Install-Module Pester -RequiredVersion $pester -Force -Scope CurrentUser -SkipPublisherCheck }
+          if ($needYaml) { Install-Module powershell-yaml -RequiredVersion $yaml -Force -Scope CurrentUser }
+
+      - name: "Pester: share ${{ matrix.shard }} of ${{ matrix.shards }} of the test files under ${{ matrix.folder }}, each in its own process"
+        shell: pwsh
+        run: ./tools/Invoke-PesterParallel.ps1 -RepoRoot "$env:GITHUB_WORKSPACE" -Path "${{ matrix.folder }}" -Shards ${{ matrix.shards }} -Shard ${{ matrix.shard }} -PesterVersion "$env:PESTER_VERSION" -CoverageFile "$env:RUNNER_TEMP/coverage/coverage.xml" -Ci
+
+      # The coverage of this share. The run attempt is in the name, because a second attempt cannot
+      # upload an artifact name that the first one used.
+      - name: "Pester: upload the coverage of share ${{ matrix.shard }} of ${{ matrix.folder }}"
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-${{ matrix.folder }}-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/coverage
+          if-no-files-found: warn
+
+  test-consumer:
+    name: "Test consumer: ${{ matrix.consumer }} (${{ matrix.pass }})"
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      # The fresh install and the upgrade of a consumer run as two jobs at the same time, because
+      # neither needs the other. The setup-script consumer takes under a minute, so it runs in the
+      # bicep-only fresh job and does not take a runner of its own.
+      matrix:
+        include:
+          - { consumer: "bicep-only,setup-script", pass: fresh }
+          - { consumer: bicep-only, pass: upgrade }
+          - { consumer: full, pass: fresh }
+          - { consumer: full, pass: upgrade }
+          - { consumer: minimal, pass: fresh }
+          - { consumer: minimal, pass: upgrade }
+          - { consumer: platform, pass: fresh }
+          - { consumer: platform, pass: upgrade }
+    steps:
+      # The upgrade pass needs the release tags, so this checkout has the full history and the tags.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: "PowerShell modules: restore Pester and powershell-yaml"
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.local/share/powershell/Modules
+          key: psmodules-${{ runner.os }}-pester-${{ env.PESTER_VERSION }}-yaml-${{ env.POWERSHELL_YAML_VERSION }}
+
+      - name: "PowerShell modules: install what the cache did not hold"
+        shell: pwsh
+        run: |
+          $pester = [version]$env:PESTER_VERSION
+          $yaml = [version]$env:POWERSHELL_YAML_VERSION
+          $needPester = -not (Get-Module -ListAvailable Pester | Where-Object { $_.Version -eq $pester })
+          $needYaml = -not (Get-Module -ListAvailable powershell-yaml | Where-Object { $_.Version -eq $yaml })
+          if ($needPester -or $needYaml) { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted }
+          if ($needPester) { Install-Module Pester -RequiredVersion $pester -Force -Scope CurrentUser -SkipPublisherCheck }
+          if ($needYaml) { Install-Module powershell-yaml -RequiredVersion $yaml -Force -Scope CurrentUser }
+
+      - name: "Install APM (pinned release, SHA-256 checked)"
+        shell: pwsh
+        run: ./core/.apm/skills/ai-sdlc-gates/scripts/Install-Apm.ps1
+
+      # The gates of a test consumer include the C03 secret scan, which fails without gitleaks.
+      - name: "Install gitleaks (pinned release, SHA-256 checked)"
+        shell: pwsh
+        run: ./core/.apm/skills/ai-sdlc-gates/scripts/Install-Gitleaks.ps1
+
+      - name: "Test consumer ${{ matrix.consumer }}: install the packages and run its gates"
+        if: ${{ matrix.pass == 'fresh' }}
+        shell: pwsh
+        run: ./tools/Test-Consumers.ps1 -RepoRoot "$env:GITHUB_WORKSPACE" -Name ${{ matrix.consumer }} -Ci
+
+      # A consumer takes a new version with the Update-AiSdlc.ps1 of the version it has. This step does
+      # the same from the previous release tag to the head branch of this pull request. APM installs
+      # only from a remote; a public AI.SDLC needs no token for that.
+      - name: "Test consumer ${{ matrix.consumer }}: upgrade from the previous release with its own Update-AiSdlc.ps1"
+        if: ${{ matrix.pass == 'upgrade' }}
+        shell: pwsh
+        run: ./tools/Test-Consumers.ps1 -RepoRoot "$env:GITHUB_WORKSPACE" -Name "${{ matrix.consumer }}" -Upgrade -Ci
+
+  ai-sdlc:
+    name: "AI-SDLC gates"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: "PowerShell modules: restore Pester and powershell-yaml"
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.local/share/powershell/Modules
+          key: psmodules-${{ runner.os }}-pester-${{ env.PESTER_VERSION }}-yaml-${{ env.POWERSHELL_YAML_VERSION }}
+
+      - name: "PowerShell modules: install what the cache did not hold"
+        shell: pwsh
+        run: |
+          $pester = [version]$env:PESTER_VERSION
+          $yaml = [version]$env:POWERSHELL_YAML_VERSION
+          $needPester = -not (Get-Module -ListAvailable Pester | Where-Object { $_.Version -eq $pester })
+          $needYaml = -not (Get-Module -ListAvailable powershell-yaml | Where-Object { $_.Version -eq $yaml })
+          if ($needPester -or $needYaml) { Set-PSRepository -Name PSGallery -InstallationPolicy Trusted }
+          if ($needPester) { Install-Module Pester -RequiredVersion $pester -Force -Scope CurrentUser -SkipPublisherCheck }
+          if ($needYaml) { Install-Module powershell-yaml -RequiredVersion $yaml -Force -Scope CurrentUser }
+
+      # The same shared step every consumer runs, from the copy under .claude/ that apm.yml installs from this branch.
+      # A pull request from a fork gets no secrets, so there the private term gate fails: run
+      # Check-PrivateTerms.ps1 locally before you merge such a pull request.
+      - uses: ./.claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr
+        with:
+          private-terms: ${{ secrets.AISDLC_PRIVATE_TERMS }}

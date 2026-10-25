@@ -1,0 +1,6 @@
+# APM downloads during a local install.
+apm_modules/
+doc-candidates/
+# Working files of the agents and the pre-flight receipts.
+temp/
+.claude/settings.local.json

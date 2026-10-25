@@ -1,0 +1,91 @@
+#!/bin/sh
+# Pre-push gate: refuses a push to main or master, then runs the blocking CA gates locally so a doc / skill / graph violation is caught
+# before the push, not after a full pipeline cycle. When a passing pre-flight receipt covers the tree of the tip commit
+# of each pushed ref (Test-PushReceipt.ps1), those gates already passed on that content and do not run again. A push that only
+# deletes refs, or whose commits the remote already has, runs no gate. Then it hands on to Git LFS, so the LFS objects
+# are uploaded. Tool-agnostic: fires on any `git push`, whether
+# from a terminal, Claude Code, or GitHub Copilot, because it is a git hook, not an agent feature.
+#
+# Enable once per clone:  pwsh .claude/skills/ai-sdlc-hooks/scripts/Initialize-AiSdlc.ps1
+#                         (sets core.hooksPath to .claude/skills/ai-sdlc-hooks/githooks)
+# Skip for one push:      git push --no-verify
+#
+# Runs only the fast BLOCKING gates of the installed packages. That run includes Check-DocDrift.ps1
+# when the dotnet pack is installed, because its gates.json registers it as Blocking. Advisory scans
+# are left to the full local run (`pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1`) and
+# to the pull request pipeline; coverage (C09) is left to the pre-flight.
+
+# A push to main or master is refused before any gate runs. The agent hook Deny-IncompletePush.ps1
+# refuses it in Claude Code; this is the same rule for every other tool and for a push from a terminal.
+# git passes one line per ref on stdin: <local ref> <local sha> <remote ref> <remote sha>.
+# `git lfs pre-push` needs the same lines at the end, so they are read once and kept.
+refs=$(cat)
+while read -r local_ref local_sha remote_ref remote_sha; do
+    case "$remote_ref" in
+        refs/heads/main|refs/heads/master)
+            echo "pre-push: a push to ${remote_ref#refs/heads/} is refused. A change reaches main only through a pull request that a person reviews and merges. Push the story branch and open or update its pull request instead." >&2
+            exit 1
+            ;;
+    esac
+done <<EOF
+$refs
+EOF
+
+run_gates() (
+    repo_root=$(git rev-parse --show-toplevel)
+    runner="$repo_root/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1"
+
+    if [ ! -f "$runner" ]; then
+        # Not in a tree that has the gates (e.g. an old branch); do not block.
+        return 0
+    fi
+
+    if command -v pwsh >/dev/null 2>&1; then
+        PWSH=pwsh
+    else
+        echo "pre-push: PowerShell 7 (pwsh) not found; skipping local gates. Install pwsh to enforce them before push." >&2
+        return 0
+    fi
+
+    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+
+    pushed=$(printf '%s\n' "$refs" | awk 'NF >= 2 { print $2 }' | tr '\n' ' ')
+    nothing_new="$repo_root/.claude/skills/ai-sdlc-gates/scripts/Test-PushSendsNothingNew.ps1"
+    if [ -f "$nothing_new" ] && why=$("$PWSH" -NoProfile -File "$nothing_new" -RepoRoot "$repo_root" -Remote "$1" -Commit "$pushed" 2>/dev/null); then
+        echo "pre-push: $why"
+        return 0
+    fi
+
+    receipt_check="$repo_root/.claude/skills/ai-sdlc-gates/scripts/Test-PushReceipt.ps1"
+    if [ -f "$receipt_check" ] && "$PWSH" -NoProfile -File "$receipt_check" -RepoRoot "$repo_root" -Commit "$pushed" >/dev/null 2>&1; then
+        echo "pre-push: a passing pre-flight receipt covers the tip commit of each pushed ref, so the blocking gates do not run again."
+        status=0
+    else
+        echo "pre-push: running blocking CA gates ($runner -BlockingOnly)..."
+        "$PWSH" -NoProfile -File "$runner" -BlockingOnly
+        status=$?
+    fi
+
+    # Advisory: reports when behaviour moved while its tests or docs stood still. Its gate is Advisory,
+    # so the -BlockingOnly run above leaves it out; this call keeps the report visible on every push,
+    # for every tool, without failing it.
+    completeness="$repo_root/.claude/skills/ai-sdlc-gates/scripts/Check-ChangeCompleteness.ps1"
+    if [ -f "$completeness" ]; then
+        "$PWSH" -NoProfile -File "$completeness" || true
+    fi
+
+    if [ "$status" -ne 0 ]; then
+        echo "" >&2
+        echo "pre-push: blocking gate(s) failed. Fix the issues above, or push with --no-verify to bypass intentionally." >&2
+        return 1
+    fi
+    return 0
+)
+
+run_gates "$1" || exit 1
+
+# Last, once the push may go ahead: upload the LFS objects of the pushed commits, the step the
+# stock LFS pre-push hook did before core.hooksPath pointed git here. See git-lfs-hook next to this file.
+[ -n "$refs" ] || exit 0
+printf '%s\n' "$refs" | "$(dirname "$0")/git-lfs-hook" pre-push "$@"
+exit $?

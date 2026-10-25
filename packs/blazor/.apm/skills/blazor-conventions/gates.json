@@ -1,0 +1,11 @@
+{
+  "package": "blazor",
+  "gates": [
+    { "name": "Portal component conventions (razor)", "script": "scripts/Check-RazorConventions.ps1", "mode": "Blocking" },
+    { "name": "Portal: component attribute placement", "script": "scripts/Check-RazorAttributePlacement.ps1", "mode": "Blocking" }
+  ],
+  "allow": [
+    "pwsh -NoProfile -File .claude/skills/blazor-conventions/scripts/Check-*",
+    "pwsh .claude/skills/blazor-conventions/scripts/Check-*"
+  ]
+}

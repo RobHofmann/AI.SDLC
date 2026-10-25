@@ -1,0 +1,5 @@
+# Skill names that a release retired, with the name that replaced each one.
+# One pair per line: the old name, a space, the new name. Lines starting with # and blank lines are skipped.
+# Check-RetiredSkillNames.ps1 fails when an old name is still used. Update-SyncManifest.ps1 writes the pairs
+# into sync-manifest.json, so a consumer can find a folder an older version left behind.
+

@@ -1,0 +1,65 @@
+# Takes each new release of the shared AI-SDLC in {{Repository}}. Every Monday, and on demand, it runs
+# New-AiSdlcUpdatePullRequest.ps1 from the core: when AI.SDLC has a newer release, it opens one pull
+# request on the branch ai-sdlc-<tag> that lists what the release asks of this repository. A person does
+# those steps on that branch and merges it. AI.SDLC does not know this repository; this workflow pulls.
+#
+# A pull request that the default GITHUB_TOKEN opens starts no workflow, so its required checks would
+# never run. So the workflow signs in as a GitHub App, through a token that lives for this run only:
+# - the repository variable AISDLC_UPDATE_APP_CLIENT_ID holds the client ID of the app;
+# - the repository secret AISDLC_UPDATE_APP_PRIVATE_KEY holds its private key;
+# - the app is installed on this repository with Contents and Pull requests set to read and write.
+name: ai-sdlc-update
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-sdlc-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Take the newest AI-SDLC release
+    runs-on: {{Runner}}
+    steps:
+      - name: Check that the app is set up
+        shell: pwsh
+        env:
+          CLIENT_ID: ${{ vars.AISDLC_UPDATE_APP_CLIENT_ID }}
+          HAS_KEY: ${{ secrets.AISDLC_UPDATE_APP_PRIVATE_KEY != '' }}
+        run: |
+          if (-not $env:CLIENT_ID -or $env:HAS_KEY -ne 'true') {
+            Write-Host '::error title=AI-SDLC update::Set the variable AISDLC_UPDATE_APP_CLIENT_ID and the secret AISDLC_UPDATE_APP_PRIVATE_KEY of a GitHub App with Contents and Pull requests write on this repository. The header of this workflow says why.'
+            exit 1
+          }
+
+      - id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.AISDLC_UPDATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.AISDLC_UPDATE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: {{Trunk}}
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Open the update pull request
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+        run: |
+          git config user.name "$env:APP_SLUG[bot]"
+          git config user.email "$env:APP_SLUG[bot]@users.noreply.github.com"
+          & ./.claude/skills/ai-sdlc-gates/scripts/Install-Apm.ps1
+          & ./.claude/skills/ai-sdlc-hooks/scripts/New-AiSdlcUpdatePullRequest.ps1
+          exit $LASTEXITCODE

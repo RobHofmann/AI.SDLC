@@ -1,0 +1,8 @@
+#!/bin/sh
+# Hand on to Git LFS first, so LFS locking keeps a locked file read-only. See
+# .claude/skills/ai-sdlc-hooks/githooks/git-lfs-hook. Git ignores the exit code of this hook.
+"$(dirname "$0")/git-lfs-hook" post-merge "$@"
+# Refresh the local Graphify code graph after a pull or merge. The tool's own hooks do not cover
+# this case; its docs tell you to run the update by hand, which is exactly the step people forget.
+# Silent no-op when graphify is not installed. See .claude/skills/ai-sdlc-hooks/githooks/graphify-refresh.
+exec "$(dirname "$0")/graphify-refresh"

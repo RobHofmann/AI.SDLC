@@ -1,0 +1,157 @@
+# Composite action: the shared AI-SDLC checks of a pull request workflow. It ships in the core, so every
+# repository gets it at the same version as the rest of the AI-SDLC. Use it in a job of a pull request
+# workflow, right after a full-depth checkout:
+#
+#   on:
+#     pull_request:
+#   permissions:
+#     contents: read
+#     issues: read
+#     pull-requests: read
+#   jobs:
+#     ai-sdlc:
+#       runs-on: ubuntu-24.04
+#       steps:
+#         - uses: actions/checkout@<full commit SHA>   # pin by SHA
+#           with:
+#             fetch-depth: 0
+#         - uses: ./.claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr
+#           with:
+#             coverage-file: coverage/coverage.xml               # optional, for the C04 coverage ratchet
+#             pre-gate-command: dotnet restore                   # optional, run before the gates; never a gate
+#             private-terms: ${{ secrets.AISDLC_PRIVATE_TERMS }} # optional, for Check-PrivateTerms.ps1
+#
+# The action runs every gate that a local run of Invoke-LocalGates.ps1 runs: the gates of the core, of
+# each pack that apm.yml lists, and the repoGates of aisdlc.json. A Blocking gate that fails fails the
+# job; an Advisory gate that finds issues, or a gate that could not check, is a warning annotation.
+# So a repository that uses this action needs no hand-listed gate steps. The pre-gate-command input
+# never holds a gate: a gate goes in gates.json or in the repoGates of aisdlc.json.
+#
+# On a pull request the action gives the gates the context they read: PR_ID, PR_TITLE, PR_DESCRIPTION,
+# PR_SOURCE_BRANCH, PR_TARGET_BRANCH and CHANGED_FILES (git diff --name-only <base sha>...HEAD). The
+# values come from the pull_request event, so no API call is needed. GH_TOKEN is the job token
+# (github.token), for the gates that read issues and pull requests with gh. Full depth (fetch-depth: 0)
+# keeps the history that the diff and the C08 name gate read.
+#
+# APM installs the AI.SDLC packages from apm.yml. A public AI.SDLC source needs no token. A private
+# source needs a token in GITHUB_APM_PAT, set in the env of the calling job.
+#
+# Before the gates, the action installs the pinned gitleaks (Install-Gitleaks.ps1, SHA-256 checked). The
+# C03 gate Test-GitleaksBaseline.ps1 then runs with the other gates, so the scan runs once. On a pull
+# request it scans only the commits that the pull request adds (PR_BASE_SHA..HEAD), the same range as the
+# pre-flight. On any other event it scans the whole history. It is blocking: a finding that
+# gitleaks-baseline.json does not hold fails the job, and so does a missing gitleaks (constitution C03).
+# A repository without a baseline counts every finding; Create-GitleaksBaseline.ps1 makes one for old
+# findings that are not secrets.
+#
+# The C04 coverage ratchet needs a merged coverage file, which an earlier step of the job makes. Name it
+# in coverage-file; the action then passes -CoverageFile to Invoke-LocalGates.ps1. A missing file fails
+# the job. Without coverage-file the ratchet runs only in the pre-flight.
+#
+# The gate-script self-tests (-IncludeToolTests) do not run here; AI.SDLC tests its own scripts in its
+# own workflow at the same tag. This action uses no third-party action.
+
+name: AI-SDLC pull request checks
+description: Installs the pinned APM and gitleaks, checks the installed AI-SDLC files and runs every gate, the C03 secret scan gate included.
+
+inputs:
+  coverage-file:
+    description: The merged coverage file (dotnet-coverage XML or OpenCover) for the C04 coverage ratchet; empty runs no ratchet.
+    required: false
+    default: ""
+  pre-gate-command:
+    description: A pwsh command to run after the install and before the gates, such as a restore a gate needs; never a gate, which goes in gates.json or repoGates.
+    required: false
+    default: ""
+  private-terms:
+    description: The private term list for Check-PrivateTerms.ps1, one regular expression per line. Pass a repository secret.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: "AI-SDLC: pull request context"
+      shell: pwsh
+      env:
+        EVENT_PR_ID: ${{ github.event.pull_request.number }}
+        EVENT_PR_TITLE: ${{ github.event.pull_request.title }}
+        EVENT_PR_BODY: ${{ github.event.pull_request.body }}
+        EVENT_PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        EVENT_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+        EVENT_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        function Set-JobEnv([string]$Name, [string]$Value) {
+          $delimiter = 'AISDLC_' + [guid]::NewGuid().ToString('n')
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "$Name<<$delimiter`n$Value`n$delimiter" -Encoding utf8
+        }
+        if (-not $env:EVENT_PR_ID) {
+          Write-Host 'Not a pull request event, so the gates get no pull request context.'
+          exit 0
+        }
+        Set-JobEnv 'PR_ID' $env:EVENT_PR_ID
+        Set-JobEnv 'PR_TITLE' $env:EVENT_PR_TITLE
+        Set-JobEnv 'PR_DESCRIPTION' $env:EVENT_PR_BODY
+        Set-JobEnv 'PR_SOURCE_BRANCH' $env:EVENT_PR_HEAD_REF
+        Set-JobEnv 'PR_TARGET_BRANCH' $env:EVENT_PR_BASE_REF
+        Set-JobEnv 'PR_BASE_SHA' $env:EVENT_PR_BASE_SHA
+        $changed = git diff --name-only "$($env:EVENT_PR_BASE_SHA)...HEAD" 2>$null
+        if ($LASTEXITCODE -eq 0) { Set-JobEnv 'CHANGED_FILES' ($changed -join "`n") }
+        else { Write-Host "::warning title=AI-SDLC::The pull request diff (git diff $($env:EVENT_PR_BASE_SHA)...HEAD) could not be computed, so the gates that read the changed files fall back to their own base ref. Check out with fetch-depth: 0." }
+
+    - name: "AI-SDLC: install APM (pinned release, SHA-256 checked)"
+      shell: pwsh
+      run: |
+        & (Join-Path $env:GITHUB_ACTION_PATH '../../../scripts/Install-Apm.ps1')
+
+    - name: "AI-SDLC: installed shared files match apm.lock.yaml (apm audit, blocking)"
+      shell: pwsh
+      run: |
+        apm --version
+        apm audit --ci
+        exit $LASTEXITCODE
+
+    - name: "AI-SDLC: apm.lock.yaml installs as committed (apm install --frozen, blocking)"
+      shell: pwsh
+      run: |
+        apm install --frozen
+        exit $LASTEXITCODE
+
+    - name: "AI-SDLC: install gitleaks (pinned release, SHA-256 checked)"
+      if: ${{ !cancelled() }}
+      shell: pwsh
+      run: |
+        & (Join-Path $env:GITHUB_ACTION_PATH '../../../scripts/Install-Gitleaks.ps1')
+
+    - name: "AI-SDLC: pre-gate command"
+      if: ${{ !cancelled() && inputs.pre-gate-command != '' }}
+      shell: pwsh
+      env:
+        AISDLC_PRE_GATE_COMMAND: ${{ inputs.pre-gate-command }}
+      run: |
+        Invoke-Expression $env:AISDLC_PRE_GATE_COMMAND
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+    - name: "AI-SDLC: gates of the shared AI-SDLC and of this repository (advisory ones warn)"
+      if: ${{ !cancelled() }}
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+        AISDLC_PRIVATE_TERMS: ${{ inputs.private-terms }}
+        AISDLC_COVERAGE_FILE: ${{ inputs.coverage-file }}
+      run: |
+        $gateArgs = @{ RepoRoot = $env:GITHUB_WORKSPACE }
+        $coverageMissing = $false
+        if ($env:AISDLC_COVERAGE_FILE) {
+          $coverage = Join-Path $env:GITHUB_WORKSPACE $env:AISDLC_COVERAGE_FILE
+          if ([IO.Path]::IsPathRooted($env:AISDLC_COVERAGE_FILE)) { $coverage = $env:AISDLC_COVERAGE_FILE }
+          if (Test-Path -LiteralPath $coverage -PathType Leaf) { $gateArgs.CoverageFile = $coverage }
+          else {
+            $coverageMissing = $true
+            Write-Host "::error title=C04 coverage ratchet::The coverage file $coverage is missing, so the coverage ratchet could not run. FIX: make an earlier step write the merged coverage file, or set coverage-file to its path."
+          }
+        }
+        & (Join-Path $env:GITHUB_ACTION_PATH '../../../scripts/Invoke-LocalGates.ps1') @gateArgs
+        $code = $LASTEXITCODE
+        if ($coverageMissing) { exit 1 }
+        exit $code

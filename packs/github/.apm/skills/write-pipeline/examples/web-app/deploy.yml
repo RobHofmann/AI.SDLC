@@ -1,0 +1,101 @@
+# deploy.yml - the reusable deploy workflow of contoso-portal, called once per environment by release.yml.
+# PARTIAL: it shows the pattern of each job, not every step a real deploy needs.
+# Every job sets the environment, so it gets that environment's variables (vars.*), its secrets and,
+# on prd, its required reviewers. The deploy scripts under deploy/ are the repository's own; the
+# workflow only calls them, so the same script runs on a laptop and in the workflow.
+
+name: deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: The GitHub environment to deploy to (dev, acc or prd).
+        type: string
+        required: true
+      version:
+        description: The version of the build to deploy.
+        type: string
+        required: true
+      deploy-infra:
+        type: boolean
+        default: false
+      run-migrations:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  infra:
+    name: infra (${{ inputs.environment }})
+    if: ${{ inputs.deploy-infra }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - name: deploy the infrastructure
+        shell: pwsh
+        run: ./deploy/Deploy-Infrastructure.ps1 -Environment '${{ inputs.environment }}' -NamePrefix '${{ vars.NAME_PREFIX }}'
+
+  migrate:
+    name: migrate (${{ inputs.environment }})
+    needs: infra
+    if: ${{ !cancelled() && !failure() && inputs.run-migrations }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/download-artifact@<full commit SHA> # v4
+        with:
+          name: package
+          path: package
+      - name: run the database migrations
+        shell: pwsh
+        env:
+          DATABASE_CONNECTION: ${{ secrets.DATABASE_CONNECTION }}
+        run: ./package/api/Contoso.Portal.Migrate --connection-env DATABASE_CONNECTION
+
+  app:
+    name: app (${{ inputs.environment }})
+    needs: [infra, migrate]
+    if: ${{ !cancelled() && !failure() }}
+    runs-on: ubuntu-24.04
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.APP_URL }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - uses: actions/download-artifact@<full commit SHA> # v4
+        with:
+          name: package
+          path: package
+      - name: deploy the app to the staging slot, check it, then swap
+        shell: pwsh
+        run: >-
+          ./deploy/Deploy-App.ps1 -Environment '${{ inputs.environment }}'
+          -PackagePath package -Version '${{ inputs.version }}' -Target '${{ vars.APP_TARGET }}' -Swap
+      - name: write the summary
+        shell: pwsh
+        run: '"Deployed contoso-portal ${{ inputs.version }} to ${{ inputs.environment }}." >> $env:GITHUB_STEP_SUMMARY'
+
+  smoke-test-dev:
+    name: smoke test (dev only)
+    needs: app
+    if: ${{ inputs.environment == 'dev' }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - shell: pwsh
+        run: ./deploy/Test-Smoke.ps1 -BaseUrl '${{ vars.APP_URL }}'

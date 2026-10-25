@@ -1,0 +1,15 @@
+name: test-consumer-full
+version: "0.0.0"
+targets:
+  - claude
+dependencies:
+  apm:
+    - ../../core
+    - ../../packs/dotnet
+    - ../../packs/blazor
+    - ../../packs/bicep
+    - ../../packs/github
+    - ../../packs/github-issues
+    - ../../packs/discovery
+    - ../../packs/knowledge
+    - ../../packs/sonarcloud

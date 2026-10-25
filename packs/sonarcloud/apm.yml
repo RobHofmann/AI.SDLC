@@ -1,0 +1,12 @@
+name: ai-sdlc-sonarcloud
+version: "1.0.0"
+description: The SonarQube Cloud pack - the SonarQube MCP server for the agent session, and the gate that keeps the token and the organization out of the repository.
+dependencies:
+  mcp:
+    - name: sonarqube
+      registry: false
+      transport: http
+      url: https://api.sonarcloud.io/mcp
+      headers:
+        Authorization: Bearer ${AISDLC_SONAR_MCP_TOKEN}
+        SONARQUBE_ORG: ${AISDLC_SONAR_ORG}

@@ -1,0 +1,9 @@
+name: test-consumer-minimal
+version: "0.0.0"
+targets:
+  - claude
+dependencies:
+  apm:
+    - ../../core
+    - ../../packs/github
+    - ../../packs/github-issues

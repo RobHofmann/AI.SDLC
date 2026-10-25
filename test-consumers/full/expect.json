@@ -1,0 +1,42 @@
+{
+  "present": [
+    ".mcp.json",
+    ".claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1",
+    ".claude/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1",
+    ".claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml",
+    ".claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1",
+    ".claude/skills/ai-sdlc-handbook/references/layout.md",
+    ".claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1",
+    ".claude/skills/test-first-dotnet/SKILL.md",
+    ".claude/skills/blazor-conventions/SKILL.md",
+    ".claude/skills/bicep-conventions/references/bicep.md",
+    ".claude/skills/github-pull-requests/scripts/New-PullRequest.ps1",
+    ".claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1",
+    ".claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1",
+    ".claude/skills/github-pull-requests/scripts/Initialize-GitHub.ps1",
+    ".claude/skills/github-actions-conventions/SKILL.md",
+    ".claude/skills/write-pipeline/SKILL.md",
+    ".claude/skills/github-issue-conventions/SKILL.md",
+    ".claude/skills/check-pr-contract/scripts/Check-PrStoryContract.ps1",
+    ".claude/skills/check-pr-contract/scripts/Invoke-IssuePreflight.ps1",
+    ".claude/skills/draw-customer-journey/SKILL.md",
+    ".claude/skills/write-hypothesis/SKILL.md",
+    ".claude/skills/write-platform-note/SKILL.md",
+    ".claude/skills/platform-knowledge-conventions/SKILL.md",
+    ".claude/agents/code-reviewer.md",
+    ".claude/settings.json",
+    ".claude/skills/ai-sdlc-hooks/scripts/Install-AiSdlc.ps1",
+    ".claude/skills/ai-sdlc-hooks/scripts/Update-AiSdlc.ps1",
+    ".claude/skills/adopt-docs/scripts/Repair-DocsWiki.ps1",
+    ".claude/skills/ai-sdlc-gates/scripts/Check-DocCoverage.ps1",
+    ".claude/skills/adopt-docs/scripts/New-DocCandidate.ps1",
+    ".claude/skills/dotnet-code-graph/scripts/Get-ProjectFacts.ps1",
+    ".claude/skills/bicep-conventions/scripts/Get-BicepFacts.ps1",
+    ".claude/skills/sonarcloud-mcp/scripts/Check-McpToken.ps1"
+  ],
+  "absent": [
+    ".claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1",
+    ".claude/skills/github-pull-requests/scripts/Register-Pipelines.ps1",
+    ".claude/skills/ai-sdlc-gates/assets/pipelines"
+  ]
+}

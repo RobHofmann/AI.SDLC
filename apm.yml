@@ -1,0 +1,10 @@
+name: ai-sdlc
+version: "0.0.0"
+targets:
+  - claude
+dependencies:
+  apm:
+    - ./core
+    - ./packs/github
+    - ./packs/github-issues
+    - ./packs/discovery

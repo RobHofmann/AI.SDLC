@@ -1,0 +1,12 @@
+{
+  "aiSdlc": {
+    "repository": "RobHofmann/AI.SDLC",
+    "repositoryUrl": "https://github.com/RobHofmann/AI.SDLC"
+  },
+  "github": {
+    "trunk": "main"
+  },
+  "workflows": {
+    "runner": "ubuntu-24.04"
+  }
+}

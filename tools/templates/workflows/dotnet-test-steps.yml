@@ -1,0 +1,26 @@
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          global-json-file: global.json
+
+      - name: Restore, build and test with coverage
+        shell: pwsh
+        run: |
+          dotnet restore {{Solution}}
+          dotnet build {{Solution}} --configuration Release --no-restore
+          dotnet test {{Solution}} --configuration Release --no-build --collect "Code Coverage"{{RunSettingsArgument}} --results-directory "${{ runner.temp }}/TestResults"
+          exit $LASTEXITCODE
+
+      - name: Merge the coverage files for the C04 ratchet
+        shell: pwsh
+        run: |
+          dotnet tool update --global dotnet-coverage
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $files = @(Get-ChildItem -Path "${{ runner.temp }}/TestResults" -Recurse -Filter '*.coverage' | ForEach-Object FullName)
+          if ($files.Count -eq 0) {
+            Write-Host "::error title=C04::The test run wrote no coverage file, so the C04 ratchet cannot run. FIX: keep the Code Coverage collector in the run settings."
+            exit 1
+          }
+          New-Item -ItemType Directory -Path "${{ runner.temp }}/coverage" -Force | Out-Null
+          & (Join-Path $HOME '.dotnet' 'tools' 'dotnet-coverage') merge --output "${{ runner.temp }}/coverage/coverage.xml" --output-format xml @files
+          exit $LASTEXITCODE
+

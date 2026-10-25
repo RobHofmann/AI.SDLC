@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(graphify*)",
+            "command": "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1",
+            "timeout": 60,
+            "statusMessage": "Checking the code graph is current..."
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(*graphify*)",
+            "command": "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1",
+            "timeout": 60,
+            "statusMessage": "Checking the code graph is current..."
+          }
+        ]
+      }
+    ]
+  }
+}

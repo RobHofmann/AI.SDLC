@@ -1,0 +1,74 @@
+# release.yml - the entry point of contoso-portal: build once, then deploy that build to dev, acc and
+# prd in order. A push to main releases the code only; the risky steps are toggles that default off
+# and can only be switched on in a manual run (workflow_dispatch).
+
+name: release
+run-name: release ${{ github.ref_name }} ${{ github.run_number }}
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy-infra:
+        description: Deploy the infrastructure before the app.
+        type: boolean
+        default: false
+      run-migrations:
+        description: Run the database migrations before the app.
+        type: boolean
+        default: false
+      skip-prd:
+        description: Stop after acc.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      upload-package: true
+
+  dev:
+    needs: build
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: dev
+      version: ${{ needs.build.outputs.version }}
+      deploy-infra: ${{ inputs.deploy-infra == true }}
+      run-migrations: ${{ inputs.run-migrations == true }}
+
+  acc:
+    needs: [build, dev]
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: acc
+      version: ${{ needs.build.outputs.version }}
+      deploy-infra: ${{ inputs.deploy-infra == true }}
+      run-migrations: ${{ inputs.run-migrations == true }}
+
+  prd:
+    needs: [build, acc]
+    if: ${{ inputs.skip-prd != true }}
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: prd
+      version: ${{ needs.build.outputs.version }}
+      deploy-infra: ${{ inputs.deploy-infra == true }}
+      run-migrations: ${{ inputs.run-migrations == true }}

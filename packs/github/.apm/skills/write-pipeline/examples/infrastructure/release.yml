@@ -1,0 +1,105 @@
+# release.yml - the release of contoso-platform, an infrastructure repository.
+# PARTIAL: it shows the toggles, the dry run, the environment chain and a dev-only job, not every part.
+# There is no build job: each job deploys a part of the platform straight from the templates.
+# A push to main deploys the shared network: dev at once, prd after its required reviewers approve.
+# Every other part is a toggle that defaults off, so it goes out only when someone asks for it.
+
+name: release
+run-name: release ${{ github.ref_name }} ${{ github.run_number }}
+
+on:
+  push:
+    branches: [main]
+    paths: [infra/**, deploy/**]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Show what would change (what-if or plan) and change nothing.
+        type: boolean
+        default: true
+      deploy-network:
+        description: Deploy the shared network.
+        type: boolean
+        default: false
+      deploy-dns:
+        description: Deploy the DNS zones.
+        type: boolean
+        default: false
+      create-test-data:
+        description: Create the test data (dev only).
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-platform
+  cancel-in-progress: false
+
+jobs:
+  network-dev:
+    name: network (dev)
+    if: ${{ github.event_name == 'push' || inputs.deploy-network }}
+    runs-on: ubuntu-24.04
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - shell: pwsh
+        run: ./deploy/Deploy-Part.ps1 -Part network -Environment dev -DryRun:$${{ inputs.dry-run == true }}
+
+  dns-dev:
+    name: dns (dev)
+    needs: network-dev
+    if: ${{ !cancelled() && !failure() && inputs.deploy-dns }}
+    runs-on: ubuntu-24.04
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - shell: pwsh
+        run: ./deploy/Deploy-Part.ps1 -Part dns -Environment dev -DryRun:$${{ inputs.dry-run == true }}
+
+  test-data-dev:
+    name: test data (dev only)
+    needs: [network-dev, dns-dev]
+    if: ${{ !cancelled() && !failure() && inputs.create-test-data }}
+    runs-on: ubuntu-24.04
+    environment: dev
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - shell: pwsh
+        run: ./deploy/New-TestData.ps1 -Environment dev
+
+  network-prd:
+    name: network (prd)
+    needs: [network-dev, dns-dev]
+    if: ${{ !cancelled() && !failure() && (github.event_name == 'push' || inputs.deploy-network) }}
+    runs-on: ubuntu-24.04
+    environment: prd
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - shell: pwsh
+        run: ./deploy/Deploy-Part.ps1 -Part network -Environment prd -DryRun:$${{ inputs.dry-run == true }}
+
+  dns-prd:
+    name: dns (prd)
+    needs: network-prd
+    if: ${{ !cancelled() && !failure() && inputs.deploy-dns }}
+    runs-on: ubuntu-24.04
+    environment: prd
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - shell: pwsh
+        run: ./deploy/Deploy-Part.ps1 -Part dns -Environment prd -DryRun:$${{ inputs.dry-run == true }}

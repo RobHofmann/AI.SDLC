@@ -1,0 +1,16 @@
+{
+  "package": "github-issues",
+  "preflight": "scripts/Invoke-IssuePreflight.ps1",
+  "gates": [
+    { "name": "PR-story contract (CI/PR only; no-op locally)", "script": "scripts/Check-PrStoryContract.ps1", "clause": "C01", "mode": "Blocking" },
+    { "name": "Graph: stories backlink their anchoring ADRs (CI only; no-op locally)", "script": "scripts/Check-StoryBackEdges.ps1", "clause": "C01", "mode": "Advisory" }
+  ],
+  "allow": [
+    "pwsh -NoProfile -File .claude/skills/check-pr-contract/scripts/Check-*",
+    "pwsh .claude/skills/check-pr-contract/scripts/Check-*",
+    "pwsh -NoProfile -File .claude/skills/check-pr-contract/scripts/Invoke-IssuePreflight.ps1*",
+    "pwsh .claude/skills/check-pr-contract/scripts/Invoke-IssuePreflight.ps1*",
+    "gh issue view *",
+    "gh issue list *"
+  ]
+}

@@ -1,0 +1,3 @@
+name: ai-sdlc-github
+version: "1.0.0"
+description: The GitHub pack - pull requests, review threads, pull request delivery metrics and the GitHub Actions workflows.

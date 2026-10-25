@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Get-PullRequestFeedback.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Get-PullRequestFeedback.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.ps1*)"
+    ]
+  }
+}

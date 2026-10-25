@@ -1,0 +1,8 @@
+name: test-consumer-bicep-only
+version: "0.0.0"
+targets:
+  - claude
+dependencies:
+  apm:
+    - ../../core
+    - ../../packs/bicep
