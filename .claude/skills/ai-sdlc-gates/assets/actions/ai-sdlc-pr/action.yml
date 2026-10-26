@@ -19,7 +19,7 @@
 #           with:
 #             coverage-file: coverage/coverage.xml               # optional, for the C04 coverage ratchet
 #             pre-gate-command: dotnet restore                   # optional, run before the gates; never a gate
-#             private-terms: ${{ secrets.AISDLC_PRIVATE_TERMS }} # optional, for Check-PrivateTerms.ps1
+#             private-terms: ${{ secrets.AISDLC_PRIVATE_TERMS }} # needed in a public repository, for Check-PrivateTerms.ps1
 #
 # The action runs every gate that a local run of Invoke-LocalGates.ps1 runs: the gates of the core, of
 # each pack that apm.yml lists, and the repoGates of aisdlc.json. A Blocking gate that fails fails the
@@ -64,7 +64,7 @@ inputs:
     required: false
     default: ""
   private-terms:
-    description: The private term list for Check-PrivateTerms.ps1, one regular expression per line. Pass a repository secret.
+    description: The private term list for Check-PrivateTerms.ps1, one regular expression per line. Pass a repository secret. A public repository fails without it.
     required: false
     default: ""
 

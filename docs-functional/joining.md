@@ -79,7 +79,9 @@ install reaches the main branch. The setup script prints the step apart from the
   session that starts in a subfolder.
 - A public repository sets `"visibility": "public"` in `aisdlc.json`. The private term gate then checks
   every file, commit message and pull request text against your private list. The workflow passes
-  that list from the secret `AISDLC_PRIVATE_TERMS`.
+  that list from the secret `AISDLC_PRIVATE_TERMS`. Without that secret, the workflow of a public
+  repository fails, also when `visibility` still says `private`. A pull request from a fork gets no
+  secrets, so check it by hand before you merge it.
 - A team keeps skills, agents and hooks of its own in the root `.apm/` folder, next to `apm.yml`. A
   local package in `apm.yml` must be a folder in git, or the push stops
   ([own parts](../core/.apm/skills/ai-sdlc-handbook/references/consumer-own.md)).

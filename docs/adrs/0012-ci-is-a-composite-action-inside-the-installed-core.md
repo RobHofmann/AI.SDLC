@@ -57,7 +57,7 @@ So after `actions/checkout`, the action is already on disk at the version the co
 The installed copy is the version, so there is no second pin.
 
 **2. Its inputs.** `coverage-file` (optional), `pre-gate-command` (an optional `pwsh` command run before
-the gates) and `private-terms` (optional).
+the gates) and `private-terms` (optional, but a public repository fails without it).
 
 **3. Its steps, in `pwsh`.**
 

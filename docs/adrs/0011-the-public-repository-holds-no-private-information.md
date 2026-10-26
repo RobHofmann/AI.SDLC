@@ -58,7 +58,10 @@ Examples use made-up names, such as `Contoso`, `PROJ`, `contoso/portal`, `#42` a
 
 **2. One gate, `Check-PrivateTerms.ps1`, in the core.** It is Blocking in the core `gates.json`, under
 clause `AI-SDLC`. It runs when `visibility` in `aisdlc.json` is `public`, or with `-Force`. Otherwise it
-exits 0 and says the repository is private.
+exits 0 and says the repository is private. In GitHub Actions it also reads the event of the run, but
+only for the checked-out repository (`GITHUB_WORKSPACE`). When GitHub says that repository is public,
+the gate checks it whatever `visibility` says, and a wrong `visibility` fails the build. So a public
+consumer cannot skip the gate by a setting nobody changed.
 
 **3. The list lives outside the repository.** The gate takes the first list it finds: `-TermsFile`, the
 environment variable `AISDLC_PRIVATE_TERMS`, `paths.privateTermsFile`, then
@@ -73,9 +76,12 @@ body, because those are public too.
 line number in the list. An invalid entry is `rule <n> is not a valid regular expression`. The matched
 text and the rule text never appear, locally or in CI. Then one `FIX:` line.
 
-**6. It fails closed in AI.SDLC.** Elsewhere, no list is exit 2: "could not check"
-([ADR 0005](0005-the-gate-contract.md)). AI.SDLC runs the gate with `-Required`, so a missing list is
-exit 1 in its own CI and pre-push hook. The public repository must never pass unchecked.
+**6. It fails closed in every public repository in CI.** No list is exit 2, "could not check"
+([ADR 0005](0005-the-gate-contract.md)), on a machine and in a private repository. In GitHub Actions, a
+repository that GitHub says is public fails with exit 1 instead, because it must never pass unchecked.
+The one exception is a pull request from a fork: it gets no secrets, so it warns with exit 2, and the
+owner runs the gate by hand before the merge. AI.SDLC runs the gate with `-Required`, so a missing list
+is exit 1 there in every case, its pre-push hook and fork pull requests included.
 
 **7. Lessons are routed by kind.** `capture-learning` sends a rule about the way of working to AI.SDLC
 as a pull request. It sends a fact about how a system behaves to the knowledge repository. The gate is the
@@ -87,7 +93,7 @@ backstop for a lesson that carries a private name.
 
 - The public repository holds only the check itself. Every private fact lives in one private place.
 - A finding never gets out through a public log.
-- A public consumer gets the same check by setting `visibility: public`.
+- A public consumer gets the same check in CI, even before anyone sets `visibility: public`.
 
 **Negative:**
 
@@ -115,7 +121,8 @@ backstop for a lesson that carries a private name.
 ## Verification
 
 - `Check-PrivateTerms.Tests.ps1` covers the list order, the skip on a private repository, exit 2 and
-  `-Required`. It covers the commit message, branch and pull request scan, and an invalid entry. It also checks that no output
+  `-Required`. It covers a run in GitHub Actions with a fake event file: the public repository with a
+  wrong `visibility`, no list, a fork pull request, and an event for another folder. It covers the commit message, branch and pull request scan, and an invalid entry. It also checks that no output
   line holds the matched text. The tests use made-up terms only.
 - By hand: run the gate in AI.SDLC with the real list before a release, and see zero findings.
 
