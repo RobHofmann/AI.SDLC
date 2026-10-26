@@ -7,6 +7,9 @@ Describe 'Check-PrivateTerms' {
         $script:SavedBranch = $env:PR_SOURCE_BRANCH
         $script:SavedTitle = $env:PR_TITLE
         $script:SavedBody = $env:PR_DESCRIPTION
+        $script:SavedActions = $env:GITHUB_ACTIONS
+        $script:SavedEventPath = $env:GITHUB_EVENT_PATH
+        $script:SavedWorkspace = $env:GITHUB_WORKSPACE
 
         function New-TermsRepo {
             param([string]$Visibility = 'public', [hashtable]$Files = @{ 'docs/page.md' = "# Page`nNothing to see." }, [string]$Config)
@@ -39,6 +42,21 @@ Describe 'Check-PrivateTerms' {
             $out = & $script:ScriptUnderTest -RepoRoot $Root @Options *>&1 | Out-String
             return [pscustomobject]@{ Code = $LASTEXITCODE; Output = $out }
         }
+
+        # Acts as a GitHub Actions run of the repository at $Workspace, with the event file GitHub writes.
+        function Set-GitHubRun {
+            param([string]$Workspace, [bool]$Private, [switch]$PullRequest, [switch]$Fork)
+            $payload = [ordered]@{ repository = [ordered]@{ full_name = 'contoso/portal'; private = $Private } }
+            if ($PullRequest -or $Fork) {
+                $head = if ($Fork) { 'someone/portal' } else { 'contoso/portal' }
+                $payload.pull_request = [ordered]@{ head = [ordered]@{ repo = [ordered]@{ full_name = $head } } }
+            }
+            $path = Join-Path $TestDrive ('event-' + [guid]::NewGuid().ToString('n') + '.json')
+            Set-Content -LiteralPath $path -Value ($payload | ConvertTo-Json -Depth 6)
+            $env:GITHUB_ACTIONS = 'true'
+            $env:GITHUB_EVENT_PATH = $path
+            $env:GITHUB_WORKSPACE = $Workspace
+        }
     }
 
     BeforeEach {
@@ -46,6 +64,9 @@ Describe 'Check-PrivateTerms' {
         $env:PR_SOURCE_BRANCH = $null
         $env:PR_TITLE = $null
         $env:PR_DESCRIPTION = $null
+        $env:GITHUB_ACTIONS = $null
+        $env:GITHUB_EVENT_PATH = $null
+        $env:GITHUB_WORKSPACE = $null
     }
 
     AfterAll {
@@ -53,6 +74,9 @@ Describe 'Check-PrivateTerms' {
         $env:PR_SOURCE_BRANCH = $script:SavedBranch
         $env:PR_TITLE = $script:SavedTitle
         $env:PR_DESCRIPTION = $script:SavedBody
+        $env:GITHUB_ACTIONS = $script:SavedActions
+        $env:GITHUB_EVENT_PATH = $script:SavedEventPath
+        $env:GITHUB_WORKSPACE = $script:SavedWorkspace
     }
 
     It 'skips a private repository' {
@@ -196,6 +220,75 @@ Describe 'Check-PrivateTerms' {
         $r.Output | Should -Match 'the pull request title  rule 1'
         $r.Output | Should -Match 'the pull request description:2  rule 1'
         $r.Output | Should -Not -Match '(?i)woodgrove'
+    }
+
+    It 'checks a repository that GitHub Actions says is public although aisdlc.json says private, and fails on the setting' {
+        $root = New-TermsRepo -Visibility private
+        Set-GitHubRun -Workspace $root -Private $false -PullRequest
+
+        $r = Invoke-Check -Root $root -Options @{ TermsFile = (New-TermsFile -Lines 'Fabrikam') }
+
+        $r.Code | Should -Be 1 -Because $r.Output
+        $r.Output | Should -Not -Match 'skipped'
+        $r.Output | Should -Match 'visibility'
+        $r.Output | Should -Match '(?m)^FIX: .*"visibility": "public"'
+    }
+
+    It 'reports the terms in a repository that GitHub Actions says is public although aisdlc.json says private' {
+        $root = New-TermsRepo -Visibility private -Files @{ 'docs/page.md' = 'Built for Fabrikam.' }
+        Set-GitHubRun -Workspace $root -Private $false
+
+        $r = Invoke-Check -Root $root -Options @{ TermsFile = (New-TermsFile -Lines 'Fabrikam') }
+
+        $r.Code | Should -Be 1
+        $r.Output | Should -Match 'docs/page\.md:1  rule 1'
+    }
+
+    It 'fails a public repository in GitHub Actions when no list is found, also without -Required' {
+        $root = New-TermsRepo
+        Set-GitHubRun -Workspace $root -Private $false -PullRequest
+
+        $r = Invoke-Check -Root $root
+
+        $r.Code | Should -Be 1 -Because $r.Output
+        $r.Output | Should -Match 'AISDLC_PRIVATE_TERMS'
+    }
+
+    It 'warns on a pull request from a fork that gets no list, and names the run before the merge' {
+        $root = New-TermsRepo
+        Set-GitHubRun -Workspace $root -Private $false -Fork
+
+        $r = Invoke-Check -Root $root
+
+        $r.Code | Should -Be 2 -Because $r.Output
+        $r.Output | Should -Match 'fork'
+        $r.Output | Should -Match '(?m)^FIX: .*-Required'
+    }
+
+    It 'fails a pull request from a fork with -Required, as AI.SDLC runs it' {
+        $root = New-TermsRepo
+        Set-GitHubRun -Workspace $root -Private $false -Fork
+
+        (Invoke-Check -Root $root -Options @{ Required = $true }).Code | Should -Be 1
+    }
+
+    It 'keeps the old behaviour for a private repository in GitHub Actions' {
+        $root = New-TermsRepo -Visibility private
+        Set-GitHubRun -Workspace $root -Private $true -PullRequest
+
+        $r = Invoke-Check -Root $root
+
+        $r.Code | Should -Be 0
+        $r.Output | Should -Match 'skipped: the repository is private'
+    }
+
+    It 'ignores the event file for a folder other than the checked-out repository' {
+        $private = New-TermsRepo -Visibility private
+        $public = New-TermsRepo
+        Set-GitHubRun -Workspace (Join-Path $TestDrive 'other-checkout') -Private $false -PullRequest
+
+        (Invoke-Check -Root $private).Code | Should -Be 0
+        (Invoke-Check -Root $public).Code | Should -Be 2
     }
 
     It 'passes a clean public repository and names the list it read' {

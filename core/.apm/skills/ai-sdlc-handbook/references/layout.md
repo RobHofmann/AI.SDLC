@@ -222,6 +222,15 @@ The core gate `Check-PrivateTerms.ps1` blocks a term of the private list in a pu
 (`visibility` is `public`). It reads the list from `AISDLC_PRIVATE_TERMS`, `paths.privateTermsFile`
 or the knowledge folder. A finding names the file, the line and the rule number, never the matched text.
 
+In GitHub Actions the gate also reads the event of the run, so it fails closed in a public repository:
+
+- When GitHub says the repository is public, the gate checks it even if `visibility` says `private`,
+  and that wrong setting fails the build. Set `"visibility": "public"`, so a local run checks it too.
+- In a public repository, a run with no list fails. So pass the secret `AISDLC_PRIVATE_TERMS` to the
+  shared step as `private-terms`. `tools/Add-AiSdlcConsumer.ps1` reads the visibility and lists this step.
+- A pull request from a fork gets no secrets, so there the gate warns (exit 2) instead. Before you merge
+  such a pull request, check out its branch and run `Check-PrivateTerms.ps1 -Required` with the list.
+
 ## Related
 
 - [The handbook start page](README.md) - the phases, the skills and the agents of the way of working.
