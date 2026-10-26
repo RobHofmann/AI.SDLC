@@ -44,6 +44,7 @@ This release holds the whole AI-SDLC for repositories on GitHub:
 - Updates are pulled: each consumer runs `New-AiSdlcUpdatePullRequest.ps1`, through the
   `update-ai-sdlc` skill or its scheduled `ai-sdlc-update.yml` workflow. It opens one pull request per
   release, which names the release issue with `Refs`. AI.SDLC keeps no list of consumers.
+  The README says so too (#4).
 - `tools/`: the setup script for a new consumer, with a starter pull request workflow and the update
   workflow. Then the test consumers and the parallel Pester runner.
 
