@@ -121,7 +121,7 @@ Open your agent in the repository and type `guide-me`. Or let the onboarding scr
 
 ## 🔄 Taking a new version
 
-A release tag opens a pull request in every repository that installs the AI.SDLC. It moves the pins to the new tag and lists what you must do before you merge. Installed files are read-only: a hook stops an edit, and the build fails on drift. A fix goes into this repository.
+Each repository that installs the AI.SDLC pulls a new release itself. Its update workflow opens a pull request every Monday when a newer release exists, or you run the `update-ai-sdlc` skill to get it now. The pull request moves the pins to the new tag and lists what you must do before you merge. Installed files are read-only: a hook stops an edit, and the build fails on drift. A fix goes into this repository.
 
 📖 **[Taking a new version](docs-functional/new-version.md)**
 
