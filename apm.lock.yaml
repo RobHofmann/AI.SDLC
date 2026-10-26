@@ -331,7 +331,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:5537684656bf189a740ba7e9e7050083af05668d00501ce1e9c6909cb8b91203
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:ec0038651f01d8aef61497e3dee10cca7b03f7b6d77b94841eeb73b2be99e50a
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:38d5853c80537f97afebefef7eb01f66ee968f83f90e97e0d2aa1fb1c4fbfd25
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:654afcaa2b81f560eff93dbdef521b09ced06137a1dbb85d70a4e14ef7502248
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -493,7 +493,7 @@ dependencies:
   deployed_file_hashes:
     .claude/skills/fix-pr-feedback/SKILL.md: sha256:8257f6f84ec21ee12016fc27e0f3508bcf16cf59b9dd91f35ace0682fbaa3c2c
     .claude/skills/github-actions-conventions/SKILL.md: sha256:0ebf2363a0ff9aa3b8fdecef9d9ffb817cf3aba483d8efae0611b2c5c3b65d87
-    .claude/skills/github-pull-requests/SKILL.md: sha256:d0460092772f606e24c0419bc14cbc968755c770423ff8435758ced71cf5fe6f
+    .claude/skills/github-pull-requests/SKILL.md: sha256:9d6aae3dc5ec47a96789befd478edafa25da33390fd208dcb5efeceec2605bd8
     .claude/skills/github-pull-requests/gates.json: sha256:ac2029c1077f9ff7ba5892b815e009e0470bd924c8b361321bfd2bd1a26f5f89
     .claude/skills/github-pull-requests/references/delivery-metrics.md: sha256:e68cda7b7772b71f456a3c48f316ae80ae8fbd7c63275a1f9780234376c68ca4
     .claude/skills/github-pull-requests/scripts/Get-PrMetrics.Tests.ps1: sha256:1a0f480b221481d73bf6d54d463dd0251b89d88b959b545d7e7d3b420e090d2c
@@ -510,8 +510,8 @@ dependencies:
     .claude/skills/github-pull-requests/scripts/PullRequestFeedback.psm1: sha256:c577a976c767140254cb82e515ab43c4d7954adb877bf9999cafa94451d3e572
     .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.Tests.ps1: sha256:76802792b28eb80b7840a3277ae894a979fd120a00fc29f0d66c27dc7abcc154
     .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1: sha256:51e2a50369be9dc26c324bdee3da25fe513c6b337ea1aa54db7c00c283e4b146
-    .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.Tests.ps1: sha256:6d6d7d723ed0d64f749a55b0bed5f10a450f9d2bc32f1c887307d001e08eb9c3
-    .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1: sha256:4cc6d9b53105a6de3f3ca7690921695e2549f63bf5cba8aa0d7ed7e201901337
+    .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.Tests.ps1: sha256:61e9f519701538cf3fb4caf319aad8fb27233fb74ee8be7dcc15f7adca175969
+    .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1: sha256:ae6f402fbf159aa55c75b21c3831697fb05c19b2840a481582f3a18674c2cbbd
     .claude/skills/github-pull-requests/scripts/Update-PullRequest.Tests.ps1: sha256:5eba6eaae6a0a30921e98f1edf30eaf6ef7a7734c4b4066e8f5a861b37816362
     .claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1: sha256:05e75b7021663887643462c57b17cdf0acbefa19c0549bd619416f76d1a5846a
     .claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.Tests.ps1: sha256:aff3b020ddcc58d82aa719966c1f1a1633d0f41f5e39fc016c6a58ebb958cdbe
@@ -526,7 +526,7 @@ dependencies:
     .claude/skills/write-pipeline/references/build-patterns.md: sha256:a1c1a4b75e6acb0afc5f0b94c09176cf2bd78b2aa5e5785fa288323ffed79f09
     .claude/skills/write-pipeline/references/deployment-job-patterns.md: sha256:33f7947c52f15b498298137463076b42ab73917e18d3d9ddd19c89dca99701bb
     .claude/skills/write-pipeline/references/orchestrator-patterns.md: sha256:33eb274d42740943cfb1cb1dd4f98d3a9856e44129447b9482c85899b0b6b443
-    .claude/skills/write-pipeline/references/pr-validation-patterns.md: sha256:17928f6b17cc122eaff133f3c309e6a220027c47379ebf3823a41ebb1631f7d7
+    .claude/skills/write-pipeline/references/pr-validation-patterns.md: sha256:28f6c8e7192bd66f4bb7e0c5f258ee12734aeb7294a05233622127a19228f04d
     .claude/skills/write-pipeline/references/release-patterns.md: sha256:3eaeafe1a1d321cbc60fd5be965b5c9ab2420ab1af85cc08113737fd16a642f6
     .claude/skills/write-pipeline/references/variables-patterns.md: sha256:65ca70ea5cfd49abcd2faf207b4806e21cc1f210e0133be2624d9f4bdc546c9a
     .claude/skills/write-pipeline/references/yaml-syntax-reference.md: sha256:b57367c18212692fd6f70bdadd03f23c6c0cd3bde3e1030382f6b0470d348781
@@ -1551,7 +1551,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:ec0038651f01d8aef61497e3dee10cca7b03f7b6d77b94841eeb73b2be99e50a
+  content_hash: sha256:38d5853c80537f97afebefef7eb01f66ee968f83f90e97e0d2aa1fb1c4fbfd25
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
@@ -2325,7 +2325,7 @@ deployments:
   owners:
   - ./packs/github
   active_owner: ./packs/github
-  content_hash: sha256:d0460092772f606e24c0419bc14cbc968755c770423ff8435758ced71cf5fe6f
+  content_hash: sha256:9d6aae3dc5ec47a96789befd478edafa25da33390fd208dcb5efeceec2605bd8
 - kind: project-relative
   target: claude
   value: .claude/skills/github-pull-requests/gates.json
@@ -2478,7 +2478,7 @@ deployments:
   owners:
   - ./packs/github
   active_owner: ./packs/github
-  content_hash: sha256:6d6d7d723ed0d64f749a55b0bed5f10a450f9d2bc32f1c887307d001e08eb9c3
+  content_hash: sha256:61e9f519701538cf3fb4caf319aad8fb27233fb74ee8be7dcc15f7adca175969
 - kind: project-relative
   target: claude
   value: .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1
@@ -2487,7 +2487,7 @@ deployments:
   owners:
   - ./packs/github
   active_owner: ./packs/github
-  content_hash: sha256:4cc6d9b53105a6de3f3ca7690921695e2549f63bf5cba8aa0d7ed7e201901337
+  content_hash: sha256:ae6f402fbf159aa55c75b21c3831697fb05c19b2840a481582f3a18674c2cbbd
 - kind: project-relative
   target: claude
   value: .claude/skills/github-pull-requests/scripts/Update-PullRequest.Tests.ps1
@@ -3063,7 +3063,7 @@ deployments:
   owners:
   - ./packs/github
   active_owner: ./packs/github
-  content_hash: sha256:17928f6b17cc122eaff133f3c309e6a220027c47379ebf3823a41ebb1631f7d7
+  content_hash: sha256:28f6c8e7192bd66f4bb7e0c5f258ee12734aeb7294a05233622127a19228f04d
 - kind: project-relative
   target: claude
   value: .claude/skills/write-pipeline/references/release-patterns.md

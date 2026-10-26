@@ -44,7 +44,7 @@ Scripts live under `packs/github/.apm/skills/github-pull-requests/scripts`.
 - `New-PullRequest.ps1` creates a GitHub pull request with a complete description.
 - `PullRequestDescription.psm1` passes a pull request description to `gh` through a file and checks that it arrived intact.
 - `PullRequestFeedback.psm1` provides shared helpers for the pull request feedback loop.
-- `Set-BranchRuleset.ps1` sets the ruleset on the default branch: a pull request and the required status checks. It asks for no approval, because the owner's merge is the approval.
+- `Set-BranchRuleset.ps1` sets the ruleset on the default branch: a pull request and the required status checks, and no force push or deletion. It asks for no approval, because the owner's merge is the approval. Pass more than one check as separate values to keep a comma in a check name.
 - `Reply-PullRequestThread.ps1` replies to a pull request review thread. It resolves the thread only when SonarQube Cloud or gitleaks opened it. A thread from any other bot stays open for a person.
 - `Update-PullRequest.ps1` changes only the title or description of an existing pull request.
 - `Wait-WorkflowRun.ps1` waits for one or more workflow runs that are not pull request checks. It returns `ready` with each result. It polls every 20 seconds and fits one call in a ten-minute shell limit.

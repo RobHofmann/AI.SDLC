@@ -29,7 +29,9 @@ This release holds the whole AI-SDLC for repositories on GitHub:
   missing list fails, except on a pull request from a fork. `Add-AiSdlcConsumer.ps1` reads the
   visibility with `gh` and takes `-Visibility`.
 - `github`: pull requests through the GitHub CLI, review threads, the feedback loop, the GitHub Actions
-  conventions and the ruleset on the main branch.
+  conventions and the ruleset on the main branch. The ruleset also blocks a force push and the
+  deletion of the branch, and a check name with a comma stays whole when the checks come as separate
+  values (#7).
 - `github-issues`: stories, bugs and epics as GitHub issues with the key `#42`, the PR-story contract
   gate and the issue pre-flight. The gate accepts a key of another repository only when
   `tracker.acceptedRepositories` lists it, such as the release issue of AI.SDLC in an update pull request.

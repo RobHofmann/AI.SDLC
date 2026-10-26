@@ -87,6 +87,7 @@ pwsh .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1 -Required
 ```
 
 The ruleset asks for a pull request with zero required approvals; the owner's merge is the approval.
+It also blocks a force push and the deletion of the branch.
 
 ## Test scripts
 
