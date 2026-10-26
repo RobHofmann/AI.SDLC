@@ -399,7 +399,7 @@
         ".claude/skills/github-pull-requests/scripts/Update-PullRequest.Tests.ps1": "f63886f04b76fdddda7b23dd886586fb04317194",
         ".claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.ps1": "27fd4ca10468eb3fecd2580f2f1e493fd115ae9d",
         ".claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.Tests.ps1": "3cf5da073805761e52b2af1ea7399e71584ee342",
-        ".claude/skills/github-pull-requests/SKILL.md": "d68adfebd33d1c097777cc1df7799f525c08df73",
+        ".claude/skills/github-pull-requests/SKILL.md": "c2d1d10ae6721687e84a21c5bee71d1332387b76",
         ".claude/skills/write-pipeline/examples/infrastructure/pr.yml": "b3758e9bae5a9c5dec006af329218e2e23244a78",
         ".claude/skills/write-pipeline/examples/infrastructure/release.yml": "967c35ded6d96c0b881b89a6ef9599960f001719",
         ".claude/skills/write-pipeline/examples/web-app/build-and-test.yml": "f9155849e3229580d5e91fc8ea257275807cf220",

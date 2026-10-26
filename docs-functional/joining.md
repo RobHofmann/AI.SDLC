@@ -50,7 +50,7 @@ pwsh .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1 -Required
 ```
 
 The first line shows what it would do. The second sets a ruleset on the main branch: every change comes
-through a pull request, the checks of the workflow must pass, and nobody can force-push or delete the branch. `AI-SDLC gates` is the name of the job in the starter
+through a pull request, and the checks of the workflow must pass. Nobody can force-push or delete the branch. `AI-SDLC gates` is the name of the job in the starter
 workflow; name your own jobs when your workflow has others. It asks for no approval, because you
 cannot approve your own pull request; your merge is the approval. A repository that already has a pull
 request workflow keeps it, and the setup script prints the step to add to it. `-NoWorkflows` skips
