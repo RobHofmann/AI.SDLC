@@ -1,0 +1,6 @@
+{
+  "package": "sonarcloud",
+  "gates": [
+    { "name": "SonarCloud MCP: the token and the organization stay placeholders, never values", "script": "scripts/Check-McpToken.ps1", "clause": "AI-SDLC", "mode": "Blocking" }
+  ]
+}

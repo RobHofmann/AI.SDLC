@@ -1,0 +1,5 @@
+#!/bin/sh
+# Refresh the local Graphify code graph after a rebase or an amend. Neither fires post-commit or
+# post-merge, so without this hook a rebased branch keeps a graph describing the code it had before.
+# Silent no-op when graphify is not installed. See .claude/skills/ai-sdlc-hooks/githooks/graphify-refresh.
+exec "$(dirname "$0")/graphify-refresh"

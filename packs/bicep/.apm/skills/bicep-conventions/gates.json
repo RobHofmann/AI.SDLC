@@ -1,0 +1,10 @@
+{
+  "package": "bicep",
+  "preflight": "scripts/Invoke-BicepPreflight.ps1",
+  "docUnits": [ { "glob": "{bicepRoot}/*", "kind": "building block", "folder": "building-blocks" } ],
+  "docFacts": "scripts/Get-BicepFacts.ps1",
+  "gates": [],
+  "allow": [
+    "az bicep build *"
+  ]
+}

@@ -1,0 +1,9 @@
+#!/bin/sh
+# Hand on to Git LFS first, for every checkout, so LFS locking keeps a locked file read-only. See
+# .claude/skills/ai-sdlc-hooks/githooks/git-lfs-hook. Git ignores the exit code of this hook.
+"$(dirname "$0")/git-lfs-hook" post-checkout "$@"
+# Refresh the local Graphify code graph after a branch switch. Git passes a flag as $3: 1 for a
+# branch checkout, 0 for a file checkout. Only a branch switch changes enough to be worth a rebuild.
+# Silent no-op when graphify is not installed. See .claude/skills/ai-sdlc-hooks/githooks/graphify-refresh.
+[ "$3" = "1" ] || exit 0
+exec "$(dirname "$0")/graphify-refresh"

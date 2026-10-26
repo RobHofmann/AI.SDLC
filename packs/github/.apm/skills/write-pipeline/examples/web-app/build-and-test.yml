@@ -1,0 +1,109 @@
+# build-and-test.yml - the reusable build and test workflow of contoso-portal.
+# release.yml and pr.yml call it, so the pull request and the release build the same way.
+# It builds the .NET backend and the Angular frontend as parallel jobs, then packs one artifact.
+# Replace each <full commit SHA> with the SHA of the action release you pin; keep the version comment.
+
+name: build-and-test
+
+on:
+  workflow_call:
+    inputs:
+      upload-package:
+        description: Pack the build as the artifact "package" for the deploy jobs.
+        type: boolean
+        default: false
+    outputs:
+      version:
+        description: The version this build carries.
+        value: ${{ jobs.backend.outputs.version }}
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: "9.0.x"
+  NODE_VERSION: "22"
+  SOLUTION: src/Contoso.Portal.sln
+
+jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - uses: actions/setup-dotnet@<full commit SHA> # v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - id: version
+        shell: pwsh
+        run: '"version=$(Get-Date -Format yyyy.MM.dd).${{ github.run_number }}" >> $env:GITHUB_OUTPUT'
+      - run: dotnet restore ${{ env.SOLUTION }} --locked-mode
+      - run: dotnet build ${{ env.SOLUTION }} --no-restore --configuration Release -p:Version=${{ steps.version.outputs.version }}
+      - name: test with coverage
+        run: >-
+          dotnet test ${{ env.SOLUTION }} --no-build --configuration Release
+          --settings tests/coverage.runsettings
+          --logger trx --results-directory TestResults
+      - name: merge coverage
+        run: |
+          dotnet tool install --global dotnet-coverage
+          dotnet-coverage merge "TestResults/**/*.coverage" --output coverage/coverage.xml --output-format xml
+      - uses: actions/upload-artifact@<full commit SHA> # v4
+        with:
+          name: coverage
+          path: coverage/coverage.xml
+          if-no-files-found: error
+      - uses: actions/upload-artifact@<full commit SHA> # v4
+        if: ${{ !cancelled() }}
+        with:
+          name: test-results-backend
+          path: TestResults/**/*.trx
+      - if: ${{ inputs.upload-package }}
+        run: dotnet publish src/Contoso.Portal.Api --no-build --configuration Release --output out/api
+      - if: ${{ inputs.upload-package }}
+        uses: actions/upload-artifact@<full commit SHA> # v4
+        with:
+          name: api
+          path: out/api
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: src/contoso-portal-web
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - uses: actions/setup-node@<full commit SHA> # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/contoso-portal-web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test -- --watch=false --reporters=junit
+      - run: npm run build -- --configuration production
+      - if: ${{ inputs.upload-package }}
+        uses: actions/upload-artifact@<full commit SHA> # v4
+        with:
+          name: web
+          path: src/contoso-portal-web/dist
+
+  package:
+    name: package
+    if: ${{ inputs.upload-package }}
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@<full commit SHA> # v4
+        with:
+          path: package
+          pattern: "{api,web}"
+      - uses: actions/upload-artifact@<full commit SHA> # v4
+        with:
+          name: package
+          path: package

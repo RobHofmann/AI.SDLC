@@ -1,0 +1,95 @@
+{
+  "skills": {
+    "core": [
+      "add-gate",
+      "adopt-docs",
+      "adr-conventions",
+      "ai-sdlc-gates",
+      "ai-sdlc-handbook",
+      "ai-sdlc-hooks",
+      "capture-learning",
+      "convene-personas",
+      "docs-wiki-conventions",
+      "grill-me",
+      "grilling",
+      "guide-me",
+      "handoff",
+      "implement",
+      "refactor",
+      "run-preflight",
+      "summary",
+      "test-skills",
+      "update-ai-sdlc",
+      "update-constitution",
+      "wait-what",
+      "walk-substrate",
+      "wrap-up",
+      "write-adr",
+      "write-docs",
+      "write-prd"
+    ],
+    "bicep": [
+      "bicep-conventions"
+    ],
+    "blazor": [
+      "blazor-authorization",
+      "blazor-conventions"
+    ],
+    "discovery": [
+      "draw-customer-journey",
+      "write-hypothesis",
+      "write-research-summary"
+    ],
+    "dotnet": [
+      "api-contract-conventions",
+      "csharp-generation-smells",
+      "dotnet-code-graph",
+      "dotnet-gates",
+      "nuget-vulnerability-remediation",
+      "test-first-dotnet",
+      "write-api-spec"
+    ],
+    "github": [
+      "fix-pr-feedback",
+      "github-actions-conventions",
+      "github-pull-requests",
+      "write-pipeline"
+    ],
+    "github-issues": [
+      "check-pr-contract",
+      "fix-bug",
+      "github-issue-conventions",
+      "write-story"
+    ],
+    "knowledge": [
+      "platform-knowledge-conventions",
+      "write-platform-note"
+    ],
+    "sonarcloud": [
+      "sonarcloud-mcp"
+    ]
+  },
+  "agents": {
+    "core": [
+      "architect",
+      "blind-judge",
+      "builder",
+      "docs-reviewer",
+      "substrate-walker"
+    ],
+    "bicep": [],
+    "blazor": [],
+    "discovery": [],
+    "dotnet": [
+      "code-reviewer",
+      "security-reviewer",
+      "test-analyzer"
+    ],
+    "github": [],
+    "github-issues": [
+      "draft-reviewer"
+    ],
+    "knowledge": [],
+    "sonarcloud": []
+  }
+}

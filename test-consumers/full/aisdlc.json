@@ -1,0 +1,33 @@
+{
+  "repository": "Test.Consumer",
+  "visibility": "private",
+  "paths": {
+    "docsRoots": [
+      "docs",
+      "docs-functional"
+    ],
+    "technicalDocs": "docs",
+    "readingLevelRoots": [
+      "docs",
+      ".claude/skills",
+      "docs-functional"
+    ],
+    "sectionRefRoots": [
+      "docs",
+      ".claude/skills",
+      "docs-functional"
+    ],
+    "functionalDocs": "docs-functional"
+  },
+  "tracker": {
+    "repository": "contoso/test-consumer",
+    "refinedLabel": "refined",
+    "toRefineLabel": "to-refine",
+    "sizeLabelPrefix": "size:",
+    "labels": []
+  },
+  "github": {
+    "repository": "contoso/test-consumer",
+    "trunk": "main"
+  }
+}

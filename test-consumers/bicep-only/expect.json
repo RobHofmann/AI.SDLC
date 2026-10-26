@@ -1,0 +1,19 @@
+{
+  "present": [
+    ".claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1",
+    ".claude/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1",
+    ".claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml",
+    ".claude/skills/ai-sdlc-handbook/references/layout.md",
+    ".claude/skills/bicep-conventions/references/bicep.md",
+    ".claude/skills/bicep-conventions/scripts/Get-BicepFacts.ps1"
+  ],
+  "absent": [
+    ".claude/skills/test-first-dotnet",
+    ".claude/skills/dotnet-gates",
+    ".claude/skills/dotnet-code-graph",
+    ".claude/skills/csharp-generation-smells",
+    ".claude/skills/github-pull-requests",
+    ".claude/skills/github-issue-conventions",
+    ".claude/skills/ai-sdlc-gates/assets/pipelines"
+  ]
+}

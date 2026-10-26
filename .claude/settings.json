@@ -1,0 +1,243 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(*git* *push*)",
+            "statusMessage": "Checking the change is finished...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(*git* *push*)",
+            "statusMessage": "Checking the change is finished...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "if": "Bash(*gh* *merge*)",
+            "statusMessage": "Checking the command does not merge a pull request...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(*gh* *merge*)",
+            "statusMessage": "Checking the command does not merge a pull request...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Checking the file is not an installed shared file...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "statusMessage": "Checking how full the context window is...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-CompactSuggestionHook.ps1",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Checking the edited file...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1",
+            "timeout": 180
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Checking whether this is a correction to learn from...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Checking the correction was captured...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Check-*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Check-*)",
+      "Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Check-*)",
+      "PowerShell(pwsh .claude/skills/ai-sdlc-gates/scripts/Check-*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1*)",
+      "Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1*)",
+      "PowerShell(pwsh .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1*)",
+      "Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1*)",
+      "PowerShell(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1*)",
+      "Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1*)",
+      "PowerShell(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Invoke-PesterGate.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Invoke-PesterGate.ps1*)",
+      "Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-PesterGate.ps1*)",
+      "PowerShell(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-PesterGate.ps1*)",
+      "Bash(git status *)",
+      "PowerShell(git status *)",
+      "Bash(git diff *)",
+      "PowerShell(git diff *)",
+      "Bash(git log *)",
+      "PowerShell(git log *)",
+      "Bash(git show *)",
+      "PowerShell(git show *)",
+      "Bash(git add *)",
+      "PowerShell(git add *)",
+      "Bash(git commit *)",
+      "PowerShell(git commit *)",
+      "Bash(git fetch *)",
+      "PowerShell(git fetch *)",
+      "Bash(git switch *)",
+      "PowerShell(git switch *)",
+      "Bash(git checkout -b *)",
+      "PowerShell(git checkout -b *)",
+      "Bash(git branch --show-current*)",
+      "PowerShell(git branch --show-current*)",
+      "Bash(git rev-parse *)",
+      "PowerShell(git rev-parse *)",
+      "Bash(git merge-base *)",
+      "PowerShell(git merge-base *)",
+      "Bash(pwsh -NoProfile -File .claude/skills/check-pr-contract/scripts/Check-*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/check-pr-contract/scripts/Check-*)",
+      "Bash(pwsh .claude/skills/check-pr-contract/scripts/Check-*)",
+      "PowerShell(pwsh .claude/skills/check-pr-contract/scripts/Check-*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/check-pr-contract/scripts/Invoke-IssuePreflight.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/check-pr-contract/scripts/Invoke-IssuePreflight.ps1*)",
+      "Bash(pwsh .claude/skills/check-pr-contract/scripts/Invoke-IssuePreflight.ps1*)",
+      "PowerShell(pwsh .claude/skills/check-pr-contract/scripts/Invoke-IssuePreflight.ps1*)",
+      "Bash(gh issue view *)",
+      "PowerShell(gh issue view *)",
+      "Bash(gh issue list *)",
+      "PowerShell(gh issue list *)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Get-PrMetrics.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Get-PrMetrics.ps1*)",
+      "Bash(pwsh .claude/skills/github-pull-requests/scripts/Get-PrMetrics.ps1*)",
+      "PowerShell(pwsh .claude/skills/github-pull-requests/scripts/Get-PrMetrics.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/New-PullRequest.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/New-PullRequest.ps1*)",
+      "Bash(pwsh .claude/skills/github-pull-requests/scripts/New-PullRequest.ps1*)",
+      "PowerShell(pwsh .claude/skills/github-pull-requests/scripts/New-PullRequest.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1*)",
+      "Bash(pwsh .claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1*)",
+      "PowerShell(pwsh .claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1*)",
+      "PowerShell(./.claude/skills/github-pull-requests/scripts/New-PullRequest.ps1 *)",
+      "PowerShell(./.claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1 *)",
+      "PowerShell(& ./.claude/skills/github-pull-requests/scripts/New-PullRequest.ps1 *)",
+      "PowerShell(& ./.claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1 *)",
+      "PowerShell(.claude/skills/github-pull-requests/scripts/New-PullRequest.ps1 *)",
+      "PowerShell(.claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1 *)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Get-PullRequestFeedback.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Get-PullRequestFeedback.ps1*)",
+      "Bash(pwsh .claude/skills/github-pull-requests/scripts/Get-PullRequestFeedback.ps1*)",
+      "PowerShell(pwsh .claude/skills/github-pull-requests/scripts/Get-PullRequestFeedback.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1*)",
+      "Bash(pwsh .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1*)",
+      "PowerShell(pwsh .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.ps1*)",
+      "Bash(pwsh .claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.ps1*)",
+      "PowerShell(pwsh .claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.ps1*)",
+      "Bash(gh auth status)",
+      "PowerShell(gh auth status)",
+      "Bash(gh auth status *)",
+      "PowerShell(gh auth status *)",
+      "Bash(gh --version)",
+      "PowerShell(gh --version)",
+      "Bash(gh repo view)",
+      "PowerShell(gh repo view)",
+      "Bash(gh repo view *)",
+      "PowerShell(gh repo view *)",
+      "Bash(gh pr view)",
+      "PowerShell(gh pr view)",
+      "Bash(gh pr view *)",
+      "PowerShell(gh pr view *)",
+      "Bash(gh pr list)",
+      "PowerShell(gh pr list)",
+      "Bash(gh pr list *)",
+      "PowerShell(gh pr list *)",
+      "Bash(gh pr checks)",
+      "PowerShell(gh pr checks)",
+      "Bash(gh pr checks *)",
+      "PowerShell(gh pr checks *)",
+      "Bash(gh pr diff)",
+      "PowerShell(gh pr diff)",
+      "Bash(gh pr diff *)",
+      "PowerShell(gh pr diff *)",
+      "Bash(gh pr status)",
+      "PowerShell(gh pr status)",
+      "Bash(gh pr status *)",
+      "PowerShell(gh pr status *)",
+      "Bash(gh run list)",
+      "PowerShell(gh run list)",
+      "Bash(gh run list *)",
+      "PowerShell(gh run list *)",
+      "Bash(gh run view)",
+      "PowerShell(gh run view)",
+      "Bash(gh run view *)",
+      "PowerShell(gh run view *)",
+      "Bash(gh workflow list)",
+      "PowerShell(gh workflow list)",
+      "Bash(gh workflow list *)",
+      "PowerShell(gh workflow list *)",
+      "Bash(gh workflow view *)",
+      "PowerShell(gh workflow view *)",
+      "Bash(gh issue list)",
+      "PowerShell(gh issue list)",
+      "Bash(pwsh -NoProfile -File .claude/skills/test-skills/scripts/Get-SkillUsage.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/test-skills/scripts/Get-SkillUsage.ps1*)",
+      "Bash(pwsh .claude/skills/test-skills/scripts/Get-SkillUsage.ps1*)",
+      "PowerShell(pwsh .claude/skills/test-skills/scripts/Get-SkillUsage.ps1*)",
+      "Bash(git push)",
+      "PowerShell(git push)",
+      "Bash(git push origin *)",
+      "PowerShell(git push origin *)",
+      "Bash(git push --set-upstream origin *)",
+      "PowerShell(git push --set-upstream origin *)",
+      "Bash(git push -u origin *)",
+      "PowerShell(git push -u origin *)"
+    ]
+  }
+}

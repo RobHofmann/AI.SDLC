@@ -1,0 +1,25 @@
+#!/bin/sh
+# Shared by the pre-push, post-checkout, post-commit and post-merge hooks: hand on to Git LFS, the
+# way the hooks that `git lfs install` writes do. core.hooksPath points git at this folder, so git
+# no longer runs the LFS hooks in .git/hooks. Without this, a push uploads the LFS pointers but not
+# the files behind them, and LFS locking no longer makes a locked file read-only.
+#
+# Not a git hook itself, like graphify-refresh. Usage: git-lfs-hook <hook name> <the hook's arguments>
+# For pre-push, the caller feeds the ref lines git gave it on stdin; `git lfs pre-push` reads them.
+#
+# Two choices differ from the stock LFS hook, because these hooks are installed in every repository:
+#   1. A repository whose .gitattributes never names filter=lfs is left alone, so it sees no change.
+#   2. When the repository uses LFS but git-lfs is missing, the hook fails (exit 2) with a clear
+#      message, like the stock hook. Git ignores the exit code of a post-* hook, so only a push stops.
+
+hook=$1
+shift
+
+git grep -q --untracked -e 'filter=lfs' -- '.gitattributes' '*/.gitattributes' 2>/dev/null || exit 0
+
+if command -v git-lfs >/dev/null 2>&1; then
+    exec git lfs "$hook" "$@"
+fi
+
+printf >&2 "\n%s\n\n" "$hook: this repository uses Git LFS (a .gitattributes file names filter=lfs), but 'git-lfs' was not found on your path. Install Git LFS (https://git-lfs.com), then run the git command again."
+exit 2

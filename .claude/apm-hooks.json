@@ -1,0 +1,98 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Bash|PowerShell",
+      "hooks": [
+        {
+          "type": "command",
+          "if": "Bash(*git* *push*)",
+          "statusMessage": "Checking the change is finished...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1",
+          "timeout": 120
+        },
+        {
+          "type": "command",
+          "if": "PowerShell(*git* *push*)",
+          "statusMessage": "Checking the change is finished...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1",
+          "timeout": 120
+        },
+        {
+          "type": "command",
+          "if": "Bash(*gh* *merge*)",
+          "statusMessage": "Checking the command does not merge a pull request...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1",
+          "timeout": 30
+        },
+        {
+          "type": "command",
+          "if": "PowerShell(*gh* *merge*)",
+          "statusMessage": "Checking the command does not merge a pull request...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1",
+          "timeout": 30
+        }
+      ],
+      "_apm_source": "_local/core"
+    },
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "statusMessage": "Checking the file is not an installed shared file...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1",
+          "timeout": 30
+        },
+        {
+          "type": "command",
+          "statusMessage": "Checking how full the context window is...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-CompactSuggestionHook.ps1",
+          "timeout": 30
+        }
+      ],
+      "_apm_source": "_local/core"
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "statusMessage": "Checking the edited file...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1",
+          "timeout": 180
+        }
+      ],
+      "_apm_source": "_local/core"
+    }
+  ],
+  "UserPromptSubmit": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "statusMessage": "Checking whether this is a correction to learn from...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1",
+          "timeout": 30
+        }
+      ],
+      "_apm_source": "_local/core"
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "statusMessage": "Checking the correction was captured...",
+          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1",
+          "timeout": 30
+        }
+      ],
+      "_apm_source": "_local/core"
+    }
+  ]
+}

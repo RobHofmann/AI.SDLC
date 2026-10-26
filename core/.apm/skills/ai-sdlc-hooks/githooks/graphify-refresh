@@ -1,0 +1,38 @@
+#!/bin/sh
+# Shared by the post-commit, post-merge, post-checkout and post-rewrite hooks: refresh the local
+# Graphify code graph in the background so it keeps describing the code that is actually checked out.
+#
+# Not a git hook itself. Git only runs files whose names match a known hook, so this sits here
+# safely and the four hooks exec it, which keeps one copy of the logic instead of four that drift.
+#
+# Three properties this must have, because it fires on every commit for everyone:
+#   1. Silent no-op when graphify is not installed. It is opt-in tooling; most clones will not have it.
+#   2. Never fails a git operation. A graph refresh is a convenience, not a gate. Always exit 0.
+#   3. Never blocks. A refresh takes about 40 seconds, so it is detached and the commit returns at once.
+#
+# The graph lands in graphify-out/, which is git-ignored. Nothing here writes to the working tree.
+# See .claude/skills/dotnet-code-graph/references/code-graph.md, which the dotnet pack installs.
+
+command -v graphify >/dev/null 2>&1 || exit 0
+
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+runner="$repo_root/.claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyIndex.ps1"
+
+[ -f "$runner" ] || exit 0
+
+if command -v pwsh >/dev/null 2>&1; then
+    PWSH=pwsh
+else
+    exit 0
+fi
+
+# Detached and silent. Always a full code-only rebuild: the tool's incremental `update` command
+# does not accept --code-only and pulls documentation in, so it is not used. See the wrapper's help.
+# The link step must follow the rebuild: a fresh graph has no `documents` edges, so the doc-to-code
+# links Invoke-DocGraphLink.ps1 resolves would be lost on every commit without it.
+linker="$repo_root/.claude/skills/dotnet-code-graph/scripts/Invoke-DocGraphLink.ps1"
+(
+    "$PWSH" -NoProfile -File "$runner" -Quiet >/dev/null 2>&1 &&     { [ -f "$linker" ] && "$PWSH" -NoProfile -File "$linker" >/dev/null 2>&1 || true; } &
+) >/dev/null 2>&1
+
+exit 0

@@ -1,0 +1,10 @@
+title = "AI.SDLC: gitleaks with the default rules and the allowlist of the AI-SDLC gate"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Files the AI-SDLC ships that only look like secrets, such as the git blob hashes in sync-manifest.json."
+paths = [
+  '''(^|/)skills/ai-sdlc-gates/sync-manifest\.json$''',
+]

@@ -1,0 +1,41 @@
+# pr.yml - the pull request workflow of contoso-platform, an infrastructure repository.
+# It validates the templates and runs a dry run against dev with read rights only, next to the shared
+# AI-SDLC job. There is no build and no coverage, so the ai-sdlc job runs on its own.
+
+name: pr
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+      - name: lint and validate the templates
+        shell: pwsh
+        run: ./deploy/Test-Templates.ps1 -Path infra
+
+  ai-sdlc:
+    name: ai-sdlc
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+        with:
+          fetch-depth: 0
+      - uses: ./.claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr
+        with:
+          private-terms: ${{ secrets.AISDLC_PRIVATE_TERMS }}

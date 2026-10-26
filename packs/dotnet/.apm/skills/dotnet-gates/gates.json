@@ -1,0 +1,22 @@
+{
+  "package": "dotnet",
+  "setup": "scripts/Initialize-Dotnet.ps1",
+  "preflight": "scripts/Invoke-DotnetPreflight.ps1",
+  "postEdit": { "extensions": [".cs", ".razor"], "script": "scripts/Invoke-DotnetPostEdit.ps1" },
+  "gates": [
+    { "name": "C10 the change adds no commented-out code, open TODO or AI tool name in a C# or Razor comment", "script": "scripts/Check-CommentHygiene.ps1", "clause": "C10", "mode": "Blocking" },
+    { "name": "C10 added public C# types and members carry a doc comment", "script": "scripts/Check-XmlDocs.ps1", "clause": "C10", "mode": "Advisory" },
+    { "name": "Story-trait coverage: every test class tagged with a well-formed key", "script": "scripts/Check-StoryTraits.ps1", "clause": "C04", "mode": "Blocking", "args": { "Strict": true } },
+    { "name": "DOTNET-01 PascalCase JSON wire names", "script": "scripts/Check-ApiPascalCase.ps1", "clause": "DOTNET-01", "mode": "Blocking" },
+    { "name": "Spec drift: a described endpoint moved and its spec did not", "script": "scripts/Check-SpecDrift.ps1", "clause": "C05", "mode": "Advisory" },
+    { "name": "Docs match the code they cite", "script": "scripts/Check-DocDrift.ps1", "clause": "C05", "mode": "Blocking", "args": { "FailOnDrift": true } },
+    { "name": "C04 coverage ratchet: must not drop below the recorded baseline", "script": "scripts/Check-Coverage.ps1", "clause": "C04", "mode": "Blocking", "requires": "CoverageFile" }
+  ],
+  "allow": [
+    "dotnet build *",
+    "dotnet test *",
+    "dotnet restore *",
+    "pwsh -NoProfile -File .claude/skills/dotnet-gates/scripts/Check-*",
+    "pwsh .claude/skills/dotnet-gates/scripts/Check-*"
+  ]
+}

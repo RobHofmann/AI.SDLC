@@ -1,0 +1,75 @@
+{
+  "repository": "AI.SDLC",
+  "visibility": "public",
+  "paths": {
+    "toolsFolder": "tools",
+    "docsRoots": [
+      "docs",
+      "docs-functional"
+    ],
+    "technicalDocs": "docs",
+    "functionalDocs": "docs-functional",
+    "agentsFile": "AGENTS.md",
+    "readingLevelRoots": [
+      "docs",
+      "docs-functional"
+    ],
+    "sectionRefRoots": [
+      "docs",
+      "docs-functional"
+    ],
+    "constitution": ".claude/skills/ai-sdlc-handbook/references/constitution.md",
+    "pipelinesFolder": ".github/workflows",
+    "codeAnalysisPipeline": ".github/workflows/pr.yml",
+    "knowledgeRoot": "../Knowledge",
+    "privateTermsFile": ""
+  },
+  "commands": {
+    "test": "./tools/Invoke-PesterParallel.ps1 -Path core, packs, tools"
+  },
+  "docs": {
+    "units": [
+      {
+        "glob": "core",
+        "kind": "package",
+        "folder": "packages"
+      },
+      {
+        "glob": "packs/*",
+        "contains": [
+          "apm.yml"
+        ],
+        "kind": "package",
+        "folder": "packages"
+      },
+      {
+        "glob": "tools",
+        "kind": "tool folder"
+      }
+    ]
+  },
+  "tracker": {
+    "repository": "RobHofmann/AI.SDLC",
+    "keyPattern": "",
+    "refinedLabel": "refined",
+    "toRefineLabel": "to-refine",
+    "sizeLabelPrefix": "size:",
+    "labels": [],
+    "dataModelPatterns": []
+  },
+  "github": {
+    "repository": "RobHofmann/AI.SDLC",
+    "trunk": "main"
+  },
+  "repoGates": [
+    { "name": "AI.SDLC: no tracked file, commit or pull request text holds a private term", "script": "core/.apm/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1", "clause": "AI.SDLC", "mode": "Blocking", "args": { "Required": true } },
+    { "name": "AI.SDLC: no shared file names a retired skill", "script": "tools/Check-RetiredSkillNames.ps1", "clause": "AI.SDLC", "mode": "Blocking" },
+    { "name": "AI.SDLC: the skill catalog is current", "script": "tools/Update-SkillCatalog.ps1", "clause": "AI.SDLC", "mode": "Blocking", "args": { "Check": true } },
+    { "name": "AI.SDLC: the sync manifest is current", "script": "tools/Update-SyncManifest.ps1", "clause": "AI.SDLC", "mode": "Blocking", "args": { "Check": true } },
+    { "name": "AI.SDLC: the shared AGENTS.md parts stay within budget", "script": "tools/Check-SharedAgentsPartSize.ps1", "clause": "AI.SDLC", "mode": "Blocking" },
+    { "name": "AI.SDLC: every apm.yml has the newest CHANGELOG version", "script": "tools/Check-PackageVersion.ps1", "clause": "AI.SDLC", "mode": "Blocking" },
+    { "name": "AI.SDLC: no em-dash in the shared files and docs", "script": "core/.apm/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.ps1", "clause": "C06", "mode": "Blocking", "args": { "Path": ["core", "packs", "tools", "test-consumers", "docs", "docs-functional", "README.md", "AGENTS.md", "CHANGELOG.md"] } },
+    { "name": "AI.SDLC: the shared docs cite no source line numbers", "script": "core/.apm/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.ps1", "clause": "C02", "mode": "Blocking", "args": { "Path": ["core", "packs", "docs", "docs-functional", "README.md", "AGENTS.md"] } },
+    { "name": "AI.SDLC: the shared docs read at B2 sentences and B1 words", "script": "core/.apm/skills/ai-sdlc-gates/scripts/Check-DocReadingLevel.ps1", "clause": "C11", "mode": "Blocking", "args": { "Path": ["core", "packs", "README.md", "AGENTS.md", "docs", "docs-functional"], "SentenceScope": "Paragraph", "MaxSentenceWords": 25 } }
+  ]
+}

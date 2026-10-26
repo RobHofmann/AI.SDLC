@@ -1,0 +1,15 @@
+{
+  "package": "dotnet",
+  "setup": "scripts/Initialize-CodeGraph.ps1",
+  "docUnits": [ { "glob": "{sourceRoot}/*", "contains": ["*.csproj"], "kind": "project", "folder": "projects" } ],
+  "docFacts": "scripts/Get-ProjectFacts.ps1",
+  "gates": [
+    { "name": "Docs match the relationships the code has (needs the code graph)", "script": "scripts/Check-DocGraphClaims.ps1", "clause": "C05", "mode": "Advisory", "args": { "FailOnFinding": true } }
+  ],
+  "allow": [
+    "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Check-*",
+    "pwsh .claude/skills/dotnet-code-graph/scripts/Check-*",
+    "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1*",
+    "pwsh .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1*"
+  ]
+}

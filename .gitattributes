@@ -1,0 +1,2 @@
+# Package files keep LF on every OS, so APM content hashes match on Windows and in CI.
+* text eol=lf

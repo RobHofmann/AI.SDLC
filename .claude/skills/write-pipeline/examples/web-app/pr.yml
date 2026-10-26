@@ -1,0 +1,44 @@
+# pr.yml - the pull request workflow of contoso-portal.
+# It runs the build and test workflow and the shared AI-SDLC job. The test job uploads the merged
+# coverage as the artifact "coverage"; the ai-sdlc job downloads it and passes it to the composite
+# action for the C04 coverage ratchet. The branch ruleset makes both checks required
+# (Set-BranchRuleset.ps1 -RequiredCheck "build-and-test / backend","build-and-test / frontend",ai-sdlc).
+
+name: pr
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    uses: ./.github/workflows/build-and-test.yml
+
+  ai-sdlc:
+    name: ai-sdlc
+    needs: build-and-test
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@<full commit SHA> # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@<full commit SHA> # v4
+        with:
+          name: coverage
+          path: coverage
+      - uses: ./.claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr
+        with:
+          coverage-file: coverage/coverage.xml
+          pre-gate-command: dotnet restore src/Contoso.Portal.sln
+          private-terms: ${{ secrets.AISDLC_PRIVATE_TERMS }}

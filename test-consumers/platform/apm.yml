@@ -1,0 +1,10 @@
+name: test-consumer-platform
+version: "0.0.0"
+targets:
+  - claude
+dependencies:
+  apm:
+    - ../../core
+    - ../../packs/bicep
+    - ../../packs/github
+    - ../../packs/github-issues
