@@ -244,7 +244,7 @@ dependencies:
     .claude/skills/adopt-docs/scripts/Test-DocCandidate.Tests.ps1: sha256:7e033f52e49f213fff6237299cc0c9ce103b5955861f50ab5923b73da57c713c
     .claude/skills/adopt-docs/scripts/Test-DocCandidate.ps1: sha256:0c54a3f64241f5a7af12f552dde3dee7b844fad0f88db2980ce87eca42431946
     .claude/skills/adr-conventions/SKILL.md: sha256:819d4d4e8f584dc0dddd8a32cc16669317fe13a89acca9c190ff565f7923340b
-    .claude/skills/ai-sdlc-gates/SKILL.md: sha256:045090b3d7f3c51ead2345cda99a5de8175888d7d581c8b58938c7f79f59c23a
+    .claude/skills/ai-sdlc-gates/SKILL.md: sha256:09165e4e714d27feedf2c07f0da9e3e4ceb485cbb8171b959428705c1247a83e
     .claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml: sha256:ee6430668f2f44b6256275645e10f8ab2167b8b6d49990465c5527d1b334abac
     .claude/skills/ai-sdlc-gates/assets/agents-core.md: sha256:9cc1689bcbd9f2a692fd77e49ca326be152ec24cbb67de6a35ca4eb3f8136fb5
     .claude/skills/ai-sdlc-gates/gates.json: sha256:160f09f14ff6591b024f827c879802cf9218b37785d209da6a1323602d6153e5
@@ -331,7 +331,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:5537684656bf189a740ba7e9e7050083af05668d00501ce1e9c6909cb8b91203
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:580856ba7e366a538b173b26451b4b9c492636df5d3012564ac33708cd6e034b
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:ec0038651f01d8aef61497e3dee10cca7b03f7b6d77b94841eeb73b2be99e50a
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:654afcaa2b81f560eff93dbdef521b09ced06137a1dbb85d70a4e14ef7502248
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -768,7 +768,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:045090b3d7f3c51ead2345cda99a5de8175888d7d581c8b58938c7f79f59c23a
+  content_hash: sha256:09165e4e714d27feedf2c07f0da9e3e4ceb485cbb8171b959428705c1247a83e
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml
@@ -1551,7 +1551,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:580856ba7e366a538b173b26451b4b9c492636df5d3012564ac33708cd6e034b
+  content_hash: sha256:ec0038651f01d8aef61497e3dee10cca7b03f7b6d77b94841eeb73b2be99e50a
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook

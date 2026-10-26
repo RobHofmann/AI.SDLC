@@ -79,8 +79,8 @@ text and the rule text never appear, locally or in CI. Then one `FIX:` line.
 **6. It fails closed in every public repository in CI.** No list is exit 2, "could not check"
 ([ADR 0005](0005-the-gate-contract.md)), on a machine and in a private repository. In GitHub Actions, a
 repository that GitHub says is public fails with exit 1 instead, because it must never pass unchecked.
-The one exception is a pull request from a fork: it gets no secrets, so it warns with exit 2, and the
-owner runs the gate by hand before the merge. AI.SDLC runs the gate with `-Required`, so a missing list
+The one exception is a pull request from a fork. It gets no secrets, so it warns with exit 2. The owner
+then runs the gate by hand before the merge. AI.SDLC runs the gate with `-Required`, so a missing list
 is exit 1 there in every case, its pre-push hook and fork pull requests included.
 
 **7. Lessons are routed by kind.** `capture-learning` sends a rule about the way of working to AI.SDLC
@@ -121,8 +121,8 @@ backstop for a lesson that carries a private name.
 ## Verification
 
 - `Check-PrivateTerms.Tests.ps1` covers the list order, the skip on a private repository, exit 2 and
-  `-Required`. It covers a run in GitHub Actions with a fake event file: the public repository with a
-  wrong `visibility`, no list, a fork pull request, and an event for another folder. It covers the commit message, branch and pull request scan, and an invalid entry. It also checks that no output
+  `-Required`. It also covers a run in GitHub Actions with a fake event file. The cases are a wrong
+  `visibility`, no list, a fork pull request, and an event for another folder. It covers the commit message, branch and pull request scan, and an invalid entry. It also checks that no output
   line holds the matched text. The tests use made-up terms only.
 - By hand: run the gate in AI.SDLC with the real list before a release, and see zero findings.
 
