@@ -30,6 +30,13 @@
     The gate runs only when "visibility" in aisdlc.json is "public", or with -Force. A private
     repository passes with "skipped".
 
+    In GitHub Actions the gate also reads the event file of the run (GITHUB_EVENT_PATH), but only when
+    it checks the checked-out repository (GITHUB_WORKSPACE). When GitHub says that repository is public:
+
+      - it is checked even when aisdlc.json says private, and that wrong setting is a failure;
+      - no list is a failure, because a public repository must never pass unchecked;
+      - a pull request from a fork gets no secrets, so there no list stays exit 2 with a FIX line.
+
     Exit codes follow the gate contract: 0 nothing found or skipped, 1 a finding, 2 could not check
     (no list, or a rule that is not a valid regular expression). With -Required, no list exits 1.
 
@@ -71,9 +78,40 @@ $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 $ErrorActionPreference = 'Stop'
 
 $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
-if ($config.visibility -ne 'public' -and -not $Force) {
+
+function Get-GitHubRun {
+    # The event file describes the repository of the workflow run, so it speaks only for the checkout
+    # at GITHUB_WORKSPACE. A test consumer inside the AI.SDLC run must not take AI.SDLC's visibility.
+    if ($env:GITHUB_ACTIONS -ne 'true' -or -not $env:GITHUB_EVENT_PATH -or -not $env:GITHUB_WORKSPACE) { return $null }
+    if (-not (Test-Path -LiteralPath $env:GITHUB_EVENT_PATH -PathType Leaf)) { return $null }
+    $comparison = if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+    $workspace = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\', '/')
+    if (-not [string]::Equals($workspace, [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/'), $comparison)) { return $null }
+    try { $payload = Get-Content -LiteralPath $env:GITHUB_EVENT_PATH -Raw | ConvertFrom-Json }
+    catch { return $null }
+    if ($null -eq $payload.repository -or $null -eq $payload.repository.private) { return $null }
+    $fork = $false
+    if ($payload.pull_request) {
+        $head = $payload.pull_request.head.repo
+        $fork = ($null -eq $head) -or ([string]$head.full_name -ne [string]$payload.repository.full_name)
+    }
+    return [pscustomobject]@{ Public = -not [bool]$payload.repository.private; Fork = $fork }
+}
+
+$run = Get-GitHubRun
+$wrongVisibility = $run -and $run.Public -and $config.visibility -ne 'public'
+if ($wrongVisibility) {
+    Write-Host 'Private terms: GitHub says this repository is public, but visibility in aisdlc.json says it is not. The gate checks it as public.' -ForegroundColor Red
+    Write-Host 'FIX: Set "visibility": "public" in aisdlc.json, so the gate runs on every machine too.' -ForegroundColor Red
+}
+elseif ($config.visibility -ne 'public' -and -not $Force) {
     Write-Host 'Private terms: skipped: the repository is private (visibility in aisdlc.json). -Force checks it anyway.'
     exit 0
+}
+
+function Exit-Gate([int]$Code) {
+    if ($wrongVisibility) { $Code = 1 }
+    exit $Code
 }
 
 function Resolve-RepoPath([string]$Value) {
@@ -121,10 +159,15 @@ if ($null -ne $listText) {
 }
 
 if ($rules.Count -eq 0 -and $invalid.Count -eq 0) {
+    if ($run -and $run.Public -and $run.Fork -and -not $Required) {
+        Write-Host 'Private terms could not be checked: this pull request comes from a fork, and GitHub passes no secrets to it.' -ForegroundColor Yellow
+        Write-Host 'FIX: Before you merge, check out the branch and run Check-PrivateTerms.ps1 -Required with the private list.'
+        Exit-Gate 2
+    }
     Write-Host 'Private terms could not be checked: no private term list was found, or the list holds no rule.' -ForegroundColor Yellow
     Write-Host 'FIX: Put the list in <knowledgeRoot>/ai-sdlc/private-terms.txt, set paths.privateTermsFile, or pass it in AISDLC_PRIVATE_TERMS (in CI, from the secret AISDLC_PRIVATE_TERMS).'
-    if ($Required) { exit 1 }
-    exit 2
+    if ($Required -or ($run -and $run.Public)) { exit 1 }
+    Exit-Gate 2
 }
 
 $findings = [System.Collections.Generic.List[string]]::new()
@@ -159,7 +202,7 @@ $tracked = @(git -C $RepoRoot ls-files 2>$null) + @(git -C $RepoRoot diff --cach
 if ($LASTEXITCODE -ne 0 -and $tracked.Count -eq 0) {
     Write-Host "Private terms could not be checked: $RepoRoot is not a git repository, so the tracked files are unknown." -ForegroundColor Yellow
     Write-Host 'FIX: Run the gate inside the git repository.'
-    exit 2
+    Exit-Gate 2
 }
 $tracked = @($tracked | Where-Object { $_ } | Select-Object -Unique)
 $listFull = if ($listFile) { [IO.Path]::GetFullPath($listFile) } else { $null }
@@ -220,8 +263,8 @@ if ($invalid.Count -gt 0) {
     Write-Host 'Private terms could not be checked in full: the list holds rules that are not valid regular expressions.' -ForegroundColor Yellow
     foreach ($number in $invalid) { Write-Host "  rule $number is not a valid regular expression" }
     Write-Host 'FIX: Correct each rule by its number in the private list, so every rule can be checked.'
-    exit 2
+    Exit-Gate 2
 }
 
 Write-Host ("Private terms OK: {0} file(s), {1} commit message(s), the branch name and the pull request text checked against {2} rule(s) from {3}." -f $checkedFiles, $commits, $rules.Count, $listSource)
-exit 0
+Exit-Gate 0

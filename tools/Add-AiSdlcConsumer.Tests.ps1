@@ -524,6 +524,48 @@ Describe 'Add-AiSdlcConsumer' {
         Test-Path -LiteralPath (Join-Path $target 'aisdlc.json') | Should -BeTrue -Because $result.Output
     }
 
+    It 'writes the visibility passed with -Visibility, and asks a public repository for the term list secret' {
+        $target = New-TargetRepo -Remote 'https://github.com/contoso/portal.git'
+        $result = Invoke-Tool -Target $target -Extra @('-Visibility', 'public')
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        (Get-Content (Join-Path $target 'aisdlc.json') -Raw | ConvertFrom-Json).visibility | Should -Be 'public'
+        ($result.Output -replace '[\s|]+', ' ') | Should -Match 'gh secret set AISDLC_PRIVATE_TERMS --repo contoso/portal'
+    }
+
+    It 'writes private and adds a to-do to check the visibility when it cannot read it' {
+        $target = New-TargetRepo -Remote 'https://github.com/contoso/portal.git'
+        $result = Invoke-Tool -Target $target
+
+        (Get-Content (Join-Path $target 'aisdlc.json') -Raw | ConvertFrom-Json).visibility | Should -Be 'private'
+        $flat = $result.Output -replace '[\s|]+', ' '
+        $flat | Should -Match 'could not read the visibility'
+        $flat | Should -Not -Match 'gh secret set AISDLC_PRIVATE_TERMS'
+    }
+
+    It 'keeps the visibility of an existing aisdlc.json with -Force' {
+        $target = New-TargetRepo -Remote 'https://github.com/contoso/portal.git' -Files @{ 'aisdlc.json' = '{ "visibility": "public" }' }
+        $result = Invoke-Tool -Target $target -Extra @('-Force')
+
+        (Get-Content (Join-Path $target 'aisdlc.json') -Raw | ConvertFrom-Json).visibility | Should -Be 'public' -Because $result.Output
+        ($result.Output -replace '[\s|]+', ' ') | Should -Not -Match 'could not read the visibility'
+    }
+
+    It 'reads the visibility of the repository with gh when it installs' {
+        $target = New-TargetRepo -Remote 'https://github.com/contoso/portal.git'
+        $fakes = Join-Path ([System.IO.Path]::GetTempPath()) ('aac-fakes-' + [guid]::NewGuid().ToString('n'))
+        New-FakeCommand -Folder $fakes -Name 'apm' -ExitCode 0
+        # A gh that answers PUBLIC to "gh repo view" and succeeds on every other call.
+        if ($IsWindows) { [IO.File]::WriteAllText((Join-Path $fakes 'gh.cmd'), "@echo off`r`nif ""%1""==""repo"" echo PUBLIC`r`nexit /b 0`r`n") }
+        else {
+            [IO.File]::WriteAllText((Join-Path $fakes 'gh'), "#!/bin/sh`nif [ ""`$1"" = repo ]; then echo PUBLIC; fi`nexit 0`n")
+            chmod +x (Join-Path $fakes 'gh')
+        }
+        $result = Invoke-WithFakes -Folder $fakes -Script { Invoke-Tool -Target $target -Install }
+
+        (Get-Content (Join-Path $target 'aisdlc.json') -Raw | ConvertFrom-Json).visibility | Should -Be 'public' -Because $result.Output
+    }
+
     It 'moves an untracked root CLAUDE.md import into .claude/CLAUDE.md after the install, before it stages' {
         $target = New-TargetRepo -Files @{ 'CLAUDE.md' = '@AGENTS.md' }
         $gates = Join-Path $target '.claude' 'skills'

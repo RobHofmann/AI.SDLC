@@ -102,7 +102,7 @@ Blocking gates check:
 - documentation coverage: both layers and a page per unit
 - the installed files against the sync manifest, including a skill folder or an agent file left behind under a retired name. When `apm.yml` installs the core from inside the repository (`- ./core`, as in AI.SDLC), it reads the source manifest there
 - every local package that `apm.yml` or `apm.lock.yaml` names is a folder in git (`Check-LocalPackages.ps1`)
-- no private term in a public repository: `Check-PrivateTerms.ps1` runs when `visibility` is `public` in `aisdlc.json`. It reads the private list from outside the repository. It scans every tracked file, the commit messages, the branch name and the pull request text. It prints only the file, the line and the rule number
+- no private term in a public repository: `Check-PrivateTerms.ps1` runs when `visibility` is `public` in `aisdlc.json`, or when GitHub Actions says the repository is public. In a public repository in CI, a missing list fails, except on a pull request from a fork. It reads the private list from outside the repository. It scans every tracked file, the commit messages, the branch name and the pull request text. It prints only the file, the line and the rule number
 
 The one advisory gate checks change completeness. It reads the commits since the base and the edits that
 are not committed yet. It also reads the new files git does not ignore, because `wrap-up` runs it before it commits.

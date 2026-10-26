@@ -36,8 +36,8 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
   the solution, the ADR folder, the coverage baseline. A gate never names a repository's folders.
 - **`-IncludeToolTests`** runs the Pester tests in the `scripts/` folder of every package that runs,
   and of each repository gate. The pre-flight does not pass it; a repository tests its own gates as add-gate says.
-- **The private-terms gate** (`Check-PrivateTerms.ps1`) runs when `visibility` is `public`. It names
-  a finding by file, line and rule number, never by the matched text ([layout](/.claude/skills/ai-sdlc-handbook/references/layout.md)).
+- **The private-terms gate** (`Check-PrivateTerms.ps1`) runs in a public repository, by `visibility` or by GitHub Actions.
+  It names a finding by file, line and rule number, never by the matched text ([layout](/.claude/skills/ai-sdlc-handbook/references/layout.md)).
 
 ## The gates.json of a package
 

@@ -24,6 +24,10 @@ This release holds the whole AI-SDLC for repositories on GitHub:
 - The private term gate `Check-PrivateTerms.ps1`. The private list is kept outside the repository. In a public repository no file, commit message,
   branch name or pull request text may hold a term of that list. It
   never prints what it found.
+- The private term gate fails closed in a public consumer (#2). In GitHub Actions it reads the event
+  of the run: a repository that GitHub says is public is checked whatever `visibility` says, and a
+  missing list fails, except on a pull request from a fork. `Add-AiSdlcConsumer.ps1` reads the
+  visibility with `gh` and takes `-Visibility`.
 - `github`: pull requests through the GitHub CLI, review threads, the feedback loop, the GitHub Actions
   conventions and the ruleset on the main branch.
 - `github-issues`: stories, bugs and epics as GitHub issues with the key `#42`, the PR-story contract

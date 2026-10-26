@@ -87,6 +87,11 @@
     Test seam for CI: install the packages from this local AI.SDLC folder instead of the tagged remote,
     so no network or login is needed. apm.yml then names local paths, which never reach a real commit.
 
+.PARAMETER Visibility
+    public or private, written to visibility in aisdlc.json. Without it the script reads the visibility
+    of the GitHub repository with gh repo view when it installs. With -Force it keeps the visibility of
+    an existing aisdlc.json. Otherwise it writes private and adds a to-do to check it.
+
 .PARAMETER DefaultsFile
     Test seam: the defaults. Defaults to config/defaults.json, which holds the AI.SDLC source URL, the
     trunk branch and the runner of the starter workflow.
@@ -108,6 +113,7 @@ param(
     [switch]$Force,
     [switch]$NoWorkflows,
     [switch]$NoDocsUpgrade,
+    [ValidateSet('public', 'private')][string]$Visibility,
     [string]$DefaultsFile,
     [string]$LocalSource
 )
@@ -221,9 +227,20 @@ if (-not $Force) {
     if ($existing) { throw "Already present, pass -Force to overwrite: $(($existing | ForEach-Object { [IO.Path]::GetRelativePath($TargetRepo, $_) }) -join ', ')" }
 }
 
+# A public repository with visibility private skips the private-terms gate, so read the real value.
+$visibilityKnown = [bool]$Visibility
+if (-not $Visibility -and -not $SkipInstall -and $githubRepository -and (Get-Command gh -ErrorAction SilentlyContinue)) {
+    $found = ((gh repo view $githubRepository --json visibility --jq .visibility 2>$null) -join '').Trim()
+    if ($LASTEXITCODE -eq 0 -and $found) {
+        $Visibility = if ($found -ieq 'PUBLIC') { 'public' } else { 'private' }
+        $visibilityKnown = $true
+    }
+}
+if (-not $Visibility) { $Visibility = 'private' }
+
 $config = [ordered]@{
     repository = $repository
-    visibility = 'private'
+    visibility = $Visibility
     paths      = [ordered]@{
         toolsFolder    = $ScriptFolder.TrimEnd('/', '\').Replace('\', '/')
         docsRoots      = @('docs', 'docs-functional')
@@ -286,6 +303,10 @@ if ($Force -and (Test-Path -LiteralPath $configPath)) {
     catch { Write-Warning "aisdlc.json is not valid JSON, so -Force overwrites it: $($_.Exception.Message)"; $existingConfig = $null }
     if ($existingConfig -is [System.Collections.IDictionary]) {
         $keptAccepted = @(if ($existingConfig.tracker -is [System.Collections.IDictionary]) { $existingConfig.tracker.acceptedRepositories })
+        if (-not $visibilityKnown -and $existingConfig.visibility -in @('public', 'private')) {
+            $config.visibility = $existingConfig.visibility
+            $visibilityKnown = $true
+        }
         $config = Merge-Config -Existing $existingConfig -New $config
         if ($config.tracker -is [System.Collections.IDictionary] -and $config.tracker.Contains('acceptedRepositories')) {
             $accepted = [System.Collections.Generic.List[string]]::new()
@@ -296,6 +317,12 @@ if ($Force -and (Test-Path -LiteralPath $configPath)) {
         }
     }
     $config.Remove('packs')
+}
+if (-not $visibilityKnown) {
+    $todo.Add('The script could not read the visibility of the repository on GitHub, so aisdlc.json says private. If the repository is public, set "visibility": "public" in aisdlc.json, so the private-terms gate checks it.')
+}
+if ($config.visibility -eq 'public') {
+    $todo.Add("This repository is public, so the private-terms gate needs your private term list in CI, or the pull request workflow fails: Get-Content -Raw <your private-terms.txt> | gh secret set AISDLC_PRIVATE_TERMS$(if ($githubRepository) { " --repo $githubRepository" }). A pull request from a fork gets no secrets: run Check-PrivateTerms.ps1 -Required on its branch before you merge it.")
 }
 if (-not $config.Contains('repoGates')) { $config.repoGates = @() }
 
