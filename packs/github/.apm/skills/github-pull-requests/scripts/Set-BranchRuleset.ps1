@@ -2,12 +2,13 @@
 <#
 .SYNOPSIS
     Creates or updates the ruleset on the default branch: a pull request is needed, with zero required
-    approvals, and the required status checks must pass.
+    approvals, the required status checks must pass, and no force push or deletion is allowed.
 
 .DESCRIPTION
     Checkpoint Bravo on GitHub: the agent opens the pull request with the owner's gh login, so the
     owner cannot approve it. So the ruleset asks for a pull request and the required status checks,
-    with zero required approvals; the owner's merge is the approval.
+    with zero required approvals; the owner's merge is the approval. A pull request rule alone still
+    lets a force push or a deletion change the branch, so the ruleset blocks both.
 
     The ruleset targets the default branch (~DEFAULT_BRANCH), so it follows a rename of that branch.
     The script finds it by name. When it does not exist, it creates it; when it differs from what this
@@ -20,7 +21,8 @@
 
 .PARAMETER RequiredCheck
     The names of the status checks that must pass, as GitHub shows them on a pull request (the job
-    name, such as build-and-test or ai-sdlc).
+    name, such as build-and-test or ai-sdlc). One value is split on commas, the form pwsh -File passes.
+    More than one value is taken as it is, so a check name with a comma in it stays whole.
 
 .PARAMETER Name
     The name of the ruleset. Defaults to "ai-sdlc default branch".
@@ -55,7 +57,9 @@ $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'PullRequestDescription.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'PullRequestFeedback.psm1') -Force
 
-$RequiredCheck = @($RequiredCheck -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique)
+# Only one value is split: a matrix job name such as "Test consumer: a,b (fresh)" holds a comma itself.
+if ($RequiredCheck.Count -eq 1) { $RequiredCheck = @($RequiredCheck[0] -split ',') }
+$RequiredCheck = @($RequiredCheck | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique)
 if ($RequiredCheck.Count -eq 0) { throw 'RequiredCheck takes one or more check names, such as build-and-test and AI-SDLC gates.' }
 
 if (-not $Repository) {
@@ -101,6 +105,8 @@ function New-RulesetBody {
                     required_status_checks               = @($RequiredCheck | ForEach-Object { [ordered]@{ context = $_ } })
                 }
             }
+            [ordered]@{ type = 'deletion' }
+            [ordered]@{ type = 'non_fast_forward' }
         )
     }
 }
@@ -113,6 +119,8 @@ function Test-RulesetMatch {
     if (@($Ruleset.conditions.ref_name.include) -notcontains '~DEFAULT_BRANCH') { return $false }
     $pr = @($Ruleset.rules | Where-Object { $_.type -eq 'pull_request' }) | Select-Object -First 1
     if (-not $pr -or [int]$pr.parameters.required_approving_review_count -ne 0) { return $false }
+    $types = @($Ruleset.rules | ForEach-Object { [string]$_.type })
+    if ($types -notcontains 'deletion' -or $types -notcontains 'non_fast_forward') { return $false }
     $checks = @($Ruleset.rules | Where-Object { $_.type -eq 'required_status_checks' }) | Select-Object -First 1
     if (-not $checks) { return $false }
     $have = @($checks.parameters.required_status_checks | ForEach-Object { [string]$_.context } | Sort-Object -Unique)
@@ -139,16 +147,16 @@ $checkText = $RequiredCheck -join ', '
 if ($existing) {
     $current = Invoke-Gh -Arguments @('api', "$base/$($existing.id)")
     if (Test-RulesetMatch -Ruleset $current) {
-        Write-Host "Ruleset '$Name' (id $($existing.id)) already asks for a pull request with zero approvals and the checks $checkText. Nothing changed."
+        Write-Host "Ruleset '$Name' (id $($existing.id)) already asks for a pull request with zero approvals and the checks $checkText, and blocks a force push and a deletion. Nothing changed."
         exit 0
     }
-    if (-not $PSCmdlet.ShouldProcess("ruleset '$Name' (id $($existing.id))", "update: pull request with zero approvals, required checks $checkText, on the default branch")) { exit 0 }
+    if (-not $PSCmdlet.ShouldProcess("ruleset '$Name' (id $($existing.id))", "update: pull request with zero approvals, required checks $checkText, no force push or deletion, on the default branch")) { exit 0 }
     $written = Write-Ruleset -Method 'PUT' -Path "$base/$($existing.id)"
     $id = if ($written -and $written.id) { $written.id } else { $existing.id }
     $verb = 'Updated'
 }
 else {
-    if (-not $PSCmdlet.ShouldProcess("ruleset '$Name'", "create: pull request with zero approvals, required checks $checkText, on the default branch")) { exit 0 }
+    if (-not $PSCmdlet.ShouldProcess("ruleset '$Name'", "create: pull request with zero approvals, required checks $checkText, no force push or deletion, on the default branch")) { exit 0 }
     $written = Write-Ruleset -Method 'POST' -Path $base
     if (-not $written -or -not $written.id) { throw "gh api returned no ruleset id after the create of '$Name'." }
     $id = $written.id
@@ -159,5 +167,5 @@ $readBack = Invoke-Gh -Arguments @('api', "$base/$id")
 if (-not (Test-RulesetMatch -Ruleset $readBack)) {
     throw "Ruleset '$Name' (id $id) does not read back as written. Check it under Settings, Rules, Rulesets."
 }
-Write-Host "$verb ruleset '$Name' (id $id): the default branch needs a pull request with zero approvals and the checks $checkText. Read back and verified."
+Write-Host "$verb ruleset '$Name' (id $id): the default branch needs a pull request with zero approvals and the checks $checkText, and blocks a force push and a deletion. Read back and verified."
 exit 0

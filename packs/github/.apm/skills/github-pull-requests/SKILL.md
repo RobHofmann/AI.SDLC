@@ -102,7 +102,7 @@ through `write-story` in update mode (github-issues pack). The change is not don
 
 A new repository sets its branch ruleset once, after the first workflow run, with `Set-BranchRuleset.ps1
 -RequiredCheck <names>`. The ruleset on the default branch asks for a pull request with zero required approvals and
-the named status checks. The owner's merge is the approval. `-WhatIf` shows the change first.
+the named status checks. It also blocks a force push and a deletion. The owner's merge is the approval. `-WhatIf` shows the change first.
 
 ## Sources
 

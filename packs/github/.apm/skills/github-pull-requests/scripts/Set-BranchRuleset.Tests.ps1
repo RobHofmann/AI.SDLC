@@ -5,14 +5,16 @@ Describe 'Set-BranchRuleset' {
         $script:Tool = Join-Path $PSScriptRoot 'Set-BranchRuleset.ps1'
 
         function global:New-RulesetJson {
-            param([int]$Id = 9, [string[]]$Checks = @('build-and-test', 'ai-sdlc'), [int]$Approvals = 0, [string]$Enforcement = 'active')
+            param([int]$Id = 9, [string[]]$Checks = @('build-and-test', 'ai-sdlc'), [int]$Approvals = 0, [string]$Enforcement = 'active', [switch]$NoBranchGuards)
+            $rules = @(
+                @{ type = 'pull_request'; parameters = @{ required_approving_review_count = $Approvals } }
+                @{ type = 'required_status_checks'; parameters = @{ required_status_checks = @($Checks | ForEach-Object { @{ context = $_ } }) } }
+            )
+            if (-not $NoBranchGuards) { $rules += @(@{ type = 'deletion' }, @{ type = 'non_fast_forward' }) }
             ConvertTo-Json -Depth 10 -InputObject @{
                 id = $Id; name = 'ai-sdlc default branch'; target = 'branch'; enforcement = $Enforcement
                 conditions = @{ ref_name = @{ include = @('~DEFAULT_BRANCH'); exclude = @() } }
-                rules = @(
-                    @{ type = 'pull_request'; parameters = @{ required_approving_review_count = $Approvals } }
-                    @{ type = 'required_status_checks'; parameters = @{ required_status_checks = @($Checks | ForEach-Object { @{ context = $_ } }) } }
-                )
+                rules = $rules
             }
         }
 
@@ -25,8 +27,12 @@ Describe 'Set-BranchRuleset' {
                 $index = [array]::IndexOf($ghArgs, '--input')
                 if ($index -ge 0) { $body = Get-Content -LiteralPath $ghArgs[$index + 1] -Raw | ConvertFrom-Json }
                 $State.Calls.Add([pscustomobject]@{ Line = $line; Body = $body })
-                if ($line -match '--method POST') { $State.Current = New-RulesetJson -Id 9 -Checks @($body.rules[1].parameters.required_status_checks.context); return $State.Current }
-                if ($line -match '--method PUT') { $State.Current = New-RulesetJson -Id 9 -Checks @($body.rules[1].parameters.required_status_checks.context); return $State.Current }
+                if ($line -match '--method (POST|PUT)') {
+                    $checks = @(($body.rules | Where-Object type -EQ 'required_status_checks').parameters.required_status_checks.context)
+                    $guards = @($body.rules | Where-Object { $_.type -in 'deletion', 'non_fast_forward' }).Count -eq 2
+                    $State.Current = New-RulesetJson -Id 9 -Checks $checks -NoBranchGuards:(-not $guards)
+                    return $State.Current
+                }
                 if ($line -match 'rulesets$') { return $State.List }
                 if ($line -match 'rulesets/9$') { if ($State.BrokenReadBack -and @($State.Calls | Where-Object { $_.Line -match '--method' }).Count -gt 0) { return (New-RulesetJson -Approvals 1) }; return $State.Current }
             }.GetNewClosure()
@@ -62,8 +68,26 @@ Describe 'Set-BranchRuleset' {
         $writes[0].Body.conditions.ref_name.include | Should -Be @('~DEFAULT_BRANCH')
         ($writes[0].Body.rules | Where-Object type -EQ 'pull_request').parameters.required_approving_review_count | Should -Be 0
         @(($writes[0].Body.rules | Where-Object type -EQ 'required_status_checks').parameters.required_status_checks.context) | Should -Be @('build-and-test', 'ai-sdlc')
+        @($writes[0].Body.rules.type) | Should -Contain 'deletion'
+        @($writes[0].Body.rules.type) | Should -Contain 'non_fast_forward'
         $out | Should -Match 'Created ruleset'
         $out | Should -Match 'Read back and verified'
+    }
+
+    It 'updates a ruleset that does not block a force push and the deletion of the branch' {
+        $script:State.List = '[{ "id": 9, "name": "ai-sdlc default branch" }]'
+        $script:State.Current = New-RulesetJson -NoBranchGuards
+
+        $out = Invoke-Tool -State $script:State
+
+        (Get-Write -State $script:State).Count | Should -Be 1 -Because $out
+        $out | Should -Match 'Updated ruleset'
+    }
+
+    It 'keeps a check name with a comma whole when the checks come as more than one value' {
+        & $script:Tool -RequiredCheck 'ai-sdlc', 'Test consumer: bicep-only,setup-script (fresh)' -Repository 'contoso/portal' -Invoker (New-Invoker -State $script:State) *>&1 | Out-Null
+
+        @(((Get-Write -State $script:State)[0].Body.rules | Where-Object type -EQ 'required_status_checks').parameters.required_status_checks.context) | Should -Be @('ai-sdlc', 'Test consumer: bicep-only,setup-script (fresh)')
     }
 
     It 'changes nothing when the ruleset already matches' {
