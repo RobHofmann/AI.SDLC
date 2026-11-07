@@ -115,6 +115,9 @@ $script:Defaults = [ordered]@{
         build = ''
         test  = ''
     }
+    secretScan     = [ordered]@{
+        allowPaths = @()
+    }
     tracker        = [ordered]@{
         repository        = ''
         keyPattern        = ''

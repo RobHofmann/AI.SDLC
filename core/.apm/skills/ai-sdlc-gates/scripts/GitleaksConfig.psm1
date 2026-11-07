@@ -11,6 +11,10 @@
     request of a consumer would fail its secret scan. The allowlist here skips that one file, in the
     shared pull request job (Test-GitleaksBaseline.ps1) and in the pre-flight (Invoke-Preflight.ps1).
 
+    A repository can name more paths in secretScan.allowPaths of aisdlc.json: files that hold secrets
+    on purpose, because the application needs them there. With -RepoRoot, New-GitleaksConfig adds
+    them as a second allowlist. Without the field, the config is the same as without -RepoRoot.
+
     New-GitleaksConfig writes a small TOML file that extends a rule set and adds the allowlist. With
     -RulesPath it extends that file, for example a pinned rule set from gitleaks-rules.json. Without it,
     it extends the default rules that gitleaks carries.
@@ -29,6 +33,8 @@
     Invoke-WebRequest -Uri $pin.Url -OutFile $file
     Test-GitleaksRulesFile -Path $file -Pin $pin
 #>
+
+Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1')
 
 # Each entry is a regular expression on the path of a file, relative to the scanned folder.
 $script:AllowedPaths = @(
@@ -67,11 +73,22 @@ function Get-GitleaksAllowedPath {
     return $script:AllowedPaths
 }
 
+function Get-GitleaksRepoAllowedPath {
+    # The paths a repository names in secretScan.allowPaths of aisdlc.json: files that hold secrets on
+    # purpose, such as the secrets file of an application. A scan never reads them.
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
+    return @($config.secretScan.allowPaths | Where-Object { $_ })
+}
+
 function New-GitleaksConfig {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Path,
-        [string]$RulesPath
+        [string]$RulesPath,
+        [string]$RepoRoot
     )
 
     $extend = if ($RulesPath) {
@@ -91,9 +108,21 @@ function New-GitleaksConfig {
         $paths
         ']'
         ''
-    ) -join "`n"
+    )
+    $repoPaths = if ($RepoRoot) { @(Get-GitleaksRepoAllowedPath -RepoRoot $RepoRoot) } else { @() }
+    if ($repoPaths.Count -gt 0) {
+        $toml += @(
+            '[[allowlists]]'
+            'description = "Paths the repository holds secrets in on purpose: secretScan.allowPaths in aisdlc.json."'
+            'paths = ['
+            (($repoPaths | ForEach-Object { "  '''$_'''" }) -join ",`n")
+            ']'
+            ''
+        )
+    }
+    $toml = $toml -join "`n"
     [IO.File]::WriteAllText($Path, $toml, [Text.UTF8Encoding]::new($false))
     return $Path
 }
 
-Export-ModuleMember -Function Get-GitleaksAllowedPath, New-GitleaksConfig, Get-GitleaksRulesPin, Test-GitleaksRulesFile
+Export-ModuleMember -Function Get-GitleaksAllowedPath, Get-GitleaksRepoAllowedPath, New-GitleaksConfig, Get-GitleaksRulesPin, Test-GitleaksRulesFile

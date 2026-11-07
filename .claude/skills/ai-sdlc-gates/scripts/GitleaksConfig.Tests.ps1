@@ -78,4 +78,46 @@ Describe 'GitleaksConfig' {
         $findings | Should -HaveCount 1
         $findings[0].File | Should -Match 'other\.json$'
     }
+
+    Context 'the paths a repository names in secretScan.allowPaths' {
+        BeforeEach {
+            $script:Repo = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+            New-Item -ItemType Directory -Path $script:Repo -Force | Out-Null
+        }
+
+        It 'adds them as an allowlist of their own, next to the allowlist of the AI-SDLC' {
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "secretScan": { "allowPaths": [ "^\\.storage/", "(^|/)secrets\\.yaml$" ] } }'
+
+            $text = Get-Content -LiteralPath (New-GitleaksConfig -Path (Join-Path $TestDrive 'repo.toml') -RepoRoot $script:Repo) -Raw
+
+            ([regex]::Matches($text, '(?m)^\[\[allowlists\]\]')).Count | Should -Be 2
+            $text | Should -Match ([regex]::Escape("'''^\.storage/'''"))
+            $text | Should -Match ([regex]::Escape("'''(^|/)secrets\.yaml$'''"))
+        }
+
+        It 'writes the same config as before when aisdlc.json names no paths' {
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "repository": "contoso" }'
+
+            $with = Get-Content -LiteralPath (New-GitleaksConfig -Path (Join-Path $TestDrive 'none.toml') -RepoRoot $script:Repo) -Raw
+            $without = Get-Content -LiteralPath (New-GitleaksConfig -Path (Join-Path $TestDrive 'plain.toml')) -Raw
+
+            $with | Should -Be $without
+        }
+
+        It 'makes gitleaks skip a named path, and still find the same secret elsewhere' -Skip:(-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "secretScan": { "allowPaths": [ "(^|/)secrets\\.yaml$" ] } }'
+            $scan = Join-Path $script:Repo 'scan'
+            New-Item -ItemType Directory -Path $scan -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $scan 'secrets.yaml') -Value (New-ManifestLine)
+            Set-Content -LiteralPath (Join-Path $scan 'other.json') -Value (New-ManifestLine)
+            $config = New-GitleaksConfig -Path (Join-Path $TestDrive 'repo-scan.toml') -RepoRoot $script:Repo
+            $report = Join-Path $TestDrive 'repo-report.json'
+
+            gitleaks dir $scan --config $config --no-banner --report-format json --report-path $report *> $null
+
+            $findings = @(Get-Content -LiteralPath $report -Raw | ConvertFrom-Json)
+            $findings | Should -HaveCount 1
+            $findings[0].File | Should -Match 'other\.json$'
+        }
+    }
 }
