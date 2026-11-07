@@ -9,7 +9,9 @@
     apm.lock.yaml, which APM writes itself, so a file APM skips is missing from both and passes. This gate
     checks against the manifest instead, which AI.SDLC builds from its own source.
 
-    It reads the installed packages from apm.yml (core and each packs/<name>), then fails on:
+    It reads the installed packages from apm.yml (core and each packs/<name>) from the source of the
+    core: the same git URL, or the same prefix in the short or local form. A pack from another source
+    belongs to the repository, and the gate leaves it alone. Then it fails on:
     - a package in apm.yml that the manifest does not know;
     - a file of the manifest that is missing, or whose content differs;
     - a hook of the manifest that is missing from .claude/settings.json (APM writes an empty matcher as
@@ -63,12 +65,36 @@ if (-not (Test-Path -LiteralPath $apmFile)) { Write-Output "::warning::The AI.SD
 if (-not (Test-Path -LiteralPath $ManifestPath)) { Write-Output "::warning::The AI.SDLC sync could not be checked: $ManifestPath does not exist."; exit 2 }
 
 $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json -AsHashtable
-$installed = [System.Collections.Generic.List[string]]::new()
+# A dependency is "- git: <url>" with "path: core" or "path: packs/<name>" below it, or one value such as
+# ../../packs/bicep or contoso/AI.SDLC/packs/bicep#v1.0.0, whose source is the part before core or packs/.
+# Only the packages from the source of the core belong to AI.SDLC. A pack from another source belongs to
+# the repository, so this gate leaves it and its skills alone.
+$dependencies = [System.Collections.Generic.List[object]]::new()
+$gitItem = $null
 foreach ($line in Get-Content -LiteralPath $apmFile) {
-    if ($line -match '(?:^|[\s/:])(?:core|packs/(?<pack>[A-Za-z0-9._-]+))\s*$') {
-        $name = if ($Matches.pack) { $Matches.pack } else { 'core' }
-        if ($name -notin $installed) { $installed.Add($name) }
+    $value = ($line -replace '\s+#.*$', '').Trim()
+    if ($value.StartsWith('-')) { $gitItem = $null }
+    if ($value -match '^-\s*git:\s*(?<url>\S+)$') {
+        $gitItem = [pscustomobject]@{ Source = ($Matches.url.Trim('''', '"').TrimEnd('/') -replace '\.git$', ''); Package = $null }
+        $dependencies.Add($gitItem)
     }
+    elseif ($gitItem -and $value -match '^path:\s*(?<path>\S+)$') {
+        $path = $Matches.path.Trim('''', '"').Trim('/')
+        if ($path -eq 'core') { $gitItem.Package = 'core' }
+        elseif ($path -match '^packs/(?<pack>[A-Za-z0-9._-]+)$') { $gitItem.Package = $Matches.pack }
+    }
+    elseif ($value -match '^-\s*(?<dependency>\S+)$') {
+        $dependency = ($Matches.dependency.Trim('''', '"') -replace '#.*$', '').TrimEnd('/')
+        if ($dependency -match '^(?<source>(?:.*[/:])?)(?:core|packs/(?<pack>[A-Za-z0-9._-]+))$') {
+            $dependencies.Add([pscustomobject]@{ Source = $Matches.source; Package = if ($Matches.pack) { $Matches.pack } else { 'core' } })
+        }
+    }
+}
+$core = @($dependencies | Where-Object { $_.Package -eq 'core' }) | Select-Object -First 1
+$installed = [System.Collections.Generic.List[string]]::new()
+foreach ($dependency in $dependencies) {
+    if (-not $dependency.Package -or ($core -and $dependency.Source -ne $core.Source)) { continue }
+    if ($dependency.Package -notin $installed) { $installed.Add($dependency.Package) }
 }
 
 $findings = [System.Collections.Generic.List[string]]::new()

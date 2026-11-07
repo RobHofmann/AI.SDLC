@@ -58,6 +58,10 @@ The technical page of each pack lists its skills, agents and gates by name: [dot
   takes them together ([taking a new version](new-version.md)).
 - The exact folder shape of a pack, and which file carries what, is on the
   [technical overview](../docs/overview.md).
+- You can install packs from a repository of your own next to the packs of AI.SDLC. An example is a
+  private pack with your own skills. Add it to `apm.yml` with its own `git:` URL. The sync check only
+  checks the packages of AI.SDLC, and the gates of your pack still run. Give your pack a name that no
+  AI.SDLC pack has.
 
 ## Related
 

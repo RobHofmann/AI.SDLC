@@ -31,7 +31,7 @@ Describe 'Check-SyncManifest' {
         New-Item -ItemType Directory -Path $script:Root -Force | Out-Null
         git -C $script:Root init --quiet
         Set-AiSdlcTestConfig -Root $script:Root
-        Write-LfFile -Path (Join-Path $script:Root 'apm.yml') -Content "dependencies:`n  apm:`n    - git: https://github.com/contoso/AI.SDLC`n      path: core`n      ref: v1.0.0`n    - ../../packs/github-issues`n"
+        Write-LfFile -Path (Join-Path $script:Root 'apm.yml') -Content "dependencies:`n  apm:`n    - git: https://github.com/contoso/AI.SDLC`n      path: core`n      ref: v1.0.0`n    - git: https://github.com/contoso/AI.SDLC`n      path: packs/github-issues`n      ref: v1.0.0`n"
         Write-LfFile -Path (Join-Path $script:Root '.claude/skills/core-skill/SKILL.md') -Content "core`n"
         Write-LfFile -Path (Join-Path $script:Root '.claude/agents/reviewer.md') -Content "agent`n"
         Write-LfFile -Path (Join-Path $script:Root '.claude/skills/issue-skill/SKILL.md') -Content "issues`n"
@@ -135,6 +135,37 @@ Describe 'Check-SyncManifest' {
         $r = Invoke-Gate -RepoRoot $script:Root
         $r.ExitCode | Should -Be 1
         $r.Output | Should -Match 'package github-issues is in apm\.yml but not in the manifest'
+    }
+
+    It 'ignores a pack from another source, and counts its skills as the repository''s own' {
+        Add-Content -LiteralPath (Join-Path $script:Root 'apm.yml') -Value "    - git: https://github.com/contoso/Private.Packs`n      path: packs/contoso-tools`n      ref: v2.0.0" -NoNewline
+        Write-LfFile -Path (Join-Path $script:Root '.claude/skills/contoso-skill/SKILL.md') -Content "private`n"
+        $r = Invoke-Gate -RepoRoot $script:Root
+        $r.ExitCode | Should -Be 0
+        $r.Output | Should -Match 'of 2 package\(s\)'
+    }
+
+    It 'ignores a pack from another source that has the name of an AI.SDLC pack' {
+        Add-Content -LiteralPath (Join-Path $script:Root 'apm.yml') -Value "    - git: https://github.com/contoso/Private.Packs`n      path: packs/dotnet`n      ref: v2.0.0" -NoNewline
+        $r = Invoke-Gate -RepoRoot $script:Root
+        $r.ExitCode | Should -Be 0
+        $r.Output | Should -Match 'of 2 package\(s\)'
+    }
+
+    It 'checks the packages of the core source in the local form, and ignores another local source' {
+        Write-LfFile -Path (Join-Path $script:Root 'apm.yml') -Content "dependencies:`n  apm:`n    - ../../core`n    - ../../packs/github-issues`n    - ../Private.Packs/packs/dotnet`n"
+        $r = Invoke-Gate -RepoRoot $script:Root
+        $r.ExitCode | Should -Be 0
+        $r.Output | Should -Match 'of 2 package\(s\)'
+    }
+
+    It 'checks the packages of the core source in the short form with a ref' {
+        Write-LfFile -Path (Join-Path $script:Root 'apm.yml') -Content "dependencies:`n  apm:`n    - contoso/AI.SDLC/core#v1.0.0`n    - contoso/AI.SDLC/packs/github-issues#v1.0.0`n    - contoso/Private.Packs/packs/dotnet#v2.0.0`n"
+        Remove-Item -LiteralPath (Join-Path $script:Root '.claude/skills/issue-skill/SKILL.md')
+        $r = Invoke-Gate -RepoRoot $script:Root
+        $r.ExitCode | Should -Be 1
+        $r.Output | Should -Match 'missing: \.claude/skills/issue-skill/SKILL\.md'
+        $r.Output | Should -Not -Match 'dotnet'
     }
 
     It 'says it could not check when the manifest is missing' {
