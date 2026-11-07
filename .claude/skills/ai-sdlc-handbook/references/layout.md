@@ -53,6 +53,10 @@ A file that `apm.lock.yaml` lists is a shared file. Change it in AI.SDLC, never 
   file that APM skipped, which `apm audit` cannot see, because APM writes the lockfile itself.
   AI.SDLC installs its own packages with `- ./core` in `apm.yml`. There the gate reads the manifest in
   `core/`, not the installed one, so a change to a source file without a new `apm install` fails.
+  It only checks the packages from the source of the core: the same `git:` URL, or the same prefix in
+  the short or local form. A repository may install packs from a source of its own next to AI.SDLC.
+  The gate leaves such a pack alone, and counts its skills as the repository's own. Give such a pack a
+  name that no AI.SDLC pack has, because the gate runner counts a pack as installed by its name.
 
 APM writes the hook entries into `.claude/settings.json` and `.claude/apm-hooks.json`, but
 `deployed_files` in `apm.lock.yaml` lists neither. So `Deny-SharedFileEdit.ps1` and `apm audit` do not

@@ -3,7 +3,7 @@ apm_version: 0.31.0
 dependencies:
 - repo_url: _local/core
   name: ai-sdlc-core
-  version: 1.0.0
+  version: 1.1.0
   package_type: apm_package
   deployed_files:
   - .claude/agents/architect.md
@@ -284,8 +284,8 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1: sha256:f760c0fb0746bc2cbffe9e349e50ffe5fd69227c416c6cab5bf4d9d6644a3b01
     .claude/skills/ai-sdlc-gates/scripts/Check-SkillHygiene.Tests.ps1: sha256:da74db532363c1897ac8f905f3763674ba03d85df3fa0c3cdb718d97b744711c
     .claude/skills/ai-sdlc-gates/scripts/Check-SkillHygiene.ps1: sha256:f1e59ba09f138a5c09adf96f1b80141c086fc67673442be76bfeebd70f4d8aed
-    .claude/skills/ai-sdlc-gates/scripts/Check-SyncManifest.Tests.ps1: sha256:a4b5994247d3eb91c425e04a2a6be73562d36e8f68b4bcf3a8337e74af8db099
-    .claude/skills/ai-sdlc-gates/scripts/Check-SyncManifest.ps1: sha256:b1983261b7865ac1b5542c5228d17ad7d7e8b8057b8cedd368b616369714dc1d
+    .claude/skills/ai-sdlc-gates/scripts/Check-SyncManifest.Tests.ps1: sha256:509b0ddb057d2f457ae93c3d4888b305dbdd0734d85008a76a4c4fb206c144c0
+    .claude/skills/ai-sdlc-gates/scripts/Check-SyncManifest.ps1: sha256:20a77ea71e24895b3eb27452f082a9f498cc72e484b5e64af20393c667ad3cb6
     .claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.Tests.ps1: sha256:5e09a846ef70041c223e753459e24b37d0344891acf9c8e67ba915d05d52fb8a
     .claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.ps1: sha256:186a243cc57c58ab15b7761e0e08df79ff40b639cc384581907e56a51ec8ec9e
     .claude/skills/ai-sdlc-gates/scripts/DocCoverage.Tests.ps1: sha256:a6e75191d84f6362a083c067ee26f90bbe0fe9f3960c7fd922e9f207adca2fad
@@ -331,7 +331,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:5537684656bf189a740ba7e9e7050083af05668d00501ce1e9c6909cb8b91203
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:30d89eb165964da701cca60b9aac301f37ca7c56abc1cad69227b9d8a2b39220
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:c09784173f5f26029f1b9b2b8bb6fe843281e70f22859e5a328c39017a82f2bb
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:654afcaa2b81f560eff93dbdef521b09ced06137a1dbb85d70a4e14ef7502248
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -343,7 +343,7 @@ dependencies:
     .claude/skills/ai-sdlc-handbook/references/docs-wiki.md: sha256:2bd6f3a8e64f9db16163519767b822e4ebcffd740e3c5cbff17281ad71d264b7
     .claude/skills/ai-sdlc-handbook/references/first-story.md: sha256:831552230cc16386ee01d7c730e288ef19aca5a66fafb00e1dfbbf4e9788caf2
     .claude/skills/ai-sdlc-handbook/references/language.md: sha256:72acd3a0946586799037ebc3536307f5b852fde1c8d07bebaad418e3303493b9
-    .claude/skills/ai-sdlc-handbook/references/layout.md: sha256:fa902f61afcc8786107bc7bb805194bd9953f57a089f080d3ecde3e578074a53
+    .claude/skills/ai-sdlc-handbook/references/layout.md: sha256:16deeba4a44cfd91b905a71879045719206a9b940088f9a87b2512d02db00ace
     .claude/skills/ai-sdlc-handbook/references/node-templates.md: sha256:8664ad1f85bff48d6230ed22e3f25683f378822e566c2a1454cbb204f4bb8fad
     .claude/skills/ai-sdlc-handbook/references/orchestration.md: sha256:05513a9f99f14f281a91da176e9eb39c95f6d939ff33ecca2390c784190546c4
     .claude/skills/ai-sdlc-handbook/references/pattern.md: sha256:7908f80ee28ff1f7cd9f85b22fcf3e455fe74225d33ff201f8fbce1623d672eb
@@ -427,7 +427,7 @@ dependencies:
   local_path: ./core
 - repo_url: _local/discovery
   name: ai-sdlc-discovery
-  version: 1.0.0
+  version: 1.1.0
   package_type: apm_package
   deployed_files:
   - .claude/skills/draw-customer-journey
@@ -444,7 +444,7 @@ dependencies:
   local_path: ./packs/discovery
 - repo_url: _local/github
   name: ai-sdlc-github
-  version: 1.0.0
+  version: 1.1.0
   package_type: apm_package
   deployed_files:
   - .claude/skills/fix-pr-feedback
@@ -534,7 +534,7 @@ dependencies:
   local_path: ./packs/github
 - repo_url: _local/github-issues
   name: ai-sdlc-github-issues
-  version: 1.0.0
+  version: 1.1.0
   package_type: apm_package
   deployed_files:
   - .claude/agents/draft-reviewer.md
@@ -1128,7 +1128,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:a4b5994247d3eb91c425e04a2a6be73562d36e8f68b4bcf3a8337e74af8db099
+  content_hash: sha256:509b0ddb057d2f457ae93c3d4888b305dbdd0734d85008a76a4c4fb206c144c0
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/Check-SyncManifest.ps1
@@ -1137,7 +1137,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:b1983261b7865ac1b5542c5228d17ad7d7e8b8057b8cedd368b616369714dc1d
+  content_hash: sha256:20a77ea71e24895b3eb27452f082a9f498cc72e484b5e64af20393c667ad3cb6
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.Tests.ps1
@@ -1551,7 +1551,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:30d89eb165964da701cca60b9aac301f37ca7c56abc1cad69227b9d8a2b39220
+  content_hash: sha256:c09784173f5f26029f1b9b2b8bb6fe843281e70f22859e5a328c39017a82f2bb
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
@@ -1668,7 +1668,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:fa902f61afcc8786107bc7bb805194bd9953f57a089f080d3ecde3e578074a53
+  content_hash: sha256:16deeba4a44cfd91b905a71879045719206a9b940088f9a87b2512d02db00ace
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook/references/node-templates.md

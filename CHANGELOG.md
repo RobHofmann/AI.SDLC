@@ -8,6 +8,14 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.1.0 - 2026-11-07
+
+- A consumer can install packs from a source of its own next to AI.SDLC (#10). `Check-SyncManifest.ps1`
+  only checks the packages from the source of the core: the same `git:` URL, or the same prefix in the
+  short or local form. A pack from another source no longer fails the gate, and its skills count as
+  the repository's own. The gate now also reads the short form with a ref, such as
+  `contoso/AI.SDLC/packs/bicep#v1.1.0`.
+
 ## v1.0.0 - 2026-10-24
 
 The first release. It has no issue, because the issue tracker of this repository starts with it.
