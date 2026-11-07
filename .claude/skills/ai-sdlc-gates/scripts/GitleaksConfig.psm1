@@ -80,7 +80,24 @@ function Get-GitleaksRepoAllowedPath {
     param([Parameter(Mandatory)][string]$RepoRoot)
 
     $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
-    return @($config.secretScan.allowPaths | Where-Object { $_ })
+    $patterns = @($config.secretScan.allowPaths | Where-Object { $_ })
+    # A repository widens its own secret scan here, so each pattern must stay narrow: anchored at the
+    # start of a path or of a folder, a valid regular expression, and no match for an ordinary file.
+    $ordinary = @('README.md', 'src/main.cs', 'a/b/c.txt', 'config/settings.json')
+    foreach ($pattern in $patterns) {
+        $reason = if ($pattern -isnot [string]) { 'is not a string' }
+        elseif ($pattern -match "['`"\p{Cc}]") { 'holds a quote or a control character' }
+        elseif ($pattern -notmatch '^(\^|\(\^\|/\))') { 'is not anchored: start it with ^ or (^|/)' }
+        else {
+            try {
+                $regex = [regex]::new($pattern)
+                if (@($ordinary | Where-Object { $regex.IsMatch($_) }).Count -gt 0) { 'matches ordinary files, so it would hide real leaks' }
+            }
+            catch { 'is not a valid regular expression' }
+        }
+        if ($reason) { throw "secretScan.allowPaths in aisdlc.json: the pattern '$pattern' $reason. Nothing was scanned." }
+    }
+    return $patterns
 }
 
 function New-GitleaksConfig {
@@ -111,6 +128,7 @@ function New-GitleaksConfig {
     )
     $repoPaths = if ($RepoRoot) { @(Get-GitleaksRepoAllowedPath -RepoRoot $RepoRoot) } else { @() }
     if ($repoPaths.Count -gt 0) {
+        Write-Host "The secret scan skips the paths in secretScan.allowPaths of aisdlc.json: $($repoPaths -join ', ')"
         $toml += @(
             '[[allowlists]]'
             'description = "Paths the repository holds secrets in on purpose: secretScan.allowPaths in aisdlc.json."'

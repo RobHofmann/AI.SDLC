@@ -287,15 +287,15 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/Check-SyncManifest.Tests.ps1: sha256:509b0ddb057d2f457ae93c3d4888b305dbdd0734d85008a76a4c4fb206c144c0
     .claude/skills/ai-sdlc-gates/scripts/Check-SyncManifest.ps1: sha256:20a77ea71e24895b3eb27452f082a9f498cc72e484b5e64af20393c667ad3cb6
     .claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.Tests.ps1: sha256:005b503c202871965b5c044812cb13ee8ae5dae741a5e5c623a679be96456d78
-    .claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.ps1: sha256:6e3183ac72cabbf6056d28f003794cd1a1324e2fb5b351f5f649d5e6ea21dbc1
+    .claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.ps1: sha256:1f7ce301cf61f60c699a8596e1516de31fc9f77cbd508794cb2bb23ff693987f
     .claude/skills/ai-sdlc-gates/scripts/DocCoverage.Tests.ps1: sha256:a6e75191d84f6362a083c067ee26f90bbe0fe9f3960c7fd922e9f207adca2fad
     .claude/skills/ai-sdlc-gates/scripts/DocCoverage.psm1: sha256:48eddcb174858783e871b0f248a389af59c0aa4feec8ce60bd9640deb9f6a959
     .claude/skills/ai-sdlc-gates/scripts/DocToolTestHarness.Tests.ps1: sha256:15cb191503775a83de29d49ccc821d6b43f6c54edfbb4b35a6423db0d43a1e5c
     .claude/skills/ai-sdlc-gates/scripts/DocToolTestHarness.psm1: sha256:3d62a22fb1955b60aa915b0d9aad19b673df63359eecc22af7c8d004319b6079
     .claude/skills/ai-sdlc-gates/scripts/GateAnnotation.Tests.ps1: sha256:cfb83154d61fba1c838a5a66b17f548c5d9d15bacda86a72525ee1222eab76e2
     .claude/skills/ai-sdlc-gates/scripts/GateAnnotation.psm1: sha256:8a2db889b816c395cf89c049c8674b36c362dcb0da9bdf2248e01451ccda7705
-    .claude/skills/ai-sdlc-gates/scripts/GitleaksConfig.Tests.ps1: sha256:a0175a21f1062738bbfda292dd192603e5b40f36ea53b48c48a95b0485bdb820
-    .claude/skills/ai-sdlc-gates/scripts/GitleaksConfig.psm1: sha256:b25806104bd6ccb804e5ec0834943aa255cd9c5fd9d27e1586de4b50ca08d5d9
+    .claude/skills/ai-sdlc-gates/scripts/GitleaksConfig.Tests.ps1: sha256:f86796d9be94a8909aa961c8b4397b731187ac35470f608b1ddba01c2d27ed46
+    .claude/skills/ai-sdlc-gates/scripts/GitleaksConfig.psm1: sha256:5d6280fa16c76d853f75ec8af21ce37ac01510237874d690b7ab5041a09d02f4
     .claude/skills/ai-sdlc-gates/scripts/Install-Apm.Tests.ps1: sha256:99b5da9c54ce47175b0ba1d9d86602fa85d2b68c94dd319717cf706ccb95e0d5
     .claude/skills/ai-sdlc-gates/scripts/Install-Apm.ps1: sha256:1afa7c30042fb04c12a9ee6b2ffe43292b1c4aa56033ac497cd91d3671896247
     .claude/skills/ai-sdlc-gates/scripts/Install-Gitleaks.Tests.ps1: sha256:73478c06f7b6b25e462346344d5b55556eec41b9c09423459e7e7e73b77bd6d7
@@ -331,7 +331,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:5537684656bf189a740ba7e9e7050083af05668d00501ce1e9c6909cb8b91203
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:fa6cbb56038e695c301e558a24861cedb3eca3bac57fee1fcff0701c90bdb868
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:3a5abfb576b5a4d53776c1955dddf3a09a83755d722778919c1f16f61279859e
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:654afcaa2b81f560eff93dbdef521b09ced06137a1dbb85d70a4e14ef7502248
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -1155,7 +1155,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:6e3183ac72cabbf6056d28f003794cd1a1324e2fb5b351f5f649d5e6ea21dbc1
+  content_hash: sha256:1f7ce301cf61f60c699a8596e1516de31fc9f77cbd508794cb2bb23ff693987f
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/DocCoverage.Tests.ps1
@@ -1218,7 +1218,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:a0175a21f1062738bbfda292dd192603e5b40f36ea53b48c48a95b0485bdb820
+  content_hash: sha256:f86796d9be94a8909aa961c8b4397b731187ac35470f608b1ddba01c2d27ed46
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/GitleaksConfig.psm1
@@ -1227,7 +1227,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:b25806104bd6ccb804e5ec0834943aa255cd9c5fd9d27e1586de4b50ca08d5d9
+  content_hash: sha256:5d6280fa16c76d853f75ec8af21ce37ac01510237874d690b7ab5041a09d02f4
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/Install-Apm.Tests.ps1
@@ -1551,7 +1551,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:fa6cbb56038e695c301e558a24861cedb3eca3bac57fee1fcff0701c90bdb868
+  content_hash: sha256:3a5abfb576b5a4d53776c1955dddf3a09a83755d722778919c1f16f61279859e
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
