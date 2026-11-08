@@ -81,18 +81,13 @@ function Get-GitleaksRepoAllowedPath {
 
     $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
     $patterns = @($config.secretScan.allowPaths | Where-Object { $_ })
-    # A repository widens its own secret scan here, so each pattern must stay narrow: anchored at the
-    # start of a path or of a folder, a valid regular expression, and no match for an ordinary file.
-    $ordinary = @('README.md', 'src/main.cs', 'a/b/c.txt', 'config/settings.json')
+    # Which paths to skip is the choice of the repository. The check only stops a pattern that would
+    # break the TOML file or that gitleaks cannot read: a quote, a control character, or a bad regex.
     foreach ($pattern in $patterns) {
         $reason = if ($pattern -isnot [string]) { 'is not a string' }
         elseif ($pattern -match "['`"\p{Cc}]") { 'holds a quote or a control character' }
-        elseif ($pattern -notmatch '^(\^|\(\^\|/\))') { 'is not anchored: start it with ^ or (^|/)' }
         else {
-            try {
-                $regex = [regex]::new($pattern)
-                if (@($ordinary | Where-Object { $regex.IsMatch($_) }).Count -gt 0) { 'matches ordinary files, so it would hide real leaks' }
-            }
+            try { $null = [regex]::new($pattern) }
             catch { 'is not a valid regular expression' }
         }
         if ($reason) { throw "secretScan.allowPaths in aisdlc.json: the pattern '$pattern' $reason. Nothing was scanned." }

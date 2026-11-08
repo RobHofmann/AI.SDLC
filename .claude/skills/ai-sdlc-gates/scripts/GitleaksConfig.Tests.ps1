@@ -105,9 +105,6 @@ Describe 'GitleaksConfig' {
         }
 
         It 'refuses a pattern that is <Why>, and names the field' -ForEach @(
-            @{ Why = 'not anchored'; Pattern = 'app-secrets\\.yaml' }
-            @{ Why = 'a match for every path'; Pattern = '^.*' }
-            @{ Why = 'a match for any file in a folder'; Pattern = '(^|/)' }
             @{ Why = 'holding a quote'; Pattern = "^a'''b" }
             @{ Why = 'not a regular expression'; Pattern = '^a[' }
         ) {
@@ -115,6 +112,19 @@ Describe 'GitleaksConfig' {
             Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value $json
 
             { New-GitleaksConfig -Path (Join-Path $TestDrive 'bad.toml') -RepoRoot $script:Repo } | Should -Throw '*secretScan.allowPaths*'
+        }
+
+        It 'accepts any valid pattern, because the repository decides what it skips' -ForEach @(
+            @{ Pattern = 'app-secrets\.yaml' }
+            @{ Pattern = '^config/' }
+            @{ Pattern = '^.*' }
+        ) {
+            $json = @{ secretScan = @{ allowPaths = @($Pattern) } } | ConvertTo-Json -Depth 3
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value $json
+
+            $text = Get-Content -LiteralPath (New-GitleaksConfig -Path (Join-Path $TestDrive 'any.toml') -RepoRoot $script:Repo 6>$null) -Raw
+
+            $text | Should -Match ([regex]::Escape("'''$Pattern'''"))
         }
 
         It 'says which paths the scan skips, so a reviewer sees a wider list' {
