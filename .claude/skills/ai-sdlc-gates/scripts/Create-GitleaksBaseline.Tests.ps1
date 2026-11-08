@@ -97,17 +97,18 @@ Describe 'Create-GitleaksBaseline' {
         Should -Invoke Invoke-WebRequest -Times 0 -Exactly
     }
 
-    It 'scans with the downloaded configuration and redacts the findings' {
+    It 'scans with the downloaded rules plus the allowlists, and redacts the findings' {
         Invoke-Create | Out-Null
 
-        Should -Invoke gitleaks -Times 1 -Exactly -ParameterFilter { $args[0] -eq 'git' -and ($args -contains '--redact') -and (($args -join ' ') -match 'gitleaks\.toml') }
+        Should -Invoke gitleaks -Times 1 -Exactly -ParameterFilter { $args[0] -eq 'git' -and ($args -contains '--redact') -and (($args -join ' ') -match 'gitleaks-ai-sdlc-[0-9a-f]{32}\.toml') }
     }
 
-    It 'removes the downloaded configuration and the temporary clone afterwards' {
+    It 'removes the downloaded configuration, the scan config and the temporary clone afterwards' {
         $r = Invoke-Create
 
         Test-Path -LiteralPath (Join-Path $r.Work 'gitleaks.toml') | Should -BeFalse
         Test-Path -LiteralPath (Join-Path $r.Temp 'gitleaksbaseline') | Should -BeFalse
+        @(Get-ChildItem -LiteralPath $r.Temp -Filter 'gitleaks-ai-sdlc-*.toml') | Should -BeNullOrEmpty
     }
 
     It 'downloads the rule set that <Configuration> names from its pinned URL' -ForEach @(

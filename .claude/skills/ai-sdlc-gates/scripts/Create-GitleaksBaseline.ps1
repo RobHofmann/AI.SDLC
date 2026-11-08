@@ -125,13 +125,18 @@ if (Test-Path -LiteralPath $tempDirectory) {
 }
 
 $failed = $false
+$scanConfig = $null
 try {
     Write-Host "Clone a fresh copy of the repository to $tempDirectory"
     git clone --quiet $remoteUrl $tempDirectory
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $tempDirectory)) { throw "git clone of $remoteUrl failed with exit code $LASTEXITCODE" }
 
+    # The pinned rules plus both allowlists: the one of the AI-SDLC and secretScan.allowPaths of the
+    # aisdlc.json in the clone, so the baseline follows what is committed, not the working copy.
+    Import-Module (Join-Path $PSScriptRoot 'GitleaksConfig.psm1') -Force
+    $scanConfig = New-GitleaksConfig -Path (Join-Path $tempDrive ('gitleaks-ai-sdlc-' + [guid]::NewGuid().ToString('n') + '.toml')) -RulesPath $gitleakconfigurationFile -RepoRoot $tempDirectory
     Write-Host "Running gitleaks on the clone to create baseline file: $gitleaksBaselinePath"
-    gitleaks git $tempDirectory --config "$gitleakconfigurationFile" --report-format=json --redact --report-path "$gitleaksBaselinePath" --exit-code=99
+    gitleaks git $tempDirectory --config "$scanConfig" --report-format=json --redact --report-path "$gitleaksBaselinePath" --exit-code=99
     $scanExit = $LASTEXITCODE
     if ($scanExit -ne 0 -and $scanExit -ne 99) { throw "gitleaks failed with exit code $scanExit, so no baseline was written" }
 }
@@ -146,6 +151,9 @@ finally {
     }
     if (Test-Path -LiteralPath $gitleakconfigurationFile) {
         Remove-Item -LiteralPath $gitleakconfigurationFile -Force -ProgressAction SilentlyContinue
+    }
+    if ($scanConfig -and (Test-Path -LiteralPath $scanConfig)) {
+        Remove-Item -LiteralPath $scanConfig -Force -ProgressAction SilentlyContinue
     }
 }
 if ($failed) { exit 1 }

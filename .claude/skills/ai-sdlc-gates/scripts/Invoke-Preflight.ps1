@@ -164,7 +164,7 @@ try {
         $reportPath = Join-Path ([System.IO.Path]::GetTempPath()) ('preflight-gitleaks-' + [guid]::NewGuid().ToString('n') + '.json')
         $range = (git rev-parse --verify --quiet "$TargetBranch" 2>$null) ? "$TargetBranch..HEAD" : 'HEAD~1..HEAD'
         # The pinned rules of CI plus the allowlist of the AI-SDLC: the blob hashes in sync-manifest.json look like keys.
-        $glConfig = New-GitleaksConfig -Path (Join-Path ([System.IO.Path]::GetTempPath()) ('gitleaks-ai-sdlc-' + [guid]::NewGuid().ToString('n') + '.toml')) -RulesPath $rulesFile
+        $glConfig = New-GitleaksConfig -Path (Join-Path ([System.IO.Path]::GetTempPath()) ('gitleaks-ai-sdlc-' + [guid]::NewGuid().ToString('n') + '.toml')) -RulesPath $rulesFile -RepoRoot $RepoRoot
         $glArgs = @('git', '--no-banner', '--redact', '--config', $glConfig, '--report-format', 'json', '--report-path', $reportPath, '--log-opts', $range)
         if (Test-Path -LiteralPath $baseline) { $glArgs += @('--baseline-path', $baseline) }
         Remove-Item -LiteralPath $reportPath -ErrorAction SilentlyContinue

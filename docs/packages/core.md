@@ -226,7 +226,7 @@ The git `pre-push` hook skips the blocking gates when a passing pre-flight recei
 
 `Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and checks its SHA-256 value. The composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml` runs it before the gate step. `Test-GitleaksBaseline.ps1` is the blocking C03 gate of `gates.json`, a secret scan against `gitleaks-baseline.json`. So `Invoke-LocalGates.ps1` runs it in the composite action, in the pre-push hook and in a local run. On a pull request in GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, as the pre-flight does. In a local run it scans `origin/main..HEAD`. A repository without a baseline counts every finding. In GitHub Actions a missing gitleaks, or rules that could not be downloaded, fail the gate. In a local run the gate reports "could not check" (exit 2), so a push still goes out.
 
-`GitleaksConfig.psm1` writes the gitleaks configuration of each scan: the rule set plus an allowlist for `sync-manifest.json`, whose git blob hashes look like keys. The composite action and the pre-flight use it.
+`GitleaksConfig.psm1` writes the gitleaks configuration of each scan: the rule set plus an allowlist for `sync-manifest.json`, whose git blob hashes look like keys. A repository can add its own paths in `secretScan.allowPaths` of `aisdlc.json`, as a second allowlist. The composite action, the pre-flight and `Create-GitleaksBaseline.ps1` use it.
 
 `GateAnnotation.psm1` turns gate results into GitHub Actions annotations (`::error` and `::warning`, with the file and the line), at most five per gate.
 

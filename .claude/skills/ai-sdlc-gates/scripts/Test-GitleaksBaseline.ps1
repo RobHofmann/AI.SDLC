@@ -173,7 +173,7 @@ if (-not (Test-GitleaksRulesFile -Path $gitleakconfigurationFile -Pin $pin)) {
 
 # The pinned rules plus the allowlist of the AI-SDLC: the blob hashes in sync-manifest.json look like keys.
 $scanConfig = Join-Path ([IO.Path]::GetTempPath()) ('gitleaks-ai-sdlc-' + [guid]::NewGuid().ToString('n') + '.toml')
-$null = New-GitleaksConfig -Path $scanConfig -RulesPath $gitleakconfigurationFile
+$null = New-GitleaksConfig -Path $scanConfig -RulesPath $gitleakconfigurationFile -RepoRoot $currentDirectory
 
 # A repository without a baseline is scanned in full: every finding counts.
 $gitleaksArgs = @('detect', "--source=$currentDirectory", '--config', $scanConfig, '--redact', '--exit-code=99')
