@@ -10,6 +10,9 @@ Each entry names its issue, as `#42`.
 
 ## v1.2.0 - 2026-11-07
 
+- A reply, work item or page gives the full link to every pull request, issue or page that the reader
+  must open or act on (#14). The rule is in `language.md` and in the `## Communication` part of
+  `AGENTS.md`.
 - A repository can name the paths that hold secrets on purpose in `secretScan.allowPaths` of
   `aisdlc.json` (#12). The secret scan skips them in the pre-flight, in the C03 gate and in a new
   baseline, through a second allowlist that `GitleaksConfig.psm1` writes. `Create-GitleaksBaseline.ps1`

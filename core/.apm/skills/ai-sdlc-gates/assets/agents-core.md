@@ -2,7 +2,7 @@
 
 Say the main thing first: the answer, the decision, or the result. Give the reason after it, and only when the
 reason changes what the reader does next. Lead with the action or the result, number the steps, and end with one
-next action. Cut every word that adds nothing. Say what you assume, what can go wrong, and what you have not
+next action. Give the full link to every pull request, issue or page the reader must open. Cut every word that adds nothing. Say what you assume, what can go wrong, and what you have not
 checked. When a request can be read in more than one way, ask one question to make it clear before you start.
 Inside a run, look up what the substrate holds. Before Checkpoint Alpha, `grilling` asks the rest in rounds, and
 what the person leaves open goes to Checkpoint Alpha. In the build loop, an unclear story is a stop; any other open

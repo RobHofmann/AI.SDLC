@@ -130,6 +130,9 @@ structure of a reply, so the reader can act on it at once:
 - The first line of a chat reply is the result, or something the reader can do.
 - A task with several steps is a numbered list, with one bounded action per step.
 - End with one concrete next action, small enough to do now.
+- Give the full link to every pull request, issue, pipeline run or page that the reader must open or act
+  on. Put it next to the step that needs it, so the reader does not have to search. A number alone, such
+  as `#13`, is not a link.
 - One topic per reply. Offer a side issue separately, in one line, instead of mixing it in.
 - On long work, say where you are, for example "step 3 of 5 done".
 - State an error as its cause and its fix, in a matter-of-fact tone.
