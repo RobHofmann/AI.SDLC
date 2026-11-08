@@ -86,13 +86,13 @@ Describe 'GitleaksConfig' {
         }
 
         It 'adds them as an allowlist of their own, next to the allowlist of the AI-SDLC' {
-            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "secretScan": { "allowPaths": [ "^\\.storage/", "(^|/)secrets\\.yaml$" ] } }'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "secretScan": { "allowPaths": [ "^\\.runtime/", "(^|/)app-secrets\\.yaml$" ] } }'
 
             $text = Get-Content -LiteralPath (New-GitleaksConfig -Path (Join-Path $TestDrive 'repo.toml') -RepoRoot $script:Repo) -Raw
 
             ([regex]::Matches($text, '(?m)^\[\[allowlists\]\]')).Count | Should -Be 2
-            $text | Should -Match ([regex]::Escape("'''^\.storage/'''"))
-            $text | Should -Match ([regex]::Escape("'''(^|/)secrets\.yaml$'''"))
+            $text | Should -Match ([regex]::Escape("'''^\.runtime/'''"))
+            $text | Should -Match ([regex]::Escape("'''(^|/)app-secrets\.yaml$'''"))
         }
 
         It 'writes the same config as before when aisdlc.json names no paths' {
@@ -105,7 +105,7 @@ Describe 'GitleaksConfig' {
         }
 
         It 'refuses a pattern that is <Why>, and names the field' -ForEach @(
-            @{ Why = 'not anchored'; Pattern = 'secrets\\.yaml' }
+            @{ Why = 'not anchored'; Pattern = 'app-secrets\\.yaml' }
             @{ Why = 'a match for every path'; Pattern = '^.*' }
             @{ Why = 'a match for any file in a folder'; Pattern = '(^|/)' }
             @{ Why = 'holding a quote'; Pattern = "^a'''b" }
@@ -118,19 +118,19 @@ Describe 'GitleaksConfig' {
         }
 
         It 'says which paths the scan skips, so a reviewer sees a wider list' {
-            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "secretScan": { "allowPaths": [ "^\\.storage/" ] } }'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "secretScan": { "allowPaths": [ "^\\.runtime/" ] } }'
 
             $out = New-GitleaksConfig -Path (Join-Path $TestDrive 'shown.toml') -RepoRoot $script:Repo 6>&1 | Out-String
 
             $out | Should -Match 'secretScan\.allowPaths'
-            $out | Should -Match ([regex]::Escape('^\.storage/'))
+            $out | Should -Match ([regex]::Escape('^\.runtime/'))
         }
 
         It 'makes gitleaks skip a named path, and still find the same secret elsewhere' -Skip:(-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
-            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "secretScan": { "allowPaths": [ "(^|/)secrets\\.yaml$" ] } }'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "secretScan": { "allowPaths": [ "(^|/)app-secrets\\.yaml$" ] } }'
             $scan = Join-Path $script:Repo 'scan'
             New-Item -ItemType Directory -Path $scan -Force | Out-Null
-            Set-Content -LiteralPath (Join-Path $scan 'secrets.yaml') -Value (New-ManifestLine)
+            Set-Content -LiteralPath (Join-Path $scan 'app-secrets.yaml') -Value (New-ManifestLine)
             Set-Content -LiteralPath (Join-Path $scan 'other.json') -Value (New-ManifestLine)
             $config = New-GitleaksConfig -Path (Join-Path $TestDrive 'repo-scan.toml') -RepoRoot $script:Repo
             $report = Join-Path $TestDrive 'repo-report.json'
