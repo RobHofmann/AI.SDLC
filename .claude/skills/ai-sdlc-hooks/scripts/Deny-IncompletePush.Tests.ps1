@@ -257,6 +257,8 @@ exit 0
             @{ Command = 'git push origin master' }
             @{ Command = 'git -C C:/repo push origin main' }
             @{ Command = 'git push origin main 2>&1' }
+            @{ Command = 'git push --set-upstream --follow-tags origin main' }
+            @{ Command = 'git push -uq origin main' }
         ) {
             $r = Invoke-OptedInHook -Command $Command
             $r.Output | Should -Not -Match 'permissionDecision'
@@ -277,6 +279,12 @@ exit 0
             @{ Command = 'git push origin main; git push origin :main' }
             @{ Command = 'git push origin main | tee out.txt' }
             @{ Command = 'git push $(echo origin) main' }
+            @{ Command = 'git push --dele origin main' }
+            @{ Command = 'git push --no-verif origin main' }
+            @{ Command = 'git push --forc origin main' }
+            @{ Command = 'git push --mirr origin' }
+            @{ Command = 'git push -uf origin main' }
+            @{ Command = 'git push --repo=other main' }
         ) {
             $r = Invoke-OptedInHook -Command $Command
             $r.Output | Should -Match '"permissionDecision":"deny"'

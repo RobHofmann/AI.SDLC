@@ -28,9 +28,11 @@
     Before the completeness check it refuses any push to main or master: a named target, a quoted one,
     HEAD while on main, a bare push while on main, and --all, --mirror or --branches. A repository that
     sets git.allowTrunkPush to true in aisdlc.json may update main or master directly, but only in a plain
-    push that is the whole command: a force push (-f, --force*, a +refspec), a delete (-d, --delete,
-    :main), --all, --mirror, --branches, --prune, --no-verify, a git option before push other than -C,
-    and a push chained with any other command stay refused. The rest of the checks still run on such a
+    push that is the whole command: a +refspec, a delete refspec (:main), any push option outside a short
+    allow list (-u, -q, -v, --set-upstream, --quiet, --verbose, --progress, --no-progress, --porcelain,
+    --atomic, --follow-tags, each written in full), a git option before push other than -C, and a push
+    chained with any other command stay refused. So --force, --delete, --mirror and --no-verify are refused,
+    also when shortened. The rest of the checks still run on such a
     push. A permission rule
     cannot see which branch a bare push targets, so this hook is the guard for Claude Code and Copilot
     CLI alike. It is registered for the Bash tool and for the PowerShell tool, because a repository
@@ -238,10 +240,15 @@ function Test-RewritesBranch {
     $push = [regex]::Match($single, '^&?\s*' + $gitName + '(?:\s+-C\s+(?:"[^"]*"|''[^'']*''|\S+))?\s+push(?<rest>(?:\s.*)?)$')
     if (-not $push.Success) { return $true }
     $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
+    # Options pass only from a short allow list, written in full. git accepts a shortened long option,
+    # such as --dele for --delete, so a deny list of names would miss one.
+    $safeLong = @('--set-upstream', '--quiet', '--verbose', '--progress', '--no-progress', '--porcelain', '--atomic', '--follow-tags')
     foreach ($word in $all) {
-        if ($word -in @('-f', '--all', '--mirror', '--branches', '--prune', '-d', '--delete', '--no-verify')) { return $true }
-        if ($word -like '--force*') { return $true }
-        if ($word.StartsWith('-') -and -not $word.StartsWith('--') -and $word -match 'f|d') { return $true }
+        if (-not $word.StartsWith('-')) { continue }
+        if ($word.StartsWith('--')) {
+            if ($word -notin $safeLong) { return $true }
+        }
+        elseif ($word -notmatch '^-[uqv]+$') { return $true }
     }
     $refspecs = @($all | Where-Object { -not $_.StartsWith('-') } | Select-Object -Skip 1)
     foreach ($refspec in $refspecs) {
