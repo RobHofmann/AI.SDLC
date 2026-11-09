@@ -22,7 +22,7 @@ repository root. The git hooks sit in `githooks/`, and `Initialize-AiSdlc.ps1` p
 
 | Event | Script | What it does |
 |---|---|---|
-| Before a Bash or PowerShell command | `Deny-IncompletePush.ps1` | Refuses a push to `main` or `master`, a push of an unfinished change, and a push of a commit without a green pre-flight receipt. A push that sends nothing new, such as a tag on a commit the remote has or a branch delete, needs no receipt |
+| Before a Bash or PowerShell command | `Deny-IncompletePush.ps1` | Refuses a push to `main` or `master` (a plain push may update it when `git.allowTrunkPush` is true), a push of an unfinished change, and a push of a commit without a green pre-flight receipt. A push that sends nothing new, such as a tag on a commit the remote has or a branch delete, needs no receipt |
 | Before a Bash or PowerShell command | `Deny-AgentMerge.ps1` | Refuses `gh pr merge` and a `gh api` call to a pull request merge endpoint, so the agent never merges (clause C09). The owner's merge is the approval at Checkpoint Bravo. Like the other hooks, it lets the command through when it cannot judge it |
 | Before an edit or write | `Deny-SharedFileEdit.ps1` | Refuses an edit to a file listed in `apm.lock.yaml`, and names its source in AI.SDLC |
 | Before an edit or write | `Invoke-CompactSuggestionHook.ps1` | Suggests a compact at a logical boundary when the context window is full |
@@ -35,7 +35,9 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
 ## The git hooks and the setup
 
 - `githooks/pre-push` first refuses a push to `main` or `master`, the same rule as
-  `Deny-IncompletePush.ps1`, so it also holds for GitHub Copilot and a push from a terminal. Then it
+  `Deny-IncompletePush.ps1`, so it also holds for GitHub Copilot and a push from a terminal. When
+  `git.allowTrunkPush` in `aisdlc.json` is true, it lets a fast-forward of the trunk through, and still
+  refuses a delete or a force push. Then it
   runs the blocking gates, which include the doc-drift check when the dotnet pack is installed. It
   skips them when a passing pre-flight receipt covers the tree of the tip commit of each pushed ref
   (`Test-PushReceipt.ps1` in `ai-sdlc-gates`). The pre-flight ran the same gates on that content, and
@@ -90,7 +92,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
 ## When a hook refused a step
 
 - A push to `main` or `master` was refused: push the story branch and open or update its pull
-  request. A change reaches `main` only through a pull request.
+  request. A change reaches `main` only through a pull request, unless the repository sets
+  `git.allowTrunkPush` in `aisdlc.json`.
 - Any other push was refused: run `wrap-up`. It commits the change and ends with the pre-flight on
   that commit. Never push with `--no-verify`.
 - The push check judges the repository the push targets. A push that names no folder is judged on

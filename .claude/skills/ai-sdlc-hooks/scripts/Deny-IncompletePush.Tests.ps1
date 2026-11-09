@@ -230,6 +230,53 @@ exit 0
         }
     }
 
+    Context 'a repository that sets git.allowTrunkPush, which may update its trunk with a plain push' {
+        BeforeAll {
+            $script:OptedIn = Join-Path -Path $TestDrive -ChildPath 'trunk-push-repo'
+            New-Item -ItemType Directory -Path $script:OptedIn -Force | Out-Null
+            git -C $script:OptedIn init --quiet
+            Set-Content -LiteralPath (Join-Path $script:OptedIn 'aisdlc.json') -Value '{ "git": { "allowTrunkPush": true } }'
+
+            function Invoke-OptedInHook {
+                param([string]$Command, [string]$Branch = 'main', [string]$CheckScript = $script:CleanCheck)
+                $payload = New-Payload -Command $Command
+                $out = & $script:ScriptUnderTest -Payload $payload -CheckScript $CheckScript -CurrentBranch $Branch -ReceiptRoot $script:Receipts -HeadTree $script:GreenTree -RepoRoot $script:OptedIn *>&1 | Out-String
+                return [pscustomobject]@{ Output = $out; ExitCode = $LASTEXITCODE }
+            }
+        }
+
+        It 'allows <Command> when the change is complete' -ForEach @(
+            @{ Command = 'git push origin main' }
+            @{ Command = 'git push' }
+            @{ Command = 'git push -u origin HEAD:main' }
+            @{ Command = 'git push origin master' }
+        ) {
+            $r = Invoke-OptedInHook -Command $Command
+            $r.Output | Should -Not -Match 'permissionDecision'
+        }
+
+        It 'refuses <Command>, which may delete or rewrite the trunk' -ForEach @(
+            @{ Command = 'git push --force origin main' }
+            @{ Command = 'git push -f origin main' }
+            @{ Command = 'git push --force-with-lease origin main' }
+            @{ Command = 'git push origin +main' }
+            @{ Command = 'git push origin :main' }
+            @{ Command = 'git push --delete origin main' }
+            @{ Command = 'git push --mirror origin' }
+            @{ Command = 'git push --all origin' }
+        ) {
+            $r = Invoke-OptedInHook -Command $Command
+            $r.Output | Should -Match '"permissionDecision":"deny"'
+            $r.Output | Should -Match 'allowTrunkPush'
+        }
+
+        It 'still runs the completeness check on a trunk push' {
+            $r = Invoke-OptedInHook -Command 'git push origin main' -CheckScript $script:GapCheck
+            $r.Output | Should -Match '"permissionDecision":"deny"'
+            $r.Output | Should -Not -Match 'main or master is refused'
+        }
+    }
+
     Context 'a push whose commit has no green pre-flight, which Checkpoint Bravo relies on' {
         It 'refuses a complete change whose commit has no receipt, and names wrap-up' {
             $r = Invoke-Hook -Payload (New-Payload -Command 'git push -u origin feature/1-x') -CheckScript $script:CleanCheck -Tree $script:UncheckedTree

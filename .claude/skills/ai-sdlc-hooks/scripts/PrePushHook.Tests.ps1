@@ -68,6 +68,65 @@ Describe 'The pre-push git hook' {
         $r.Code | Should -Be 0 -Because $r.Output
     }
 
+    Context 'a repository that sets git.allowTrunkPush, which may fast-forward its trunk' {
+        BeforeAll {
+            $script:NoPwshHere = -not (Get-Command pwsh -ErrorAction SilentlyContinue)
+
+            # A repository with two commits on main, so a push can be a fast-forward or a rewrite.
+            function Invoke-TrunkPush {
+                param([string]$Json, [ValidateSet('FastForward', 'Rewrite', 'Delete', 'UnknownRemote')][string]$Kind)
+                $root = Join-Path ([System.IO.Path]::GetTempPath()) ('pre-push-' + [guid]::NewGuid().ToString('n'))
+                New-Item -ItemType Directory -Path $root | Out-Null
+                git -C $root init --quiet --initial-branch main
+                git -C $root config user.email probe@example.invalid
+                git -C $root config user.name probe
+                if ($Json) { Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $Json }
+                git -C $root commit --quiet --allow-empty -m one --no-verify
+                $first = (git -C $root rev-parse HEAD).Trim()
+                git -C $root commit --quiet --allow-empty -m two --no-verify
+                $second = (git -C $root rev-parse HEAD).Trim()
+                $line = switch ($Kind) {
+                    'FastForward' { "refs/heads/main $second refs/heads/main $first" }
+                    'Rewrite' { "refs/heads/main $first refs/heads/main $second" }
+                    'Delete' { "(delete) $script:Zero refs/heads/main $second" }
+                    'UnknownRemote' { "refs/heads/main $second refs/heads/main $script:Sha" }
+                }
+                Push-Location $root
+                try {
+                    $output = "$line`n" | & $script:Sh $script:Hook origin 'https://example.invalid/repo' 2>&1 | Out-String
+                    [pscustomobject]@{ Code = $LASTEXITCODE; Output = $output }
+                }
+                finally { Pop-Location; Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
+            }
+            $script:OptIn = '{ "git": { "allowTrunkPush": true } }'
+        }
+
+        It 'allows a fast-forward of main and says which setting allowed it' -Skip:($script:NoSh -or $script:NoPwshHere) {
+            $r = Invoke-TrunkPush -Json $script:OptIn -Kind FastForward
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Output | Should -Match 'git.allowTrunkPush in aisdlc.json allows this fast-forward of main'
+        }
+
+        It 'refuses a <Kind> of main' -Skip:($script:NoSh -or $script:NoPwshHere) -ForEach @(
+            @{ Kind = 'Rewrite'; Reason = 'not a force push' }
+            @{ Kind = 'Delete'; Reason = 'not a delete' }
+            @{ Kind = 'UnknownRemote'; Reason = 'Fetch first' }
+        ) {
+            $r = Invoke-TrunkPush -Json $script:OptIn -Kind $Kind
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match $Reason
+        }
+
+        It 'still refuses a fast-forward when the setting is <Name>' -Skip:($script:NoSh -or $script:NoPwshHere) -ForEach @(
+            @{ Name = 'missing'; Json = '{}' }
+            @{ Name = 'the string "true"'; Json = '{ "git": { "allowTrunkPush": "true" } }' }
+        ) {
+            $r = Invoke-TrunkPush -Json $Json -Kind FastForward
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'a push to main is refused'
+        }
+    }
+
     It 'never falls back to Windows PowerShell, which cannot run a gate that needs PowerShell 7' {
         foreach ($name in 'pre-push', 'graphify-refresh') {
             $text = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'githooks' $name) -Raw

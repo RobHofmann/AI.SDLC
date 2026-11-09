@@ -26,7 +26,10 @@
     script. A payload this script cannot read as a git push allows for the same reason; the pre-push
     git hook stays the backstop that no configuration can miss.
     Before the completeness check it refuses any push to main or master: a named target, a quoted one,
-    HEAD while on main, a bare push while on main, and --all, --mirror or --branches. A permission rule
+    HEAD while on main, a bare push while on main, and --all, --mirror or --branches. A repository that
+    sets git.allowTrunkPush to true in aisdlc.json may update main or master directly, but only in a plain
+    push: a force push (-f, --force*, a +refspec), a delete (-d, --delete, :main), --all, --mirror,
+    --branches and --prune stay refused. The rest of the checks still run on such a push. A permission rule
     cannot see which branch a bare push targets, so this hook is the guard for Claude Code and Copilot
     CLI alike. It is registered for the Bash tool and for the PowerShell tool, because a repository
     that allows git push in PowerShell would otherwise push past it. The PowerShell payload has the same
@@ -216,6 +219,26 @@ function Test-TargetsProtectedBranch {
     return $false
 }
 
+function Test-RewritesBranch {
+    # True when the push may delete or rewrite a branch: a force option, a +refspec, a delete, or a
+    # push of every branch. Only a push without any of these may update the trunk under git.allowTrunkPush.
+    param([string]$CommandLine)
+
+    $push = [regex]::Match($CommandLine, "$gitPrefix\s+push(?<rest>[^;&|]*)")
+    if (-not $push.Success) { return $true }
+    $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
+    foreach ($word in $all) {
+        if ($word -in @('-f', '--all', '--mirror', '--branches', '--prune', '-d', '--delete')) { return $true }
+        if ($word -like '--force*') { return $true }
+        if ($word.StartsWith('-') -and -not $word.StartsWith('--') -and $word -match 'f|d') { return $true }
+    }
+    $refspecs = @($all | Where-Object { -not $_.StartsWith('-') } | Select-Object -Skip 1)
+    foreach ($refspec in $refspecs) {
+        if ($refspec.StartsWith('+') -or $refspec.StartsWith(':')) { return $true }
+    }
+    return $false
+}
+
 function Get-PushedCommits {
     param([string]$CommandLine, [string]$Root)
 
@@ -296,10 +319,18 @@ if (-not $PSBoundParameters.ContainsKey('CurrentBranch')) {
     $CurrentBranch = try { [string](git -C $targetRoot rev-parse --abbrev-ref HEAD 2>$null) } catch { '' }
 }
 if (Test-TargetsProtectedBranch -CommandLine $command -Branch ([string]$CurrentBranch).Trim()) {
-    Write-Deny ('A push to main or master is refused. A change reaches main only through a pull request that a ' +
-        'person reviews and merges (.claude/skills/ai-sdlc-handbook/references/orchestration.md). Push the story ' +
-        'branch and open or update its pull request instead.')
-    exit 0
+    $trunkPushAllowed = $targetInstalls -and (Test-AiSdlcTrunkPushAllowed -RepoRoot $targetRoot)
+    if (-not $trunkPushAllowed) {
+        Write-Deny ('A push to main or master is refused. A change reaches main only through a pull request that a ' +
+            'person reviews and merges (.claude/skills/ai-sdlc-handbook/references/orchestration.md). Push the story ' +
+            'branch and open or update its pull request instead.')
+        exit 0
+    }
+    if (Test-RewritesBranch -CommandLine $command) {
+        Write-Deny ('git.allowTrunkPush in aisdlc.json allows a plain push to main or master, not a force push, a ' +
+            'delete, or a push of every branch. Push the trunk on its own, without those options.')
+        exit 0
+    }
 }
 
 if (-not $targetInstalls) { exit 0 }

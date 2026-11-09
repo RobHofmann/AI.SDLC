@@ -20,7 +20,7 @@ Use this at the PR preflight and at the end of the loop. `implement`, `refactor`
 `write-platform-note`, `write-pipeline`, `write-prd`, `write-hypothesis`, `draw-customer-journey` and
 `write-research-summary` load it before they push, and `fix-bug` through `implement`. After a standalone run, `write-adr`,
 `update-constitution`, `write-docs`, `add-gate`, `capture-learning` and `write-api-spec` load it too. The push and the pull request run with no prompt. Checkpoint Bravo is the person's review of the pull request on GitHub ([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)).
-A push to `main` or `master` is always refused. The link from the PR to its story is a tracker update, so it joins the
+A push to `main` or `master` is refused, unless the repository sets `git.allowTrunkPush` in `aisdlc.json`. The link from the PR to its story is a tracker update, so it joins the
 one list of tracker updates for the run. The agent opens the pull request as a request for review; it never
 approves, reviews with approval, or merges one (C09). A hook refuses `gh pr merge` and a merge call through `gh api`.
 

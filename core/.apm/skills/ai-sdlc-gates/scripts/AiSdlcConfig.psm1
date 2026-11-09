@@ -118,6 +118,9 @@ $script:Defaults = [ordered]@{
     secretScan     = [ordered]@{
         allowPaths = @()
     }
+    git            = [ordered]@{
+        allowTrunkPush = $false
+    }
     tracker        = [ordered]@{
         repository        = ''
         keyPattern        = ''
@@ -270,6 +273,17 @@ function Test-AiSdlcPack {
     return @($config.packs) -contains $Name
 }
 
+function Test-AiSdlcTrunkPushAllowed {
+    # True only when aisdlc.json sets git.allowTrunkPush to the JSON value true. A string such as "true"
+    # does not count, so a typo never opens the trunk. The push hooks still refuse a delete or a force push.
+    [CmdletBinding()]
+    param([string]$RepoRoot)
+
+    $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
+    $value = $config.git['allowTrunkPush']
+    return ($value -is [bool]) -and $value
+}
+
 function Get-AiSdlcStoryPattern {
     [CmdletBinding()]
     param([string]$RepoRoot)
@@ -383,4 +397,4 @@ function Get-AiSdlcPackage {
     }
 }
 
-Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Test-AiSdlcPack, Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage
+Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage

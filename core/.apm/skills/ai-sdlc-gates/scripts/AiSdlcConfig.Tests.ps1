@@ -133,6 +133,17 @@ Describe 'AiSdlcConfig' {
         @($config.dotnet.Keys) | Should -Not -Contain 'docGeneratorEndpoint'
     }
 
+    It 'refuses a push to the trunk unless git.allowTrunkPush is the JSON value true' -ForEach @(
+        @{ Json = $null; Expected = $false }
+        @{ Json = '{}'; Expected = $false }
+        @{ Json = '{ "git": { "allowTrunkPush": false } }'; Expected = $false }
+        @{ Json = '{ "git": { "allowTrunkPush": "true" } }'; Expected = $false }
+        @{ Json = '{ "git": { "allowTrunkPush": 1 } }'; Expected = $false }
+        @{ Json = '{ "git": { "allowTrunkPush": true } }'; Expected = $true }
+    ) {
+        Test-AiSdlcTrunkPushAllowed -RepoRoot (New-ConfigRepo -Json $Json -Git) | Should -Be $Expected
+    }
+
     It 'reads the other repositories whose issues a pull request may name from tracker.acceptedRepositories' {
         $config = Get-AiSdlcConfig -RepoRoot (New-ConfigRepo -Json '{ "tracker": { "acceptedRepositories": ["contoso/ai-sdlc"] } }')
 

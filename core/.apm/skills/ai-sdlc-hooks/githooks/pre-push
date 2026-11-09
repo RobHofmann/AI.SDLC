@@ -1,5 +1,5 @@
 #!/bin/sh
-# Pre-push gate: refuses a push to main or master, then runs the blocking CA gates locally so a doc / skill / graph violation is caught
+# Pre-push gate: refuses a push to main or master (unless git.allowTrunkPush allows a fast-forward), then runs the blocking CA gates locally so a doc / skill / graph violation is caught
 # before the push, not after a full pipeline cycle. When a passing pre-flight receipt covers the tree of the tip commit
 # of each pushed ref (Test-PushReceipt.ps1), those gates already passed on that content and do not run again. A push that only
 # deletes refs, or whose commits the remote already has, runs no gate. Then it hands on to Git LFS, so the LFS objects
@@ -17,14 +17,55 @@
 
 # A push to main or master is refused before any gate runs. The agent hook Deny-IncompletePush.ps1
 # refuses it in Claude Code; this is the same rule for every other tool and for a push from a terminal.
+# A repository that sets git.allowTrunkPush to true in aisdlc.json may update main or master directly,
+# but only as a fast-forward: a delete, and an update whose old tip is not an ancestor of the new one,
+# stay refused. The blocking gates still run on such a push. Without pwsh or the config module, the
+# setting cannot be read, so the push is refused.
 # git passes one line per ref on stdin: <local ref> <local sha> <remote ref> <remote sha>.
 # `git lfs pre-push` needs the same lines at the end, so they are read once and kept.
+trunk_push_allowed() {
+    command -v pwsh >/dev/null 2>&1 || return 1
+    module="$(dirname "$0")/../../ai-sdlc-gates/scripts/AiSdlcConfig.psm1"
+    [ -f "$module" ] || return 1
+    AISDLC_CONFIG_MODULE="$module" AISDLC_REPO_ROOT="$(git rev-parse --show-toplevel)" \
+        pwsh -NoProfile -NonInteractive -Command 'try { Import-Module $env:AISDLC_CONFIG_MODULE -Force; if (Test-AiSdlcTrunkPushAllowed -RepoRoot $env:AISDLC_REPO_ROOT) { exit 0 } } catch { }; exit 1' >/dev/null 2>&1
+}
+
+is_zero_sha() {
+    case "$1" in
+        *[!0]*) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
 refs=$(cat)
+trunk_allowed=
 while read -r local_ref local_sha remote_ref remote_sha; do
     case "$remote_ref" in
         refs/heads/main|refs/heads/master)
-            echo "pre-push: a push to ${remote_ref#refs/heads/} is refused. A change reaches main only through a pull request that a person reviews and merges. Push the story branch and open or update its pull request instead." >&2
-            exit 1
+            branch=${remote_ref#refs/heads/}
+            if [ -z "$trunk_allowed" ]; then
+                if trunk_push_allowed; then trunk_allowed=yes; else trunk_allowed=no; fi
+            fi
+            if [ "$trunk_allowed" != yes ]; then
+                echo "pre-push: a push to $branch is refused. A change reaches main only through a pull request that a person reviews and merges. Push the story branch and open or update its pull request instead." >&2
+                exit 1
+            fi
+            if is_zero_sha "$local_sha"; then
+                echo "pre-push: git.allowTrunkPush in aisdlc.json allows an update of $branch, not a delete. The delete is refused." >&2
+                exit 1
+            fi
+            if ! is_zero_sha "$remote_sha"; then
+                if ! git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+                    echo "pre-push: the remote tip of $branch is not in this clone, so this push cannot be checked as a fast-forward. Fetch first, then push again." >&2
+                    exit 1
+                fi
+                if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+                    echo "pre-push: git.allowTrunkPush in aisdlc.json allows a fast-forward of $branch, not a force push. The push is refused." >&2
+                    exit 1
+                fi
+            fi
+            echo "pre-push: git.allowTrunkPush in aisdlc.json allows this fast-forward of $branch. The blocking gates still run."
             ;;
     esac
 done <<EOF
