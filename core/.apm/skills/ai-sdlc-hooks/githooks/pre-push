@@ -95,12 +95,18 @@ gate_root_for() {
         if is_network_path "$1"; then want=1; else want=0; fi
     fi
     if [ "$want" = 1 ] && [ -n "$2" ]; then
-        dir=$(mktemp -d 2>/dev/null) && rmdir "$dir" &&
-            git -C "$1" worktree add --quiet --detach "$dir" "$2" >/dev/null 2>&1 && {
-                if [ -f "$dir/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1" ]; then echo "$dir"; return 0; fi
-                git -C "$1" worktree remove --force "$dir" >/dev/null 2>&1
-                rm -rf "$dir"
-            }
+        # The checkout goes in a subfolder of the private (0700) temp folder, so no other user can put
+        # anything in its place.
+        dir=$(mktemp -d 2>/dev/null) || dir=
+        if [ -n "$dir" ]; then
+            if git -C "$1" worktree add --quiet --detach "$dir/wt" "$2" >/dev/null 2>&1 &&
+                [ -f "$dir/wt/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1" ]; then
+                echo "$dir/wt"
+                return 0
+            fi
+            git -C "$1" worktree remove --force "$dir/wt" >/dev/null 2>&1
+            rm -rf "$dir"
+        fi
     fi
     echo "$1"
 }
@@ -139,7 +145,8 @@ run_gates() (
         [ "$(printf '%s\n' "$tips" | grep -c .)" -eq 1 ] || tips=
         gate_root=$(gate_root_for "$repo_root" "$tips")
         if [ "$gate_root" != "$repo_root" ]; then
-            trap 'git -C "$repo_root" worktree remove --force "$gate_root" >/dev/null 2>&1; rm -rf "$gate_root"' EXIT
+            trap 'git -C "$repo_root" worktree remove --force "$gate_root" >/dev/null 2>&1; rm -rf "$(dirname "$gate_root")"' EXIT
+            trap 'exit 130' INT TERM
             echo "pre-push: the gates run on a local checkout of $tips, because the repository is on a network share."
             cd "$gate_root" || return 1
             runner="$gate_root/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1"

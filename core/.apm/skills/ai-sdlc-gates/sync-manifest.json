@@ -130,7 +130,7 @@
         ".claude/skills/ai-sdlc-hooks/githooks/post-commit": "f18058f9a38efc164e13801d61bb05329a056109",
         ".claude/skills/ai-sdlc-hooks/githooks/post-merge": "bb373f33abd09294cda55d7fc4499f32672eb372",
         ".claude/skills/ai-sdlc-hooks/githooks/post-rewrite": "e4c187dffeeaba569901f3424fae476b17c14927",
-        ".claude/skills/ai-sdlc-hooks/githooks/pre-push": "63ac41677c2bd605920ee5ba4b5719e60276e154",
+        ".claude/skills/ai-sdlc-hooks/githooks/pre-push": "73b10f0197b87c9311542cbb93627c116aa28788",
         ".claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.ps1": "52ffd325d13cd403e7bfea0de8098c530c129b65",
         ".claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.Tests.ps1": "ef5b30f0811181462d354a61d3e64c19f0c305e2",
         ".claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1": "535543b86886fcc582912ded5373b0bd3d756356",

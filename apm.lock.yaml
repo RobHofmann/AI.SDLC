@@ -331,7 +331,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:5537684656bf189a740ba7e9e7050083af05668d00501ce1e9c6909cb8b91203
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:51eb177707092c6d1b8d3fd2663429fb85c9bd5748bed4269f7699985af56d2b
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:fff5affc81314bb5c2391de0f077154e271c558f9eaa59fea0e9b0bfecc02462
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:654afcaa2b81f560eff93dbdef521b09ced06137a1dbb85d70a4e14ef7502248
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -358,7 +358,7 @@ dependencies:
     .claude/skills/ai-sdlc-hooks/githooks/post-commit: sha256:4f73a74133b0272725117fa9d962353abb6ed98d9cf5e731cd212fd5ace23271
     .claude/skills/ai-sdlc-hooks/githooks/post-merge: sha256:b9f1f47cd3894406451e00c177912baeed66470b0cc18d581a5461330c7c0868
     .claude/skills/ai-sdlc-hooks/githooks/post-rewrite: sha256:b7ee1a97b08a9826678829b6c49457fdc4b5ebd53eaf8cdd70f33d26e61c4a79
-    .claude/skills/ai-sdlc-hooks/githooks/pre-push: sha256:e3e6a13cdaaa14c10676d6519e0665d31b7c3a401fca7e5d7ce3180db43989cd
+    .claude/skills/ai-sdlc-hooks/githooks/pre-push: sha256:54c273622626f944f1ffc1285c747b42d4c8a56e778aeba5744c971b13a294c6
     .claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.Tests.ps1: sha256:004bc7f1a68e953c8e657b49e74755b69a14138dfb0db61162ab15420f2b24be
     .claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.ps1: sha256:b3569de6e27c3dcaffbc082311e6882bd722d440e5e855245da2410033202c7e
     .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.Tests.ps1: sha256:4c4e1f6b673671125290d78815c72277665a8a618b55fd589f75f3a36e3b80aa
@@ -1551,7 +1551,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:51eb177707092c6d1b8d3fd2663429fb85c9bd5748bed4269f7699985af56d2b
+  content_hash: sha256:fff5affc81314bb5c2391de0f077154e271c558f9eaa59fea0e9b0bfecc02462
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
@@ -1812,7 +1812,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:e3e6a13cdaaa14c10676d6519e0665d31b7c3a401fca7e5d7ce3180db43989cd
+  content_hash: sha256:54c273622626f944f1ffc1285c747b42d4c8a56e778aeba5744c971b13a294c6
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.Tests.ps1
