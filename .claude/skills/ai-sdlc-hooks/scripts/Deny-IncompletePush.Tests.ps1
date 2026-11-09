@@ -285,6 +285,9 @@ exit 0
             @{ Command = 'git push --mirr origin' }
             @{ Command = 'git push -uf origin main' }
             @{ Command = 'git push --repo=other main' }
+            @{ Command = 'git push origin main \--force' }
+            @{ Command = 'git push origin main ${X}' }
+            @{ Command = 'git push origin main {--force,}' }
         ) {
             $r = Invoke-OptedInHook -Command $Command
             $r.Output | Should -Match '"permissionDecision":"deny"'

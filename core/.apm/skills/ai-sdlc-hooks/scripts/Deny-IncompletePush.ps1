@@ -244,7 +244,12 @@ function Test-RewritesBranch {
     # such as --dele for --delete, so a deny list of names would miss one.
     $safeLong = @('--set-upstream', '--quiet', '--verbose', '--progress', '--no-progress', '--porcelain', '--atomic', '--follow-tags')
     foreach ($word in $all) {
-        if (-not $word.StartsWith('-')) { continue }
+        # A remote or refspec holds only plain name characters. A backslash, $ or brace could hide an
+        # option from this check (\--force reaches git as --force), so such a word is refused.
+        if (-not $word.StartsWith('-')) {
+            if ($word -notmatch '^[A-Za-z0-9._/:@^~+-]+$') { return $true }
+            continue
+        }
         if ($word.StartsWith('--')) {
             if ($word -notin $safeLong) { return $true }
         }
