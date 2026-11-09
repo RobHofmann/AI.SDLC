@@ -35,9 +35,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
 ## The git hooks and the setup
 
 - `githooks/pre-push` first refuses a push to `main` or `master`, the same rule as
-  `Deny-IncompletePush.ps1`, so it also holds for GitHub Copilot and a push from a terminal. When
-  `git.allowTrunkPush` in `aisdlc.json` is true, it lets a fast-forward of the trunk through, and still
-  refuses a delete or a force push. Then it
+  `Deny-IncompletePush.ps1`, so it also holds for GitHub Copilot and a push from a terminal. With
+  `git.allowTrunkPush` it lets a fast-forward of `main` through, never a delete or a force push. Then it
   runs the blocking gates, which include the doc-drift check when the dotnet pack is installed. It
   skips them when a passing pre-flight receipt covers the tree of the tip commit of each pushed ref
   (`Test-PushReceipt.ps1` in `ai-sdlc-gates`). The pre-flight ran the same gates on that content, and
@@ -92,8 +91,7 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
 ## When a hook refused a step
 
 - A push to `main` or `master` was refused: push the story branch and open or update its pull
-  request. A change reaches `main` only through a pull request, unless the repository sets
-  `git.allowTrunkPush` in `aisdlc.json`.
+  request. A change reaches `main` only through a pull request, unless `git.allowTrunkPush` is set.
 - Any other push was refused: run `wrap-up`. It commits the change and ends with the pre-flight on
   that commit. Never push with `--no-verify`.
 - The push check judges the repository the push targets. A push that names no folder is judged on

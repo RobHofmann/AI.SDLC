@@ -162,7 +162,7 @@ What stays in `.claude/settings.json` is not enforcement:
   may add its own rules. An allow rule only saves a person from a prompt per command.
 - **the push hook** `.claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1`, which both tools run.
   It refuses a push to `main` or `master`, including a bare push while on `main`. A repository that
-  sets `git.allowTrunkPush` in `aisdlc.json` may update its trunk with a plain push, never a force
+  sets `git.allowTrunkPush` in `aisdlc.json` may update `main` with a plain push, never a force
   push or a delete. The other checks still run on that push. It also refuses a
   push that leaves tests or docs behind, and a push whose commit has no green pre-flight receipt. A push
   that sends nothing new needs no receipt. Each pushed ref is a delete, or its commit is already on

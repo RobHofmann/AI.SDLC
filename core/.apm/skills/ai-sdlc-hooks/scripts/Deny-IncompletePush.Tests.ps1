@@ -213,6 +213,11 @@ exit 0
             $r.Output | Should -Match 'main or master is refused'
         }
 
+        It 'refuses a push to main that comes second in a chain' {
+            $r = Invoke-Hook -Payload (New-Payload -Command 'git push origin 1-story && git push origin main') -CheckScript $script:CleanCheck
+            $r.Output | Should -Match 'main or master is refused'
+        }
+
         It 'refuses a bare push while the current branch is main' {
             $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $script:CleanCheck -Branch 'main'
             $r.Output | Should -Match 'main or master is refused'
@@ -250,6 +255,8 @@ exit 0
             @{ Command = 'git push' }
             @{ Command = 'git push -u origin HEAD:main' }
             @{ Command = 'git push origin master' }
+            @{ Command = 'git -C C:/repo push origin main' }
+            @{ Command = 'git push origin main 2>&1' }
         ) {
             $r = Invoke-OptedInHook -Command $Command
             $r.Output | Should -Not -Match 'permissionDecision'
@@ -264,6 +271,12 @@ exit 0
             @{ Command = 'git push --delete origin main' }
             @{ Command = 'git push --mirror origin' }
             @{ Command = 'git push --all origin' }
+            @{ Command = 'git push --no-verify origin main' }
+            @{ Command = 'git -c remote.origin.mirror=true push origin main' }
+            @{ Command = 'git push origin main && git push -f origin main' }
+            @{ Command = 'git push origin main; git push origin :main' }
+            @{ Command = 'git push origin main | tee out.txt' }
+            @{ Command = 'git push $(echo origin) main' }
         ) {
             $r = Invoke-OptedInHook -Command $Command
             $r.Output | Should -Match '"permissionDecision":"deny"'

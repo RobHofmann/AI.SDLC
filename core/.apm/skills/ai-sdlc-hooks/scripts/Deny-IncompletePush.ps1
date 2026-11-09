@@ -28,8 +28,10 @@
     Before the completeness check it refuses any push to main or master: a named target, a quoted one,
     HEAD while on main, a bare push while on main, and --all, --mirror or --branches. A repository that
     sets git.allowTrunkPush to true in aisdlc.json may update main or master directly, but only in a plain
-    push: a force push (-f, --force*, a +refspec), a delete (-d, --delete, :main), --all, --mirror,
-    --branches and --prune stay refused. The rest of the checks still run on such a push. A permission rule
+    push that is the whole command: a force push (-f, --force*, a +refspec), a delete (-d, --delete,
+    :main), --all, --mirror, --branches, --prune, --no-verify, a git option before push other than -C,
+    and a push chained with any other command stay refused. The rest of the checks still run on such a
+    push. A permission rule
     cannot see which branch a bare push targets, so this hook is the guard for Claude Code and Copilot
     CLI alike. It is registered for the Bash tool and for the PowerShell tool, because a repository
     that allows git push in PowerShell would otherwise push past it. The PowerShell payload has the same
@@ -204,31 +206,40 @@ function Test-IsGitPush {
 function Test-TargetsProtectedBranch {
     param([string]$CommandLine, [string]$Branch)
 
-    $push = [regex]::Match($CommandLine, "$gitPrefix\s+push(?<rest>[^;&|]*)")
-    if (-not $push.Success) { return $false }
-    $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
-    if (@($all | Where-Object { $_ -in @('--all', '--mirror', '--branches') }).Count -gt 0) { return $true }
-    $words = @($all | Where-Object { -not $_.StartsWith('-') })
-    $refspecs = @($words | Select-Object -Skip 1)
-    if ($refspecs.Count -eq 0) { return $Branch -in $protectedBranches }
-    foreach ($refspec in $refspecs) {
-        $target = ($refspec.TrimStart('+') -split ':')[-1] -replace '^refs/heads/', ''
-        if ($target -in $protectedBranches) { return $true }
-        if ($target -eq 'HEAD' -and $Branch -in $protectedBranches) { return $true }
+    # Every push in the command counts, so a second push in a chain cannot reach main unseen.
+    foreach ($push in [regex]::Matches($CommandLine, "$gitPrefix\s+push(?<rest>[^;&|]*)")) {
+        $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
+        if (@($all | Where-Object { $_ -in @('--all', '--mirror', '--branches') }).Count -gt 0) { return $true }
+        $words = @($all | Where-Object { -not $_.StartsWith('-') })
+        $refspecs = @($words | Select-Object -Skip 1)
+        if ($refspecs.Count -eq 0) {
+            if ($Branch -in $protectedBranches) { return $true }
+            continue
+        }
+        foreach ($refspec in $refspecs) {
+            $target = ($refspec.TrimStart('+') -split ':')[-1] -replace '^refs/heads/', ''
+            if ($target -in $protectedBranches) { return $true }
+            if ($target -eq 'HEAD' -and $Branch -in $protectedBranches) { return $true }
+        }
     }
     return $false
 }
 
 function Test-RewritesBranch {
-    # True when the push may delete or rewrite a branch: a force option, a +refspec, a delete, or a
-    # push of every branch. Only a push without any of these may update the trunk under git.allowTrunkPush.
+    # True when the push may delete or rewrite a branch, or when the hook cannot judge it: a force option,
+    # a +refspec, a delete, a push of every branch, --no-verify (which skips the pre-push git hook), a git
+    # option before push other than -C, or a command that holds anything besides this one push. Only a
+    # plain push that is the whole command may update the trunk under git.allowTrunkPush.
     param([string]$CommandLine)
 
-    $push = [regex]::Match($CommandLine, "$gitPrefix\s+push(?<rest>[^;&|]*)")
+    $single = $CommandLine.Trim() -replace '\s+2>&1(?:\s*\|\s*(?i:Out-String))?$', ''
+    if ($single -match '[;&|<>\r\n`]|\$\(') { return $true }
+    if ([regex]::Matches($single, '(?:^|\s)' + $gitName + '(?:\s|$)').Count -ne 1) { return $true }
+    $push = [regex]::Match($single, '^&?\s*' + $gitName + '(?:\s+-C\s+(?:"[^"]*"|''[^'']*''|\S+))?\s+push(?<rest>(?:\s.*)?)$')
     if (-not $push.Success) { return $true }
     $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
     foreach ($word in $all) {
-        if ($word -in @('-f', '--all', '--mirror', '--branches', '--prune', '-d', '--delete')) { return $true }
+        if ($word -in @('-f', '--all', '--mirror', '--branches', '--prune', '-d', '--delete', '--no-verify')) { return $true }
         if ($word -like '--force*') { return $true }
         if ($word.StartsWith('-') -and -not $word.StartsWith('--') -and $word -match 'f|d') { return $true }
     }
@@ -328,7 +339,8 @@ if (Test-TargetsProtectedBranch -CommandLine $command -Branch ([string]$CurrentB
     }
     if (Test-RewritesBranch -CommandLine $command) {
         Write-Deny ('git.allowTrunkPush in aisdlc.json allows a plain push to main or master, not a force push, a ' +
-            'delete, or a push of every branch. Push the trunk on its own, without those options.')
+            'delete, a push of every branch, --no-verify, a git option before push, or a push chained with other ' +
+            'commands. Run the push of main on its own, as git push [remote] [branch].')
         exit 0
     }
 }

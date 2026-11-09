@@ -12,8 +12,10 @@ Each entry names its issue, as `#42`.
 
 - A repository can set `git.allowTrunkPush` to `true` in `aisdlc.json` to update `main` or `master`
   with a plain push, without a pull request (#16). The pre-push git hook and `Deny-IncompletePush.ps1`
-  still refuse a delete and a force push of the trunk, and the blocking gates still run. The git hook
-  prints one line that names the setting when it lets a push through.
+  still refuse a delete and a force push of `main`, and the blocking gates still run. The git hook
+  prints one line that names the setting when it lets a push through. The agent hook now checks every
+  push in a command, and with the setting it refuses `--no-verify`, a git option before `push`, and a
+  push to `main` that is chained with other commands.
 
 ## v1.2.0 - 2026-11-07
 
