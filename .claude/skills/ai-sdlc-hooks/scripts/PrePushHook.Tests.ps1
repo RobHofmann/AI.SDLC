@@ -147,6 +147,41 @@ Describe 'The pre-push git hook' {
             $r.Code | Should -Be 1
             $r.Output | Should -Match 'a push to main is refused'
         }
+
+        # Initialize-AiSdlc.ps1 sets a relative core.hooksPath, so git starts the hook with a relative $0.
+        # This test runs a real git push through that setup, not the hook through an absolute path.
+        It 'reads the setting through the relative core.hooksPath of a real git push, when it is <Name>' -Skip:($script:NoSh -or $script:NoPwshHere) -ForEach @(
+            @{ Name = 'on'; Json = '{ "git": { "allowTrunkPush": true } }'; Code = 0; Expect = 'allows this fast-forward of main' }
+            @{ Name = 'off'; Json = '{}'; Code = 1; Expect = 'a push to main is refused' }
+        ) {
+            $root = Join-Path ([System.IO.Path]::GetTempPath()) ('pre-push-' + [guid]::NewGuid().ToString('n'))
+            $remote = "$root-remote.git"
+            try {
+                git init --quiet --bare --initial-branch main $remote
+                git -C (Split-Path $remote) init --quiet --initial-branch main $root
+                git -C $root config user.email probe@example.invalid
+                git -C $root config user.name probe
+                Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $Json
+                git -C $root add aisdlc.json
+                git -C $root commit --quiet -m one --no-verify
+                git -C $root remote add origin $remote
+                git -C $root push --quiet --no-verify origin main 2>$null
+
+                $hooks = Join-Path $root '.claude' 'skills' 'ai-sdlc-hooks' 'githooks'
+                $gates = Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
+                New-Item -ItemType Directory -Path $hooks, $gates -Force | Out-Null
+                Copy-Item -Path (Join-Path $PSScriptRoot '..' 'githooks' '*') -Destination $hooks
+                Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination $gates
+                if (-not $IsWindows) { chmod +x (Get-ChildItem -LiteralPath $hooks).FullName }
+                git -C $root config core.hooksPath '.claude/skills/ai-sdlc-hooks/githooks'
+                git -C $root commit --quiet --allow-empty -m two --no-verify
+
+                $output = git -C $root push origin main 2>&1 | Out-String
+                $LASTEXITCODE | Should -Be $Code -Because $output
+                $output | Should -Match $Expect
+            }
+            finally { Remove-Item -LiteralPath $root, $remote -Recurse -Force -ErrorAction SilentlyContinue }
+        }
     }
 
     It 'never falls back to Windows PowerShell, which cannot run a gate that needs PowerShell 7' {
