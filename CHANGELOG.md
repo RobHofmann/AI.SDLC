@@ -8,6 +8,13 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.4.0 - 2026-11-09
+
+- A repository can set `docs.lastCheckedMaxAgeDays` in `aisdlc.json` to a number of days (#24). Then a
+  new advisory gate, `Check-DocLastChecked.ps1`, lists every `Last checked: <date>` in `AGENTS.md` and
+  the doc layers that is older than that. The pre-push hook shows the same list as a warning, and never
+  fails the push on it. The setting is off by default, and a page without such a date is left alone.
+
 ## v1.3.3 - 2026-11-09
 
 - A `Test-GitleaksBaseline` test no longer fails when a test file that runs in parallel deletes its own

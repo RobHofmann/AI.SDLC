@@ -21,6 +21,7 @@
     { "name": "AI-SDLC no private term in a public repository (skipped when private)", "script": "scripts/Check-PrivateTerms.ps1", "clause": "AI-SDLC", "mode": "Blocking" },
     { "name": "C05 a pointer names a section that is there", "script": "scripts/Check-DocSectionRefs.ps1", "clause": "C05", "mode": "Blocking" },
     { "name": "C05 both doc layers exist, and every unit has a page", "script": "scripts/Check-DocCoverage.ps1", "clause": "C05", "mode": "Blocking" },
+    { "name": "Docs: no page was last checked longer ago than docs.lastCheckedMaxAgeDays (off by default)", "script": "scripts/Check-DocLastChecked.ps1", "clause": "C05", "mode": "Advisory" },
     { "name": "Allow rules of the installed packages are in .claude/settings.json", "script": "scripts/Sync-AllowRules.ps1", "clause": "AI-SDLC", "mode": "Advisory", "args": { "Check": true } }
   ],
   "allow": [

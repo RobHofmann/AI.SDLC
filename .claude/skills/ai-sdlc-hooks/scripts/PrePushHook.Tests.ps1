@@ -280,6 +280,7 @@ Describe 'The pre-push git hook' {
                 git -C $root init --quiet
                 Set-Content -LiteralPath (Join-Path $gates 'Invoke-LocalGates.ps1') -Value "param([switch]`$BlockingOnly) Write-Host `"runner ran blockingOnly=`$BlockingOnly`"; Write-Host `"GIT_DIR=[`$env:GIT_DIR] GIT_INDEX_FILE=[`$env:GIT_INDEX_FILE]`"; exit $RunnerExit"
                 Set-Content -LiteralPath (Join-Path $gates 'Check-ChangeCompleteness.ps1') -Value "Write-Host 'completeness ran'; exit $CompletenessExit"
+                Set-Content -LiteralPath (Join-Path $gates 'Check-DocLastChecked.ps1') -Value "param([switch]`$Quiet) Write-Host `"last-checked ran quiet=`$Quiet`"; exit 1"
                 Set-Content -LiteralPath (Join-Path $dotnet 'Check-DocDrift.ps1') -Value "Write-Host 'drift ran on its own'; exit 0"
                 $sha = $script:Sha
                 if ($Receipt -ne 'None') {
@@ -317,6 +318,13 @@ Describe 'The pre-push git hook' {
             $r.Code | Should -Be 0 -Because $r.Output
             $r.Output | Should -Match 'runner ran blockingOnly=True'
             $r.Output | Should -Match 'completeness ran'
+        }
+
+        It 'shows the Last checked report quietly, and a finding there does not fail the push' -Skip:($script:NoSh -or $script:NoPwsh) {
+            $r = Invoke-PrePushWithGates
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Output | Should -Match 'last-checked ran quiet=True'
         }
 
         It 'does not run Check-DocDrift.ps1 again, because the runner runs it as a blocking gate' -Skip:($script:NoSh -or $script:NoPwsh) {

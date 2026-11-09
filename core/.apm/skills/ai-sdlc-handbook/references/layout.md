@@ -136,6 +136,7 @@ installs. `AiSdlcConfig.psm1` takes each dependency whose path ends in `packs/<n
 | `paths.privateTermsFile` | The private term list of the private-terms gate. Empty means `<knowledgeRoot>/ai-sdlc/private-terms.txt` | empty |
 | `paths.discoveryRoot` | The folder of the discovery pages, for the `discovery` pack | `docs-functional/discovery` |
 | `visibility` | `private` or `public`. The private-terms gate runs only on a `public` repository | `private` |
+| `docs.lastCheckedMaxAgeDays` | A positive whole number switches on a warning for every `Last checked: <date>` in `AGENTS.md` and the doc layers that is older than this many days. The local gate run and the pre-push hook show it, and it never fails a push. Any other value counts as off. | `0` (off) |
 | `docs.units` / `docs.unitExclude` | The units that need a page, when the list of the packs does not fit, and the unit paths left out on purpose | the packs' list / none |
 | `paths.solution`, `paths.sourceRoot`, `paths.testRoot`, `paths.runSettings`, `paths.coverageBaseline`, `paths.packagesProps` | The .NET solution, its code, its tests and its coverage setup, for the `dotnet` pack | none |
 | `commands.build` / `commands.test` | How to build and test the repository. The pre-flight runs `commands.test` from the repository root, unless a pack pre-flight runs the tests itself, as the dotnet pack does | none |
