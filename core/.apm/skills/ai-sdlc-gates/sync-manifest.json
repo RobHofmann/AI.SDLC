@@ -38,7 +38,7 @@
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocCoverage.Tests.ps1": "4a0ec4a8a2e853dc747caed1fd52eab355795d74",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.ps1": "5bfba25e0161cef3f3d0afd7bff3f7c0f7cdd8e4",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.Tests.ps1": "c49f03dc79e512398464c9a635831d9484b6d8d5",
-        ".claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.ps1": "6f3c147d407948d3919f10fce9778355661f86f8",
+        ".claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.ps1": "662d77429101dd307f62b4ba4b391c5678a2f453",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.Tests.ps1": "e435f161b0d0fafb3268e34ba149346029cb2273",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.ps1": "aa86e5e2370d5798f5fbb6984e6ad66d4d23235d",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.Tests.ps1": "dbab13ae6cf7594a5392655b00e01043023d8ba0",

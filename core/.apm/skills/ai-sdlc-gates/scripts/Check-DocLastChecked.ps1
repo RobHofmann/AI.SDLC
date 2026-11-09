@@ -74,7 +74,7 @@ foreach ($file in $files) {
 if ($old.Count) {
     Write-Host "Last checked: $($old.Count) page date(s) are older than $maxAge days (docs.lastCheckedMaxAgeDays):" -ForegroundColor Yellow
     foreach ($o in $old) { Write-Host "  $o" }
-    Write-Host 'Check those facts against their source, fix what changed, and set the date to today.'
+    Write-Host 'FIX: Check those facts against their source, fix what changed, and set the date to today.'
     exit 1
 }
 if (-not $Quiet) { Write-Host "Last checked: every date is at most $maxAge days old." }

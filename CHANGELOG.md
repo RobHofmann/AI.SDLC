@@ -8,7 +8,7 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
-## v1.4.0 - 2026-11-09
+## v1.4.0 - 2026-11-10
 
 - A repository can set `docs.lastCheckedMaxAgeDays` in `aisdlc.json` to a number of days (#24). Then a
   new advisory gate, `Check-DocLastChecked.ps1`, lists every `Last checked: <date>` in `AGENTS.md` and

@@ -267,7 +267,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.Tests.ps1: sha256:092d340744011ebf8ea1dd057c278cdaccf87a1242a20a17f1579e452ec9f01e
     .claude/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.ps1: sha256:93551cfbcfde7c0bd8f4e0495d38da86c4ed6289c22190f84989ef425256c3a3
     .claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.Tests.ps1: sha256:ca122ee40ac7c9847724583a695801a37e7b3395a191d139dfb7694f111de899
-    .claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.ps1: sha256:cbcc02105cf12c6af02f5c442ad2c7d18170748f60911a98237e05764a2874ca
+    .claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.ps1: sha256:a279e1011f13dd7e4a0141231a1bc35700231986885977ee1fc217c07ad56059
     .claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.Tests.ps1: sha256:4d4ce3e76a97d655a18e2b3e0b29349b9e33a660c8d1502ae0a9309792e3b533
     .claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.ps1: sha256:8f8b8e563a6283637f71f21fcf2d70f4ca38bbd8053f0d94f8283715247c9d13
     .claude/skills/ai-sdlc-gates/scripts/Check-DocPersonNames.Tests.ps1: sha256:9b797aac762bdb17bad0a9117037be2dbeb82ca0f45e422a152958c0b66fce88
@@ -335,7 +335,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:5537684656bf189a740ba7e9e7050083af05668d00501ce1e9c6909cb8b91203
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:28d3146a01f39ecf5adccace23cd3a3742183baf9ecf8e444ffedb0363d49bf6
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:1934ca960410072099c1daed77920db30b43e0b01d2f8bb15dcf1a4157b516ab
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:654afcaa2b81f560eff93dbdef521b09ced06137a1dbb85d70a4e14ef7502248
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -961,7 +961,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:cbcc02105cf12c6af02f5c442ad2c7d18170748f60911a98237e05764a2874ca
+  content_hash: sha256:a279e1011f13dd7e4a0141231a1bc35700231986885977ee1fc217c07ad56059
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.Tests.ps1
@@ -1573,7 +1573,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:28d3146a01f39ecf5adccace23cd3a3742183baf9ecf8e444ffedb0363d49bf6
+  content_hash: sha256:1934ca960410072099c1daed77920db30b43e0b01d2f8bb15dcf1a4157b516ab
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
