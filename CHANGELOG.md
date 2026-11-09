@@ -8,6 +8,14 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.3.2 - 2026-11-09
+
+- On a network share, the pre-push git hook runs the blocking gates on a local checkout of the pushed
+  commit: a detached git worktree in a temp folder, which it removes after the run (#20). A push of
+  about 930 files went from 1,425 seconds in the gates to 15. The gates now check the pushed commit
+  there, not the working tree. It is used only when one commit is pushed.
+  `AISDLC_GATES_LOCAL_CHECKOUT=1` forces it, and `=0` turns it off.
+
 ## v1.3.1 - 2026-11-09
 
 - The pre-push git hook now reads `git.allowTrunkPush` when `core.hooksPath` is relative, which is how

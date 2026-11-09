@@ -42,7 +42,7 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   (`Test-PushReceipt.ps1` in `ai-sdlc-gates`). The pre-flight ran the same gates on that content, and
   the pull request build still runs them. A push that only deletes refs, or whose commits
   the remote already has, runs no gate at all. Only the refs of the remote being pushed to count. Both
-  push hooks judge this with one rule, `Test-PushSendsNothingNew` in `PreflightReceipt.psm1`. It also shows the change-completeness report, which is advisory and never fails the push. Last, it
+  push hooks judge this with one rule, `Test-PushSendsNothingNew` in `PreflightReceipt.psm1`. It also shows the change-completeness report, which is advisory and never fails the push. When the repository is on a network share and one commit is pushed, the gates run on a local checkout of that commit, which is much faster. Last, it
   hands the same ref lines on to `git lfs pre-push`, so the LFS objects are uploaded. The other
   hooks refresh the code graph, and do nothing when the graph tooling is absent.
 - `githooks/git-lfs-hook` is shared by `pre-push`, `post-checkout`, `post-commit` and `post-merge`.

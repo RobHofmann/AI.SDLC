@@ -191,6 +191,84 @@ Describe 'The pre-push git hook' {
         }
     }
 
+    Context 'a repository on a network share, where the gates run on a local checkout of the pushed commit' {
+        BeforeAll {
+            $script:NoPwshShare = -not (Get-Command pwsh -ErrorAction SilentlyContinue)
+
+            # The committed runner prints "committed"; the working tree holds an uncommitted copy that prints
+            # "worktree". So the output shows which copy ran.
+            function Invoke-PushFromShare {
+                param([string]$Checkout, [int]$RunnerExit = 0)
+                $root = Join-Path ([System.IO.Path]::GetTempPath()) ('pre-push-' + [guid]::NewGuid().ToString('n'))
+                $gates = Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
+                New-Item -ItemType Directory -Path $gates -Force | Out-Null
+                git -C $root init --quiet
+                git -C $root config user.email probe@example.invalid
+                git -C $root config user.name probe
+                $runner = Join-Path $gates 'Invoke-LocalGates.ps1'
+                Set-Content -LiteralPath $runner -Value "Write-Host 'runner copy=committed'; exit $RunnerExit"
+                Set-Content -LiteralPath (Join-Path $gates 'Check-ChangeCompleteness.ps1') -Value "Write-Host 'completeness copy=committed'"
+                git -C $root add .
+                git -C $root commit --quiet -m one --no-verify
+                $sha = (git -C $root rev-parse HEAD).Trim()
+                Set-Content -LiteralPath $runner -Value "Write-Host 'runner copy=worktree'; exit 0"
+                $saved = $env:AISDLC_GATES_LOCAL_CHECKOUT
+                Push-Location $root
+                try {
+                    $env:AISDLC_GATES_LOCAL_CHECKOUT = $Checkout
+                    $output = "refs/heads/1-story $sha refs/heads/1-story $script:Zero`n" | & $script:Sh $script:Hook origin 'https://example.invalid/repo' 2>&1 | Out-String
+                    [pscustomobject]@{ Code = $LASTEXITCODE; Output = $output; Worktrees = @(git -C $root worktree list).Count }
+                }
+                finally {
+                    $env:AISDLC_GATES_LOCAL_CHECKOUT = $saved
+                    Pop-Location
+                    Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+                }
+            }
+        }
+
+        It 'runs the committed gates in a local checkout, and removes the checkout after' -Skip:($script:NoSh -or $script:NoPwshShare) {
+            $r = Invoke-PushFromShare -Checkout '1'
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Output | Should -Match 'local checkout of [0-9a-f]{40}'
+            $r.Output | Should -Match 'runner copy=committed'
+            $r.Output | Should -Match 'completeness copy=committed'
+            $r.Output | Should -Not -Match 'copy=worktree'
+            $r.Worktrees | Should -Be 1 -Because 'only the main working tree is left'
+        }
+
+        It 'refuses the push when a gate fails in the checkout, and still removes it' -Skip:($script:NoSh -or $script:NoPwshShare) {
+            $r = Invoke-PushFromShare -Checkout '1' -RunnerExit 1
+
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'blocking gate\(s\) failed'
+            $r.Worktrees | Should -Be 1
+        }
+
+        It 'runs the gates in place when the repository is not on a share' -Skip:($script:NoSh -or $script:NoPwshShare) {
+            $r = Invoke-PushFromShare -Checkout ''
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Output | Should -Match 'runner copy=worktree'
+            $r.Output | Should -Not -Match 'local checkout'
+        }
+
+        It 'treats a //host/share root as a network share, and a drive or POSIX path as local' -Skip:$script:NoSh {
+            $probe = Join-Path ([System.IO.Path]::GetTempPath()) ('net-path-' + [guid]::NewGuid().ToString('n') + '.sh')
+            try {
+                $text = Get-Content -LiteralPath $script:Hook -Raw
+                $function = [regex]::Match($text, '(?ms)^is_network_path\(\) \{.*?^\}').Value
+                Set-Content -LiteralPath $probe -Value ($function + "`nfor p in //host/share/repo C:/repo /home/repo; do if is_network_path `"`$p`"; then echo `"net `$p`"; else echo `"local `$p`"; fi; done")
+                $output = & $script:Sh $probe | Out-String
+                $output | Should -Match 'net //host/share/repo'
+                $output | Should -Match 'local C:/repo'
+                $output | Should -Match 'local /home/repo'
+            }
+            finally { Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue }
+        }
+    }
+
     Context 'in a tree that has the gates' {
         BeforeAll {
             function Invoke-PrePushWithGates {

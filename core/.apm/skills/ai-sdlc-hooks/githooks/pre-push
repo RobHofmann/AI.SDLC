@@ -3,7 +3,8 @@
 # before the push, not after a full pipeline cycle. When a passing pre-flight receipt covers the tree of the tip commit
 # of each pushed ref (Test-PushReceipt.ps1), those gates already passed on that content and do not run again. A push that only
 # deletes refs, or whose commits the remote already has, runs no gate. Then it hands on to Git LFS, so the LFS objects
-# are uploaded. Tool-agnostic: fires on any `git push`, whether
+# are uploaded. On a network share the gates run on a local checkout of the pushed commit (see is_network_path).
+# Tool-agnostic: fires on any `git push`, whether
 # from a terminal, Claude Code, or GitHub Copilot, because it is a git hook, not an agent feature.
 #
 # Enable once per clone:  pwsh .claude/skills/ai-sdlc-hooks/scripts/Initialize-AiSdlc.ps1
@@ -73,6 +74,37 @@ done <<EOF
 $refs
 EOF
 
+# On a network share every gate reads every file over the network, which is slow. There the gates run on
+# a local checkout of the pushed commit: a detached git worktree in a temp folder, removed after the run.
+# So they also check what is pushed, not the working tree. It is used only when one commit is pushed.
+# AISDLC_GATES_LOCAL_CHECKOUT=1 forces it, and =0 turns it off.
+# git rev-parse --show-toplevel prints a share root with forward slashes, //host/share/..., also for a
+# mapped drive letter.
+is_network_path() {
+    case "$1" in
+        //*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Prints the folder the gates run in: a new local checkout of commit $2, or the repository root $1 itself.
+# A checkout without the gate runner (the commit does not track .claude/) is removed again.
+gate_root_for() {
+    want=${AISDLC_GATES_LOCAL_CHECKOUT:-}
+    if [ -z "$want" ]; then
+        if is_network_path "$1"; then want=1; else want=0; fi
+    fi
+    if [ "$want" = 1 ] && [ -n "$2" ]; then
+        dir=$(mktemp -d 2>/dev/null) && rmdir "$dir" &&
+            git -C "$1" worktree add --quiet --detach "$dir" "$2" >/dev/null 2>&1 && {
+                if [ -f "$dir/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1" ]; then echo "$dir"; return 0; fi
+                git -C "$1" worktree remove --force "$dir" >/dev/null 2>&1
+                rm -rf "$dir"
+            }
+    fi
+    echo "$1"
+}
+
 run_gates() (
     repo_root=$(git rev-parse --show-toplevel)
     runner="$repo_root/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1"
@@ -103,6 +135,15 @@ run_gates() (
         echo "pre-push: a passing pre-flight receipt covers the tip commit of each pushed ref, so the blocking gates do not run again."
         status=0
     else
+        tips=$(printf '%s\n' "$refs" | awk 'NF >= 2 && $2 !~ /^0+$/ { print $2 }' | sort -u)
+        [ "$(printf '%s\n' "$tips" | grep -c .)" -eq 1 ] || tips=
+        gate_root=$(gate_root_for "$repo_root" "$tips")
+        if [ "$gate_root" != "$repo_root" ]; then
+            trap 'git -C "$repo_root" worktree remove --force "$gate_root" >/dev/null 2>&1; rm -rf "$gate_root"' EXIT
+            echo "pre-push: the gates run on a local checkout of $tips, because the repository is on a network share."
+            cd "$gate_root" || return 1
+            runner="$gate_root/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1"
+        fi
         echo "pre-push: running blocking CA gates ($runner -BlockingOnly)..."
         "$PWSH" -NoProfile -File "$runner" -BlockingOnly
         status=$?
@@ -111,7 +152,7 @@ run_gates() (
     # Advisory: reports when behaviour moved while its tests or docs stood still. Its gate is Advisory,
     # so the -BlockingOnly run above leaves it out; this call keeps the report visible on every push,
     # for every tool, without failing it.
-    completeness="$repo_root/.claude/skills/ai-sdlc-gates/scripts/Check-ChangeCompleteness.ps1"
+    completeness="${gate_root:-$repo_root}/.claude/skills/ai-sdlc-gates/scripts/Check-ChangeCompleteness.ps1"
     if [ -f "$completeness" ]; then
         "$PWSH" -NoProfile -File "$completeness" || true
     fi
