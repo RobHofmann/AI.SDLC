@@ -8,6 +8,18 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.3.0 - 2026-11-09
+
+- A repository can set `git.allowTrunkPush` to `true` in `aisdlc.json` to update `main` or `master`
+  with a plain push, without a pull request (#16). The pre-push git hook and `Deny-IncompletePush.ps1`
+  still refuse a delete and a force push of `main`, and the blocking gates still run. The git hook
+  prints one line that names the setting when it lets a push through. The agent hook now checks every
+  push in a command, and with the setting it refuses `--no-verify`, a git option before `push`, and a
+  push to `main` that is chained with other commands. Both hooks read the setting from `aisdlc.json` on
+  the remote `main` branch, not from the working tree, so an edit that is not on `main` cannot switch
+  it on. The git hook reads it from the remote tip that git passes during the push, so a local ref
+  cannot switch it on either.
+
 ## v1.2.0 - 2026-11-07
 
 - A reply, work item or page gives the full link to every pull request, issue or page that the reader

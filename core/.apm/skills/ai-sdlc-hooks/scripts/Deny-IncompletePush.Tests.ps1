@@ -213,6 +213,11 @@ exit 0
             $r.Output | Should -Match 'main or master is refused'
         }
 
+        It 'refuses a push to main that comes second in a chain' {
+            $r = Invoke-Hook -Payload (New-Payload -Command 'git push origin 1-story && git push origin main') -CheckScript $script:CleanCheck
+            $r.Output | Should -Match 'main or master is refused'
+        }
+
         It 'refuses a bare push while the current branch is main' {
             $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $script:CleanCheck -Branch 'main'
             $r.Output | Should -Match 'main or master is refused'
@@ -227,6 +232,98 @@ exit 0
             $r = Invoke-Hook -Payload (New-Payload -Command 'git push -u origin feature/1-maintenance-mode') -CheckScript $script:CleanCheck
             $r.Output.Trim() | Should -BeNullOrEmpty
             $r.ExitCode | Should -Be 0
+        }
+    }
+
+    Context 'a repository that sets git.allowTrunkPush, which may update its trunk with a plain push' {
+        BeforeAll {
+            $script:OptedIn = Join-Path -Path $TestDrive -ChildPath 'trunk-push-repo'
+            New-Item -ItemType Directory -Path $script:OptedIn -Force | Out-Null
+            git -C $script:OptedIn init --quiet
+            git -C $script:OptedIn config user.email probe@example.invalid
+            git -C $script:OptedIn config user.name probe
+            Set-Content -LiteralPath (Join-Path $script:OptedIn 'aisdlc.json') -Value '{ "git": { "allowTrunkPush": true } }'
+            git -C $script:OptedIn add aisdlc.json
+            git -C $script:OptedIn commit --quiet -m on --no-verify
+            # The setting counts only on the remote main branch, so the remote-tracking refs hold it.
+            git -C $script:OptedIn update-ref refs/remotes/origin/main HEAD
+            git -C $script:OptedIn update-ref refs/remotes/origin/master HEAD
+
+            # A repository whose working tree switches the setting on, while the remote main branch does not.
+            $script:LocalOnly = Join-Path -Path $TestDrive -ChildPath 'local-only-repo'
+            New-Item -ItemType Directory -Path $script:LocalOnly -Force | Out-Null
+            git -C $script:LocalOnly init --quiet
+            git -C $script:LocalOnly config user.email probe@example.invalid
+            git -C $script:LocalOnly config user.name probe
+            Set-Content -LiteralPath (Join-Path $script:LocalOnly 'aisdlc.json') -Value '{}'
+            git -C $script:LocalOnly add aisdlc.json
+            git -C $script:LocalOnly commit --quiet -m off --no-verify
+            git -C $script:LocalOnly update-ref refs/remotes/origin/main HEAD
+            Set-Content -LiteralPath (Join-Path $script:LocalOnly 'aisdlc.json') -Value '{ "git": { "allowTrunkPush": true } }'
+
+            function Invoke-OptedInHook {
+                param([string]$Command, [string]$Branch = 'main', [string]$CheckScript = $script:CleanCheck)
+                $payload = New-Payload -Command $Command
+                $out = & $script:ScriptUnderTest -Payload $payload -CheckScript $CheckScript -CurrentBranch $Branch -ReceiptRoot $script:Receipts -HeadTree $script:GreenTree -RepoRoot $script:OptedIn *>&1 | Out-String
+                return [pscustomobject]@{ Output = $out; ExitCode = $LASTEXITCODE }
+            }
+        }
+
+        It 'allows <Command> when the change is complete' -ForEach @(
+            @{ Command = 'git push origin main' }
+            @{ Command = 'git push' }
+            @{ Command = 'git push -u origin HEAD:main' }
+            @{ Command = 'git push origin master' }
+            @{ Command = 'git -C C:/repo push origin main' }
+            @{ Command = 'git push origin main 2>&1' }
+            @{ Command = 'git push --set-upstream --follow-tags origin main' }
+            @{ Command = 'git push -uq origin main' }
+        ) {
+            $r = Invoke-OptedInHook -Command $Command
+            $r.Output | Should -Not -Match 'permissionDecision'
+        }
+
+        It 'refuses <Command>, which may delete or rewrite the trunk' -ForEach @(
+            @{ Command = 'git push --force origin main' }
+            @{ Command = 'git push -f origin main' }
+            @{ Command = 'git push --force-with-lease origin main' }
+            @{ Command = 'git push origin +main' }
+            @{ Command = 'git push origin :main' }
+            @{ Command = 'git push --delete origin main' }
+            @{ Command = 'git push --mirror origin' }
+            @{ Command = 'git push --all origin' }
+            @{ Command = 'git push --no-verify origin main' }
+            @{ Command = 'git -c remote.origin.mirror=true push origin main' }
+            @{ Command = 'git push origin main && git push -f origin main' }
+            @{ Command = 'git push origin main; git push origin :main' }
+            @{ Command = 'git push origin main | tee out.txt' }
+            @{ Command = 'git push $(echo origin) main' }
+            @{ Command = 'git push --dele origin main' }
+            @{ Command = 'git push --no-verif origin main' }
+            @{ Command = 'git push --forc origin main' }
+            @{ Command = 'git push --mirr origin' }
+            @{ Command = 'git push -uf origin main' }
+            @{ Command = 'git push --repo=other main' }
+            @{ Command = 'git push origin main \--force' }
+            @{ Command = 'git push origin main ${X}' }
+            @{ Command = 'git push origin main {--force,}' }
+        ) {
+            $r = Invoke-OptedInHook -Command $Command
+            $r.Output | Should -Match '"permissionDecision":"deny"'
+            $r.Output | Should -Match 'allowTrunkPush'
+        }
+
+        It 'refuses a trunk push when only the working tree switches the setting on' {
+            $payload = New-Payload -Command 'git push origin main'
+            $out = & $script:ScriptUnderTest -Payload $payload -CheckScript $script:CleanCheck -CurrentBranch 'main' -ReceiptRoot $script:Receipts -HeadTree $script:GreenTree -RepoRoot $script:LocalOnly *>&1 | Out-String
+            $out | Should -Match '"permissionDecision":"deny"'
+            $out | Should -Match 'refs/remotes/origin/main'
+        }
+
+        It 'still runs the completeness check on a trunk push' {
+            $r = Invoke-OptedInHook -Command 'git push origin main' -CheckScript $script:GapCheck
+            $r.Output | Should -Match '"permissionDecision":"deny"'
+            $r.Output | Should -Not -Match 'main or master is refused'
         }
     }
 

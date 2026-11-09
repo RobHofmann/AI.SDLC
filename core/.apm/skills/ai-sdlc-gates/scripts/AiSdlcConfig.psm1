@@ -118,6 +118,9 @@ $script:Defaults = [ordered]@{
     secretScan     = [ordered]@{
         allowPaths = @()
     }
+    git            = [ordered]@{
+        allowTrunkPush = $false
+    }
     tracker        = [ordered]@{
         repository        = ''
         keyPattern        = ''
@@ -270,6 +273,31 @@ function Test-AiSdlcPack {
     return @($config.packs) -contains $Name
 }
 
+function Test-AiSdlcTrunkPushAllowed {
+    # True only when aisdlc.json sets git.allowTrunkPush to the JSON value true. A string such as "true"
+    # does not count, so a typo never opens the trunk. The push hooks still refuse a delete or a force push.
+    # With -Ref, the file is read from that commit, not from the working tree. The push hooks pass the
+    # remote-tracking ref of the branch they guard, such as refs/remotes/origin/main, so a change in the
+    # working tree cannot switch the setting on: it counts only once it is on the remote main branch.
+    # A missing ref, a missing file or a file that is not valid JSON counts as false.
+    [CmdletBinding()]
+    param([string]$RepoRoot, [string]$Ref)
+
+    if ($Ref) {
+        if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot }
+        $text = git -C $RepoRoot show "$($Ref):$($script:ConfigFileName)" 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $text) { return $false }
+        try { $values = ($text -join "`n") | ConvertFrom-Json -AsHashtable } catch { return $false }
+        $section = if ($values -is [System.Collections.IDictionary]) { $values['git'] } else { $null }
+        $value = if ($section -is [System.Collections.IDictionary]) { $section['allowTrunkPush'] } else { $null }
+        return ($value -is [bool]) -and $value
+    }
+
+    $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
+    $value = $config.git['allowTrunkPush']
+    return ($value -is [bool]) -and $value
+}
+
 function Get-AiSdlcStoryPattern {
     [CmdletBinding()]
     param([string]$RepoRoot)
@@ -383,4 +411,4 @@ function Get-AiSdlcPackage {
     }
 }
 
-Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Test-AiSdlcPack, Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage
+Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage

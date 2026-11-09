@@ -26,7 +26,17 @@
     script. A payload this script cannot read as a git push allows for the same reason; the pre-push
     git hook stays the backstop that no configuration can miss.
     Before the completeness check it refuses any push to main or master: a named target, a quoted one,
-    HEAD while on main, a bare push while on main, and --all, --mirror or --branches. A permission rule
+    HEAD while on main, a bare push while on main, and --all, --mirror or --branches. A repository that
+    sets git.allowTrunkPush to true in aisdlc.json may update main or master directly, but only in a plain
+    push that is the whole command: a +refspec, a delete refspec (:main), any push option outside a short
+    allow list (-u, -q, -v, --set-upstream, --quiet, --verbose, --progress, --no-progress, --porcelain,
+    --atomic, --follow-tags, each written in full), a git option before push other than -C, and a push
+    chained with any other command stay refused. So --force, --delete, --mirror and --no-verify are refused,
+    also when shortened. The setting counts only when it is in aisdlc.json on the remote-tracking ref of
+    that main branch (refs/remotes/<remote>/main), so an edit in the working tree cannot switch it on.
+    That ref lives in the clone, so it is a first check only. The pre-push git hook is the backstop: it
+    reads the setting from the remote tip that git passes during the push, which no local ref can change. The rest of the checks still run on such a
+    push. A permission rule
     cannot see which branch a bare push targets, so this hook is the guard for Claude Code and Copilot
     CLI alike. It is registered for the Bash tool and for the PowerShell tool, because a repository
     that allows git push in PowerShell would otherwise push past it. The PowerShell payload has the same
@@ -201,17 +211,77 @@ function Test-IsGitPush {
 function Test-TargetsProtectedBranch {
     param([string]$CommandLine, [string]$Branch)
 
+    # Every push in the command counts, so a second push in a chain cannot reach main unseen.
+    foreach ($push in [regex]::Matches($CommandLine, "$gitPrefix\s+push(?<rest>[^;&|]*)")) {
+        $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
+        if (@($all | Where-Object { $_ -in @('--all', '--mirror', '--branches') }).Count -gt 0) { return $true }
+        $words = @($all | Where-Object { -not $_.StartsWith('-') })
+        $refspecs = @($words | Select-Object -Skip 1)
+        if ($refspecs.Count -eq 0) {
+            if ($Branch -in $protectedBranches) { return $true }
+            continue
+        }
+        foreach ($refspec in $refspecs) {
+            $target = ($refspec.TrimStart('+') -split ':')[-1] -replace '^refs/heads/', ''
+            if ($target -in $protectedBranches) { return $true }
+            if ($target -eq 'HEAD' -and $Branch -in $protectedBranches) { return $true }
+        }
+    }
+    return $false
+}
+
+function Get-TrunkTrackingRef {
+    # The remote-tracking ref of the main branch a plain push updates, such as refs/remotes/origin/main.
+    # git.allowTrunkPush is read from that commit, so only a setting that is already on the remote counts.
+    # Call it only after Test-RewritesBranch passed, so the command is one plain push.
+    param([string]$CommandLine, [string]$Branch, [string]$Root)
+
     $push = [regex]::Match($CommandLine, "$gitPrefix\s+push(?<rest>[^;&|]*)")
-    if (-not $push.Success) { return $false }
     $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
-    if (@($all | Where-Object { $_ -in @('--all', '--mirror', '--branches') }).Count -gt 0) { return $true }
-    $words = @($all | Where-Object { -not $_.StartsWith('-') })
-    $refspecs = @($words | Select-Object -Skip 1)
-    if ($refspecs.Count -eq 0) { return $Branch -in $protectedBranches }
+    $words = @($all | Where-Object { $_ -ne '2>&1' -and -not $_.StartsWith('-') })
+    $remote = if ($words.Count -gt 0) { $words[0] } else { '' }
+    if (-not $remote -and $Branch) { $remote = try { [string](git -C $Root config "branch.$Branch.remote" 2>$null) } catch { '' } }
+    if (-not $remote) { $remote = 'origin' }
+    $target = $Branch
+    foreach ($refspec in @($words | Select-Object -Skip 1)) {
+        $name = ($refspec -split ':')[-1] -replace '^refs/heads/', ''
+        if ($name -eq 'HEAD') { $name = $Branch }
+        if ($name -in $protectedBranches) { $target = $name; break }
+    }
+    return "refs/remotes/$($remote.Trim())/$target"
+}
+
+function Test-RewritesBranch {
+    # True when the push may delete or rewrite a branch, or when the hook cannot judge it: a force option,
+    # a +refspec, a delete, a push of every branch, --no-verify (which skips the pre-push git hook), a git
+    # option before push other than -C, or a command that holds anything besides this one push. Only a
+    # plain push that is the whole command may update the trunk under git.allowTrunkPush.
+    param([string]$CommandLine)
+
+    $single = $CommandLine.Trim() -replace '\s+2>&1(?:\s*\|\s*(?i:Out-String))?$', ''
+    if ($single -match '[;&|<>\r\n`]|\$\(') { return $true }
+    if ([regex]::Matches($single, '(?:^|\s)' + $gitName + '(?:\s|$)').Count -ne 1) { return $true }
+    $push = [regex]::Match($single, '^&?\s*' + $gitName + '(?:\s+-C\s+(?:"[^"]*"|''[^'']*''|\S+))?\s+push(?<rest>(?:\s.*)?)$')
+    if (-not $push.Success) { return $true }
+    $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
+    # Options pass only from a short allow list, written in full. git accepts a shortened long option,
+    # such as --dele for --delete, so a deny list of names would miss one.
+    $safeLong = @('--set-upstream', '--quiet', '--verbose', '--progress', '--no-progress', '--porcelain', '--atomic', '--follow-tags')
+    foreach ($word in $all) {
+        # A remote or refspec holds only plain name characters. A backslash, $ or brace could hide an
+        # option from this check (\--force reaches git as --force), so such a word is refused.
+        if (-not $word.StartsWith('-')) {
+            if ($word -notmatch '^[A-Za-z0-9._/:@^~+-]+$') { return $true }
+            continue
+        }
+        if ($word.StartsWith('--')) {
+            if ($word -notin $safeLong) { return $true }
+        }
+        elseif ($word -notmatch '^-[uqv]+$') { return $true }
+    }
+    $refspecs = @($all | Where-Object { -not $_.StartsWith('-') } | Select-Object -Skip 1)
     foreach ($refspec in $refspecs) {
-        $target = ($refspec.TrimStart('+') -split ':')[-1] -replace '^refs/heads/', ''
-        if ($target -in $protectedBranches) { return $true }
-        if ($target -eq 'HEAD' -and $Branch -in $protectedBranches) { return $true }
+        if ($refspec.StartsWith('+') -or $refspec.StartsWith(':')) { return $true }
     }
     return $false
 }
@@ -296,10 +366,26 @@ if (-not $PSBoundParameters.ContainsKey('CurrentBranch')) {
     $CurrentBranch = try { [string](git -C $targetRoot rev-parse --abbrev-ref HEAD 2>$null) } catch { '' }
 }
 if (Test-TargetsProtectedBranch -CommandLine $command -Branch ([string]$CurrentBranch).Trim()) {
-    Write-Deny ('A push to main or master is refused. A change reaches main only through a pull request that a ' +
-        'person reviews and merges (.claude/skills/ai-sdlc-handbook/references/orchestration.md). Push the story ' +
-        'branch and open or update its pull request instead.')
-    exit 0
+    $trunkPushAllowed = $targetInstalls -and (Test-AiSdlcTrunkPushAllowed -RepoRoot $targetRoot)
+    if (-not $trunkPushAllowed) {
+        Write-Deny ('A push to main or master is refused. A change reaches main only through a pull request that a ' +
+            'person reviews and merges (.claude/skills/ai-sdlc-handbook/references/orchestration.md). Push the story ' +
+            'branch and open or update its pull request instead.')
+        exit 0
+    }
+    if (Test-RewritesBranch -CommandLine $command) {
+        Write-Deny ('git.allowTrunkPush in aisdlc.json allows a plain push to main or master, not a force push, a ' +
+            'delete, a push of every branch, --no-verify, a git option before push, or a push chained with other ' +
+            'commands. Run the push of main on its own, as git push [remote] [branch].')
+        exit 0
+    }
+    $trunkRef = Get-TrunkTrackingRef -CommandLine $command -Branch ([string]$CurrentBranch).Trim() -Root $targetRoot
+    if (-not (Test-AiSdlcTrunkPushAllowed -RepoRoot $targetRoot -Ref $trunkRef)) {
+        Write-Deny ("git.allowTrunkPush counts only when it is on the remote main branch ($trunkRef), not in the " +
+            'working tree alone. Get the setting onto main through a pull request first, or fetch when it is ' +
+            'already there.')
+        exit 0
+    }
 }
 
 if (-not $targetInstalls) { exit 0 }
