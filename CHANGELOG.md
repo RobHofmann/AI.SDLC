@@ -8,6 +8,11 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.3.3 - 2026-11-09
+
+- A `Test-GitleaksBaseline` test no longer fails when a test file that runs in parallel deletes its own
+  temp file while the test reads the shared temp folder (#22).
+
 ## v1.3.2 - 2026-11-09
 
 - On a network share, the pre-push git hook runs the blocking gates on a local checkout of the pushed

@@ -160,7 +160,9 @@ Describe 'Test-GitleaksBaseline' {
         $r = Invoke-Scan
 
         @(Get-ChildItem -LiteralPath $r.Work -Filter '*.toml') | Should -HaveCount 0
-        @(Get-ChildItem -LiteralPath ([IO.Path]::GetTempPath()) -Filter 'gitleaks-ai-sdlc-*.toml' -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -gt (Get-Date).AddMinutes(-1) -and (Get-Content -LiteralPath $_.FullName -Raw) -match [regex]::Escape($r.Work.Replace('\', '/')) }) | Should -HaveCount 0
+        # Other test files run in parallel and share this temp folder, so a scan of theirs can delete its own
+        # file between the listing and the read. A file that is gone was not left behind, so it is skipped.
+        @(Get-ChildItem -LiteralPath ([IO.Path]::GetTempPath()) -Filter 'gitleaks-ai-sdlc-*.toml' -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -gt (Get-Date).AddMinutes(-1) -and (Get-Content -LiteralPath $_.FullName -Raw -ErrorAction SilentlyContinue) -match [regex]::Escape($r.Work.Replace('\', '/')) }) | Should -HaveCount 0
     }
 
     It 'downloads the rule set that <Configuration> names' -ForEach @(
