@@ -28,13 +28,15 @@
 # learns that commit from the remote while it pushes and passes it on stdin as <remote sha>, so neither
 # an edit in the working tree nor a local ref can switch the setting on. A new branch (zero sha) or a tip
 # that is not in this clone counts as off. $1 is that remote sha.
+# core.hooksPath is relative, so $0 and the module path can be relative to the repository root, where git
+# starts the hook. Import-Module reads a bare relative path as a module name, so the path is resolved first.
 trunk_push_allowed() {
     is_zero_sha "$1" && return 1
     git cat-file -e "$1^{commit}" 2>/dev/null || return 1
     command -v pwsh >/dev/null 2>&1 || return 1
     module="$(dirname "$0")/../../ai-sdlc-gates/scripts/AiSdlcConfig.psm1"
     [ -f "$module" ] || return 1
-    AISDLC_CONFIG_MODULE="$module" AISDLC_REPO_ROOT="$(git rev-parse --show-toplevel)" AISDLC_REF="$1"         pwsh -NoProfile -NonInteractive -Command 'try { Import-Module $env:AISDLC_CONFIG_MODULE -Force; if (Test-AiSdlcTrunkPushAllowed -RepoRoot $env:AISDLC_REPO_ROOT -Ref $env:AISDLC_REF) { exit 0 } } catch { }; exit 1' >/dev/null 2>&1
+    AISDLC_CONFIG_MODULE="$module" AISDLC_REPO_ROOT="$(git rev-parse --show-toplevel)" AISDLC_REF="$1"         pwsh -NoProfile -NonInteractive -Command 'try { Import-Module (Resolve-Path -LiteralPath $env:AISDLC_CONFIG_MODULE).ProviderPath -Force; if (Test-AiSdlcTrunkPushAllowed -RepoRoot $env:AISDLC_REPO_ROOT -Ref $env:AISDLC_REF) { exit 0 } } catch { }; exit 1' >/dev/null 2>&1
 }
 
 is_zero_sha() {

@@ -8,6 +8,14 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.3.1 - 2026-11-09
+
+- The pre-push git hook now reads `git.allowTrunkPush` when `core.hooksPath` is relative, which is how
+  `Initialize-AiSdlc.ps1` sets it (#18). Before, the hook could not load the config module, so it refused
+  every push to `main`. A new test runs a real `git push` through that setup.
+- On `main` or `master` in a repository that sets `git.allowTrunkPush`, the pre-flight issue-contract row
+  is SKIP, not FAIL, because a change there has no story or pull request (#18).
+
 ## v1.3.0 - 2026-11-09
 
 - A repository can set `git.allowTrunkPush` to `true` in `aisdlc.json` to update `main` or `master`

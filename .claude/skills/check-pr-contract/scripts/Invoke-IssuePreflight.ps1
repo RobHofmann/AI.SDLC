@@ -11,6 +11,8 @@
     story key (42-short-name, or the bare number 42 of a bug branch) is a FAIL row, so the pre-flight
     writes no receipt, with or without gh. Set PR_STORY_KEY to name the key of a branch that cannot
     carry it. Outside a git repository there is no branch, and this step is left out.
+    On main or master in a repository that sets git.allowTrunkPush, the row is SKIP: a change there has
+    no story or pull request on purpose.
 
     When gh is installed and signed in (`gh auth status` succeeds), it runs Check-PrStoryContract.ps1
     for the current branch and the changed files. Without it, it says what is needed; the same check
@@ -54,7 +56,11 @@ Write-Host "Issue contract (gh; the same check runs from the run-preflight skill
 $branch = [string](git -C $RepoRoot rev-parse --abbrev-ref HEAD 2>$null)
 # The story key needs no GitHub read, so a branch without one fails before the gh check. The branch rule
 # is the one Check-PrStoryContract.ps1 uses, so both forms agree on what a key is.
-if ($branch -and -not ($env:PR_STORY_KEY -or (Get-AiSdlcBranchStoryKey -Branch $branch))) {
+# A repository that sets git.allowTrunkPush changes main or master directly, with no story or pull request.
+if ($branch -in 'main', 'master' -and -not $env:PR_STORY_KEY -and (Test-AiSdlcTrunkPushAllowed -RepoRoot $RepoRoot)) {
+    [pscustomobject]@{ Check = 'IssueContract (story + ADR)'; Status = 'SKIP'; Detail = "branch '$branch' is the main branch, and git.allowTrunkPush in aisdlc.json lets a change go there without a story or pull request" }
+}
+elseif ($branch -and -not ($env:PR_STORY_KEY -or (Get-AiSdlcBranchStoryKey -Branch $branch))) {
     [pscustomobject]@{ Check = 'IssueContract (story + ADR)'; Status = 'FAIL'; Detail = "branch '$branch' names no story key, and the pre-flight has no pull request title or body to read; start the branch name with the issue number (42-short-name), or set PR_STORY_KEY to the key" }
 }
 elseif (Test-GhReady) {

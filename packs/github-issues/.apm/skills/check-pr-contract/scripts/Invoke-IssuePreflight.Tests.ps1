@@ -42,6 +42,27 @@ Describe 'Invoke-IssuePreflight' {
             $rows[0].Detail | Should -Match 'title or body'
         }
 
+        It 'returns a SKIP row on main when git.allowTrunkPush is on, and a FAIL row when it is off' {
+            git -C $script:Repo checkout -q -B main 2>$null
+            $rows = @(& $script:ScriptUnderTest -RepoRoot $script:Repo -GhCommand $script:NoGh 6>$null)
+            $rows[0].Status | Should -Be 'FAIL'
+
+            $config = Join-Path $script:Repo 'aisdlc.json'
+            $saved = Get-Content -LiteralPath $config -Raw
+            try {
+                Set-Content -LiteralPath $config -Value '{ "tracker": { "repository": "contoso/portal" }, "git": { "allowTrunkPush": true } }'
+                $rows = @(& $script:ScriptUnderTest -RepoRoot $script:Repo -GhCommand $script:NoGh 6>$null)
+                $rows.Count | Should -Be 1
+                $rows[0].Status | Should -Be 'SKIP'
+                $rows[0].Detail | Should -Match 'git.allowTrunkPush'
+
+                git -C $script:Repo checkout -q -B feature/no-key 2>$null
+                $rows = @(& $script:ScriptUnderTest -RepoRoot $script:Repo -GhCommand $script:NoGh 6>$null)
+                $rows[0].Status | Should -Be 'FAIL' -Because 'the setting only covers main and master'
+            }
+            finally { Set-Content -LiteralPath $config -Value $saved -NoNewline }
+        }
+
         It 'returns NEEDS-GH for a branch that names a story key' {
             git -C $script:Repo checkout -q -B 1234-a-change 2>$null
 
