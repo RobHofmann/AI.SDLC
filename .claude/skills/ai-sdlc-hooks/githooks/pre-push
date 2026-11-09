@@ -19,17 +19,22 @@
 # refuses it in Claude Code; this is the same rule for every other tool and for a push from a terminal.
 # A repository that sets git.allowTrunkPush to true in aisdlc.json may update main or master directly,
 # but only as a fast-forward: a delete, and an update whose old tip is not an ancestor of the new one,
-# stay refused. The blocking gates still run on such a push. Without pwsh or the config module, the
-# setting cannot be read, so the push is refused.
+# stay refused. The blocking gates still run on such a push. The setting counts only in aisdlc.json on
+# the remote-tracking ref of that branch (refs/remotes/<remote>/main). Without pwsh, the config module or
+# that ref, the setting cannot be read, so the push is refused.
 # git passes one line per ref on stdin: <local ref> <local sha> <remote ref> <remote sha>.
 # `git lfs pre-push` needs the same lines at the end, so they are read once and kept.
+# The setting is read from aisdlc.json on the remote-tracking ref of the branch ($1 is the remote, $2 the
+# branch), not from the working tree, so an edit that is not on the remote main branch yet cannot switch it on.
 trunk_push_allowed() {
     command -v pwsh >/dev/null 2>&1 || return 1
     module="$(dirname "$0")/../../ai-sdlc-gates/scripts/AiSdlcConfig.psm1"
     [ -f "$module" ] || return 1
-    AISDLC_CONFIG_MODULE="$module" AISDLC_REPO_ROOT="$(git rev-parse --show-toplevel)" \
-        pwsh -NoProfile -NonInteractive -Command 'try { Import-Module $env:AISDLC_CONFIG_MODULE -Force; if (Test-AiSdlcTrunkPushAllowed -RepoRoot $env:AISDLC_REPO_ROOT) { exit 0 } } catch { }; exit 1' >/dev/null 2>&1
+    AISDLC_CONFIG_MODULE="$module" AISDLC_REPO_ROOT="$(git rev-parse --show-toplevel)" AISDLC_REF="refs/remotes/$1/$2" \
+        pwsh -NoProfile -NonInteractive -Command 'try { Import-Module $env:AISDLC_CONFIG_MODULE -Force; if (Test-AiSdlcTrunkPushAllowed -RepoRoot $env:AISDLC_REPO_ROOT -Ref $env:AISDLC_REF) { exit 0 } } catch { }; exit 1' >/dev/null 2>&1
 }
+
+remote_name=$1
 
 is_zero_sha() {
     case "$1" in
@@ -39,15 +44,11 @@ is_zero_sha() {
 }
 
 refs=$(cat)
-trunk_allowed=
 while read -r local_ref local_sha remote_ref remote_sha; do
     case "$remote_ref" in
         refs/heads/main|refs/heads/master)
             branch=${remote_ref#refs/heads/}
-            if [ -z "$trunk_allowed" ]; then
-                if trunk_push_allowed; then trunk_allowed=yes; else trunk_allowed=no; fi
-            fi
-            if [ "$trunk_allowed" != yes ]; then
+            if ! trunk_push_allowed "$remote_name" "$branch"; then
                 echo "pre-push: a push to $branch is refused. A change reaches main only through a pull request that a person reviews and merges. Push the story branch and open or update its pull request instead." >&2
                 exit 1
             fi

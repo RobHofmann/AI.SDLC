@@ -240,7 +240,26 @@ exit 0
             $script:OptedIn = Join-Path -Path $TestDrive -ChildPath 'trunk-push-repo'
             New-Item -ItemType Directory -Path $script:OptedIn -Force | Out-Null
             git -C $script:OptedIn init --quiet
+            git -C $script:OptedIn config user.email probe@example.invalid
+            git -C $script:OptedIn config user.name probe
             Set-Content -LiteralPath (Join-Path $script:OptedIn 'aisdlc.json') -Value '{ "git": { "allowTrunkPush": true } }'
+            git -C $script:OptedIn add aisdlc.json
+            git -C $script:OptedIn commit --quiet -m on --no-verify
+            # The setting counts only on the remote main branch, so the remote-tracking refs hold it.
+            git -C $script:OptedIn update-ref refs/remotes/origin/main HEAD
+            git -C $script:OptedIn update-ref refs/remotes/origin/master HEAD
+
+            # A repository whose working tree switches the setting on, while the remote main branch does not.
+            $script:LocalOnly = Join-Path -Path $TestDrive -ChildPath 'local-only-repo'
+            New-Item -ItemType Directory -Path $script:LocalOnly -Force | Out-Null
+            git -C $script:LocalOnly init --quiet
+            git -C $script:LocalOnly config user.email probe@example.invalid
+            git -C $script:LocalOnly config user.name probe
+            Set-Content -LiteralPath (Join-Path $script:LocalOnly 'aisdlc.json') -Value '{}'
+            git -C $script:LocalOnly add aisdlc.json
+            git -C $script:LocalOnly commit --quiet -m off --no-verify
+            git -C $script:LocalOnly update-ref refs/remotes/origin/main HEAD
+            Set-Content -LiteralPath (Join-Path $script:LocalOnly 'aisdlc.json') -Value '{ "git": { "allowTrunkPush": true } }'
 
             function Invoke-OptedInHook {
                 param([string]$Command, [string]$Branch = 'main', [string]$CheckScript = $script:CleanCheck)
@@ -292,6 +311,13 @@ exit 0
             $r = Invoke-OptedInHook -Command $Command
             $r.Output | Should -Match '"permissionDecision":"deny"'
             $r.Output | Should -Match 'allowTrunkPush'
+        }
+
+        It 'refuses a trunk push when only the working tree switches the setting on' {
+            $payload = New-Payload -Command 'git push origin main'
+            $out = & $script:ScriptUnderTest -Payload $payload -CheckScript $script:CleanCheck -CurrentBranch 'main' -ReceiptRoot $script:Receipts -HeadTree $script:GreenTree -RepoRoot $script:LocalOnly *>&1 | Out-String
+            $out | Should -Match '"permissionDecision":"deny"'
+            $out | Should -Match 'refs/remotes/origin/main'
         }
 
         It 'still runs the completeness check on a trunk push' {

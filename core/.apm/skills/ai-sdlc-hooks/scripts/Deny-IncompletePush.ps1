@@ -32,7 +32,8 @@
     allow list (-u, -q, -v, --set-upstream, --quiet, --verbose, --progress, --no-progress, --porcelain,
     --atomic, --follow-tags, each written in full), a git option before push other than -C, and a push
     chained with any other command stay refused. So --force, --delete, --mirror and --no-verify are refused,
-    also when shortened. The rest of the checks still run on such a
+    also when shortened. The setting counts only when it is in aisdlc.json on the remote-tracking ref of
+    that main branch (refs/remotes/<remote>/main), so an edit in the working tree cannot switch it on. The rest of the checks still run on such a
     push. A permission rule
     cannot see which branch a bare push targets, so this hook is the guard for Claude Code and Copilot
     CLI alike. It is registered for the Bash tool and for the PowerShell tool, because a repository
@@ -227,6 +228,27 @@ function Test-TargetsProtectedBranch {
     return $false
 }
 
+function Get-TrunkTrackingRef {
+    # The remote-tracking ref of the main branch a plain push updates, such as refs/remotes/origin/main.
+    # git.allowTrunkPush is read from that commit, so only a setting that is already on the remote counts.
+    # Call it only after Test-RewritesBranch passed, so the command is one plain push.
+    param([string]$CommandLine, [string]$Branch, [string]$Root)
+
+    $push = [regex]::Match($CommandLine, "$gitPrefix\s+push(?<rest>[^;&|]*)")
+    $all = @($push.Groups['rest'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_ -replace '[''"]', '' })
+    $words = @($all | Where-Object { $_ -ne '2>&1' -and -not $_.StartsWith('-') })
+    $remote = if ($words.Count -gt 0) { $words[0] } else { '' }
+    if (-not $remote -and $Branch) { $remote = try { [string](git -C $Root config "branch.$Branch.remote" 2>$null) } catch { '' } }
+    if (-not $remote) { $remote = 'origin' }
+    $target = $Branch
+    foreach ($refspec in @($words | Select-Object -Skip 1)) {
+        $name = ($refspec -split ':')[-1] -replace '^refs/heads/', ''
+        if ($name -eq 'HEAD') { $name = $Branch }
+        if ($name -in $protectedBranches) { $target = $name; break }
+    }
+    return "refs/remotes/$($remote.Trim())/$target"
+}
+
 function Test-RewritesBranch {
     # True when the push may delete or rewrite a branch, or when the hook cannot judge it: a force option,
     # a +refspec, a delete, a push of every branch, --no-verify (which skips the pre-push git hook), a git
@@ -353,6 +375,13 @@ if (Test-TargetsProtectedBranch -CommandLine $command -Branch ([string]$CurrentB
         Write-Deny ('git.allowTrunkPush in aisdlc.json allows a plain push to main or master, not a force push, a ' +
             'delete, a push of every branch, --no-verify, a git option before push, or a push chained with other ' +
             'commands. Run the push of main on its own, as git push [remote] [branch].')
+        exit 0
+    }
+    $trunkRef = Get-TrunkTrackingRef -CommandLine $command -Branch ([string]$CurrentBranch).Trim() -Root $targetRoot
+    if (-not (Test-AiSdlcTrunkPushAllowed -RepoRoot $targetRoot -Ref $trunkRef)) {
+        Write-Deny ("git.allowTrunkPush counts only when it is on the remote main branch ($trunkRef), not in the " +
+            'working tree alone. Get the setting onto main through a pull request first, or fetch when it is ' +
+            'already there.')
         exit 0
     }
 }

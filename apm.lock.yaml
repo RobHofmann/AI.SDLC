@@ -248,8 +248,8 @@ dependencies:
     .claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml: sha256:ee6430668f2f44b6256275645e10f8ab2167b8b6d49990465c5527d1b334abac
     .claude/skills/ai-sdlc-gates/assets/agents-core.md: sha256:544bb5b78ceaa2ee9eb20203ecdef5d380ecd9b10265cc90d10385d96ed72509
     .claude/skills/ai-sdlc-gates/gates.json: sha256:160f09f14ff6591b024f827c879802cf9218b37785d209da6a1323602d6153e5
-    .claude/skills/ai-sdlc-gates/scripts/AiSdlcConfig.Tests.ps1: sha256:d7fc0ff34d5e1995c8d1a592827147fab087361097249ca710953d03581ddb0a
-    .claude/skills/ai-sdlc-gates/scripts/AiSdlcConfig.psm1: sha256:967f1efe278a6640b9e24ac249a12a27eacd9e6d11edbe460c7333179353915c
+    .claude/skills/ai-sdlc-gates/scripts/AiSdlcConfig.Tests.ps1: sha256:669ce124af8ce839ddd1f463236777d682196ebda0a0175fe362185f033779a4
+    .claude/skills/ai-sdlc-gates/scripts/AiSdlcConfig.psm1: sha256:59a69f20f41fdcde013a4654e6532730acb1da42408ff2d825747b8c6891e401
     .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.Tests.ps1: sha256:0b95e6de39c913f3bdebc38c6003f12565a225b165c19e73167cf30391ec1a8b
     .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1: sha256:fe0a4432d2e5cb3d1830bc178a086c721eea3cbdd744def18586e1d0a9c0a4c1
     .claude/skills/ai-sdlc-gates/scripts/Check-AgentHygiene.Tests.ps1: sha256:d4115307bda4dc2794d395bf41cdc4169896f1255e37b5393d71ad3fb6e6495b
@@ -331,7 +331,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:5537684656bf189a740ba7e9e7050083af05668d00501ce1e9c6909cb8b91203
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:d76ce5649ccda8b4ab92cab77661c855a5b3dbd40968aa5192d50939ea8ec9dd
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:31ab2b37324dec52467b23dfc34ad7af70623600b0528deb31ba74b03e53acfd
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:654afcaa2b81f560eff93dbdef521b09ced06137a1dbb85d70a4e14ef7502248
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -343,7 +343,7 @@ dependencies:
     .claude/skills/ai-sdlc-handbook/references/docs-wiki.md: sha256:2bd6f3a8e64f9db16163519767b822e4ebcffd740e3c5cbff17281ad71d264b7
     .claude/skills/ai-sdlc-handbook/references/first-story.md: sha256:831552230cc16386ee01d7c730e288ef19aca5a66fafb00e1dfbbf4e9788caf2
     .claude/skills/ai-sdlc-handbook/references/language.md: sha256:e0e32fae9c9fcdd23380d92ec910128254ce248538940541f5789ca78228a023
-    .claude/skills/ai-sdlc-handbook/references/layout.md: sha256:4ac735eea3800a51727efd56ca61f3ed4137c8cca960da5b74f21d1115e78f63
+    .claude/skills/ai-sdlc-handbook/references/layout.md: sha256:b03868c6780c790b2b24acc33c165e46b6e7b99258a04d2d07bfbaed9c035ae6
     .claude/skills/ai-sdlc-handbook/references/node-templates.md: sha256:8664ad1f85bff48d6230ed22e3f25683f378822e566c2a1454cbb204f4bb8fad
     .claude/skills/ai-sdlc-handbook/references/orchestration.md: sha256:6a1d6b6cc434f2e312994bd77daaa1fef4e007e03777ac63f3ca74edaa0cc485
     .claude/skills/ai-sdlc-handbook/references/pattern.md: sha256:7908f80ee28ff1f7cd9f85b22fcf3e455fe74225d33ff201f8fbce1623d672eb
@@ -358,13 +358,13 @@ dependencies:
     .claude/skills/ai-sdlc-hooks/githooks/post-commit: sha256:4f73a74133b0272725117fa9d962353abb6ed98d9cf5e731cd212fd5ace23271
     .claude/skills/ai-sdlc-hooks/githooks/post-merge: sha256:b9f1f47cd3894406451e00c177912baeed66470b0cc18d581a5461330c7c0868
     .claude/skills/ai-sdlc-hooks/githooks/post-rewrite: sha256:b7ee1a97b08a9826678829b6c49457fdc4b5ebd53eaf8cdd70f33d26e61c4a79
-    .claude/skills/ai-sdlc-hooks/githooks/pre-push: sha256:f71a2b92ba190e7bf7b2ccc42a3f7705524db7f5cadbf31ee7abd39c9ae3ca79
+    .claude/skills/ai-sdlc-hooks/githooks/pre-push: sha256:66453196c7d3e116c1510bd6c75c5e02240d86dbd960dfbe3c29b73d290a61c4
     .claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.Tests.ps1: sha256:004bc7f1a68e953c8e657b49e74755b69a14138dfb0db61162ab15420f2b24be
     .claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.ps1: sha256:b3569de6e27c3dcaffbc082311e6882bd722d440e5e855245da2410033202c7e
     .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.Tests.ps1: sha256:4c4e1f6b673671125290d78815c72277665a8a618b55fd589f75f3a36e3b80aa
     .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1: sha256:46d1d83e38e75db41b1f370bc6f49f4800f0234765eac63c53e37b5af7000453
-    .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.Tests.ps1: sha256:20e41e5c86854c2a1752c02295a6040e050a6f9126a4e21699b9d850ff6708ac
-    .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1: sha256:01c095018cb97ec7b880b7781f330b94cd143580030be793894ade5a0f96b3a5
+    .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.Tests.ps1: sha256:ea9062bd8b20ad47d488b9838eb5a6c735d73b3148cdcfdd9ebdd60ef708f897
+    .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1: sha256:b291a529130c4216e473e271a827f8fb3bf96be77480a4195ce2adbfa68217ec
     .claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.Tests.ps1: sha256:1c46576b9633bd12286efa11cc9f7c6c2f982f29859f9a33272f76452888e77b
     .claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1: sha256:fccaa2da3a0254cc8a7740974f07b1c0fc1e67106ae7191d9710cbf699da1ba7
     .claude/skills/ai-sdlc-hooks/scripts/Find-RetiredSkillNames.Tests.ps1: sha256:151c3ee69c88db0d85cf4c94207b04dfc4eabe857e178051044ed4fdcee58f33
@@ -384,7 +384,7 @@ dependencies:
     .claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1: sha256:d60cdd2d341487ded3b9fafe40da49f2adfb1cf8f20cf3f8559ea2e80a5f93c6
     .claude/skills/ai-sdlc-hooks/scripts/New-AiSdlcUpdatePullRequest.Tests.ps1: sha256:9c9859767d2534c45e1c72b47f4b5c64aaa16c32c580df3b5d8bc3dce5cdb2c4
     .claude/skills/ai-sdlc-hooks/scripts/New-AiSdlcUpdatePullRequest.ps1: sha256:abf763c6cde97dbfc83b25f140e768d66fd9edd3961605b7d058b08a31882875
-    .claude/skills/ai-sdlc-hooks/scripts/PrePushHook.Tests.ps1: sha256:ef41c8fce0c879024fe134dbad9e208111831bd7d85b1db8f4f117c3ac037d18
+    .claude/skills/ai-sdlc-hooks/scripts/PrePushHook.Tests.ps1: sha256:00ecc72b23d941c31859bcb922474dcbcbea528ae02f37570b30e2dc5b9da095
     .claude/skills/ai-sdlc-hooks/scripts/Update-AiSdlc.Tests.ps1: sha256:4f2fe5313c8763f8128ad0e0347da1f2dd485393d20dc5e3a5d75e08aa157ad3
     .claude/skills/ai-sdlc-hooks/scripts/Update-AiSdlc.ps1: sha256:0381e47c6b1070c7b230f81f243e25b1a8bfa68b5e8e9ae2ad6e225b0ddb36b6
     .claude/skills/ai-sdlc-hooks/scripts/WindowsLongPaths.Tests.ps1: sha256:52f81e945390e61222a2668c8525cb17f17226267e24c52d7792263a07576543
@@ -804,7 +804,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:d7fc0ff34d5e1995c8d1a592827147fab087361097249ca710953d03581ddb0a
+  content_hash: sha256:669ce124af8ce839ddd1f463236777d682196ebda0a0175fe362185f033779a4
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/AiSdlcConfig.psm1
@@ -813,7 +813,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:967f1efe278a6640b9e24ac249a12a27eacd9e6d11edbe460c7333179353915c
+  content_hash: sha256:59a69f20f41fdcde013a4654e6532730acb1da42408ff2d825747b8c6891e401
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.Tests.ps1
@@ -1551,7 +1551,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:d76ce5649ccda8b4ab92cab77661c855a5b3dbd40968aa5192d50939ea8ec9dd
+  content_hash: sha256:31ab2b37324dec52467b23dfc34ad7af70623600b0528deb31ba74b03e53acfd
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
@@ -1668,7 +1668,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:4ac735eea3800a51727efd56ca61f3ed4137c8cca960da5b74f21d1115e78f63
+  content_hash: sha256:b03868c6780c790b2b24acc33c165e46b6e7b99258a04d2d07bfbaed9c035ae6
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook/references/node-templates.md
@@ -1812,7 +1812,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:f71a2b92ba190e7bf7b2ccc42a3f7705524db7f5cadbf31ee7abd39c9ae3ca79
+  content_hash: sha256:66453196c7d3e116c1510bd6c75c5e02240d86dbd960dfbe3c29b73d290a61c4
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.Tests.ps1
@@ -1857,7 +1857,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:20e41e5c86854c2a1752c02295a6040e050a6f9126a4e21699b9d850ff6708ac
+  content_hash: sha256:ea9062bd8b20ad47d488b9838eb5a6c735d73b3148cdcfdd9ebdd60ef708f897
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1
@@ -1866,7 +1866,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:01c095018cb97ec7b880b7781f330b94cd143580030be793894ade5a0f96b3a5
+  content_hash: sha256:b291a529130c4216e473e271a827f8fb3bf96be77480a4195ce2adbfa68217ec
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.Tests.ps1
@@ -2046,7 +2046,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:ef41c8fce0c879024fe134dbad9e208111831bd7d85b1db8f4f117c3ac037d18
+  content_hash: sha256:00ecc72b23d941c31859bcb922474dcbcbea528ae02f37570b30e2dc5b9da095
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-hooks/scripts/Update-AiSdlc.Tests.ps1

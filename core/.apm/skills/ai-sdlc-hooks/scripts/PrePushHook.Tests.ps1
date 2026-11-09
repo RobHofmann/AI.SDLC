@@ -74,17 +74,23 @@ Describe 'The pre-push git hook' {
 
             # A repository with two commits on main, so a push can be a fast-forward or a rewrite.
             function Invoke-TrunkPush {
-                param([string]$Json, [ValidateSet('FastForward', 'Rewrite', 'Delete', 'UnknownRemote')][string]$Kind)
+                param([string]$Json, [ValidateSet('FastForward', 'Rewrite', 'Delete', 'UnknownRemote')][string]$Kind, [string]$WorkTreeJson)
                 $root = Join-Path ([System.IO.Path]::GetTempPath()) ('pre-push-' + [guid]::NewGuid().ToString('n'))
                 New-Item -ItemType Directory -Path $root | Out-Null
                 git -C $root init --quiet --initial-branch main
                 git -C $root config user.email probe@example.invalid
                 git -C $root config user.name probe
-                if ($Json) { Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $Json }
+                if ($Json) {
+                    Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $Json
+                    git -C $root add aisdlc.json
+                }
                 git -C $root commit --quiet --allow-empty -m one --no-verify
                 $first = (git -C $root rev-parse HEAD).Trim()
                 git -C $root commit --quiet --allow-empty -m two --no-verify
                 $second = (git -C $root rev-parse HEAD).Trim()
+                # The remote main branch holds the committed setting; the hook reads it from there.
+                git -C $root update-ref refs/remotes/origin/main $first
+                if ($WorkTreeJson) { Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $WorkTreeJson }
                 $line = switch ($Kind) {
                     'FastForward' { "refs/heads/main $second refs/heads/main $first" }
                     'Rewrite' { "refs/heads/main $first refs/heads/main $second" }
@@ -122,6 +128,12 @@ Describe 'The pre-push git hook' {
             @{ Name = 'the string "true"'; Json = '{ "git": { "allowTrunkPush": "true" } }' }
         ) {
             $r = Invoke-TrunkPush -Json $Json -Kind FastForward
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'a push to main is refused'
+        }
+
+        It 'refuses a fast-forward when only the working tree switches the setting on' -Skip:($script:NoSh -or $script:NoPwshHere) {
+            $r = Invoke-TrunkPush -Json '{}' -WorkTreeJson $script:OptIn -Kind FastForward
             $r.Code | Should -Be 1
             $r.Output | Should -Match 'a push to main is refused'
         }

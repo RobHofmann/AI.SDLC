@@ -144,6 +144,23 @@ Describe 'AiSdlcConfig' {
         Test-AiSdlcTrunkPushAllowed -RepoRoot (New-ConfigRepo -Json $Json -Git) | Should -Be $Expected
     }
 
+    It 'reads git.allowTrunkPush from the commit that -Ref names, not from the working tree' {
+        $root = New-ConfigRepo -Json '{ "git": { "allowTrunkPush": true } }' -Git
+        git -C $root config user.email probe@example.invalid
+        git -C $root config user.name probe
+        git -C $root add aisdlc.json
+        git -C $root commit --quiet -m on --no-verify
+        git -C $root update-ref refs/remotes/origin/main HEAD
+        Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{}'
+        git -C $root commit --quiet -am off --no-verify
+        git -C $root update-ref refs/remotes/origin/master HEAD
+        Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "git": { "allowTrunkPush": true } }'
+
+        Test-AiSdlcTrunkPushAllowed -RepoRoot $root -Ref 'refs/remotes/origin/main' | Should -BeTrue
+        Test-AiSdlcTrunkPushAllowed -RepoRoot $root -Ref 'refs/remotes/origin/master' | Should -BeFalse
+        Test-AiSdlcTrunkPushAllowed -RepoRoot $root -Ref 'refs/remotes/origin/missing' | Should -BeFalse
+    }
+
     It 'reads the other repositories whose issues a pull request may name from tracker.acceptedRepositories' {
         $config = Get-AiSdlcConfig -RepoRoot (New-ConfigRepo -Json '{ "tracker": { "acceptedRepositories": ["contoso/ai-sdlc"] } }')
 
