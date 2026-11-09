@@ -33,7 +33,9 @@
     --atomic, --follow-tags, each written in full), a git option before push other than -C, and a push
     chained with any other command stay refused. So --force, --delete, --mirror and --no-verify are refused,
     also when shortened. The setting counts only when it is in aisdlc.json on the remote-tracking ref of
-    that main branch (refs/remotes/<remote>/main), so an edit in the working tree cannot switch it on. The rest of the checks still run on such a
+    that main branch (refs/remotes/<remote>/main), so an edit in the working tree cannot switch it on.
+    That ref lives in the clone, so it is a first check only. The pre-push git hook is the backstop: it
+    reads the setting from the remote tip that git passes during the push, which no local ref can change. The rest of the checks still run on such a
     push. A permission rule
     cannot see which branch a bare push targets, so this hook is the guard for Claude Code and Copilot
     CLI alike. It is registered for the Bash tool and for the PowerShell tool, because a repository

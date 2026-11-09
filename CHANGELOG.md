@@ -17,7 +17,8 @@ Each entry names its issue, as `#42`.
   push in a command, and with the setting it refuses `--no-verify`, a git option before `push`, and a
   push to `main` that is chained with other commands. Both hooks read the setting from `aisdlc.json` on
   the remote `main` branch, not from the working tree, so an edit that is not on `main` cannot switch
-  it on.
+  it on. The git hook reads it from the remote tip that git passes during the push, so a local ref
+  cannot switch it on either.
 
 ## v1.2.0 - 2026-11-07
 

@@ -74,7 +74,7 @@ Describe 'The pre-push git hook' {
 
             # A repository with two commits on main, so a push can be a fast-forward or a rewrite.
             function Invoke-TrunkPush {
-                param([string]$Json, [ValidateSet('FastForward', 'Rewrite', 'Delete', 'UnknownRemote')][string]$Kind, [string]$WorkTreeJson)
+                param([string]$Json, [ValidateSet('FastForward', 'Rewrite', 'Delete', 'UnknownRemote')][string]$Kind, [string]$WorkTreeJson, [string]$SecondJson)
                 $root = Join-Path ([System.IO.Path]::GetTempPath()) ('pre-push-' + [guid]::NewGuid().ToString('n'))
                 New-Item -ItemType Directory -Path $root | Out-Null
                 git -C $root init --quiet --initial-branch main
@@ -86,10 +86,14 @@ Describe 'The pre-push git hook' {
                 }
                 git -C $root commit --quiet --allow-empty -m one --no-verify
                 $first = (git -C $root rev-parse HEAD).Trim()
+                if ($SecondJson) {
+                    Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $SecondJson
+                    git -C $root add aisdlc.json
+                }
                 git -C $root commit --quiet --allow-empty -m two --no-verify
                 $second = (git -C $root rev-parse HEAD).Trim()
-                # The remote main branch holds the committed setting; the hook reads it from there.
-                git -C $root update-ref refs/remotes/origin/main $first
+                # The remote-tracking ref may point anywhere; the hook must read the remote sha from stdin.
+                git -C $root update-ref refs/remotes/origin/main $(if ($SecondJson) { $second } else { $first })
                 if ($WorkTreeJson) { Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $WorkTreeJson }
                 $line = switch ($Kind) {
                     'FastForward' { "refs/heads/main $second refs/heads/main $first" }
@@ -128,6 +132,12 @@ Describe 'The pre-push git hook' {
             @{ Name = 'the string "true"'; Json = '{ "git": { "allowTrunkPush": "true" } }' }
         ) {
             $r = Invoke-TrunkPush -Json $Json -Kind FastForward
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'a push to main is refused'
+        }
+
+        It 'reads the setting from the remote sha git passes, not from a local remote-tracking ref' -Skip:($script:NoSh -or $script:NoPwshHere) {
+            $r = Invoke-TrunkPush -Json '{}' -SecondJson $script:OptIn -Kind FastForward
             $r.Code | Should -Be 1
             $r.Output | Should -Match 'a push to main is refused'
         }
