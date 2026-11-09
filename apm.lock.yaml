@@ -3,7 +3,7 @@ apm_version: 0.31.0
 dependencies:
 - repo_url: _local/core
   name: ai-sdlc-core
-  version: 1.3.2
+  version: 1.3.3
   package_type: apm_package
   deployed_files:
   - .claude/agents/architect.md
@@ -315,7 +315,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/Sync-AgentsFile.ps1: sha256:26d154d3a0e17c5d2e84bc1d388ac7fe292dcf08933e696293b7801cf1a21cd1
     .claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.Tests.ps1: sha256:f5fcd4a5d50f6e617802eaf7ddabf6ec4ae4530dc2f7a4bc7105d4e1b96ee70f
     .claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1: sha256:85c9eb910410b46d70124159a7a58599adf0537b3c6200c67de05e40b2d9ed20
-    .claude/skills/ai-sdlc-gates/scripts/Test-GitleaksBaseline.Tests.ps1: sha256:4f5e844252b7ad0a9429d9e4444a4f4a5caeba1c35ffe76be29040fb1f32676a
+    .claude/skills/ai-sdlc-gates/scripts/Test-GitleaksBaseline.Tests.ps1: sha256:e8a5763be910fade0018de12453febe990fb84c4ec265e7f9757da4459c55f63
     .claude/skills/ai-sdlc-gates/scripts/Test-GitleaksBaseline.ps1: sha256:79059d12e703af2ab5534c954f4accd0cce08a102ff8853bef66118fce80a093
     .claude/skills/ai-sdlc-gates/scripts/Test-PushReceipt.Tests.ps1: sha256:54ed79f8f67be5481ee9613a12bbfa4b71aa508f2d143e661afbe518db8f40ef
     .claude/skills/ai-sdlc-gates/scripts/Test-PushReceipt.ps1: sha256:12cb640a6acf0d1966b43798f9bbde65bffc76ad05781e5dfc8338599f329158
@@ -331,7 +331,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:5537684656bf189a740ba7e9e7050083af05668d00501ce1e9c6909cb8b91203
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:547a69750aed8c4ff59aed2ad698dc7e9a52414a2e301ce6a7468a192938960e
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:6912b15b11efef78b071cddfafa6b4ccd56358a00677e9e9a302070383daba35
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:654afcaa2b81f560eff93dbdef521b09ced06137a1dbb85d70a4e14ef7502248
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -427,7 +427,7 @@ dependencies:
   local_path: ./core
 - repo_url: _local/discovery
   name: ai-sdlc-discovery
-  version: 1.3.2
+  version: 1.3.3
   package_type: apm_package
   deployed_files:
   - .claude/skills/draw-customer-journey
@@ -444,7 +444,7 @@ dependencies:
   local_path: ./packs/discovery
 - repo_url: _local/github
   name: ai-sdlc-github
-  version: 1.3.2
+  version: 1.3.3
   package_type: apm_package
   deployed_files:
   - .claude/skills/fix-pr-feedback
@@ -534,7 +534,7 @@ dependencies:
   local_path: ./packs/github
 - repo_url: _local/github-issues
   name: ai-sdlc-github-issues
-  version: 1.3.2
+  version: 1.3.3
   package_type: apm_package
   deployed_files:
   - .claude/agents/draft-reviewer.md
@@ -1407,7 +1407,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:4f5e844252b7ad0a9429d9e4444a4f4a5caeba1c35ffe76be29040fb1f32676a
+  content_hash: sha256:e8a5763be910fade0018de12453febe990fb84c4ec265e7f9757da4459c55f63
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/Test-GitleaksBaseline.ps1
@@ -1551,7 +1551,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:547a69750aed8c4ff59aed2ad698dc7e9a52414a2e301ce6a7468a192938960e
+  content_hash: sha256:6912b15b11efef78b071cddfafa6b4ccd56358a00677e9e9a302070383daba35
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook

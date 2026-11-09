@@ -96,7 +96,7 @@
         ".claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1": "0466893efb2128502dfe5367058d70231a1c14c3",
         ".claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.Tests.ps1": "93de3d86a94954e2a57b6ab417454018efebf041",
         ".claude/skills/ai-sdlc-gates/scripts/Test-GitleaksBaseline.ps1": "d90af9f6881677ca4308cd4b67f7e0cd8a628533",
-        ".claude/skills/ai-sdlc-gates/scripts/Test-GitleaksBaseline.Tests.ps1": "ce362cbde96a8fcf61eb8793f075fe5f58ac9c3a",
+        ".claude/skills/ai-sdlc-gates/scripts/Test-GitleaksBaseline.Tests.ps1": "1c787298ae7006c185e33ecf53f2b21e721cab03",
         ".claude/skills/ai-sdlc-gates/scripts/Test-PushReceipt.ps1": "54ec6a3e42d488994ee91d0f4993ba5d3366d96a",
         ".claude/skills/ai-sdlc-gates/scripts/Test-PushReceipt.Tests.ps1": "74968692c13e072622dcc86e75759a5de35a62b4",
         ".claude/skills/ai-sdlc-gates/scripts/Test-PushSendsNothingNew.ps1": "79da28786523f1f0c908c66032cce19d5b07f541",
