@@ -128,6 +128,7 @@ Documentation scripts live under `core/.apm/skills/adopt-docs/scripts/` and `cor
 - `Check-DocLineCitations.ps1` rejects source references by line number.
 - `Check-DocPersonNames.ps1` checks for internal team member names.
 - `Check-DocRowContent.ps1` requires each documentation line to carry a fact.
+- `Check-DocLastChecked.ps1` lists the pages whose `Last checked` date is older than `docs.lastCheckedMaxAgeDays`. It is advisory and off by default.
 - `Check-DocSectionRefs.ps1` checks references to sections in other pages.
 
 `DocCoverage.psm1` finds units that need pages and the pages that cover them.

@@ -173,6 +173,7 @@ sources, then checked claim by claim before anything is merged.
 | Check wiki integrity locally | `Invoke-LocalGates.ps1` and the pre-push hook (run `Check-DocsWiki.ps1`) | active |
 | Enforce the no-em-dash house style | `Check-DocEmDashes.ps1` (via `Invoke-LocalGates.ps1`) | active, blocking in CI |
 | Enforce the reading level (B2 sentences, B1 words) | `Check-DocReadingLevel.ps1` (via `Invoke-LocalGates.ps1`) | active, blocking |
+| Warn when a page's `Last checked` date is too old | `Check-DocLastChecked.ps1` (via `Invoke-LocalGates.ps1` and the pre-push hook) | advisory, off until `docs.lastCheckedMaxAgeDays` is set |
 | Check wiki integrity before merge | CI gate in the pull request workflow | active, blocking (orphans, broken links, index sync, page-to-page connectivity) |
 | Check every pointer names a section that is there | `Check-DocSectionRefs.ps1` (via `Invoke-LocalGates.ps1`) | active, blocking |
 | Check every documented row carries a fact | `Check-DocRowContent.ps1` (blocking gate; no graph needed) | active |

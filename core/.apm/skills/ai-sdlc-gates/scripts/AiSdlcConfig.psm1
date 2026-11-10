@@ -150,8 +150,9 @@ $script:Defaults = [ordered]@{
         routePageFolders       = @('docs/api/')
     }
     docs           = [ordered]@{
-        units       = @()
-        unitExclude = @()
+        units                 = @()
+        unitExclude           = @()
+        lastCheckedMaxAgeDays = 0
     }
     repoGates      = @()
 }

@@ -160,6 +160,13 @@ run_gates() (
     # so the -BlockingOnly run above leaves it out; this call keeps the report visible on every push,
     # for every tool, without failing it.
     completeness="${gate_root:-$repo_root}/.claude/skills/ai-sdlc-gates/scripts/Check-ChangeCompleteness.ps1"
+    # Advisory as well, for the same reason: lists the pages whose "Last checked" date is older than
+    # docs.lastCheckedMaxAgeDays. It prints nothing when the setting is off or every date is recent.
+    last_checked="${gate_root:-$repo_root}/.claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.ps1"
+    if [ -f "$last_checked" ]; then
+        "$PWSH" -NoProfile -File "$last_checked" -Quiet || true
+    fi
+
     if [ -f "$completeness" ]; then
         "$PWSH" -NoProfile -File "$completeness" || true
     fi
