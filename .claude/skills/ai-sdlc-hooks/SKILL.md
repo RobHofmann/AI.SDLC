@@ -57,7 +57,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   as advice only: a failed login check never skips `apm install`. It installs
   the pinned APM with `Install-Apm.ps1` when APM is missing, and warns when an installed APM is not
   the pinned version. It runs `apm install --frozen`, or plain `apm install` when there is no lock
-  yet, and then `Initialize-AiSdlc.ps1`. When the knowledge folder (`paths.knowledgeRoot`) is missing, it
+  yet. On a network share it runs APM in a local worktree and copies the result back (`Invoke-ApmInstall`),
+  because APM 0.31.0 left changed skill folders empty there. Then it runs `Initialize-AiSdlc.ps1`. When the knowledge folder (`paths.knowledgeRoot`) is missing, it
   says so, with the `gh repo clone` command when `knowledge.repository` is set. When a blocking setup check fails, it skips `apm install` and says so.
   It still runs `Initialize-AiSdlc.ps1`, and then exits 1. It works before APM is on the machine,
   because the repository commits the installed files.

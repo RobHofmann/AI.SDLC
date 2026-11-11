@@ -1,3 +1,3 @@
 name: ai-sdlc-discovery
-version: "1.4.0"
+version: "1.4.1"
 description: The discovery pack - the discovery workflows that write a research summary, a journey map and a hypothesis canvas as markdown files in the repository.

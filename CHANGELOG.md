@@ -8,6 +8,15 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.4.1 - 2026-11-11
+
+- On a network share, `Install-AiSdlc.ps1` and `Update-AiSdlc.ps1` run `apm install` in a local git
+  worktree and copy the result back. On a share, APM 0.31.0 reported a good install but left the changed
+  skill folders empty, and its lock listed those folders, so a second run skipped them. The new helper
+  `Invoke-ApmInstall` in `AiSdlcSetup.ps1` copies each file of the new lock that differs from the share,
+  and removes each file that only the old lock listed. `AISDLC_APM_LOCAL_INSTALL=1` forces it, `=0`
+  turns it off. The share check is the one the pre-push hook uses (#20).
+
 ## v1.4.0 - 2026-11-10
 
 - A repository can set `docs.lastCheckedMaxAgeDays` in `aisdlc.json` to a number of days (#24). Then a
