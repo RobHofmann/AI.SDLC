@@ -8,6 +8,18 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.4.2 - 2026-11-12
+
+- On a network share, the pre-push hook runs the gates in a local checkout whose git data stays on the
+  share. Git refused that checkout as "dubious ownership", so the C03 secret scan read 0 commits and
+  still passed. The hook now trusts the checkout folder through `GIT_CONFIG_COUNT` (`safe.directory`),
+  only for the gates; the git config of the machine is not changed (#20).
+- `Test-GitleaksBaseline.ps1` checks that git can read the folder before it scans. When it cannot, the
+  gate exits 2 locally and 1 in GitHub Actions, so a blind scan never passes (#20).
+- On a share, `Update-AiSdlc.ps1` runs `apm audit --ci` in the local worktree of the install, where
+  `apm_modules` exists. On the share itself the audit failed after a good install. A failed audit now
+  leaves the share as it was (#20).
+
 ## v1.4.1 - 2026-11-11
 
 - On a network share, `Install-AiSdlc.ps1` and `Update-AiSdlc.ps1` run `apm install` in a local git

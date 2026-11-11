@@ -28,9 +28,12 @@ Describe 'Test-GitleaksBaseline' {
         } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $script:PinFile
 
         function Invoke-Scan {
-            param([hashtable]$Options = @{}, [switch]$NoBaseline)
-            $work = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
-            New-Item -ItemType Directory -Path $work -Force | Out-Null
+            param([hashtable]$Options = @{}, [switch]$NoBaseline, [switch]$NotARepository)
+            if ($NotARepository) {
+                $work = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+                New-Item -ItemType Directory -Path $work -Force | Out-Null
+            }
+            else { $work = New-GitRepo }
             if (-not $NoBaseline) {
                 $name = if ($Options.ContainsKey('BaselineFileName')) { $Options['BaselineFileName'] } else { 'gitleaks-baseline.json' }
                 Set-Content -LiteralPath (Join-Path $work $name) -Value '[]'
@@ -198,6 +201,19 @@ Describe 'Test-GitleaksBaseline' {
         $r = Invoke-Scan
 
         $r.Code | Should -Be $Code
+        Should -Invoke gitleaks -Times 0 -Exactly
+    }
+
+    It 'exits <Code> and scans nothing when git cannot read the folder, so a refused checkout never passes, <Where>' -ForEach @(
+        @{ Where = 'in GitHub Actions, so the build fails'; Pipeline = $true; Code = 1 }
+        @{ Where = 'in a local run, as a check that could not run'; Pipeline = $false; Code = 2 }
+    ) {
+        if ($Pipeline) { $env:GITHUB_ACTIONS = 'true' }
+
+        $r = Invoke-Scan -NotARepository
+
+        $r.Code | Should -Be $Code -Because $r.Output
+        $r.Output | Should -Match 'git cannot read the repository'
         Should -Invoke gitleaks -Times 0 -Exactly
     }
 

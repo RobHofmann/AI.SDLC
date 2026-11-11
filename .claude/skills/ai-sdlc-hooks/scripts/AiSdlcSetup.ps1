@@ -208,7 +208,11 @@ function Invoke-ApmInstall {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
-        [string[]]$Arguments = @('install')
+        [string[]]$Arguments = @('install'),
+        # When given, apm audit --ci runs after a good install, in the same folder, and its exit code goes here.
+        # On a share that folder is the worktree: only there does apm_modules exist, so an audit on the share
+        # itself fails on a good install.
+        [ref]$AuditCode
     )
 
     $want = $env:AISDLC_APM_LOCAL_INSTALL
@@ -216,8 +220,16 @@ function Invoke-ApmInstall {
 
     if (-not $useLocal) {
         Push-Location -LiteralPath $RepoRoot
-        try { apm @Arguments | Out-Host } finally { Pop-Location }
-        return $LASTEXITCODE
+        try {
+            apm @Arguments | Out-Host
+            $code = $LASTEXITCODE
+            if ($code -eq 0 -and $AuditCode) {
+                apm audit --ci | Out-Host
+                $AuditCode.Value = $LASTEXITCODE
+            }
+        }
+        finally { Pop-Location }
+        return $code
     }
 
     # On a share, APM 0.31.0 reported a good install but left the changed skill folders empty, and its lock
@@ -243,9 +255,18 @@ function Invoke-ApmInstall {
         $before = @(Get-ApmDeployedFile -LockPath (Join-Path $RepoRoot 'apm.lock.yaml'))
         Write-Host "apm runs in a local worktree, because the repository is on a network share: $worktree"
         Push-Location -LiteralPath $worktree
-        try { apm @Arguments | Out-Host } finally { Pop-Location }
-        $code = $LASTEXITCODE
+        try {
+            apm @Arguments | Out-Host
+            $code = $LASTEXITCODE
+            if ($code -eq 0 -and $AuditCode) {
+                apm audit --ci | Out-Host
+                $AuditCode.Value = $LASTEXITCODE
+            }
+        }
+        finally { Pop-Location }
         if ($code -ne 0) { return $code }
+        # A failed audit leaves the share as it was, so the caller can stop with nothing changed.
+        if ($AuditCode -and $AuditCode.Value -ne 0) { return 0 }
         $after = @(Get-ApmDeployedFile -LockPath (Join-Path $worktree 'apm.lock.yaml'))
 
         foreach ($path in @($after + $own | Select-Object -Unique)) {

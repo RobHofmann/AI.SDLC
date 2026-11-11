@@ -107,11 +107,11 @@ Write-Host "Moved $moved AI.SDLC ref(s) in apm.yml to $Ref; the refs of other so
 
 Push-Location $RepoRoot
 try {
-    $installCode = Invoke-ApmInstall -RepoRoot $RepoRoot
+    $auditCode = 0
+    $installCode = Invoke-ApmInstall -RepoRoot $RepoRoot -AuditCode ([ref]$auditCode)
     if ($installCode -ne 0) { throw (Get-ApmInstallFailureHint -ExitCode $installCode) }
-    apm audit --ci
-    if ($LASTEXITCODE -ne 0) {
-        throw "apm audit --ci failed with exit code $LASTEXITCODE, so apm.yml, apm.lock.yaml and the installed files under .claude/ do not agree. Read its output above. Nothing is staged yet."
+    if ($auditCode -ne 0) {
+        throw "apm audit --ci failed with exit code $auditCode, so apm.yml, apm.lock.yaml and the installed files under .claude/ do not agree. Read its output above. Nothing is staged yet."
     }
     foreach ($p in @('apm.yml', 'apm.lock.yaml', '.claude')) {
         if (Test-Path -LiteralPath (Join-Path $RepoRoot $p)) { git add -- $p }

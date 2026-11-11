@@ -149,6 +149,13 @@ run_gates() (
             trap 'exit 130' INT TERM
             echo "pre-push: the gates run on a local checkout of $tips, because the repository is on a network share."
             cd "$gate_root" || return 1
+            # The git data of the checkout sits on the share, which another user owns, so git refuses the
+            # checkout as "dubious ownership". Then gitleaks scanned 0 commits and still passed. This trusts
+            # the one checkout folder, only for the gates and through the environment; the git config of
+            # the machine stays as it is. Git on Windows names the folder C:/..., so cygpath converts it.
+            safe_dir=$(cygpath -m "$gate_root" 2>/dev/null) || safe_dir=$gate_root
+            n=${GIT_CONFIG_COUNT:-0}
+            export "GIT_CONFIG_KEY_$n=safe.directory" "GIT_CONFIG_VALUE_$n=$safe_dir" "GIT_CONFIG_COUNT=$((n + 1))"
             runner="$gate_root/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1"
         fi
         echo "pre-push: running blocking CA gates ($runner -BlockingOnly)..."

@@ -251,6 +251,55 @@ Describe 'AiSdlcSetup' {
             Get-ApmDeployedFile -LockPath $lock | Should -Be @('.claude/skills/a', '.claude/skills/a/SKILL.md')
         }
 
+        It 'runs apm audit --ci in the worktree after the install and hands back its exit code, on a share' {
+            $env:AISDLC_APM_LOCAL_INSTALL = '1'
+            $script:Calls = [Collections.Generic.List[string]]::new()
+            Mock apm {
+                $script:Calls.Add("$($args -join ' ') @ $((Get-Location).Path)")
+                if ($args[0] -eq 'install') { New-Item -ItemType Directory -Path (Join-Path (Get-Location).Path 'apm_modules') -Force | Out-Null }
+                $global:LASTEXITCODE = if ($args[0] -eq 'audit') { if (Test-Path -LiteralPath (Join-Path (Get-Location).Path 'apm_modules')) { 0 } else { 1 } } else { 0 }
+            }
+            $audit = 9
+
+            Invoke-ApmInstall -RepoRoot $script:Repo -AuditCode ([ref]$audit) | Should -Be 0
+
+            $audit | Should -Be 0
+            $script:Calls.Count | Should -Be 2
+            $script:Calls[1] | Should -BeLike 'audit --ci @ *'
+            $script:Calls[1] | Should -Not -BeLike "* @ $((Resolve-Path -LiteralPath $script:Repo).Path)"
+        }
+
+        It 'leaves the share as it was when the audit fails in the worktree' {
+            $env:AISDLC_APM_LOCAL_INSTALL = '1'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.lock.yaml') -Value "deployed_files:`n  - .claude/skills/x/SKILL.md"
+            Mock apm {
+                if ($args[0] -eq 'install') { Set-Content -LiteralPath (Join-Path (Get-Location).Path '.claude/skills/x/SKILL.md') -Value 'new' }
+                $global:LASTEXITCODE = if ($args[0] -eq 'audit') { 4 } else { 0 }
+            }
+            $audit = 0
+
+            Invoke-ApmInstall -RepoRoot $script:Repo -AuditCode ([ref]$audit) | Should -Be 0
+
+            $audit | Should -Be 4
+            (Get-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/x/SKILL.md') -Raw).Trim() | Should -Be 'old'
+            @(git -C $script:Repo worktree list).Count | Should -Be 1
+        }
+
+        It 'runs the audit in the repository itself when it is not on a network share, and only after a good install' {
+            $script:Calls = [Collections.Generic.List[string]]::new()
+            Mock apm { $script:Calls.Add($args[0]); $global:LASTEXITCODE = 0 }
+            $audit = 9
+
+            Invoke-ApmInstall -RepoRoot $script:Repo -AuditCode ([ref]$audit) | Should -Be 0
+            $audit | Should -Be 0
+            $script:Calls | Should -Be @('install', 'audit')
+
+            $script:Calls.Clear()
+            Mock apm { $script:Calls.Add($args[0]); $global:LASTEXITCODE = 3 }
+            Invoke-ApmInstall -RepoRoot $script:Repo -AuditCode ([ref]$audit) | Should -Be 3
+            $script:Calls | Should -Be @('install')
+        }
+
         It 'leaves the repository as it was when apm fails in the worktree' {
             $env:AISDLC_APM_LOCAL_INSTALL = '1'
             Mock apm {
