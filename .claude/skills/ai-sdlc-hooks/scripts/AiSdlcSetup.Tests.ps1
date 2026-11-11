@@ -165,4 +165,103 @@ Describe 'AiSdlcSetup' {
             { Get-AiSdlcReleaseTag -Url $empty } | Should -Throw '*No release tag*'
         }
     }
+
+    Context 'Invoke-ApmInstall' {
+        BeforeAll {
+            function apm { }
+        }
+
+        BeforeEach {
+            $script:Repo = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+            git init --quiet -b main $script:Repo
+            git -C $script:Repo config user.email probe@example.invalid
+            git -C $script:Repo config user.name probe
+            New-Item -ItemType Directory -Path (Join-Path $script:Repo '.claude/skills/x') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.yml') -Value 'ref: v1'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'keep.txt') -Value 'old'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'gone.txt') -Value 'old'
+            Set-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/x/SKILL.md') -Value 'old'
+            git -C $script:Repo add -A
+            git -C $script:Repo commit --quiet -m init
+            # The caller has moved the ref in the working copy, as Update-AiSdlc.ps1 does
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.yml') -Value 'ref: v2'
+        }
+
+        AfterEach {
+            $env:AISDLC_APM_LOCAL_INSTALL = $null
+        }
+
+        It 'runs apm in the repository itself when it is not on a network share' {
+            Mock apm { $script:RanIn = (Get-Location).Path; $global:LASTEXITCODE = 0 }
+
+            Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 0
+
+            $script:RanIn | Should -Be (Resolve-Path -LiteralPath $script:Repo).Path
+        }
+
+        It 'returns the exit code of apm' {
+            Mock apm { $global:LASTEXITCODE = 3 }
+
+            Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 3
+        }
+
+        It 'says a local repository is not on a network share' {
+            Test-AiSdlcNetworkPath -RepoRoot $script:Repo | Should -BeFalse
+        }
+
+        It 'runs apm in a local worktree and makes the share match the new lock, also where the share differs from HEAD' {
+            $env:AISDLC_APM_LOCAL_INSTALL = '1'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.lock.yaml') -Value "deployed_files:`n  - .claude/skills/x`n  - .claude/skills/x/SKILL.md`n  - .claude/skills/old/SKILL.md"
+            New-Item -ItemType Directory -Path (Join-Path $script:Repo '.claude/skills/old') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/old/SKILL.md') -Value 'old'
+            git -C $script:Repo add -A
+            git -C $script:Repo commit --quiet -m lock
+            # The share holds another version than HEAD, as after an earlier install on it
+            Set-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/x/SKILL.md') -Value 'v3'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.yml') -Value 'ref: v2'
+            Mock apm {
+                $here = (Get-Location).Path
+                $script:RanIn = $here
+                $script:SawApmYml = (Get-Content -LiteralPath (Join-Path $here 'apm.yml') -Raw).Trim()
+                Set-Content -LiteralPath (Join-Path $here '.claude/skills/x/SKILL.md') -Value 'old'
+                New-Item -ItemType Directory -Path (Join-Path $here '.claude/skills/x/scripts') -Force | Out-Null
+                Set-Content -LiteralPath (Join-Path $here '.claude/skills/x/scripts/added.py') -Value 'added'
+                Remove-Item -LiteralPath (Join-Path $here '.claude/skills/old/SKILL.md')
+                Set-Content -LiteralPath (Join-Path $here 'apm.lock.yaml') -Value "deployed_files:`n  - .claude/skills/x`n  - .claude/skills/x/SKILL.md`n  - .claude/skills/x/scripts/added.py"
+                $global:LASTEXITCODE = 0
+            }
+
+            Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 0
+
+            $script:RanIn | Should -Not -Be (Resolve-Path -LiteralPath $script:Repo).Path
+            $script:SawApmYml | Should -Be 'ref: v2'
+            (Get-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/x/SKILL.md') -Raw).Trim() | Should -Be 'old'
+            Join-Path $script:Repo '.claude/skills/x/scripts/added.py' | Should -Exist
+            Join-Path $script:Repo '.claude/skills/old/SKILL.md' | Should -Not -Exist
+            Get-Content -LiteralPath (Join-Path $script:Repo 'apm.lock.yaml') | Should -Contain '  - .claude/skills/x/scripts/added.py'
+            Join-Path $script:Repo 'keep.txt' | Should -Exist
+            $script:RanIn | Should -Not -Exist
+            @(git -C $script:Repo worktree list).Count | Should -Be 1
+        }
+
+        It 'reads the deployed files from an APM lock' {
+            $lock = Join-Path $TestDrive 'lock.yaml'
+            Set-Content -LiteralPath $lock -Value "- name: a`n  deployed_files:`n  - .claude/skills/a`n  - '.claude/skills/a/SKILL.md'`n  deployed_file_hashes:`n    .claude/skills/a/SKILL.md: sha256:1"
+
+            Get-ApmDeployedFile -LockPath $lock | Should -Be @('.claude/skills/a', '.claude/skills/a/SKILL.md')
+        }
+
+        It 'leaves the repository as it was when apm fails in the worktree' {
+            $env:AISDLC_APM_LOCAL_INSTALL = '1'
+            Mock apm {
+                Remove-Item -LiteralPath (Join-Path (Get-Location).Path 'keep.txt')
+                $global:LASTEXITCODE = 5
+            }
+
+            Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 5
+
+            Join-Path $script:Repo 'keep.txt' | Should -Exist
+            @(git -C $script:Repo worktree list).Count | Should -Be 1
+        }
+    }
 }

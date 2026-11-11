@@ -107,8 +107,8 @@ Write-Host "Moved $moved AI.SDLC ref(s) in apm.yml to $Ref; the refs of other so
 
 Push-Location $RepoRoot
 try {
-    apm install
-    if ($LASTEXITCODE -ne 0) { throw (Get-ApmInstallFailureHint -ExitCode $LASTEXITCODE) }
+    $installCode = Invoke-ApmInstall -RepoRoot $RepoRoot
+    if ($installCode -ne 0) { throw (Get-ApmInstallFailureHint -ExitCode $installCode) }
     apm audit --ci
     if ($LASTEXITCODE -ne 0) {
         throw "apm audit --ci failed with exit code $LASTEXITCODE, so apm.yml, apm.lock.yaml and the installed files under .claude/ do not agree. Read its output above. Nothing is staged yet."

@@ -126,10 +126,9 @@ if (-not $SkipApm) {
         $frozen = Test-Path -LiteralPath (Join-Path $repoRoot 'apm.lock.yaml') -PathType Leaf
         [string[]]$installArgs = if ($frozen) { @('install', '--frozen') } else { @('install') }
         if (-not $frozen) { Write-Host 'No apm.lock.yaml yet, so apm install resolves apm.yml and writes one. Commit it.' -ForegroundColor Yellow }
-        Push-Location $repoRoot
-        try { apm @installArgs } finally { Pop-Location }
-        if ($LASTEXITCODE -ne 0) {
-            $hint = Get-ApmInstallFailureHint -ExitCode $LASTEXITCODE
+        $installCode = Invoke-ApmInstall -RepoRoot $repoRoot -Arguments $installArgs
+        if ($installCode -ne 0) {
+            $hint = Get-ApmInstallFailureHint -ExitCode $installCode
             if ($frozen) { $hint += ' With --frozen it also fails when apm.lock.yaml does not match apm.yml; take a new version with Update-AiSdlc.ps1, which moves both.' }
             throw $hint
         }

@@ -37,6 +37,21 @@
         Returns the newest tag vX.Y.Z on the source, read with git ls-remote. A tag with a suffix, such
         as v1.2.0-rc.1, counts only with -IncludePreRelease. It throws when there is none.
 
+    Test-AiSdlcNetworkPath -RepoRoot <path>
+        Returns $true when the repository is on a network share: git prints its root as //host/share,
+        also for a mapped drive letter. The pre-push hook uses the same rule.
+
+    Invoke-ApmInstall -RepoRoot <path> [-Arguments <apm arguments>]
+        Runs apm (install by default) for the repository and returns its exit code. On a network share
+        it runs apm in a temporary local git worktree of HEAD, with the working copies of apm.yml,
+        apm.lock.yaml, aisdlc.json, .mcp.json and .claude/settings.json. Then it copies each file of the new
+        lock that differs from the share, and removes each file that only the old lock listed. On a share,
+        APM 0.31.0 left changed skill folders empty. The environment variable AISDLC_APM_LOCAL_INSTALL=1
+        forces the worktree, and =0 turns it off.
+
+    Get-ApmDeployedFile -LockPath <apm.lock.yaml>
+        Returns the paths under deployed_files in an APM lock: the files and folders APM installed.
+
 .EXAMPLE
     . (Join-Path $PSScriptRoot 'AiSdlcSetup.ps1')
     $advice = Test-GitHubLogin
@@ -160,4 +175,97 @@ function Set-GitHookExecutable {
     git -C $RepoRoot update-index --chmod=+x -- @tracked
     if ($LASTEXITCODE -ne 0) { throw "git update-index --chmod=+x failed with exit code $LASTEXITCODE for $($tracked -join ', ')." }
     return $tracked
+}
+
+function Test-AiSdlcNetworkPath {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    # The same rule as is_network_path in the pre-push hook: git prints the root of a repository on a share
+    # as //host/share/..., also for a mapped drive letter.
+    $top = try { [string](git -C $RepoRoot rev-parse --show-toplevel 2>$null) } catch { '' }
+    $top = $top.Trim()
+    return $top.StartsWith('//') -or $top.StartsWith('\\')
+}
+
+function Get-ApmDeployedFile {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$LockPath)
+
+    if (-not (Test-Path -LiteralPath $LockPath -PathType Leaf)) { return @() }
+    $paths = [Collections.Generic.List[string]]::new()
+    $inList = $false
+    foreach ($line in [IO.File]::ReadAllLines($LockPath)) {
+        if ($line -match '^\s*deployed_files:\s*$') { $inList = $true; continue }
+        if (-not $inList) { continue }
+        if ($line -match '^\s*-\s+(\S.*?)\s*$') { $paths.Add($Matches[1].Trim([char[]]"'`"")); continue }
+        $inList = $false
+    }
+    return @($paths | Select-Object -Unique)
+}
+
+function Invoke-ApmInstall {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string[]]$Arguments = @('install')
+    )
+
+    $want = $env:AISDLC_APM_LOCAL_INSTALL
+    $useLocal = if ($want -eq '1') { $true } elseif ($want -eq '0') { $false } else { Test-AiSdlcNetworkPath -RepoRoot $RepoRoot }
+
+    if (-not $useLocal) {
+        Push-Location -LiteralPath $RepoRoot
+        try { apm @Arguments | Out-Host } finally { Pop-Location }
+        return $LASTEXITCODE
+    }
+
+    # On a share, APM 0.31.0 reported a good install but left the changed skill folders empty, and its lock
+    # listed those folders instead of their files, so a second run skipped them. The same install on a local
+    # disk was correct. So APM runs in a local git worktree of HEAD, with the working copies of the files it
+    # reads or merges into. Then the files of the new lock are carried back where they differ from the share,
+    # and the files that only the old lock listed are removed. The share's working copy can differ from HEAD,
+    # so the comparison is with the share itself, not with HEAD.
+    $own = @('apm.yml', 'apm.lock.yaml', 'aisdlc.json', '.mcp.json', '.claude/settings.json')
+    $temp = Join-Path ([IO.Path]::GetTempPath()) ('aisdlc-apm-' + [guid]::NewGuid().ToString('n'))
+    $worktree = Join-Path $temp 'wt'
+    New-Item -ItemType Directory -Path $temp -Force | Out-Null
+    try {
+        git -C $RepoRoot worktree add --quiet --detach $worktree HEAD 2>$null
+        if ($LASTEXITCODE -ne 0) { throw "git worktree add failed with exit code $LASTEXITCODE, so apm install did not run." }
+        foreach ($name in $own) {
+            $source = Join-Path $RepoRoot $name
+            if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { continue }
+            $copy = Join-Path $worktree $name
+            New-Item -ItemType Directory -Path (Split-Path -Parent $copy) -Force | Out-Null
+            Copy-Item -LiteralPath $source -Destination $copy -Force
+        }
+        $before = @(Get-ApmDeployedFile -LockPath (Join-Path $RepoRoot 'apm.lock.yaml'))
+        Write-Host "apm runs in a local worktree, because the repository is on a network share: $worktree"
+        Push-Location -LiteralPath $worktree
+        try { apm @Arguments | Out-Host } finally { Pop-Location }
+        $code = $LASTEXITCODE
+        if ($code -ne 0) { return $code }
+        $after = @(Get-ApmDeployedFile -LockPath (Join-Path $worktree 'apm.lock.yaml'))
+
+        foreach ($path in @($after + $own | Select-Object -Unique)) {
+            $source = Join-Path $worktree $path
+            if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { continue }
+            $target = Join-Path $RepoRoot $path
+            if ((Test-Path -LiteralPath $target -PathType Leaf) -and
+                (Get-FileHash -LiteralPath $target).Hash -eq (Get-FileHash -LiteralPath $source).Hash) { continue }
+            New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+            Copy-Item -LiteralPath $source -Destination $target -Force
+        }
+        foreach ($path in @($before | Where-Object { $_ -notin $after })) {
+            $target = Join-Path $RepoRoot $path
+            if (Test-Path -LiteralPath $target -PathType Leaf) { Remove-Item -LiteralPath $target -Force }
+        }
+        return 0
+    }
+    finally {
+        git -C $RepoRoot worktree remove --force $worktree 2>$null | Out-Null
+        if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue }
+        git -C $RepoRoot worktree prune 2>$null | Out-Null
+    }
 }
