@@ -141,6 +141,15 @@ if (-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
     exit $notChecked
 }
 
+# Gitleaks reads the commits through git. When git refuses the repository, for example as "dubious
+# ownership" in a checkout whose git data is on a share, gitleaks scans 0 commits and reports no leaks.
+# So a folder that git cannot read is "could not check", never a pass.
+$null = git -C $currentDirectory rev-parse --verify --quiet HEAD 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "git cannot read the repository in $currentDirectory (for example 'dubious ownership'), so gitleaks would scan 0 commits. No secret scan ran."
+    exit $notChecked
+}
+
 if (-not $PSBoundParameters.ContainsKey('LogOpts')) {
     if ($inPipeline -and $env:PR_BASE_SHA) { $LogOpts = "$($env:PR_BASE_SHA)..HEAD" }
     elseif (-not $inPipeline -and (git -C $currentDirectory rev-parse --verify --quiet 'origin/main' 2>$null)) { $LogOpts = 'origin/main..HEAD' }

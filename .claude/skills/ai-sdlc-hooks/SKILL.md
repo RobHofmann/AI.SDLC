@@ -42,7 +42,7 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   (`Test-PushReceipt.ps1` in `ai-sdlc-gates`). The pre-flight ran the same gates on that content, and
   the pull request build still runs them. A push that only deletes refs, or whose commits
   the remote already has, runs no gate at all. Only the refs of the remote being pushed to count. Both
-  push hooks judge this with one rule, `Test-PushSendsNothingNew` in `PreflightReceipt.psm1`. It also shows the change-completeness report and the `Last checked` report, which are advisory and never fail the push. On a network share, the gates run on a local checkout of the pushed commit, which is much faster. Last, it
+  push hooks judge this with one rule, `Test-PushSendsNothingNew` in `PreflightReceipt.psm1`. It also shows the change-completeness report and the `Last checked` report, which are advisory and never fail the push. On a network share, the gates run on a local checkout of the pushed commit, which is much faster. The git data of that checkout stays on the share, so the hook trusts the checkout folder through `GIT_CONFIG_COUNT` (`safe.directory`), only for the gates. Without it, git refused the checkout as "dubious ownership" and the secret scan read 0 commits. Last, it
   hands the same ref lines on to `git lfs pre-push`, so the LFS objects are uploaded. The other
   hooks refresh the code graph, and do nothing when the graph tooling is absent.
 - `githooks/git-lfs-hook` is shared by `pre-push`, `post-checkout`, `post-commit` and `post-merge`.
@@ -58,7 +58,7 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   the pinned APM with `Install-Apm.ps1` when APM is missing, and warns when an installed APM is not
   the pinned version. It runs `apm install --frozen`, or plain `apm install` when there is no lock
   yet. On a network share it runs APM in a local worktree and copies the result back (`Invoke-ApmInstall`),
-  because APM 0.31.0 left changed skill folders empty there. Then it runs `Initialize-AiSdlc.ps1`. When the knowledge folder (`paths.knowledgeRoot`) is missing, it
+  because APM 0.31.0 left changed skill folders empty there. `Update-AiSdlc.ps1` runs `apm audit --ci` in that same worktree, because `apm_modules` exists only there. Then it runs `Initialize-AiSdlc.ps1`. When the knowledge folder (`paths.knowledgeRoot`) is missing, it
   says so, with the `gh repo clone` command when `knowledge.repository` is set. When a blocking setup check fails, it skips `apm install` and says so.
   It still runs `Initialize-AiSdlc.ps1`, and then exits 1. It works before APM is on the machine,
   because the repository commits the installed files.

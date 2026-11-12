@@ -198,7 +198,7 @@ Describe 'The pre-push git hook' {
             # The committed runner prints "committed"; the working tree holds an uncommitted copy that prints
             # "worktree". So the output shows which copy ran.
             function Invoke-PushFromShare {
-                param([string]$Checkout, [int]$RunnerExit = 0)
+                param([string]$Checkout, [int]$RunnerExit = 0, [string]$RunnerExtra = '')
                 $root = Join-Path ([System.IO.Path]::GetTempPath()) ('pre-push-' + [guid]::NewGuid().ToString('n'))
                 $gates = Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
                 New-Item -ItemType Directory -Path $gates -Force | Out-Null
@@ -206,7 +206,7 @@ Describe 'The pre-push git hook' {
                 git -C $root config user.email probe@example.invalid
                 git -C $root config user.name probe
                 $runner = Join-Path $gates 'Invoke-LocalGates.ps1'
-                Set-Content -LiteralPath $runner -Value "Write-Host 'runner copy=committed'; exit $RunnerExit"
+                Set-Content -LiteralPath $runner -Value "$RunnerExtra`nWrite-Host 'runner copy=committed'; exit $RunnerExit"
                 Set-Content -LiteralPath (Join-Path $gates 'Check-ChangeCompleteness.ps1') -Value "Write-Host 'completeness copy=committed'"
                 git -C $root add .
                 git -C $root commit --quiet -m one --no-verify
@@ -236,6 +236,18 @@ Describe 'The pre-push git hook' {
             $r.Output | Should -Match 'completeness copy=committed'
             $r.Output | Should -Not -Match 'copy=worktree'
             $r.Worktrees | Should -Be 1 -Because 'only the main working tree is left'
+        }
+
+        It 'trusts only the checkout folder for git in the gates, through the environment, so git does not refuse it as dubious ownership' -Skip:($script:NoSh -or $script:NoPwshShare) {
+            $extra = 'Write-Host "safe=$(git config --get-all safe.directory | Select-Object -Last 1)|top=$(git rev-parse --show-toplevel)|count=$env:GIT_CONFIG_COUNT"'
+            $r = Invoke-PushFromShare -Checkout '1' -RunnerExtra $extra
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $m = [regex]::Match($r.Output, 'safe=(?<safe>[^|]*)\|top=(?<top>[^|]*)\|count=(?<count>\d+)')
+            $m.Success | Should -BeTrue -Because $r.Output
+            $m.Groups['safe'].Value.Trim() | Should -Be $m.Groups['top'].Value.Trim()
+            [int]$m.Groups['count'].Value | Should -BeGreaterOrEqual 1
+            $r.Output | Should -Match 'runner copy=committed'
         }
 
         It 'refuses the push when a gate fails in the checkout, and still removes it' -Skip:($script:NoSh -or $script:NoPwshShare) {
