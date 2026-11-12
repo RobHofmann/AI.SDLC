@@ -48,8 +48,9 @@
     The git log range that gitleaks scans, passed as --log-opts. Without it the script picks the range.
     On a pull request in GitHub Actions (PR_BASE_SHA set by the shared action) it is <base sha>..HEAD,
     the commits the pull request adds, as the pre-flight scans <target>..HEAD. On any other workflow
-    run it is the history of every branch and tag. In a local run it is origin/main..HEAD, or the whole
-    history when there is no origin/main. An empty value scans the whole history.
+    run it is the history of every branch and tag. In a local run it is <trunk>..HEAD, where the trunk is
+    the first of origin/main, origin/master and origin/HEAD that exists, or the whole history when none
+    does. An empty value scans the whole history.
 
 .PARAMETER RepoRoot
     The repository to scan, where the baseline file is. Defaults to the current folder.
@@ -152,7 +153,14 @@ if ($LASTEXITCODE -ne 0) {
 
 if (-not $PSBoundParameters.ContainsKey('LogOpts')) {
     if ($inPipeline -and $env:PR_BASE_SHA) { $LogOpts = "$($env:PR_BASE_SHA)..HEAD" }
-    elseif (-not $inPipeline -and (git -C $currentDirectory rev-parse --verify --quiet 'origin/main' 2>$null)) { $LogOpts = 'origin/main..HEAD' }
+    elseif (-not $inPipeline) {
+        # The trunk of the remote: main, or master, or whatever origin/HEAD names. A repository whose trunk is
+        # master had no origin/main, so the scan read the whole history; on a share that took very long.
+        foreach ($trunk in 'origin/main', 'origin/master', 'origin/HEAD') {
+            $null = git -C $currentDirectory rev-parse --verify --quiet $trunk 2>$null
+            if ($LASTEXITCODE -eq 0) { $LogOpts = "$trunk..HEAD"; break }
+        }
+    }
 }
 
 Import-Module (Join-Path $PSScriptRoot 'GitleaksConfig.psm1') -Force

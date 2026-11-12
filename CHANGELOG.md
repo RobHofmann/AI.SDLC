@@ -8,6 +8,14 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.4.3 - 2026-11-12
+
+- In a local run, `Test-GitleaksBaseline.ps1` scans `<trunk>..HEAD`, where the trunk is the first of
+  `origin/main`, `origin/master` and `origin/HEAD` that exists. A repository whose trunk is `master` had
+  no `origin/main`, so the C03 gate scanned the whole history. On a network share, where every blob is
+  read over the network, that made the pre-push hook run for a very long time. v1.4.2 made it visible:
+  before, git refused the checkout and the scan read nothing (#20).
+
 ## v1.4.2 - 2026-11-12
 
 - On a network share, the pre-push hook runs the gates in a local checkout whose git data stays on the

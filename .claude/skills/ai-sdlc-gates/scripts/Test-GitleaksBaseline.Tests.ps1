@@ -262,6 +262,22 @@ Describe 'Test-GitleaksBaseline' {
         }
     }
 
+    It 'scans <Trunk>..HEAD in a local run when the trunk of the remote is <Name>, not the whole history' -ForEach @(
+        @{ Name = 'master'; Refs = @('refs/remotes/origin/master'); Trunk = 'origin/master' }
+        @{ Name = 'named only by origin/HEAD'; Refs = @('refs/remotes/origin/develop'); Head = 'refs/remotes/origin/develop'; Trunk = 'origin/HEAD' }
+        @{ Name = 'main, also when master exists'; Refs = @('refs/remotes/origin/main', 'refs/remotes/origin/master'); Trunk = 'origin/main' }
+    ) {
+        $repo = New-GitRepo
+        foreach ($ref in $Refs) { git -C $repo update-ref $ref HEAD }
+        if ($Head) { git -C $repo symbolic-ref refs/remotes/origin/HEAD $Head }
+        Set-Content -LiteralPath (Join-Path $repo 'gitleaks-baseline.json') -Value '[]'
+
+        & $script:ScriptUnderTest -RepoRoot $repo -PinFile $script:PinFile *> $null
+
+        $LASTEXITCODE | Should -Be 0
+        Should -Invoke gitleaks -Times 1 -Exactly -ParameterFilter { $args -contains "--log-opts=$Trunk..HEAD" }
+    }
+
     It 'is the blocking C03 gate of the core, so Invoke-LocalGates.ps1 runs it everywhere' {
         $entry = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'gates.json') -Raw | ConvertFrom-Json).gates | Where-Object { $_.script -eq 'scripts/Test-GitleaksBaseline.ps1' })
 
