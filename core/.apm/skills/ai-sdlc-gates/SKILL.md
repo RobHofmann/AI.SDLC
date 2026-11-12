@@ -98,7 +98,7 @@ These sit in the same `scripts/` folder but are not gates:
 - `Create-GitleaksBaseline.ps1` makes a gitleaks baseline with the rule sets pinned in
   `gitleaks-rules.json`. `Test-GitleaksBaseline.ps1` runs gitleaks against that baseline, or without
   one when the repository has none. It is the blocking C03 gate of `gates.json`. On a pull request in
-  GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, and in a local run `origin/main..HEAD`. When git cannot read the folder, for example as "dubious ownership", it scans nothing and exits 2 locally and 1 in GitHub Actions, never 0.
+  GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, and in a local run `<trunk>..HEAD` (`origin/main`, `origin/master` or `origin/HEAD`). When git cannot read the folder, for example as "dubious ownership", it scans nothing and exits 2 locally and 1 in GitHub Actions, never 0.
 - `Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and refuses
   it on a SHA-256 mismatch, as `Install-Apm.ps1` does for APM.
 - `GitleaksConfig.psm1` writes the gitleaks configuration of a scan: the rules plus an allowlist for
