@@ -8,6 +8,7 @@ Describe 'Check-McpToken' {
         $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
         if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' }
         Import-Module (Join-Path $aiSdlcGates 'DocToolTestHarness.psm1') -Force
+        $script:Toolsets = 'projects,issues,quality-gates,rules,measures,coverage,duplications'
         $script:SavedTokens = @{ AISDLC_SONAR_MCP_TOKEN = $env:AISDLC_SONAR_MCP_TOKEN; SONAR_TOKEN = $env:SONAR_TOKEN }
 
         function Invoke-Gate {
@@ -17,8 +18,10 @@ Describe 'Check-McpToken' {
         }
 
         function Set-McpFile {
-            param([string]$Path = '.mcp.json', [string]$Authorization = 'Bearer ${AISDLC_SONAR_MCP_TOKEN}', [string]$Key = 'mcpServers', [hashtable]$Extra = @{}, [string]$Org = '${AISDLC_SONAR_ORG}')
-            $servers = [ordered]@{ sonarqube = [ordered]@{ type = 'http'; url = 'https://api.sonarcloud.io/mcp'; headers = [ordered]@{ Authorization = $Authorization; SONARQUBE_ORG = $Org } } }
+            param([string]$Path = '.mcp.json', [string]$Authorization = 'Bearer ${AISDLC_SONAR_MCP_TOKEN}', [string]$Key = 'mcpServers', [hashtable]$Extra = @{}, [string]$Org = '${AISDLC_SONAR_ORG}', [string]$Toolsets)
+            $headers = [ordered]@{ Authorization = $Authorization; SONARQUBE_ORG = $Org }
+            if ($Toolsets) { $headers['SONARQUBE_TOOLSETS'] = $Toolsets }
+            $servers = [ordered]@{ sonarqube = [ordered]@{ type = 'http'; url = 'https://api.sonarcloud.io/mcp'; headers = $headers } }
             foreach ($name in $Extra.Keys) { $servers[$name] = $Extra[$name] }
             $file = Join-Path $script:Root $Path
             New-Item -ItemType Directory -Path (Split-Path $file) -Force | Out-Null
@@ -105,6 +108,36 @@ Describe 'Check-McpToken' {
 
         $r.ExitCode | Should -Be 0
         (Get-Content -LiteralPath $file -Raw | ConvertFrom-Json -AsHashtable).mcpServers.sonarqube.headers.SONARQUBE_ORG | Should -BeExactly '${AISDLC_SONAR_ORG}'
+    }
+
+    It 'accepts the SONARQUBE_TOOLSETS header next to the placeholders' -Tag '86' {
+        Set-McpFile -Toolsets $script:Toolsets | Out-Null
+
+        $r = Invoke-Gate
+
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+    }
+
+    It 'keeps the SONARQUBE_TOOLSETS header when -Fix writes the placeholders back' -Tag '86' {
+        $file = Set-McpFile -Authorization 'Bearer sqp_fake_86' -Org 'contoso' -Toolsets $script:Toolsets
+
+        $r = Invoke-Gate -Extra @{ Fix = $true }
+
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+        $headers = (Get-Content -LiteralPath $file -Raw | ConvertFrom-Json -AsHashtable).mcpServers.sonarqube.headers
+        $headers.Authorization | Should -BeExactly 'Bearer ${AISDLC_SONAR_MCP_TOKEN}'
+        $headers.SONARQUBE_ORG | Should -BeExactly '${AISDLC_SONAR_ORG}'
+        $headers.SONARQUBE_TOOLSETS | Should -BeExactly $script:Toolsets
+    }
+
+    It 'has the pack send the seven tool groups the skills use, in SONARQUBE_TOOLSETS' -Tag '86' {
+        $apm = Join-Path $PSScriptRoot '..' '..' '..' '..' 'apm.yml'
+        if (-not (Test-Path -LiteralPath $apm)) { Set-ItResult -Skipped -Because 'this layout has no apm.yml of the sonarcloud pack'; return }
+
+        $line = @(Get-Content -LiteralPath $apm | Where-Object { $_ -match '^\s+SONARQUBE_TOOLSETS:' })
+
+        $line | Should -HaveCount 1
+        ($line[0] -replace '^\s+SONARQUBE_TOOLSETS:\s*', '').Trim() | Should -BeExactly $script:Toolsets
     }
 
     It 'fails a sonarqube server with no Authorization header' {
