@@ -26,6 +26,12 @@
     path differs per machine; the script never writes it into .claude/settings.json. The rest of
     settings.local.json stays as it is.
 
+    The folder must be below the parent folder of the repository, such as the ../Knowledge sibling. In
+    a linked worktree, the parent folder of the main checkout counts too. No folder on the way may be
+    a link. The parent folder itself, a folder elsewhere such as \\contoso\share, and a folder reached
+    through a link are skipped with a FIX line, because aisdlc.json must not open a folder elsewhere to
+    the agent. The exit code stays 0.
+
     With -Check it writes nothing. It exits 1 when a rule of an installed package is missing. The
     knowledge folder is not checked, because CI never has it.
 
@@ -80,6 +86,36 @@ function Protect-LocalSetting {
     Write-Host 'Knowledge folder: added /.claude/settings.local.json to .git/info/exclude, so that file is never committed.'
 }
 
+function Test-KnowledgeRootAllowed {
+    # aisdlc.json is repository content, so it may name any folder or share. Only a folder below the
+    # parent folder of the repository, such as the ../Knowledge sibling, gets read access (#32). In a
+    # linked worktree, Get-AiSdlcKnowledgeRoot may resolve against the main checkout, so the parent
+    # folder of that checkout counts too. A path check alone does not follow links, and a repository
+    # can commit a symlink that points at a share. So no folder below the parent folder may be a link.
+    param([string]$Path)
+    $comparison = if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+    $separator = [IO.Path]::DirectorySeparatorChar
+    $target = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Path).ProviderPath).TrimEnd('\', '/')
+    $repos = @($RepoRoot, (Get-AiSdlcMainCheckoutRoot -RepoRoot $RepoRoot)) | Where-Object { $_ }
+    foreach ($repo in $repos) {
+        $repo = [IO.Path]::GetFullPath($repo).TrimEnd('\', '/')
+        $parent = [IO.Path]::GetDirectoryName($repo)
+        # A repository at a drive or share root has no parent folder, and its scope would be the whole
+        # drive. So it gets no knowledge folder at all.
+        if (-not $parent) { continue }
+        $scope = $parent.TrimEnd('\', '/') + $separator
+        # The parent folder itself is refused: it would open every other repository next to this one.
+        if (($target + $separator).Length -le $scope.Length) { continue }
+        if (-not ($target + $separator).StartsWith($scope, $comparison)) { continue }
+        $linked = $false
+        for ($folder = $target; $folder -and ($folder + $separator).Length -gt $scope.Length; $folder = [IO.Path]::GetDirectoryName($folder)) {
+            if ((Get-Item -LiteralPath $folder -Force).LinkType) { $linked = $true; break }
+        }
+        if (-not $linked) { return $true }
+    }
+    return $false
+}
+
 function Sync-KnowledgeDirectory {
     $root = $config.paths.knowledgeRoot
     if (-not $root) { return }
@@ -88,8 +124,13 @@ function Sync-KnowledgeDirectory {
         Write-Host "Knowledge folder: $root is not there, so the agent gets no read access to it. Clone the knowledge repository there to add it."
         return
     }
+    if (-not (Test-KnowledgeRootAllowed -Path $full)) {
+        Write-Host "Knowledge folder: $root is outside the parent folder of this repository, or reached through a link, so the agent gets no read access to it. A repository must not open a folder elsewhere on this machine or on a network share." -ForegroundColor Yellow
+        Write-Host 'FIX: Clone the knowledge repository next to this repository and point paths.knowledgeRoot there. Or, when you trust the folder, add it by hand to permissions.additionalDirectories in .claude/settings.local.json.' -ForegroundColor Yellow
+        return
+    }
     # ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, which breaks the allow rule (#29).
-    $full =(Resolve-Path -LiteralPath $full).ProviderPath.Replace('\', '/')
+    $full = (Resolve-Path -LiteralPath $full).ProviderPath.Replace('\', '/')
     $localPath = Join-Path $RepoRoot '.claude' 'settings.local.json'
     $local = [ordered]@{}
     if (Test-Path -LiteralPath $localPath -PathType Leaf) {

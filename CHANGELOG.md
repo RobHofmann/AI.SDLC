@@ -8,6 +8,20 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.5.0 - 2026-11-26
+
+- `Check-PrivateTerms.ps1` and `Test-GitleaksBaseline.ps1` stop as "not checked" when `-RepoRoot` is
+  not an existing folder. They exit 2 in a local run, and 1 in GitHub Actions or, for the private-terms
+  gate, with `-Required`. Before, `git -C ''` read the current folder, so a gate could pass on another
+  repository (#32).
+- `Sync-AllowRules.ps1` only adds a knowledge folder below the parent folder of the repository, or of
+  the main checkout in a linked worktree, and reached without a link. It skips the parent folder
+  itself, a folder anywhere else such as a network share, and a repository at a drive or share root.
+  It prints a FIX line and keeps exit 0, so the setup and the update do not fail. A repository that
+  keeps its knowledge folder elsewhere adds it by hand to `.claude/settings.local.json` (#32).
+- The new `Get-AiSdlcMainCheckoutRoot` in `AiSdlcConfig.psm1` finds the main checkout of a linked
+  worktree. `Get-AiSdlcKnowledgeRoot` and `Sync-AllowRules.ps1` both use it (#32).
+
 ## v1.4.5 - 2026-11-26
 
 - A relative `paths.knowledgeRoot` is found from a linked git worktree too. In a worktree under

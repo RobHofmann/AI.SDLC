@@ -286,20 +286,32 @@ function Get-AiSdlcKnowledgeRoot {
     $local = [IO.Path]::GetFullPath((Join-Path $config.repoRoot $root))
     if (Test-Path -LiteralPath $local -PathType Container) { return $local }
 
-    $git = @(git -C $config.repoRoot rev-parse --path-format=absolute --git-dir --git-common-dir --show-toplevel 2>$null)
-    if ($LASTEXITCODE -ne 0 -or $git.Count -ne 3) { return $local }
+    $mainRoot = Get-AiSdlcMainCheckoutRoot -RepoRoot $config.repoRoot
+    if (-not $mainRoot) { return $local }
+    $main = [IO.Path]::GetFullPath((Join-Path $mainRoot $root))
+    if (Test-Path -LiteralPath $main -PathType Container) { return $main }
+    return $local
+}
+
+function Get-AiSdlcMainCheckoutRoot {
+    # Returns the folder in the main checkout that matches RepoRoot in a linked git worktree, or $null
+    # when RepoRoot is not in a linked worktree. Get-AiSdlcKnowledgeRoot resolves against it (#31), and
+    # Sync-AllowRules.ps1 accepts a knowledge folder next to it (#32).
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $git = @(git -C $RepoRoot rev-parse --path-format=absolute --git-dir --git-common-dir --show-toplevel 2>$null)
+    if ($LASTEXITCODE -ne 0 -or $git.Count -ne 3) { return $null }
     $gitDir = [IO.Path]::GetFullPath($git[0])
     $commonDir = [IO.Path]::GetFullPath($git[1])
     $top = [IO.Path]::GetFullPath($git[2])
     # Only a linked worktree has a git dir apart from the common dir. A bare repository or a submodule
     # keeps its common dir in no folder named .git, so it has no main checkout to fall back to.
-    if ($gitDir -eq $commonDir -or (Split-Path $commonDir -Leaf) -ne '.git') { return $local }
+    if ($gitDir -eq $commonDir -or (Split-Path $commonDir -Leaf) -ne '.git') { return $null }
 
     $mainTop = Split-Path $commonDir -Parent
-    $offset = [IO.Path]::GetRelativePath($top, $config.repoRoot)
-    $main = [IO.Path]::GetFullPath((Join-Path $mainTop $offset $root))
-    if (Test-Path -LiteralPath $main -PathType Container) { return $main }
-    return $local
+    $offset = [IO.Path]::GetRelativePath($top, $RepoRoot)
+    return [IO.Path]::GetFullPath((Join-Path $mainTop $offset))
 }
 
 function Test-AiSdlcPack {
@@ -452,4 +464,4 @@ function Get-AiSdlcPackage {
     }
 }
 
-Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage
+Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage

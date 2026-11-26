@@ -79,6 +79,36 @@ Describe 'Check-PrivateTerms' {
         $env:GITHUB_WORKSPACE = $script:SavedWorkspace
     }
 
+    It 'exits <Code> and checks nothing else when the root is missing (<Case>)' -ForEach @(
+        @{ Case = 'local run'; Code = 2; Required = $false; Pipeline = $false }
+        @{ Case = '-Required'; Code = 1; Required = $true; Pipeline = $false }
+        @{ Case = 'GitHub Actions'; Code = 1; Required = $false; Pipeline = $true }
+    ) {
+        # The shell stands in another public repository with a finding: the gate must not check that one.
+        $other = New-TermsRepo -Files @{ 'docs/page.md' = 'Built for Fabrikam.' }
+        if ($Pipeline) { $env:GITHUB_ACTIONS = 'true' }
+        $options = @{ TermsFile = (New-TermsFile -Lines 'Fabrikam'); Force = $true }
+        if ($Required) { $options['Required'] = $true }
+
+        Push-Location $other
+        try { $r = Invoke-Check -Root (Join-Path $TestDrive 'no-such-folder') -Options $options }
+        finally { Pop-Location }
+
+        $r.Code | Should -Be $Code -Because $r.Output
+        $r.Output | Should -Match 'could not be checked: the repository root'
+        $r.Output | Should -Not -Match 'rule 1'
+    }
+
+    It 'exits 2 when the root is a file, not a folder' {
+        $file = Join-Path $TestDrive 'not-a-folder.txt'
+        Set-Content -LiteralPath $file -Value 'x'
+
+        $r = Invoke-Check -Root $file -Options @{ TermsFile = (New-TermsFile -Lines 'Fabrikam'); Force = $true }
+
+        $r.Code | Should -Be 2 -Because $r.Output
+        $r.Output | Should -Match 'is not an existing folder'
+    }
+
     It 'skips a private repository' {
         $root = New-TermsRepo -Visibility private
 
