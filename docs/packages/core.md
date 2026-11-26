@@ -186,7 +186,7 @@ A `cwd` or a repository on a network share (a UNC path) works too, because the h
 
 The agent never merges, because the owner's merge is the approval (Checkpoint Bravo). A check in the same hooks refuses `gh pr merge` and a `gh api` call to a merge endpoint. Like the other hooks, it lets a command through when it cannot read it.
 
-`Invoke-PostEditCheck.ps1` runs the house-style or build check that fits a file after an edit.
+`Invoke-PostEditCheck.ps1` runs the house-style or build check that fits a file after an edit. For a file in a git worktree under the main checkout, both edit hooks judge it on that worktree: its root, its packs, its allow lists and its `apm.lock.yaml`. `Get-HookCheckoutRoot` in `HookPayload.psm1` finds that worktree.
 
 `HookPayload.psm1` reads the hook payload of Claude Code and of GitHub Copilot, including the text of an `apply_patch` edit. It also writes hook context in the shapes of both tools. Copilot reads `additionalContext` at the top level after a prompt or an edit, and Claude Code reads it in `hookSpecificOutput`.
 

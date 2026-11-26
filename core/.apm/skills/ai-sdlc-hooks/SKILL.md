@@ -98,6 +98,11 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
 - The push check judges the repository the push targets. A push that names no folder is judged on
   the repository of the `cwd` field of the hook payload. In a session that works in a git worktree,
   that is the worktree, even though the hook itself runs from the main checkout.
+- The edit hooks judge a file in a git worktree inside the main checkout, such as one under
+  `.claude/worktrees`, on that worktree. The shared-file check reads the `apm.lock.yaml` of the
+  worktree, or the one of the main checkout when the worktree has none. The reading-level check uses
+  the allow lists of the worktree, so a word added to an allow list on a branch counts at once there.
+  The scripts that run are always the hook's own, never scripts of the worktree.
 - A push names a folder only in the plain forms: `git -C <dir> push`, and one `cd`, `pushd` or
   `Set-Location` right before the push, joined with `&&` or `;`. The folder may stand in quotes, and a
   relative folder starts at the `cwd`. Any other form is judged on the repository of the `cwd`. That
