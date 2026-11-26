@@ -135,9 +135,8 @@ Contributions are welcome. Start with [AGENTS.md](AGENTS.md): it holds the rules
 
 ## 🏷️ Releasing
 
-1. Every change has an issue with the `refined` label. Its pull request says `Refs #42`, not `Fixes #42`, so the merge leaves the issue open.
+1. Every change has an issue with the `refined` label. Its pull request says `Fixes #42`, so the merge closes the issue. Keep its `refined` label: an update pull request in a consumer names it as `Refs RobHofmann/AI.SDLC#42`, and the story check accepts a closed issue with that label.
 2. After the merge, tag `main` with an annotated tag whose message names the issue: `git tag -a v1.2.0 -m "Release v1.2.0 for #42"`. Do not start the message with `#`: git drops a tag message line that starts with `#`. Push the tag and publish a GitHub release on it.
-3. Close the issue. Keep its `refined` label: an update pull request in a consumer names it as `Refs RobHofmann/AI.SDLC#42`, and the story check accepts a closed issue with that label.
 
 AI.SDLC does not know its consumers, and pushes nothing to them. Each consumer pulls a release itself: its `ai-sdlc-update.yml` workflow opens an update pull request every Monday, and the `update-ai-sdlc` skill does the same on demand.
 
