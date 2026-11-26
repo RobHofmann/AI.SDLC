@@ -23,6 +23,10 @@
                           that needs an MCP server lists both. The
                           tools line is one line or a YAML list, never a folded block. The agents
                           review and read; the workflow skill that called them does the writing.
+      - mcp name          no MCP tool of a claude.ai connector (mcp__claude_ai_<name>__) or of a Claude
+                          app connector (mcp__<uuid>__). Those prefixes hold the name or the ID of each
+                          person's own connector, so the tool matches nothing for most people. Name the
+                          server a pack installs in .mcp.json, such as mcp__sonarqube__<action>.
       - writer            the exception to read-only. Only an agent on the writer list of this
                           script (today only `builder`) may hold Edit and Write, and never Agent,
                           Task, a wildcard or an MCP write tool. It must set `model:`, and its
@@ -93,6 +97,7 @@ $allowedModels = @('opus', 'sonnet', 'inherit')
 $writerAgents = @('builder')
 $writerTools = @('Edit', 'Write', 'MultiEdit', 'edit', 'write')
 $mcpReadPattern = '(^|_)(get|search|list|query|read|fetch|lookup)([A-Z_]|$)'
+$connectorToolPattern = '^mcp__(claude_ai_[^_]|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}__)'
 $mcpWritePattern = '(^|_)(create|edit|update|delete|transition|add|run|vote|reply|resolve|batch|push|set|merge|complete|approve|queue)([A-Z_]|$)'
 
 if (-not (Test-Path $AgentsRoot)) {
@@ -161,6 +166,9 @@ foreach ($file in $agentFiles) {
             $isMcp = $tool -like 'mcp__*' -or $tool -match '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.*-]+$'
             $action = if ($tool -like 'mcp__*') { ($tool -split '__')[-1] } else { ($tool -split '/')[-1] }
             $mcpWrite = $isMcp -and ($action -cmatch $mcpWritePattern -or $action -cnotmatch $mcpReadPattern)
+            if ($tool -match $connectorToolPattern) {
+                Add-Violation $name 'mcp-name' "tool '$tool' names a connector whose prefix differs per person; name the server a pack installs, such as mcp__sonarqube__<action>"
+            }
             if ($name -in $writerAgents -and $tool -in $writerTools) { continue }
             if ($tool -in $editTools -or $tool -match '\*' -or $mcpWrite) {
                 Add-Violation $name 'read-only' "tool '$tool' can change a file, an outside system or start another agent; agents only read and report"

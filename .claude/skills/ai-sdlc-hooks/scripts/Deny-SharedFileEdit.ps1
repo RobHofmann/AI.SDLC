@@ -25,11 +25,19 @@
     case stays cheap: the repository root is found by walking up to aisdlc.json, and the lock file is
     only parsed when it names one of the edited files.
 
+    Claude Code starts the hook in the folder the session started in, which is the main checkout for a
+    session that works in a git worktree under .claude/worktrees. A file in such a worktree is judged on
+    the worktree (Get-HookCheckoutRoot in HookPayload.psm1): its path counts from the worktree, and the
+    apm.lock.yaml of the worktree decides, or the one of the main checkout when the worktree has none.
+    Without that, the path of an installed copy in the worktree
+    starts with .claude/worktrees/, matches nothing in the lock file, and the edit goes through.
+
 .PARAMETER Payload
     The hook payload as JSON. Read from stdin when not supplied.
 
 .PARAMETER RepoRoot
     The repository root. Defaults to the folder that holds aisdlc.json, found from the current location.
+    A file in a git worktree inside it is judged on the worktree instead.
 
 .PARAMETER LockFile
     The APM lock file. Defaults to <RepoRoot>/apm.lock.yaml.
@@ -114,42 +122,55 @@ if (-not $PSBoundParameters.ContainsKey('Payload')) {
 $files = @(Get-HookEditedFile -Json $Payload)
 if ($files.Count -eq 0) { exit 0 }
 
+# CLAUDE_PROJECT_DIR first, so a cd out of the repository does not switch the guard off.
+if (-not $RepoRoot -and [Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR')) { $RepoRoot = Find-RepoRootFast -StartPath ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR')) }
 if (-not $RepoRoot) { $RepoRoot = Find-RepoRootFast -StartPath (Get-Location).Path }
 if (-not $RepoRoot) { exit 0 }
-if (-not $LockFile) { $LockFile = Join-Path $RepoRoot 'apm.lock.yaml' }
-if (-not (Test-Path -LiteralPath $LockFile -PathType Leaf)) { exit 0 }
-
 $rootFull = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-$relatives = foreach ($file in $files) {
-    $full = if ([IO.Path]::IsPathRooted($file)) { $file } else { Join-Path $RepoRoot $file }
-    $full = [IO.Path]::GetFullPath($full)
-    if ($full.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) { $full.Substring($rootFull.Length).Replace('\', '/') }
+$checkouts = [ordered]@{}
+foreach ($file in $files) {
+    try {
+        $full = if ([IO.Path]::IsPathRooted($file)) { $file } else { Join-Path $RepoRoot $file }
+        $full = [IO.Path]::GetFullPath($full)
+    }
+    catch { continue }
+    if (-not $full.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) { continue }
+    $checkout = Get-HookCheckoutRoot -File $full -RepoRoot $RepoRoot
+    $checkoutFull = [IO.Path]::GetFullPath($checkout).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+    if (-not $checkouts.Contains($checkout)) { $checkouts[$checkout] = [System.Collections.Generic.List[string]]::new() }
+    $checkouts[$checkout].Add($full.Substring($checkoutFull.Length).Replace('\', '/'))
 }
-$relatives = @($relatives | Select-Object -Unique)
-if ($relatives.Count -eq 0) { exit 0 }
 
-$lockText = [IO.File]::ReadAllText($LockFile)
-if (-not @($relatives | Where-Object { $lockText.IndexOf($_, [StringComparison]::OrdinalIgnoreCase) -ge 0 })) { exit 0 }
-
-$deployed = Read-DeployedFiles -Path $LockFile
 $inRepo = $false
-$reasons = foreach ($relative in $relatives) {
-    $package = $deployed[$relative]
-    if (-not $package) {
-        $match = $deployed.Keys | Where-Object { $_.Equals($relative, [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
-        if ($match) { $package = $deployed[$match] }
-    }
-    if (-not $package) { continue }
+$reasons = foreach ($checkout in $checkouts.Keys) {
+    $mainLock = if ($LockFile) { $LockFile } else { Join-Path $RepoRoot 'apm.lock.yaml' }
+    $lock = if ($checkout -eq $RepoRoot) { $mainLock } else { Join-Path $checkout 'apm.lock.yaml' }
+    if (-not (Test-Path -LiteralPath $lock -PathType Leaf)) { $lock = $mainLock }
+    if (-not (Test-Path -LiteralPath $lock -PathType Leaf)) { continue }
+    $relatives = @($checkouts[$checkout] | Select-Object -Unique)
 
-    $source = Get-SourcePath -Relative $relative -Package $package
-    if ($package.Repo -like '_local/*' -and (Test-Path -LiteralPath (Join-Path $RepoRoot $source))) {
-        $inRepo = $true
-        "$relative is installed from $source in this repository, so an edit here is lost at the next apm install. Change $source instead."
-        continue
+    $lockText = [IO.File]::ReadAllText($lock)
+    if (-not @($relatives | Where-Object { $lockText.IndexOf($_, [StringComparison]::OrdinalIgnoreCase) -ge 0 })) { continue }
+
+    $deployed = Read-DeployedFiles -Path $lock
+    foreach ($relative in $relatives) {
+        $package = $deployed[$relative]
+        if (-not $package) {
+            $match = $deployed.Keys | Where-Object { $_.Equals($relative, [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+            if ($match) { $package = $deployed[$match] }
+        }
+        if (-not $package) { continue }
+
+        $source = Get-SourcePath -Relative $relative -Package $package
+        if ($package.Repo -like '_local/*' -and (Test-Path -LiteralPath (Join-Path $checkout $source))) {
+            $inRepo = $true
+            "$relative is installed from $source in this repository, so an edit here is lost at the next apm install. Change $source instead."
+            continue
+        }
+        $ref = if ($package.Ref) { " at $($package.Ref)" } else { '' }
+        ("$relative is installed from AI.SDLC (package $($package.Name)$ref), so an edit here is lost at the next " +
+            "apm install and fails apm audit --ci. Change $source in AI.SDLC instead, through a pull request there.")
     }
-    $ref = if ($package.Ref) { " at $($package.Ref)" } else { '' }
-    ("$relative is installed from AI.SDLC (package $($package.Name)$ref), so an edit here is lost at the next " +
-        "apm install and fails apm audit --ci. Change $source in AI.SDLC instead, through a pull request there.")
 }
 $reasons = @($reasons)
 if ($reasons.Count -eq 0) { exit 0 }

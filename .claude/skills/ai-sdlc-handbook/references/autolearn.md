@@ -27,6 +27,8 @@ fires at the push.
 | The same avoidable failure happens twice in a session (a gate, a tool call, a wrong path) | The agent notices it while working | `capture-learning` |
 | A change is finished | Step 9 of `wrap-up`, before its commit | `capture-learning` |
 | A pull request review lands | The user asks, or `wrap-up` reaches its lessons step for `fix-pr-feedback` | `capture-learning`, from a pull request |
+| The user asks the agent to update its advice, often with new input | The `UserPromptSubmit` hook matches an advice-update phrase and adds a softer note, with no flag | The agent checks whether the input shows a lesson, and proposes `capture-learning` only when it does |
+| A new session starts while a lesson proposal still waits for an answer | On the first prompt of the session, the `UserPromptSubmit` hook counts the lines of `temp/autolearn/pending.md` and names them | The agent brings them up through `capture-learning` when the work allows |
 
 The hook is `.claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1`, wired from
 `.claude/settings.json`. It never decides whether a lesson is real. It only says "a correction just
@@ -108,15 +110,40 @@ inside it, exits zero and stays silent.
   and Dutch. On a match it writes a flag file for the session in the temporary folder `ai-sdlc-autolearn`.
   It also returns `additionalContext`, which tells the agent to run `capture-learning` once the user's
   request is handled.
+- **`UserPromptSubmit`, advice update**: when no correction phrase matches, it checks a second list.
+  That list matches a request to update or change the advice, in English or Dutch, such as
+  `update your advice`, `pas je advies aan` or `herzie je advies`. A request that says no, such as
+  `pas je advies niet aan`, does not match. Most of that input is a fact about the work in hand, not
+  a lesson. So the hook writes no flag and does not block the stop. Its note asks the agent two
+  questions. Could it have found or asked for this input before it advised? Does the input hold beyond
+  this work item? When both answers are no, the agent says nothing about a lesson. When one is yes, it
+  proposes a capture and waits.
+- **`UserPromptSubmit`, first prompt of a session**: it looks for `temp/autolearn/pending.md` in the
+  checkout of the session. When the file holds lines, it tells the agent how many lesson proposals are
+  still open. It only counts the lines: it never writes the file and never shows what is in it. A
+  payload with no `cwd` gets nothing, so the hook never reads the file of another checkout. A small
+  marker per session in `ai-sdlc-autolearn` says the first prompt is done, and markers older than 14
+  days are removed. It does not use `SessionStart`, because the `sonarcloud` pack already has an entry
+  there. APM 0.31.0 reports drift in `apm audit` when two packages add an entry to one event.
 - **`Stop`**: it looks for that flag. When the flag is there it deletes it first, then blocks the stop
   once with the same instruction. Deleting first is what stops a loop: the flag can only be redeemed one
   time, so the agent can always finish its turn.
 
 GitHub Copilot CLI reads the same `.claude/settings.json` and raises both events (probed on 1.0.100,
 2026-10-20). It reads the prompt context only at the top level of the hook output, so the script writes
-it in both shapes. It honours the `Stop` block too. A session that starts in a subfolder runs no hook,
-and an agent may run where no hook fires. That is why the `## Standing rules` block sits in every skill
+it in both shapes. It honours the `Stop` block too. Claude Code loads no project hook in a session that
+starts in a subfolder, and an agent may run where no hook fires. That is why the `## Standing rules` block sits in every skill
 and not only in the hook.
+
+## Where an open proposal waits
+
+A person who is busy may not answer a proposal at once. A compaction can then drop it from the
+summary, and a new session would not know it. So `capture-learning` keeps each proposal that waits for
+an answer as one line in `temp/autolearn/pending.md`: the date, the lesson in one sentence and the
+proposed home. The folder holds its own `.gitignore`, so the file is never committed. The line goes
+away once the person says yes or no. Both entries of `capture-learning` read the file first, so the
+lessons step of `wrap-up` brings an open proposal back. The hook names it on the first prompt of the
+next session.
 
 ## Related
 

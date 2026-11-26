@@ -101,6 +101,63 @@ function Get-HookEditedFile {
     return @()
 }
 
+function Get-HookCheckoutRoot {
+    <#
+    .SYNOPSIS
+        Returns the git worktree that holds a file when that worktree lies inside RepoRoot, else RepoRoot.
+
+    .DESCRIPTION
+        Claude Code starts a hook in the folder the session started in. For a session that works in a git
+        worktree under .claude/worktrees, that is the main checkout, so the hook finds the main checkout
+        as its repository while the edited file belongs to the worktree.
+
+        The nearest folder above the file, below RepoRoot, that holds a .git entry decides. It counts as
+        a worktree only when .git is a file whose gitdir line points into the .git/worktrees folder of
+        RepoRoot, and the gitdir file there points back to that .git file, the way git writes a linked
+        worktree. Any other .git entry, such as a nested repository or a planted marker, and any path
+        that cannot be read, leaves the file with RepoRoot. A folder with only its own aisdlc.json, such
+        as a test consumer, is not a checkout either and stays part of RepoRoot.
+
+    .PARAMETER File
+        The full path of the edited file.
+
+    .PARAMETER RepoRoot
+        The main checkout the hook runs from.
+
+    .EXAMPLE
+        Get-HookCheckoutRoot -File $full -RepoRoot $RepoRoot
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$File,
+        [Parameter(Mandatory)][string]$RepoRoot
+    )
+
+    try {
+        $root = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/')
+        $worktrees = [IO.Path]::GetFullPath((Join-Path $root '.git' 'worktrees')) + [IO.Path]::DirectorySeparatorChar
+        $dir = Split-Path -Parent ([IO.Path]::GetFullPath($File))
+        while ($dir -and $dir.Length -gt $root.Length -and $dir.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) {
+            $marker = Join-Path $dir '.git'
+            if (Test-Path -LiteralPath $marker -PathType Leaf) {
+                $line = [string](Get-Content -LiteralPath $marker -TotalCount 1)
+                if ($line -notmatch '^gitdir:\s*(?<path>.+?)\s*$') { return $RepoRoot }
+                $gitdir = [IO.Path]::GetFullPath($Matches.path, $dir)
+                if (-not $gitdir.StartsWith($worktrees, [StringComparison]::OrdinalIgnoreCase)) { return $RepoRoot }
+                $backPointer = Join-Path $gitdir 'gitdir'
+                if (-not (Test-Path -LiteralPath $backPointer -PathType Leaf)) { return $RepoRoot }
+                $back = [IO.Path]::GetFullPath(([string](Get-Content -LiteralPath $backPointer -TotalCount 1)).Trim())
+                if ($back -ne [IO.Path]::GetFullPath($marker)) { return $RepoRoot }
+                return $dir
+            }
+            if (Test-Path -LiteralPath $marker) { return $RepoRoot }
+            $dir = Split-Path -Parent $dir
+        }
+    }
+    catch { return $RepoRoot }
+    return $RepoRoot
+}
+
 function New-HookContextOutput {
     <#
     .SYNOPSIS
@@ -121,4 +178,4 @@ function New-HookContextOutput {
         } | ConvertTo-Json -Depth 5 -Compress)
 }
 
-Export-ModuleMember -Function Get-PatchFilePath, Get-HookToolArgument, Get-HookEditedFile, New-HookContextOutput
+Export-ModuleMember -Function Get-PatchFilePath, Get-HookToolArgument, Get-HookEditedFile, Get-HookCheckoutRoot, New-HookContextOutput

@@ -23,6 +23,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0015: The tests of a shared package live outside the installed package](./adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md) - A shared script kept its Pester test next to it, in `<package>/.apm/skills/<skill>/scripts/`.
 - [ADR 0016: A spec review runs next to the code review](./adrs/0016-a-spec-review-runs-next-to-the-code-review.md) - The review step of `implement` asks whether a change is built right.
 - [ADR 0017: The shared code rules and the review agents live in core](./adrs/0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) - The code rules that hold in every language lived inside `csharp-generation-smells` of the dotnet pack.
+- [ADR 0018: The SonarCloud MCP token lives in a user store](./adrs/0018-the-sonarcloud-mcp-token-lives-in-a-user-store.md) - The `sonarqube` MCP server of the sonarcloud pack sends the header `Bearer ${AISDLC_SONAR_MCP_TOKEN}`.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General

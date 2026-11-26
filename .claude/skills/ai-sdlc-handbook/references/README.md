@@ -328,8 +328,9 @@ prompt), and it checks your `gh auth status`. It installs APM when it is missing
 `.git/info/exclude` of the clone, so nobody edits `.gitignore` by hand. The pull request workflow checks the installed files against
 the lock (`apm audit --ci`). Then start Claude Code or GitHub Copilot in the root folder of the
 repository. The agent hooks come from the committed `.claude/settings.json`. In Copilot they run only
-once you trust the repository folder. They also run only in a session that starts in the root folder:
-a session started in a subfolder runs no hook. The skills read GitHub issues and pull requests with the `gh` command.
+once you trust the repository folder. Claude Code loads them only in a session that starts in the
+root folder: a session started in a subfolder runs no project hook. A `cd` later in the session does
+not stop them, because each hook finds its script through `CLAUDE_PROJECT_DIR`. The skills read GitHub issues and pull requests with the `gh` command.
 Run `gh auth login` once per machine. You may also add the GitHub MCP server for its read tools, but no skill needs it.
 The `substrate-walker` agent uses `gh` and `git` read-only. Copilot does not read the allow rules in
 `.claude/settings.json`, so it asks before each command. To allow a command for a session, start

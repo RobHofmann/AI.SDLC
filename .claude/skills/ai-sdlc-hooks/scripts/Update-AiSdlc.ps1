@@ -26,6 +26,10 @@
        and stages the move. Claude Code reads both places, and GitHub Copilot then reads AGENTS.md once.
        It also writes the allow rules of the installed packages into .claude/settings.json with
        Sync-AllowRules.ps1, and stages that file.
+       It stages .mcp.json when git tracks it, or when it exists and git does not ignore it. With the
+       sonarcloud pack, Check-McpToken.ps1 runs first, and a written-out token stops the update there.
+       Without that pack, it stages only a .mcp.json that git already tracks.
+       Then it rebuilds the index of each doc layer with the new Build-DocsIndex.ps1 and stages it.
     6. It runs Find-RetiredSkillNames.ps1 of the new version. That lists each line in the repository's
        own files that still uses a skill name a release retired, with the new name. It is advice only:
        the person fixes those lines, and the script changes none of them.
@@ -130,6 +134,49 @@ try {
         pwsh -NoProfile -File $allow -RepoRoot $RepoRoot
         if ($LASTEXITCODE -ne 0) { throw "Sync-AllowRules.ps1 failed with exit code $LASTEXITCODE." }
         git add -- .claude/settings.json
+    }
+
+    # A release can add or change a shared MCP server, which APM writes into .mcp.json, so the update
+    # stages it too (#85). It stages the file only when git tracks it, or when it exists and git does not
+    # ignore it. A written-out token stops the update first: the sonarcloud gate is the one check for it.
+    # Without that gate nothing checks the file, so only a file git already tracks is staged, and the
+    # person is told to read its diff.
+    $mcpTracked = [bool](git ls-files -- .mcp.json)
+    git check-ignore -q -- .mcp.json 2>$null
+    $mcpIgnored = $LASTEXITCODE -eq 0
+    $mcpWanted = $mcpTracked -or ((Test-Path -LiteralPath (Join-Path $RepoRoot '.mcp.json') -PathType Leaf) -and -not $mcpIgnored)
+    if ($mcpWanted) {
+        $tokenCheck = Join-Path $RepoRoot '.claude' 'skills' 'sonarcloud-mcp' 'scripts' 'Check-McpToken.ps1'
+        $checked = Test-Path -LiteralPath $tokenCheck
+        if ($checked) {
+            pwsh -NoProfile -File $tokenCheck -RepoRoot $RepoRoot
+            if ($LASTEXITCODE -ne 0) { throw "Check-McpToken.ps1 found a written-out token or organization in an MCP file (exit $LASTEXITCODE), so .mcp.json is not staged and the update stops here. Run pwsh .claude/skills/sonarcloud-mcp/scripts/Check-McpToken.ps1 -Fix, then run this again." }
+        }
+        if ($checked -or $mcpTracked) {
+            git add -- .mcp.json
+            if ($LASTEXITCODE -ne 0) { throw "git add .mcp.json failed with exit code $LASTEXITCODE." }
+            if (-not $checked) { Write-Host 'Staged .mcp.json without a token check, because the sonarcloud pack is not installed. Read its diff for a secret before you commit.' -ForegroundColor Yellow }
+        }
+        else { Write-Host '.mcp.json is new and no token check is installed, so it is not staged. Read it, then stage it by hand.' -ForegroundColor Yellow }
+    }
+
+    # A release can change how the docs index is built, so the index gate would fail on the update pull
+    # request. The new Build-DocsIndex.ps1 rebuilds each layer index, which is then staged (#85). Exit 2
+    # means the repository has no doc layer.
+    $indexer = Join-Path $gatesScripts 'Build-DocsIndex.ps1'
+    if (Test-Path -LiteralPath $indexer) {
+        pwsh -NoProfile -File $indexer -RepoRoot $RepoRoot | Out-Host
+        $indexCode = $LASTEXITCODE
+        if ($indexCode -ne 0 -and $indexCode -ne 2) { throw "Build-DocsIndex.ps1 failed with exit code $indexCode." }
+        if ($indexCode -eq 0) {
+            Import-Module (Join-Path $gatesScripts 'AiSdlcConfig.psm1') -Force
+            foreach ($layer in @(Get-AiSdlcPath -Name docsRoots -RepoRoot $RepoRoot -Relative)) {
+                $index = "$($layer.TrimEnd('/'))/index.md"
+                if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot $index) -PathType Leaf)) { continue }
+                git add -- $index
+                if ($LASTEXITCODE -ne 0) { throw "git add $index failed with exit code $LASTEXITCODE." }
+            }
+        }
     }
 
     $finder = Join-Path $PSScriptRoot 'Find-RetiredSkillNames.ps1'

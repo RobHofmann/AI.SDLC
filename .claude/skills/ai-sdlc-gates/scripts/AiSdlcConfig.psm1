@@ -314,6 +314,46 @@ function Get-AiSdlcMainCheckoutRoot {
     return [IO.Path]::GetFullPath((Join-Path $mainTop $offset))
 }
 
+function Test-AiSdlcPathExcluded {
+    <#
+    .SYNOPSIS
+        True when a file sits below a folder whose name is on an exclusion list.
+
+    .DESCRIPTION
+        Only the folders between the repository root and the file count, so a folder above the
+        repository never excludes a file. A git worktree under .claude/worktrees/ therefore keeps its
+        files (#88). The match ignores case. A file whose own name equals an excluded name is not
+        excluded.
+
+    .PARAMETER RepoRoot
+        The repository root.
+
+    .PARAMETER FullName
+        The full path of the file.
+
+    .PARAMETER Folder
+        The folder names to leave out, such as node_modules. An empty list excludes nothing.
+
+    .EXAMPLE
+        Test-AiSdlcPathExcluded -RepoRoot $root -FullName $file -Folder '.claude', '.git'
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$FullName,
+        [string[]]$Folder
+    )
+
+    $names = @($Folder | Where-Object { $_ })
+    if ($names.Count -eq 0) { return $false }
+    $segments = @([IO.Path]::GetRelativePath($RepoRoot, $FullName).Replace('\', '/') -split '/')
+    if ($segments.Count -lt 2) { return $false }
+    foreach ($parent in $segments[0..($segments.Count - 2)]) {
+        foreach ($name in $names) { if ($parent -ieq $name) { return $true } }
+    }
+    return $false
+}
+
 function Test-AiSdlcPack {
     [CmdletBinding()]
     param(
@@ -464,4 +504,4 @@ function Get-AiSdlcPackage {
     }
 }
 
-Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage
+Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPathExcluded, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage

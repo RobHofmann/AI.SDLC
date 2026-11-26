@@ -42,7 +42,8 @@ Two rules hold in every run of every skill, and each is defined in one place:
    `Invoke-LocalGates.ps1`, commit and push. A step left for after the merge needs a second pull request.
 4. **Hand over.** Report the pull request link and what is done. The owner merges it (Checkpoint Bravo).
 
-The script runs `Update-AiSdlc.ps1 -NoGates`, because the pull request workflow runs the gates. The
+The script runs `Update-AiSdlc.ps1 -NoGates`, because the pull request workflow runs the gates.
+`Update-AiSdlc.ps1` also stages `.mcp.json` and the rebuilt docs index, and stops on a written-out token. The
 pull request names the release issue as `Refs owner/AI.SDLC#42`. The PR-story check accepts it, because
 `tracker.acceptedRepositories` lists AI.SDLC and a closed issue counts.
 
