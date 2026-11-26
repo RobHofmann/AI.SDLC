@@ -14,9 +14,8 @@ description: >
 # AI-SDLC hooks
 
 The agent hooks run in every agent tool that reads `.claude/settings.json`, and the scripts they call
-sit in this skill's `scripts/` folder. Each hook command calls its script by a path relative to the
-repository root. The git hooks sit in `githooks/`, and `Initialize-AiSdlc.ps1` points
-`core.hooksPath` at that folder.
+sit in this skill's `scripts/` folder. The git hooks sit in `githooks/`, and `Initialize-AiSdlc.ps1`
+points `core.hooksPath` at that folder.
 
 ## The agent hooks
 
@@ -27,7 +26,7 @@ repository root. The git hooks sit in `githooks/`, and `Initialize-AiSdlc.ps1` p
 | Before an edit or write | `Deny-SharedFileEdit.ps1` | Refuses an edit to a file listed in `apm.lock.yaml`, and names its source in AI.SDLC |
 | Before an edit or write | `Invoke-CompactSuggestionHook.ps1` | Suggests a compact at a logical boundary when the context window is full |
 | After an edit or write | `Invoke-PostEditCheck.ps1` | Runs the reading-level and em-dash gates on a markdown file, and hands any other file to the `postEdit` script of the pack that claims its extension, for example the dotnet build of a C# file |
-| When a prompt arrives, and at stop | `Invoke-AutolearnHook.ps1` | Reminds the agent to capture a correction as a lesson |
+| When a prompt arrives, and at stop | `Invoke-AutolearnHook.ps1` | Reminds the agent to capture a correction as a lesson, asks two lesson questions after a request to update its advice, and names the open lesson proposals on the first prompt of a session |
 
 The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph` refuses a raw
 `graphify` query in Bash or PowerShell on a stale code graph.
@@ -48,7 +47,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
 - `githooks/git-lfs-hook` is shared by `pre-push`, `post-checkout`, `post-commit` and `post-merge`.
   Git ignores the LFS hooks in `.git/hooks` once `core.hooksPath` is set, so these hooks hand on to
   Git LFS themselves. A repository whose `.gitattributes` never names `filter=lfs` sees no change.
-  When the repository uses LFS but `git-lfs` is missing, the push fails with a clear message.
+  When the repository uses LFS but git cannot run `git lfs`, the push fails with a clear message.
+- `githooks/commit-msg` removes a `Co-authored-by` trailer that names a coding tool; it never fails.
 - A clone that still points `core.hooksPath` at an older folder, such as `.githooks/`, moves to
   `githooks/` the next time `Initialize-AiSdlc.ps1` runs.
 - `scripts/Install-AiSdlc.ps1` is the one command for a fresh clone. It checks Windows long paths
@@ -85,8 +85,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   `apply_patch`, which sends the text of the edit, and one such edit can name several files.
 - **Return context in both shapes.** After a prompt or an edit, Copilot CLI reads `additionalContext`
   at the top level, and Claude Code reads it in `hookSpecificOutput`. `New-HookContextOutput` writes both.
-- **Start the session in the root folder.** Copilot CLI runs no agent hook in a session that starts in
-  a subfolder. The git `pre-push` hook still holds there.
+- **Find the script through `CLAUDE_PROJECT_DIR`**, so a `cd` does not break the hook. `pwsh -Command`
+  turns any exit code but 0 into 1, so a hook refuses with its JSON decision and exit 0.
 - **Read repository paths from `aisdlc.json`** through `AiSdlcConfig.psm1` in the `ai-sdlc-gates` skill.
 
 ## When a hook refused a step
@@ -97,7 +97,7 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   that commit. Never push with `--no-verify`.
 - The push check judges the repository the push targets. A push that names no folder is judged on
   the repository of the `cwd` field of the hook payload. In a session that works in a git worktree,
-  that is the worktree, even though the hook itself runs from the main checkout.
+  that is the worktree, even though the hook runs from the main checkout. The edit hooks do the same.
 - A push names a folder only in the plain forms: `git -C <dir> push`, and one `cd`, `pushd` or
   `Set-Location` right before the push, joined with `&&` or `;`. The folder may stand in quotes, and a
   relative folder starts at the `cwd`. Any other form is judged on the repository of the `cwd`. That

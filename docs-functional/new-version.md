@@ -11,13 +11,17 @@ person reviews and merges it.
   your GitHub App. A newer update pull request closes an older one that is still open.
 - The new version of every installed package, all pinned to the same tag. Only the `ref:` lines of the AI.SDLC packages move; another dependency keeps its own ref.
 - A root `CLAUDE.md` that only imports `AGENTS.md` moves to `.claude/CLAUDE.md`. Nothing else changes.
+- `.mcp.json` when a release adds or changes a shared MCP server, unless git ignores the file. The
+  update stops when the file holds a written-out token, and says how to fix it.
+- The index of each doc layer, rebuilt by the new version, so the index check passes.
 - The issue of AI.SDLC that the release tag names, so the change is traced to its issue. The title
   names it as `RobHofmann/AI.SDLC#42`, and the description as `Refs RobHofmann/AI.SDLC#42`. It says
   `Refs`, never `Fixes`, so your merge does not close the issue of AI.SDLC.
 - A description that says what to fix in the same pull request. It lists each line of your own files that
   still uses a retired skill name, with the new name. A file whose name marks it as history, such as a
   change list, is listed apart, with the `paths.historyPaths` entry to add instead of a rename. It also
-  holds the steps that each release since your old version asks of you. A "Before you merge" list at the
+  holds the steps that each release since your old version asks of you, which the AI.SDLC changelog
+  lists under the line "What a consumer does when it takes this release:". A "Before you merge" list at the
   top names each step, so the whole update fits in this one pull request. When the list is too long, the
   full list is in a comment on the pull request.
 

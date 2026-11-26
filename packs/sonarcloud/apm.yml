@@ -10,3 +10,4 @@ dependencies:
       headers:
         Authorization: Bearer ${AISDLC_SONAR_MCP_TOKEN}
         SONARQUBE_ORG: ${AISDLC_SONAR_ORG}
+        SONARQUBE_TOOLSETS: projects,issues,quality-gates,rules,measures,coverage,duplications

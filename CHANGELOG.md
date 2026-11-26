@@ -46,6 +46,39 @@ Each entry names its issue, as `#42`.
   path is gone: every change gets a plan, which opens with an `Approach:` line. The evidence record
   names the model of each step (#59).
 
+- The Bicep pre-flight builds the templates of a repository that sits in a git worktree under
+  `.claude/worktrees/`. It left out every file whose full path held `.claude`, so it found no template
+  and passed. The new `Test-AiSdlcPathExcluded` in `AiSdlcConfig.psm1` judges only the folders inside
+  the repository (#88).
+- The git hooks find Git LFS the way git does, with `git lfs version`, so a Git LFS in the program
+  folder of git counts. The message now says git could not run `git lfs` (#91).
+- The update pull request reads the steps for a consumer only under the line
+  `What a consumer does when it takes this release:`, and reads `*` items as well as `- ` items.
+  `tools/Check-ChangelogConsumerSteps.Tests.ps1` keeps this CHANGELOG in that form (#92).
+- The docs index keeps the first sentence of a page whole when it wraps, or when a line starts with a
+  code span. `Check-DocSectionRefs.ps1` builds a link anchor the way GitHub does, with `-1` and `-2`
+  for a repeated heading. `Check-DocPersonNames.ps1` also finds "Last, First" and a name with a word
+  such as "van der". `Check-AgentHygiene.ps1` fails an MCP tool of a connector whose name differs per
+  person (#89).
+- The edit hooks judge a file in a git worktree under the main checkout on that worktree. They use
+  its root, its packs, its allow lists and its `apm.lock.yaml`. The scripts that run stay the hook's
+  own (#50).
+- Every agent hook command finds its script through `CLAUDE_PROJECT_DIR`, so a `cd` in the session no
+  longer turns the hooks off. APM replaces the old commands in `.claude/settings.json` (#51).
+- A new git `commit-msg` hook removes a `Co-authored-by` trailer that names a coding tool. A trailer
+  that names a person stays, and a commit never fails on it (#53).
+- The autolearn hook adds a softer note when the user asks the agent to update its advice. An open
+  lesson proposal waits in `temp/autolearn/pending.md`, and the hook names the count on the first
+  prompt of a session (#54).
+- `Set-SonarMcpToken.ps1` of the sonarcloud pack sets the SonarCloud MCP token once, with hidden input
+  and a check against SonarCloud, on Windows, macOS and Linux. The setup and each session say when it
+  is missing. Every `apm install` of the shared scripts runs without the token variables, so
+  `.mcp.json` keeps its placeholders. ADR 0018 records where the token lives (#84).
+- `Update-AiSdlc.ps1` stages `.mcp.json` after the token check passes, and rebuilds and stages the
+  index of each doc layer (#85).
+- The `sonarqube` MCP server offers only the seven tool groups the skills use, through the header
+  `SONARQUBE_TOOLSETS` (#86).
+
 What a consumer does when it takes this release:
 
 - Expect a larger update pull request once: it deletes the old test files under `.claude/`. No file
@@ -53,6 +86,18 @@ What a consumer does when it takes this release:
 - When one of your own tests checks that a script under `.claude/` has a `.Tests.ps1` file next to it,
   check that only for your own scripts outside `.claude/`. The scripts under `.claude/` no longer come
   with their tests.
+- With the sonarcloud pack, each person runs
+  `pwsh .claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1` once in their own terminal, then
+  restarts the terminal and the tool. On macOS and Linux, add the line it prints to the shell profile.
+- Take this release with `New-AiSdlcUpdatePullRequest.ps1` or the update workflow, without
+  `AISDLC_SONAR_MCP_TOKEN` set in that shell. An older `Update-AiSdlc.ps1` still writes a set token
+  into `.mcp.json`; run `Check-McpToken.ps1 -Fix` before you commit when that happens.
+- A repository with its own `sonarqube` entry in `.mcp.json` adds the header `SONARQUBE_TOOLSETS` by
+  hand. Each person restarts their tool after the update pull request is merged.
+- The update to this release still runs the old `Update-AiSdlc.ps1`, which does not rebuild the docs
+  index. On the update branch, run `pwsh .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1`
+  and commit the index. Then fix any link that `Check-DocSectionRefs.ps1` or any name that
+  `Check-DocPersonNames.ps1` now reports.
 
 ## v1.5.1 - 2026-11-26
 
@@ -218,6 +263,8 @@ This release holds the whole AI-SDLC for repositories on GitHub:
 - `tools/`: the setup script for a new consumer, with a starter pull request workflow and the update
   workflow. Then the test consumers and the parallel Pester runner.
 
-What a consumer does when it takes this release: run `tools/Add-AiSdlcConsumer.ps1` from a clone of
-AI.SDLC, or add `apm.yml` by hand as the README says. Then switch on Issues, run
-`Set-BranchRuleset.ps1` once, and set up the GitHub App of the update workflow.
+What a consumer does when it takes this release:
+
+- Run `tools/Add-AiSdlcConsumer.ps1` from a clone of AI.SDLC, or add `apm.yml` by hand as the README
+  says. Then switch on Issues, run `Set-BranchRuleset.ps1` once, and set up the GitHub App of the
+  update workflow.

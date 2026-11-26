@@ -21,10 +21,10 @@
         ".claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml": "f80ed84d896859668d74cd47bf327a714d383f8a",
         ".claude/skills/ai-sdlc-gates/assets/agents-core.md": "f7e45643bf0f5447d480b588784b2c599cc7f320",
         ".claude/skills/ai-sdlc-gates/gates.json": "d37c2ad2ae7c5d8982aa4ae2b02c931ea7268642",
-        ".claude/skills/ai-sdlc-gates/scripts/AiSdlcConfig.psm1": "adc21763e176daadaa72b57d3342444ee70d761f",
+        ".claude/skills/ai-sdlc-gates/scripts/AiSdlcConfig.psm1": "80c8ebecaee5ccd872ddb92eb174b429e8da3e93",
         ".claude/skills/ai-sdlc-gates/scripts/apm-version.json": "fbbd8a51e60e3a7e653a35bc9b959f2bf332ab74",
-        ".claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1": "64c6d651e638b0fe15d20cde02418e8021a5cdfc",
-        ".claude/skills/ai-sdlc-gates/scripts/Check-AgentHygiene.ps1": "e8871a9e6598e5974413297afeb641a4cdb8924b",
+        ".claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1": "3d3ed16e25721320d98a562a67119b12bd1a248f",
+        ".claude/skills/ai-sdlc-gates/scripts/Check-AgentHygiene.ps1": "b17694d5c9400fb824e98a91a930ca596c4df2c0",
         ".claude/skills/ai-sdlc-gates/scripts/Check-AgentsFileSize.ps1": "5fe4e9a88e0d611333ecbb13986b58759cb2f48d",
         ".claude/skills/ai-sdlc-gates/scripts/Check-ArtifactGraph.ps1": "dc286db214d4856480a59329041b253f0637e034",
         ".claude/skills/ai-sdlc-gates/scripts/Check-ChangeCompleteness.ps1": "230b4814991cd1cdbcb587c26e23903d87788b6e",
@@ -32,10 +32,10 @@
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.ps1": "5bfba25e0161cef3f3d0afd7bff3f7c0f7cdd8e4",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.ps1": "662d77429101dd307f62b4ba4b391c5678a2f453",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.ps1": "aa86e5e2370d5798f5fbb6984e6ad66d4d23235d",
-        ".claude/skills/ai-sdlc-gates/scripts/Check-DocPersonNames.ps1": "931b28d5f8f50e660b2b4072f911feee86503435",
+        ".claude/skills/ai-sdlc-gates/scripts/Check-DocPersonNames.ps1": "8d309fb54f28bbad6a8bbe8a2251a12ce278f20e",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocReadingLevel.ps1": "3b7270d7bd298e6c21ceeddbad4ab12734661282",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocRowContent.ps1": "b249328b896d8611737dba10f6ff8c28e0e36d82",
-        ".claude/skills/ai-sdlc-gates/scripts/Check-DocSectionRefs.ps1": "5936fa4c12fb9ae74afa786ac51d5eebfaf75a30",
+        ".claude/skills/ai-sdlc-gates/scripts/Check-DocSectionRefs.ps1": "1aa9a18bf1e288170a721aeeab70b5a676a8d7fe",
         ".claude/skills/ai-sdlc-gates/scripts/Check-DocsWiki.ps1": "4f74cbbc243b530c412c96bb75853d31296a3d3b",
         ".claude/skills/ai-sdlc-gates/scripts/Check-LocalPackages.ps1": "c30dc709e487bb779e3cf9fe51d4e6b19ed99357",
         ".claude/skills/ai-sdlc-gates/scripts/Check-PrHygiene.ps1": "cbc32f6a6c0facc66a9f7c90b9a60413d68ba3d2",
@@ -68,47 +68,49 @@
         ".claude/skills/ai-sdlc-gates/skill-catalog.json": "b82af34d5ff2f96a8d687d5983981977d97c8898",
         ".claude/skills/ai-sdlc-gates/SKILL.md": "152575c17ebfbb8ffa1b5e2abf8d146bf4dd3e3d",
         ".claude/skills/ai-sdlc-handbook/references/artifact-graph.md": "8e16413affc7aa745d6626d424f637113c9b31cf",
-        ".claude/skills/ai-sdlc-handbook/references/autolearn.md": "a48ad70673bb2e67448628d23d2df7bd972eaccc",
+        ".claude/skills/ai-sdlc-handbook/references/autolearn.md": "c2b854cdc59a976d1fda98d61726a90460a8af17",
         ".claude/skills/ai-sdlc-handbook/references/comments.md": "710ad4b26e4b966c0c19127adf83203a3254053d",
         ".claude/skills/ai-sdlc-handbook/references/constitution.md": "c59059f5d5809c73fac56f730106d7e8174e7da5",
         ".claude/skills/ai-sdlc-handbook/references/consumer-own.md": "3dd7f38e00b58f6d1c5b7c79a160a5ebfafdb3c1",
-        ".claude/skills/ai-sdlc-handbook/references/context-management.md": "e284e60ca4d5e2624be79b5ce247e0662e430e3d",
-        ".claude/skills/ai-sdlc-handbook/references/docs-wiki.md": "37bdec92b7b65d58ce5d845385fdf9dc92cbcd6b",
+        ".claude/skills/ai-sdlc-handbook/references/context-management.md": "8602a5cf5cc51ff01f093ee95ef413c09dd22e10",
+        ".claude/skills/ai-sdlc-handbook/references/docs-wiki.md": "ed10110d14907bc57b40c455d84c39ae646a742f",
         ".claude/skills/ai-sdlc-handbook/references/first-story.md": "be899eb395dafb2d704b8f0cb46bac1fb5e593c8",
         ".claude/skills/ai-sdlc-handbook/references/language.md": "ca703edeb9e07e28e32a39fbcc9116b64db444d8",
         ".claude/skills/ai-sdlc-handbook/references/layout.md": "485c72dd48e8b6638c3e70d7980182e6d32d5f28",
         ".claude/skills/ai-sdlc-handbook/references/node-templates.md": "580c9c92c470a6abbaa0145cc3060ff1a11d247c",
         ".claude/skills/ai-sdlc-handbook/references/orchestration.md": "649cf5281934a0d84d76ef7f18f824644d6193a6",
-        ".claude/skills/ai-sdlc-handbook/references/pattern.md": "ec98d1af331d32e6911db343290e6c9a4ce1ad5f",
+        ".claude/skills/ai-sdlc-handbook/references/pattern.md": "d088deb0e7b56c08eb2d4cc320f6196c437c450f",
         ".claude/skills/ai-sdlc-handbook/references/personas.md": "063023eb07eeb81ca3503f93afa0457d18cef6f2",
-        ".claude/skills/ai-sdlc-handbook/references/plan.md": "8c6fde8e741106f8fe625b8b9a4e98b6d5ba912f",
-        ".claude/skills/ai-sdlc-handbook/references/README.md": "a78aa272d3bf6a3efd668d5b7e5735283d998bca",
+        ".claude/skills/ai-sdlc-handbook/references/plan.md": "92007175656aacef724eb793ef52ff6d16ae524f",
+        ".claude/skills/ai-sdlc-handbook/references/README.md": "621ab20cfb4911faf9015d60c4271044f8a4e95b",
         ".claude/skills/ai-sdlc-handbook/references/skill-usage.md": "156c716dbc880667ae6872ac2d2a39190b7568b1",
         ".claude/skills/ai-sdlc-handbook/SKILL.md": "67ec15d52be245a90fa92436624c922d0df77ac5",
         ".claude/skills/ai-sdlc-hooks/gates.json": "5ccede757f407e1b86737666375bbb67532c1c51",
-        ".claude/skills/ai-sdlc-hooks/githooks/git-lfs-hook": "a8fdf6cd73e7e87a1deee87daba346407e9a185e",
+        ".claude/skills/ai-sdlc-hooks/githooks/commit-msg": "67f05c95270aba7e0af1bd2a4da8055326fca88f",
+        ".claude/skills/ai-sdlc-hooks/githooks/git-lfs-hook": "8e8a6caa0477d31fa202a9096be4edfdf61cf42d",
         ".claude/skills/ai-sdlc-hooks/githooks/graphify-refresh": "9d174a9fb1336a128f3b40c9addbe9ea49b37cd4",
         ".claude/skills/ai-sdlc-hooks/githooks/post-checkout": "af51567430f6dd3bdc9dc9032d66c1ad35664772",
         ".claude/skills/ai-sdlc-hooks/githooks/post-commit": "f18058f9a38efc164e13801d61bb05329a056109",
         ".claude/skills/ai-sdlc-hooks/githooks/post-merge": "bb373f33abd09294cda55d7fc4499f32672eb372",
         ".claude/skills/ai-sdlc-hooks/githooks/post-rewrite": "e4c187dffeeaba569901f3424fae476b17c14927",
         ".claude/skills/ai-sdlc-hooks/githooks/pre-push": "bc91ffa955ea59a548d00e2084371cf042e94201",
-        ".claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.ps1": "831c406341104a8648b5055001f9b61447d68741",
+        ".claude/skills/ai-sdlc-hooks/scripts/AiSdlcSetup.ps1": "085409f0714900488229f62b9fbdd753b270665a",
         ".claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1": "535543b86886fcc582912ded5373b0bd3d756356",
         ".claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1": "ebea793434cb33b6f644a1fa42a3164f71e9e16f",
-        ".claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1": "ca703a9e057633e39af161d9e43a042429813acc",
+        ".claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1": "b0e195680d8ac7e42ede5467ef48d8b0da37c363",
         ".claude/skills/ai-sdlc-hooks/scripts/Find-RetiredSkillNames.ps1": "da6172d61799df3f37c5f70a103cddddb5517cb0",
-        ".claude/skills/ai-sdlc-hooks/scripts/HookPayload.psm1": "e4cbd92e148643d87586357bd5972cc00fe0acad",
+        ".claude/skills/ai-sdlc-hooks/scripts/HookPayload.psm1": "4ff145e88cffb93f38d37ce4d072e7adf3b180e3",
         ".claude/skills/ai-sdlc-hooks/scripts/Initialize-AiSdlc.ps1": "96651019ce61fd33e02a8070d7aaebae48f696c3",
         ".claude/skills/ai-sdlc-hooks/scripts/Install-AiSdlc.ps1": "65c6e28c40c5a72c9b4c007f48b04a8714f18ca3",
-        ".claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1": "bf9c2883e1b1fc08399dc2dbc80111a4ce7573ca",
+        ".claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1": "4b4171045d8e2f57c9bac6c5c82ec91fc0b3a38c",
         ".claude/skills/ai-sdlc-hooks/scripts/Invoke-CompactSuggestionHook.ps1": "5843b3906f5018d30948d91c2ac185411cd809d5",
-        ".claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1": "f801ed9f8d0d205bfd508741379fe67907970803",
-        ".claude/skills/ai-sdlc-hooks/scripts/New-AiSdlcUpdatePullRequest.ps1": "d9706f02178f054e090a35535fcf82ba50705770",
-        ".claude/skills/ai-sdlc-hooks/scripts/Update-AiSdlc.ps1": "372b0a9b02ff673f06e9d2729ca74476f512d155",
+        ".claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1": "f2707a2271b0def71d863b96fa62115b94a7e8b6",
+        ".claude/skills/ai-sdlc-hooks/scripts/New-AiSdlcUpdatePullRequest.ps1": "ee4bac3243efc5d5fe211cfa36892072d5299e02",
+        ".claude/skills/ai-sdlc-hooks/scripts/Remove-AiCoAuthorTrailer.ps1": "3583fa8a2f46f9c85d87dc3728b1c88b14a07d20",
+        ".claude/skills/ai-sdlc-hooks/scripts/Update-AiSdlc.ps1": "877c4abd22fd63d82ee86b01dd9081188856f4ee",
         ".claude/skills/ai-sdlc-hooks/scripts/WindowsLongPaths.ps1": "fa3d7f509b6f9a1a935178c1eaf0d1566b7afead",
-        ".claude/skills/ai-sdlc-hooks/SKILL.md": "33541a991e789d971017b63d415d0e6518f5047c",
-        ".claude/skills/capture-learning/SKILL.md": "32300ce3189109b0d717f975623e8d7ccec1c821",
+        ".claude/skills/ai-sdlc-hooks/SKILL.md": "a135e9b36f343c6b7a1db5c34d63e23d721be698",
+        ".claude/skills/capture-learning/SKILL.md": "c1d3856aeabb9ff3ee017c343e02141c07574c67",
         ".claude/skills/code-conventions/references/clean-code.md": "8e5baf2342a4d05d271f851d62c3c383457dda4c",
         ".claude/skills/code-conventions/references/skills-by-file-type.md": "4c37e54c5ee020923449036aadb1119cbdd35876",
         ".claude/skills/code-conventions/SKILL.md": "f07f72f9662da6263f908eeabfe04c139f90d99f",
@@ -134,7 +136,7 @@
         ".claude/skills/test-skills/scripts/Get-SkillUsage.ps1": "6414fbdafe94f41d0317544986eac895d8301b34",
         ".claude/skills/test-skills/scripts/Invoke-CopilotRouting.ps1": "44dab1b781b3b347f26a4b675bb2770a2b067c9c",
         ".claude/skills/test-skills/SKILL.md": "bed7ca965b48d3f60d4e64aca4cff2f7af2cf6ba",
-        ".claude/skills/update-ai-sdlc/SKILL.md": "8909ff0e0e220b1b7e6ff5dc694e4f7f32597324",
+        ".claude/skills/update-ai-sdlc/SKILL.md": "0a69a559a41f09ea6bbd5d1713b7e73fa6079f12",
         ".claude/skills/update-constitution/SKILL.md": "ed72e9c29c110355b4be543feab500bf5bbed7bc",
         ".claude/skills/wait-what/LICENSE-upstream.md": "c94c3ec2386b9ec966eaf5742d3b78bfd0c2c1f8",
         ".claude/skills/wait-what/SKILL.md": "9042f201a06250d028707456049c2e76b8481fcb",
@@ -151,55 +153,55 @@
           "event": "PreToolUse",
           "matcher": "Bash|PowerShell",
           "if": "Bash(*git* *push*)",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1')\""
         },
         {
           "event": "PreToolUse",
           "matcher": "Bash|PowerShell",
           "if": "PowerShell(*git* *push*)",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1')\""
         },
         {
           "event": "PreToolUse",
           "matcher": "Bash|PowerShell",
           "if": "Bash(*gh* *merge*)",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1')\""
         },
         {
           "event": "PreToolUse",
           "matcher": "Bash|PowerShell",
           "if": "PowerShell(*gh* *merge*)",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1')\""
         },
         {
           "event": "PreToolUse",
           "matcher": "Edit|Write",
           "if": "",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1')\""
         },
         {
           "event": "PreToolUse",
           "matcher": "Edit|Write",
           "if": "",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-CompactSuggestionHook.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Invoke-CompactSuggestionHook.ps1')\""
         },
         {
           "event": "PostToolUse",
           "matcher": "Edit|Write",
           "if": "",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1')\""
         },
         {
           "event": "UserPromptSubmit",
           "matcher": "",
           "if": "",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1')\""
         },
         {
           "event": "Stop",
           "matcher": "",
           "if": "",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1')\""
         }
       ]
     },
@@ -209,9 +211,9 @@
         ".claude/skills/bicep-conventions/references/bicep.md": "401ad1e73738cad4a29fb1a23ca8b9744d9dcd94",
         ".claude/skills/bicep-conventions/references/modules-and-naming.md": "cfab6665c6687b735489cbe98c310795ca19a21a",
         ".claude/skills/bicep-conventions/scripts/Get-BicepFacts.ps1": "22262a1ddee2b5b2c1e62b69cd5144ec83c1b54a",
-        ".claude/skills/bicep-conventions/scripts/Invoke-BicepPreflight.ps1": "f7e16095a2b34e114d83e845df93e3d74e2c390f",
+        ".claude/skills/bicep-conventions/scripts/Invoke-BicepPreflight.ps1": "2cb069aff40ac612408ccf890bbdc2beb617f872",
         ".claude/skills/bicep-conventions/scripts/Reorder-BicepPropertyOrder.ps1": "2df56588ccd935e98e0e8b09f90ff3de9b349746",
-        ".claude/skills/bicep-conventions/SKILL.md": "048e66d4ff613eab34eee7f8563b94bd0676b066"
+        ".claude/skills/bicep-conventions/SKILL.md": "f9a873851846c238f3443a19a7b74e2ed77da47c"
       },
       "hooks": []
     },
@@ -270,7 +272,7 @@
         ".claude/skills/dotnet-gates/scripts/DocSurface.psm1": "84b5fa7b21b8f168807d0dd93aaac07506f9059c",
         ".claude/skills/dotnet-gates/scripts/Initialize-Dotnet.ps1": "ce7dd39b322e53394568550feb02b21385045579",
         ".claude/skills/dotnet-gates/scripts/Invoke-DotnetPostEdit.ps1": "7187cd4062bd13947e1709287d08abcadf02d1d5",
-        ".claude/skills/dotnet-gates/scripts/Invoke-DotnetPreflight.ps1": "a8072b668109180de14118595c2bf6812fd3f204",
+        ".claude/skills/dotnet-gates/scripts/Invoke-DotnetPreflight.ps1": "0b19bd860ff301efdd03003bb0389bb9852b4e16",
         ".claude/skills/dotnet-gates/SKILL.md": "d140d6cdf37622c0a570e0b18197522d1e7b6070",
         ".claude/skills/nuget-vulnerability-remediation/SKILL.md": "5edd5bd3d27b96845b2136d513ecfec32a894b27",
         ".claude/skills/test-first-dotnet/SKILL.md": "55885e80aad7f58f1b308c79a43a7a3834f07e74",
@@ -281,13 +283,13 @@
           "event": "PreToolUse",
           "matcher": "Bash|PowerShell",
           "if": "Bash(graphify*)",
-          "command": "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1')\""
         },
         {
           "event": "PreToolUse",
           "matcher": "Bash|PowerShell",
           "if": "PowerShell(*graphify*)",
-          "command": "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1')\""
         }
       ]
     },
@@ -350,11 +352,22 @@
     },
     "sonarcloud": {
       "files": {
-        ".claude/skills/sonarcloud-mcp/gates.json": "bb8718d543c013a1456661a03d88365fe4bab93c",
+        ".claude/skills/sonarcloud-mcp/gates.json": "863f076e897e7e6f2706b52301a5f35a03332c94",
         ".claude/skills/sonarcloud-mcp/scripts/Check-McpToken.ps1": "cc17ff02e2ab7add14a71f2d7b01a20dbbe532a2",
-        ".claude/skills/sonarcloud-mcp/SKILL.md": "8f7947d1cbe26fa0d6b7fb56f8227359e75f117c"
+        ".claude/skills/sonarcloud-mcp/scripts/Initialize-SonarCloud.ps1": "50beda386b16cfcd5b65b5be6c8ddd4b6595ff30",
+        ".claude/skills/sonarcloud-mcp/scripts/Invoke-SonarTokenHook.ps1": "2989013a4213d3a38895937f1da77ed7614be3b4",
+        ".claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1": "8fe01e8cc8aeb2555563545598eb510d48199812",
+        ".claude/skills/sonarcloud-mcp/scripts/SonarMcpToken.psm1": "16d714937fabeb90faad68f442b9046ac814595d",
+        ".claude/skills/sonarcloud-mcp/SKILL.md": "2469fa60cda388d6d74e538b0d5d35dbd235982a"
       },
-      "hooks": []
+      "hooks": [
+        {
+          "event": "SessionStart",
+          "matcher": "",
+          "if": "",
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/sonarcloud-mcp/scripts/Invoke-SonarTokenHook.ps1')\""
+        }
+      ]
     }
   },
   "retired": {},
@@ -422,6 +435,7 @@
     "Initialize-CodeGraph.Tests.ps1",
     "Initialize-Dotnet.Tests.ps1",
     "Initialize-GitHub.Tests.ps1",
+    "Initialize-SonarCloud.Tests.ps1",
     "Install-AiSdlc.Tests.ps1",
     "Install-Apm.Tests.ps1",
     "Install-Gitleaks.Tests.ps1",
@@ -441,6 +455,7 @@
     "Invoke-PesterGate.Tests.ps1",
     "Invoke-PostEditCheck.Tests.ps1",
     "Invoke-Preflight.Tests.ps1",
+    "Invoke-SonarTokenHook.Tests.ps1",
     "New-AiSdlcUpdatePullRequest.Tests.ps1",
     "New-DocCandidate.Tests.ps1",
     "New-PullRequest.Tests.ps1",
@@ -448,11 +463,14 @@
     "PrePushHook.Tests.ps1",
     "PullRequestDescription.Tests.ps1",
     "PullRequestFeedback.Tests.ps1",
+    "Remove-AiCoAuthorTrailer.Tests.ps1",
     "Reorder-BicepPropertyOrder.Tests.ps1",
     "Repair-DocsWiki.Tests.ps1",
     "Reply-PullRequestThread.Tests.ps1",
     "Set-BranchRuleset.Tests.ps1",
+    "Set-SonarMcpToken.Tests.ps1",
     "SharedWiring.Tests.ps1",
+    "SonarMcpToken.Tests.ps1",
     "Sync-AgentsFile.Tests.ps1",
     "Sync-AllowRules.Tests.ps1",
     "Test-DocCandidate.Tests.ps1",

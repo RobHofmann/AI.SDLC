@@ -125,9 +125,10 @@ $ErrorActionPreference = 'Stop'
 Remove-Item Env:GITHUB_ACTIONS -ErrorAction SilentlyContinue
 # apm install writes the value of AISDLC_SONAR_MCP_TOKEN into the .mcp.json of the sonarcloud pack, and
 # its gate then fails. A test consumer gets the placeholder, as in the pipeline. SONAR_TOKEN goes too:
-# an upgrade test can install an older release, which named it, and the gate fails on its value.
-Remove-Item Env:AISDLC_SONAR_MCP_TOKEN -ErrorAction SilentlyContinue
-Remove-Item Env:SONAR_TOKEN -ErrorAction SilentlyContinue
+# an upgrade test can install an older release, which named it, and the gate fails on its value. The
+# list of variables lives in AiSdlcSetup.ps1 (#84).
+. (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-hooks' 'scripts' 'AiSdlcSetup.ps1')
+$null = Remove-ApmSecretVariable
 
 $testRoot = Join-Path $RepoRoot 'test-consumers'
 $consumers = @(Get-ChildItem -LiteralPath $testRoot -Directory | Where-Object { -not $Name -or $_.Name -in $Name } | Sort-Object Name)

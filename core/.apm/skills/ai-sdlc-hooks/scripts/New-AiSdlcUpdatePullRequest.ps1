@@ -129,9 +129,10 @@ function Get-ReleaseOfRef {
     return $null
 }
 
-# The "What a consumer does" text of each release after $From, up to and including $To, as CHANGELOG.md
-# writes it. A text runs to the first blank line that a list item or an indented line does not follow.
-# A "- " bullet becomes "* ", so a step reads as one list in the description.
+# The consumer steps of each release after $From, up to and including $To, as CHANGELOG.md writes them.
+# Only the exact line "What a consumer does when it takes this release:" starts a block (#92). A block
+# runs to the first blank line that a list item (- or *) or an indented line does not follow. A "- "
+# bullet becomes "* ", so a step reads as one list in the description.
 function Get-ConsumerStep {
     param([string]$Path, $From, $To)
     $steps = [System.Collections.Generic.List[pscustomobject]]::new()
@@ -145,12 +146,12 @@ function Get-ConsumerStep {
             $after = if ($From.PreRelease) { $version -ge $From.Version } else { $version -gt $From.Version }
             $release = if (-not $Matches[2] -and $after -and $version -le $To.Version) { "v$($Matches[1])" } else { $null }
         }
-        elseif ($release -and $lines[$i] -match '^What a consumer does') {
+        elseif ($release -and $lines[$i] -ceq 'What a consumer does when it takes this release:') {
             $block = [System.Collections.Generic.List[string]]::new()
             while ($i -lt $lines.Count -and $lines[$i] -notmatch '^#') {
                 if (-not $lines[$i].Trim()) {
                     $next = if ($i + 1 -lt $lines.Count) { $lines[$i + 1] } else { '' }
-                    if ($next -notmatch '^(\s*- |\s{2,}\S)') { break }
+                    if ($next -notmatch '^(\s*[-*] |\s{2,}\S)') { break }
                 }
                 $block.Add(($lines[$i] -replace '^(\s*)- ', '$1* '))
                 $i++

@@ -9,7 +9,7 @@
 #
 # Two choices differ from the stock LFS hook, because these hooks are installed in every repository:
 #   1. A repository whose .gitattributes never names filter=lfs is left alone, so it sees no change.
-#   2. When the repository uses LFS but git-lfs is missing, the hook fails (exit 2) with a clear
+#   2. When the repository uses LFS but git cannot run `git lfs`, the hook fails (exit 2) with a clear
 #      message, like the stock hook. Git ignores the exit code of a post-* hook, so only a push stops.
 
 hook=$1
@@ -17,9 +17,11 @@ shift
 
 git grep -q --untracked -e 'filter=lfs' -- '.gitattributes' '*/.gitattributes' 2>/dev/null || exit 0
 
-if command -v git-lfs >/dev/null 2>&1; then
+# Ask git itself: git finds git-lfs in its own program folder first, then on PATH (#91). stdin stays
+# closed, so the check never reads the pre-push ref lines that git lfs pre-push needs.
+if git lfs version </dev/null >/dev/null 2>&1; then
     exec git lfs "$hook" "$@"
 fi
 
-printf >&2 "\n%s\n\n" "$hook: this repository uses Git LFS (a .gitattributes file names filter=lfs), but 'git-lfs' was not found on your path. Install Git LFS (https://git-lfs.com), then run the git command again."
+printf >&2 "\n%s\n\n" "$hook: this repository uses Git LFS (a .gitattributes file names filter=lfs), but git could not run 'git lfs'. Install Git LFS (https://git-lfs.com), then run the git command again."
 exit 2

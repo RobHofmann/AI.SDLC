@@ -68,4 +68,64 @@ Describe 'Build-DocsIndex' {
         $r.ExitCode | Should -Not -Be 0
         (Get-Content -LiteralPath (Join-Path $script:Root 'docs/index.md') -Raw) | Should -Match 'out of date'
     }
+
+    Context 'the first whole sentence of the summary' {
+        It 'takes a first sentence that wraps over <Lines> lines whole' -Tag '89' -ForEach @(
+            @{ Lines = 2; Text = "This sentence starts on one line`nand ends on the next. Then comes more."; Expected = 'This sentence starts on one line and ends on the next.' }
+            @{ Lines = 3; Text = "This sentence starts here,`nruns over a second line,`nand ends on the third. Then comes more."; Expected = 'This sentence starts here, runs over a second line, and ends on the third.' }
+        ) {
+            Set-Page -Relative 'docs/wrap.md' -Text "# Wrap`n`n$Text`n"
+
+            Invoke-Builder | Out-Null
+
+            ((Get-IndexLine -Match '\[Wrap\]') -replace '^.* - ', '') | Should -Be $Expected
+        }
+
+        It 'does not take the second sentence' -Tag '89' {
+            Set-Page -Relative 'docs/second.md' -Text "# Second`n`nFirst sentence here.`nSecond sentence there.`n"
+
+            Invoke-Builder | Out-Null
+
+            ((Get-IndexLine -Match '\[Second\]') -replace '^.* - ', '') | Should -Be 'First sentence here.'
+        }
+
+        It 'takes a first sentence whole when a wrapped line starts with a code span' -Tag '89' {
+            Set-Page -Relative 'docs/tick.md' -Text "# Tick`n`nThis sentence moves a rule into`n``powershell-conventions``. It also adds more.`n"
+
+            Invoke-Builder | Out-Null
+
+            Get-IndexLine -Match '\[Tick\]' | Should -Match ' - This sentence moves a rule into `powershell-conventions`\.$'
+        }
+
+        It 'takes a paragraph that starts with a code span' -Tag '89' {
+            Set-Page -Relative 'docs/lead.md' -Text "# Lead`n`n``Build-DocsIndex.ps1`` writes the index`nof each layer. Then more.`n"
+
+            Invoke-Builder | Out-Null
+
+            Get-IndexLine -Match '\[Lead\]' | Should -Match ' - `Build-DocsIndex\.ps1` writes the index of each layer\.$'
+        }
+
+        It 'ends the paragraph at a code fence that opens with <Fence>' -Tag '89' -ForEach @(
+            @{ Fence = '```' }
+            @{ Fence = '~~~' }
+        ) {
+            Set-Page -Relative 'docs/fence.md' -Text "# Fence`n`nThis paragraph has no stop`n$Fence`nfenced code`n$Fence`n"
+
+            Invoke-Builder | Out-Null
+
+            ((Get-IndexLine -Match '\[Fence\]') -replace '^.* - ', '') | Should -Be 'This paragraph has no stop'
+        }
+
+        It 'does not end the sentence at <Case>' -Tag '89' -ForEach @(
+            @{ Case = 'e.g.'; Text = 'Use a gate, e.g. the docs gate, to check it. Next.'; Expected = 'Use a gate, e.g. the docs gate, to check it.' }
+            @{ Case = 'a version'; Text = 'Release v2.8.0 changed the index. Next.'; Expected = 'Release v2.8.0 changed the index.' }
+            @{ Case = 'a dot inside a code span'; Text = 'Run `Build. It now` to write it. Next.'; Expected = 'Run `Build. It now` to write it.' }
+        ) {
+            Set-Page -Relative 'docs/cases.md' -Text "# Cases`n`n$Text`n"
+
+            Invoke-Builder | Out-Null
+
+            ((Get-IndexLine -Match '\[Cases\]') -replace '^.* - ', '') | Should -Be $Expected
+        }
+    }
 }

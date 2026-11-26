@@ -161,6 +161,62 @@ dependencies:
         $decision.permissionDecisionReason | Should -Not -Match 'local clone'
     }
 
+    It 'denies an edit to an installed file of a git worktree inside the repository, judged on the lock file of the worktree' -Tag '50' {
+        $root = New-LockRepo
+        $worktree = Join-Path $root '.claude' 'worktrees' 'wt'
+        New-Item -ItemType Directory -Path $worktree -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $worktree '.git') -Value "gitdir: $root/.git/worktrees/wt"
+        New-Item -ItemType Directory -Path (Join-Path $root '.git' 'worktrees' 'wt') -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $root '.git' 'worktrees' 'wt' 'gitdir') -Value (Join-Path $worktree '.git')
+        Set-Content -LiteralPath (Join-Path $worktree 'apm.lock.yaml') -Value $script:Lock -Encoding utf8
+        $absolute = (Join-Path $worktree '.claude/skills/guide-me/SKILL.md').Replace('\', '\\')
+
+        $result = Invoke-Hook -Root $root -Payload "{`"tool_input`":{`"file_path`":`"$absolute`"}}"
+
+        $decision = $result.Output | ConvertFrom-Json
+        $decision.permissionDecision | Should -Be 'deny'
+        $decision.permissionDecisionReason | Should -Match '^\.claude/skills/guide-me/SKILL\.md is installed from AI\.SDLC'
+    }
+
+    It 'allows an edit in a git worktree whose lock file does not list the file, even when the main checkout lists the same path' -Tag '50' {
+        $root = New-LockRepo
+        $worktree = Join-Path $root '.claude' 'worktrees' 'wt'
+        New-Item -ItemType Directory -Path $worktree -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $worktree '.git') -Value "gitdir: $root/.git/worktrees/wt"
+        New-Item -ItemType Directory -Path (Join-Path $root '.git' 'worktrees' 'wt') -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $root '.git' 'worktrees' 'wt' 'gitdir') -Value (Join-Path $worktree '.git')
+        Set-Content -LiteralPath (Join-Path $worktree 'apm.lock.yaml') -Value "lockfile_version: '1'`ndependencies: []" -Encoding utf8
+        $absolute = (Join-Path $worktree '.claude/skills/guide-me/SKILL.md').Replace('\', '\\')
+
+        $result = Invoke-Hook -Root $root -Payload "{`"tool_input`":{`"file_path`":`"$absolute`"}}"
+
+        $result.Output | Should -BeNullOrEmpty
+    }
+
+    It 'judges a git worktree without a lock file on the lock file of the main checkout, so a missing lock does not open the guard' -Tag '50' {
+        $root = New-LockRepo
+        $worktree = Join-Path $root '.claude' 'worktrees' 'wt'
+        New-Item -ItemType Directory -Path $worktree -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $worktree '.git') -Value "gitdir: $root/.git/worktrees/wt"
+        New-Item -ItemType Directory -Path (Join-Path $root '.git' 'worktrees' 'wt') -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $root '.git' 'worktrees' 'wt' 'gitdir') -Value (Join-Path $worktree '.git')
+        $absolute = (Join-Path $worktree '.claude/skills/guide-me/SKILL.md').Replace('\', '\\')
+
+        $result = Invoke-Hook -Root $root -Payload "{`"tool_input`":{`"file_path`":`"$absolute`"}}"
+
+        ($result.Output | ConvertFrom-Json).permissionDecisionReason | Should -Match '^\.claude/skills/guide-me/SKILL\.md is installed from AI\.SDLC'
+    }
+
+    It 'still denies the installed file of a patch when another path in it is malformed' -Tag '50' {
+        $root = New-LockRepo
+        $patch = "*** Begin Patch`n*** Update File: docs/bad`0name.md`n@@`n-a`n+b`n*** Update File: .claude/skills/guide-me/SKILL.md`n@@`n-a`n+b`n*** End Patch`n"
+        $payload = @{ tool_name = 'Edit'; tool_input = $patch } | ConvertTo-Json -Compress
+
+        $result = Invoke-Hook -Root $root -Payload $payload
+
+        ($result.Output | ConvertFrom-Json).permissionDecision | Should -Be 'deny'
+    }
+
     It 'points to the handbook page on developing against a local clone' {
         $root = New-LockRepo
 

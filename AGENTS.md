@@ -111,7 +111,9 @@ step. That step runs every core, pack and repo gate once. `Test-Consumers.ps1` n
 3. Add a line to `CHANGELOG.md` under the version this pull request releases, never under
    `Unreleased`. When the newest heading has no tag yet, add to it. Otherwise start a new heading
    `## vX.Y.Z - <date>`. Raise Z for a fix or a change in `tools/`. Raise Y for a new skill, gate or
-   behaviour. Raise X for a change a consumer must act on. Set `version` in every `apm.yml` to the
+   behaviour. Raise X for a change a consumer must act on. List a step for a consumer under the exact
+   line `What a consumer does when it takes this release:`, then a blank line and a list; the update
+   pull request reads only that line. Set `version` in every `apm.yml` to the
    same version; `tools/Check-PackageVersion.ps1` fails the build when one differs. Then open a pull
    request with `Fixes #42`, so the merge closes the issue. `main` only changes
    through a pull request with green checks; the owner's merge is the approval.

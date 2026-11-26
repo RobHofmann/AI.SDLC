@@ -200,13 +200,15 @@ Describe 'Invoke-DotnetPreflight' {
 
     Context 'the SonarCloud opt-in' {
         BeforeEach {
-            $script:SavedTokens = @{ SONAR_TOKEN = $env:SONAR_TOKEN; SONARCLOUD_TOKEN = $env:SONARCLOUD_TOKEN }
+            $script:SavedTokens = @{ SONAR_TOKEN = $env:SONAR_TOKEN; SONARCLOUD_TOKEN = $env:SONARCLOUD_TOKEN; AISDLC_SONAR_MCP_TOKEN = $env:AISDLC_SONAR_MCP_TOKEN }
             $env:SONAR_TOKEN = $null
             $env:SONARCLOUD_TOKEN = $null
+            $env:AISDLC_SONAR_MCP_TOKEN = $null
         }
 
         AfterEach {
             $env:SONAR_TOKEN = $script:SavedTokens.SONAR_TOKEN
+            $env:AISDLC_SONAR_MCP_TOKEN = $script:SavedTokens.AISDLC_SONAR_MCP_TOKEN
             $env:SONARCLOUD_TOKEN = $script:SavedTokens.SONARCLOUD_TOKEN
         }
 
@@ -240,6 +242,77 @@ Describe 'Invoke-DotnetPreflight' {
             $scanner[-1] | Should -Match '^dotnet-sonarscanner end'
             @($global:DotnetTest.Calls | Where-Object { $_ -like 'build *' }).Count | Should -Be 2
             @($global:DotnetTest.Calls | Where-Object { $_ -match 'secret-token-value' }).Count | Should -Be 0
+        }
+
+        Context 'which token the scanner gets' {
+            BeforeEach {
+                $global:DotnetTest.ScannerToken = @()
+                Mock dotnet-sonarscanner {
+                    $global:DotnetTest.Calls.Add('dotnet-sonarscanner ' + ($args -join ' '))
+                    if ($args[0] -eq 'begin') { $global:DotnetTest.ScannerToken += $env:SONAR_TOKEN }
+                    $global:LASTEXITCODE = if ($args[0] -eq 'begin') { $global:DotnetTest.BeginExit } else { 0 }
+                }
+                $global:DotnetTest.BeginExit = 0
+                $script:SonarRoot = New-DotnetRepo -SonarCloud @{ projectKey = 'key'; organization = 'org' }
+            }
+
+            It 'falls back to AISDLC_SONAR_MCP_TOKEN when SONAR_TOKEN and SONARCLOUD_TOKEN are not set' -Tag '84' {
+                $env:AISDLC_SONAR_MCP_TOKEN = 'fake-sonar-token-84'
+
+                $rows = Invoke-Preflight -Root $script:SonarRoot -Extra @{ SkipTests = $true; IncludeSonar = $true }
+
+                (Get-Row $rows 'SonarCloud*').Status | Should -Be 'PASS'
+                $global:DotnetTest.ScannerToken | Should -Be @('fake-sonar-token-84')
+            }
+
+            It 'treats an empty SONAR_TOKEN and SONARCLOUD_TOKEN as not set' -Tag '84' {
+                # On Windows an empty value removes the variable; on Linux and macOS it stays set and empty.
+                [Environment]::SetEnvironmentVariable('SONAR_TOKEN', '')
+                [Environment]::SetEnvironmentVariable('SONARCLOUD_TOKEN', '')
+                $env:AISDLC_SONAR_MCP_TOKEN = 'fake-sonar-token-84'
+
+                $rows = Invoke-Preflight -Root $script:SonarRoot -Extra @{ SkipTests = $true; IncludeSonar = $true }
+
+                (Get-Row $rows 'SonarCloud*').Status | Should -Be 'PASS'
+                $global:DotnetTest.ScannerToken | Should -Be @('fake-sonar-token-84')
+            }
+
+            It 'prefers SONAR_TOKEN, then SONARCLOUD_TOKEN, over AISDLC_SONAR_MCP_TOKEN' -Tag '84' {
+                $env:AISDLC_SONAR_MCP_TOKEN = 'fake-mcp-token-84'
+                $env:SONARCLOUD_TOKEN = 'fake-cloud-token-84'
+
+                Invoke-Preflight -Root $script:SonarRoot -Extra @{ SkipTests = $true; IncludeSonar = $true } | Out-Null
+                $env:SONAR_TOKEN = 'fake-sonar-token-84'
+                Invoke-Preflight -Root $script:SonarRoot -Extra @{ SkipTests = $true; IncludeSonar = $true } | Out-Null
+
+                $global:DotnetTest.ScannerToken | Should -Be @('fake-cloud-token-84', 'fake-sonar-token-84')
+            }
+
+            It 'leaves SONAR_TOKEN unset after the scan when only the fallback token was set' -Tag '84' {
+                $env:AISDLC_SONAR_MCP_TOKEN = 'fake-sonar-token-84'
+
+                Invoke-Preflight -Root $script:SonarRoot -Extra @{ SkipTests = $true; IncludeSonar = $true } | Out-Null
+
+                Test-Path Env:SONAR_TOKEN | Should -BeFalse
+            }
+
+            It 'gives SONAR_TOKEN its old value back after the scan, also when the scanner fails' -Tag '84' {
+                $env:SONAR_TOKEN = 'fake-sonar-token-84'
+                $global:DotnetTest.BeginExit = 1
+
+                $rows = Invoke-Preflight -Root $script:SonarRoot -Extra @{ SkipTests = $true; IncludeSonar = $true }
+
+                (Get-Row $rows 'SonarCloud*').Status | Should -Be 'FAIL'
+                $env:SONAR_TOKEN | Should -Be 'fake-sonar-token-84'
+            }
+
+            It 'names Set-SonarMcpToken.ps1 in the NEEDS-TOKEN row when no token is set' -Tag '84' {
+                $rows = Invoke-Preflight -Root $script:SonarRoot -Extra @{ SkipTests = $true; IncludeSonar = $true }
+
+                $row = Get-Row $rows 'SonarCloud*'
+                $row.Status | Should -Be 'NEEDS-TOKEN'
+                $row.Detail | Should -Match 'Set-SonarMcpToken\.ps1'
+            }
         }
     }
 }

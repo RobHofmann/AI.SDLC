@@ -72,6 +72,74 @@ Describe 'HookPayload' {
         }
     }
 
+    Context 'Get-HookCheckoutRoot' {
+        BeforeAll {
+            $script:Main = Join-Path $TestDrive 'main'
+            $script:Worktree = Join-Path $script:Main '.claude' 'worktrees' 'wt'
+            New-Item -ItemType Directory -Path (Join-Path $script:Worktree 'docs'), (Join-Path $script:Main 'test' 'full' 'docs') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $script:Main '.git') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $script:Worktree '.git') -Value "gitdir: $script:Main/.git/worktrees/wt"
+            New-Item -ItemType Directory -Path (Join-Path $script:Main '.git' 'worktrees' 'wt') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $script:Main '.git' 'worktrees' 'wt' 'gitdir') -Value (Join-Path $script:Worktree '.git')
+            Set-Content -LiteralPath (Join-Path $script:Main 'test' 'full' 'aisdlc.json') -Value '{ }'
+        }
+
+        It 'returns the worktree for a file in a git worktree that lies inside the repository' -Tag '50' {
+            Get-HookCheckoutRoot -File (Join-Path $script:Worktree 'docs' 'page.md') -RepoRoot $script:Main | Should -Be $script:Worktree
+        }
+
+        It 'returns the worktree for a file it is about to create in a new folder' -Tag '50' {
+            Get-HookCheckoutRoot -File (Join-Path $script:Worktree 'new' 'deep' 'page.md') -RepoRoot $script:Main | Should -Be $script:Worktree
+        }
+
+        It 'returns the repository for a file of the repository itself' -Tag '50' {
+            Get-HookCheckoutRoot -File (Join-Path $script:Main 'docs' 'page.md') -RepoRoot $script:Main | Should -Be $script:Main
+        }
+
+        It 'returns the repository for a folder with its own aisdlc.json but no .git, such as a test consumer' -Tag '50' {
+            Get-HookCheckoutRoot -File (Join-Path $script:Main 'test' 'full' 'docs' 'page.md') -RepoRoot $script:Main | Should -Be $script:Main
+        }
+
+        It 'returns the repository for a .git file whose gitdir points outside its .git/worktrees folder' -Tag '50' {
+            $planted = Join-Path $script:Main 'planted'
+            New-Item -ItemType Directory -Path $planted -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $planted '.git') -Value "gitdir: $TestDrive/elsewhere/.git"
+
+            Get-HookCheckoutRoot -File (Join-Path $planted 'page.md') -RepoRoot $script:Main | Should -Be $script:Main
+        }
+
+        It 'returns the repository for a .git file that points into .git/worktrees without the back-pointer git writes there' -Tag '50' {
+            $forged = Join-Path $script:Main 'forged'
+            New-Item -ItemType Directory -Path $forged, (Join-Path $script:Main '.git' 'worktrees' 'forged') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $forged '.git') -Value "gitdir: $script:Main/.git/worktrees/forged"
+
+            Get-HookCheckoutRoot -File (Join-Path $forged 'page.md') -RepoRoot $script:Main | Should -Be $script:Main
+        }
+
+        It 'returns the repository for a back-pointer that names another folder' -Tag '50' {
+            $other = Join-Path $script:Main 'other'
+            New-Item -ItemType Directory -Path $other -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $other '.git') -Value "gitdir: $script:Main/.git/worktrees/wt"
+
+            Get-HookCheckoutRoot -File (Join-Path $other 'page.md') -RepoRoot $script:Main | Should -Be $script:Main
+        }
+
+        It 'returns the repository for a .git file whose gitdir is not a valid path, instead of throwing' -Tag '50' {
+            $malformed = Join-Path $script:Main 'malformed'
+            New-Item -ItemType Directory -Path $malformed -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $malformed '.git') -Value "gitdir: $script:Main/.git/worktrees/bad`0name"
+
+            Get-HookCheckoutRoot -File (Join-Path $malformed 'page.md') -RepoRoot $script:Main | Should -Be $script:Main
+        }
+
+        It 'returns the repository for a nested repository with a .git folder' -Tag '50' {
+            $nested = Join-Path $script:Main 'nested'
+            New-Item -ItemType Directory -Path (Join-Path $nested '.git') -Force | Out-Null
+
+            Get-HookCheckoutRoot -File (Join-Path $nested 'page.md') -RepoRoot $script:Main | Should -Be $script:Main
+        }
+    }
+
     Context 'New-HookContextOutput' {
         It 'writes additionalContext at the top level for Copilot CLI and nested for Claude Code' {
             $out = New-HookContextOutput -EventName 'PostToolUse' -Text 'Fix the reading level.' | ConvertFrom-Json

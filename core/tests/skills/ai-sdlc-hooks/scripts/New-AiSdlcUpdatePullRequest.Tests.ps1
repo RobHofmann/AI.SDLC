@@ -13,7 +13,9 @@ Describe 'New-AiSdlcUpdatePullRequest' {
 
 ## v1.2.0 - 2026-10-03
 
-What a consumer does: the step of v1.2.0.
+What a consumer does when it takes this release:
+
+- The step of v1.2.0.
 
 ## v1.1.0 - 2026-10-02
 
@@ -31,15 +33,25 @@ Behaviour changes:
 
 - Another change that asks nothing.
 
-What a consumer does for these: run the new step once.
+What a consumer does when it takes this release:
+
+- Run the new step once.
+
+What a consumer does for one pack:
+
+- A step under a heading that is not the fixed one.
 
 ## v1.1.0-rc.1 - 2026-10-01
 
-What a consumer does: the step of the pre-release.
+What a consumer does when it takes this release:
+
+- The step of the pre-release.
 
 ## v1.0.0 - 2026-10-01
 
-What a consumer does: the step of v1.0.0.
+What a consumer does when it takes this release:
+
+- The step of v1.0.0.
 '@
 
         # A local stand-in for the AI.SDLC source, with one annotated tag and its changelog.
@@ -272,8 +284,24 @@ exit 0
 
             $r.Body | Should -Match ([regex]::Escape('* Type the new names.'))
             $r.Body | Should -Match ([regex]::Escape("* Fix the text that names an old skill,`n  such as your part of AGENTS.md."))
-            $r.Body | Should -Match ([regex]::Escape('What a consumer does for these: run the new step once.'))
+            $r.Body | Should -Match ([regex]::Escape('* Run the new step once.'))
             $r.Body | Should -Not -Match 'step of v1\.2\.0|step of v1\.0\.0|step of the pre-release|asks nothing|Behaviour changes'
+        }
+
+        It 'reads the steps only under the fixed heading, What a consumer does when it takes this release' -Tag '92' {
+            $r = Invoke-Update -Consumer (New-Consumer -FindOutput $script:Finding) -Source (New-Source)
+
+            $r.Body | Should -Match ([regex]::Escape('* Run the new step once.'))
+            $r.Body | Should -Not -Match 'not the fixed one|for one pack'
+        }
+
+        It 'reads steps written as * items as well as - items' -Tag '92' {
+            $changelog = "# Changelog`n`n## v1.1.0 - 2026-10-02`n`nWhat a consumer does when it takes this release:`n`n* The first star step.`n* The second star step.`n"
+            $r = Invoke-Update -Consumer (New-Consumer -FindOutput $script:Finding) -Source (New-Source -Changelog $changelog)
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Body | Should -Match ([regex]::Escape('* The first star step.'))
+            $r.Body | Should -Match ([regex]::Escape('* The second star step.'))
         }
 
         It 'opens with a Before you merge list that names each step' {

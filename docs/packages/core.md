@@ -129,16 +129,16 @@ Documentation scripts live under `core/.apm/skills/adopt-docs/scripts/` and `cor
 - `Get-FolderFacts.ps1` reads the contents of a unit folder.
 - `New-DocCandidate.ps1` collects the facts of each unit with no page into a facts file under `doc-candidates/`. It calls no model; `adopt-docs` hands each facts file to an agent that drafts the page.
 - `Repair-DocsWiki.ps1` applies safe machine repairs to existing documentation.
-- `Build-DocsIndex.ps1` generates `docs/index.md` and `docs-functional/index.md`.
+- `Build-DocsIndex.ps1` generates `docs/index.md` and `docs-functional/index.md`. The summary of a page is the first whole sentence of its first paragraph. That holds when the sentence wraps over lines, or when a line starts with a code span.
 - `Check-DocCoverage.ps1` checks both documentation layers and unit pages.
 - `Check-DocsWiki.ps1` checks for orphans and broken relative links.
 - `Check-DocReadingLevel.ps1` checks text against the required reading level.
 - `Check-DocEmDashes.ps1` rejects the em-dash character.
 - `Check-DocLineCitations.ps1` rejects source references by line number.
-- `Check-DocPersonNames.ps1` checks for internal team member names.
+- `Check-DocPersonNames.ps1` checks for internal team member names. It looks for each full name as "First Last" and "Last, First", also when a word such as "van der" stands before the last name.
 - `Check-DocRowContent.ps1` requires each documentation line to carry a fact.
 - `Check-DocLastChecked.ps1` lists the pages whose `Last checked` date is older than `docs.lastCheckedMaxAgeDays`. It is advisory and off by default.
-- `Check-DocSectionRefs.ps1` checks references to sections in other pages.
+- `Check-DocSectionRefs.ps1` checks references to sections in other pages. It builds a link anchor the way GitHub does, with `-1` and `-2` for a repeated heading.
 
 `DocCoverage.psm1` finds units that need pages and the pages that cover them.
 
@@ -150,6 +150,7 @@ Hook files live under `core/.apm/skills/ai-sdlc-hooks/`.
 
 Git hooks include:
 
+- `commit-msg`
 - `git-lfs-hook`
 - `graphify-refresh`
 - `post-checkout`
@@ -161,6 +162,9 @@ Git hooks include:
 `git-lfs-hook` is not a hook itself. `pre-push`, `post-checkout`, `post-commit` and `post-merge` call it
 to hand on to Git LFS, because git ignores the LFS hooks in `.git/hooks` once `core.hooksPath` is set.
 It does nothing in a repository whose `.gitattributes` never names `filter=lfs`.
+
+`commit-msg` runs `Remove-AiCoAuthorTrailer.ps1`, which removes a `Co-authored-by` trailer that names a
+coding tool, so nothing in git names a tool as an author. A trailer that names a person stays.
 
 Setup and hook scripts include:
 
@@ -186,17 +190,23 @@ A `cwd` or a repository on a network share (a UNC path) works too, because the h
 
 The agent never merges, because the owner's merge is the approval (Checkpoint Bravo). A check in the same hooks refuses `gh pr merge` and a `gh api` call to a merge endpoint. Like the other hooks, it lets a command through when it cannot read it.
 
-`Invoke-PostEditCheck.ps1` runs the house-style or build check that fits a file after an edit.
+`Invoke-PostEditCheck.ps1` runs the house-style or build check that fits a file after an edit. Both edit hooks judge a file in a git worktree under the main checkout on that worktree. They use its root, its packs, its allow lists and its `apm.lock.yaml`. `Get-HookCheckoutRoot` in `HookPayload.psm1` finds that worktree.
 
 `HookPayload.psm1` reads the hook payload of Claude Code and of GitHub Copilot, including the text of an `apply_patch` edit. It also writes hook context in the shapes of both tools. Copilot reads `additionalContext` at the top level after a prompt or an edit, and Claude Code reads it in `hookSpecificOutput`.
 
-GitHub Copilot ignores the `if` field of a hook and runs every hook entry in turn before each tool call. So each hook script checks the command or file before it loads a slow module. Only `HookPayload.psm1`, which reads the payload, may load first. The push check has one entry per tool. A Copilot session that starts in a subfolder of the repository runs no hook, so start it in the root folder.
+GitHub Copilot ignores the `if` field of a hook and runs every hook entry in turn before each tool call. So each hook script checks the command or file before it loads a slow module. Only `HookPayload.psm1`, which reads the payload, may load first. The push check has one entry per tool. Each hook command finds its script through `CLAUDE_PROJECT_DIR`, or the current folder when that is not set, so a `cd` in the session does not break it.
+
+`Invoke-AutolearnHook.ps1` flags a correction and asks for `capture-learning`. When the user only asks the agent to update its advice, it adds a softer note with two lesson questions and no flag. Its phrase lists are tested with their "no" forms too. On the first prompt of a session it counts the open lesson proposals in `temp/autolearn/pending.md`, and never shows their text.
 
 `Sync-AllowRules.ps1` writes the commands that each installed package lists under `allow` in its `gates.json` into `.claude/settings.json`. It also writes the full path of the knowledge folder into `permissions.additionalDirectories` of `.claude/settings.local.json`, which stays on one machine. It does so only for a folder below the parent folder of the repository that no link leads to. Any other knowledge folder is skipped with a FIX line. `Initialize-AiSdlc.ps1` and `Update-AiSdlc.ps1` run it, and an advisory gate runs it with `-Check`.
 
 `Sync-AgentsFile.ps1`, which `Update-AiSdlc.ps1` runs, moves a root `CLAUDE.md` that only imports `AGENTS.md` to `.claude/CLAUDE.md`. Copilot reads a root `CLAUDE.md` and its import, so it loaded `AGENTS.md` twice.
 
 `New-AiSdlcUpdatePullRequest.ps1` takes the newest AI.SDLC release on the branch `ai-sdlc-<tag>`, with `Update-AiSdlc.ps1 -NoGates`, and opens one pull request. It reads the story key from the tag message and the consumer steps from `CHANGELOG.md` of that tag, in a temporary bare clone of one commit. The description lists the old skill names in the repository's own files and the steps of each release since the pinned one. It stops when the working tree has changes, and does nothing when the branch is already on origin. It closes an open update pull request of an older release. The `update-ai-sdlc` skill and the workflow `ai-sdlc-update.yml` run it. `AiSdlcSetup.ps1` holds the reading of `apm.yml` (`Get-AiSdlcPin`) and the newest tag (`Get-AiSdlcReleaseTag`) that it shares with `Update-AiSdlc.ps1`.
+
+`AiSdlcSetup.ps1` also runs every `apm install` of the shared scripts without `AISDLC_SONAR_MCP_TOKEN`, `AISDLC_SONAR_ORG` and `SONAR_TOKEN` (`Invoke-WithoutSonarToken`). APM writes the value of such a variable into `.mcp.json`, and the update pull request must keep the placeholders.
+
+`Update-AiSdlc.ps1` also stages `.mcp.json`, so a new shared MCP server reaches the update pull request. It does so when git tracks the file, or when it exists and git does not ignore it. With the sonarcloud pack it runs `Check-McpToken.ps1` first, and a written-out token stops the update. Then it rebuilds the index of each doc layer with the new `Build-DocsIndex.ps1` and stages it, so the index gate passes on the update.
 
 `Find-RetiredSkillNames.ps1` lists the lines in the repository's own files that still use a retired skill name. `Update-AiSdlc.ps1` runs it after an update. It leaves out the ADR folder (`paths.adrFolder`), because an ADR is history. It also leaves out the files that `paths.historyPaths` marks as history, and prints one line with how many places it left out. A pattern that matches no file gives a warning, and the script still never fails.
 

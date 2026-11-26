@@ -82,6 +82,50 @@ Describe 'The git hooks hand on to Git LFS' {
             [pscustomobject]@{ Code = $LASTEXITCODE; Output = $output }
         }
 
+        function Write-Script([string]$Path, [string[]]$Lines) {
+            [System.IO.File]::WriteAllText($Path, (($Lines -join "`n") + "`n"))
+        }
+
+        # A PATH with only the tools the hook needs besides git, so no git-lfs on PATH is found. With
+        # ExecPathOnly on Windows, the folder of sh stays on PATH, because git needs it there.
+        function Get-RestrictedPath {
+            param([string]$Bin, [string]$ShBin, [string]$GitLfs)
+            foreach ($tool in 'cat', 'dirname', 'sed') {
+                $target = (& $script:Sh -c "command -v $tool").Trim()
+                Write-Script "$Bin/$tool" '#!/bin/sh', "exec '$target' `"`$@`""
+            }
+            if ($GitLfs -eq 'ExecPathOnly' -and $IsWindows) { return "PATH='$ShBin':`"`$(dirname `"`$(command -v sh)`")`";" }
+            "PATH='$ShBin';"
+        }
+
+        # A stand-in git that answers `git lfs` itself, so a real Git LFS in the program folder of git
+        # never changes the result (#91). Fake logs the arguments and stdin of `git lfs`. None answers
+        # that lfs is no git command. ExecPathOnly puts a git-lfs only in GIT_EXEC_PATH, as an install
+        # in the program folder of git does.
+        function Write-StandIn {
+            param([string]$Bin, [string]$Exec, [string]$ShBin, [string]$Log, [string]$GitLfs, [switch]$SpyGit, [switch]$ExecPathLfs)
+            $execLfs = $ExecPathLfs -or $GitLfs -eq 'ExecPathOnly'
+            $realGit = (& $script:Sh -c 'command -v git').Trim()
+            $spy = if ($SpyGit) { "echo `"git: `$*`" >> '$Log'" } else { ':' }
+            $lfs = switch ($GitLfs) {
+                'Fake' { "if [ `"`$1`" = lfs ]; then shift; [ `"`$1`" = version ] && exit 0; echo `"args: `$*`" >> '$Log'; sed 's/^/stdin: /' >> '$Log'; exit 0; fi" }
+                'None' { "if [ `"`$1`" = lfs ]; then echo `"git: 'lfs' is not a git command. See 'git --help'.`" >&2; exit 1; fi" }
+                default { ':' }
+            }
+            Write-Script "$Bin/git" '#!/bin/sh', $spy, $lfs, "exec '$realGit' `"`$@`""
+            if ($execLfs) {
+                Write-Script "$Exec/git-lfs" '#!/bin/sh', '[ "$1" = version ] && exit 0', "echo `"exec-path: `$*`" >> '$Log'", "sed 's/^/stdin: /' >> '$Log'"
+            }
+            $setup = switch ($GitLfs) {
+                'Fake' { "PATH='$ShBin':`$PATH;" }
+                { $_ -in 'None', 'ExecPathOnly' } { Get-RestrictedPath -Bin $Bin -ShBin $ShBin -GitLfs $GitLfs }
+                default { '' }
+            }
+            if ($SpyGit -and -not $setup) { $setup = "PATH='$ShBin':`$PATH;" }
+            if ($execLfs) { $setup += " export GIT_EXEC_PATH='$Exec';" }
+            $setup
+        }
+
         # Runs one hook through sh in a scratch repository. -Path sets PATH inside sh, after the Git for
         # Windows sh launcher has added its own folders, so a test can hide or replace git-lfs.
         function Invoke-Hook {
@@ -90,8 +134,9 @@ Describe 'The git hooks hand on to Git LFS' {
                 [string[]]$Arguments = @(),
                 [string]$StdIn = '',
                 [switch]$UsesLfs,
-                [ValidateSet('Real', 'Fake', 'None')][string]$GitLfs = 'Real',
-                [switch]$SpyGit
+                [ValidateSet('Real', 'Fake', 'None', 'ExecPathOnly')][string]$GitLfs = 'Real',
+                [switch]$SpyGit,
+                [switch]$ExecPathLfs
             )
             $root = New-TempRoot
             $repo = Join-Path $root 'repo'
@@ -101,36 +146,13 @@ Describe 'The git hooks hand on to Git LFS' {
             $bin = (Join-Path $root 'bin') -replace '\\', '/'
             # PATH in sh splits on a colon, so a Windows path such as C:/x is written as /c/x there.
             $shBin = $bin -replace '^([A-Za-z]):/', { "/$($_.Groups[1].Value.ToLower())/" }
-            New-Item -ItemType Directory -Path $bin | Out-Null
-
-            # Fake: a git-lfs that logs its arguments and stdin. None: a PATH that holds only git,
-            # cat and dirname, so git-lfs (which sits next to git in Git for Windows) is not found.
-            function Write-Script([string]$Path, [string[]]$Lines) {
-                [System.IO.File]::WriteAllText($Path, (($Lines -join "`n") + "`n"))
-            }
-            $setup = switch ($GitLfs) {
-                'Real' { '' }
-                'Fake' {
-                    Write-Script "$bin/git-lfs" '#!/bin/sh', "echo `"args: `$*`" >> '$log'", "sed 's/^/stdin: /' >> '$log'"
-                    "PATH='$shBin':`$PATH;"
-                }
-                'None' {
-                    foreach ($tool in 'git', 'cat', 'dirname') {
-                        $target = (& $script:Sh -c "command -v $tool").Trim()
-                        Write-Script "$bin/$tool" '#!/bin/sh', "exec '$target' `"`$@`""
-                    }
-                    "PATH='$shBin';"
-                }
-            }
-            # Spy: a git that logs each call and then runs the real git, so a test sees every git command a hook runs.
-            if ($SpyGit) {
-                $realGit = (& $script:Sh -c 'command -v git').Trim()
-                Write-Script "$bin/git" '#!/bin/sh', "echo `"git: `$*`" >> '$log'", "exec '$realGit' `"`$@`""
-                if ($GitLfs -ne 'None') { $setup = "PATH='$shBin':`$PATH;" }
-            }
+            $exec = (Join-Path $root 'exec') -replace '\\', '/'
+            $shExec = $exec -replace '^([A-Za-z]):/', { "/$($_.Groups[1].Value.ToLower())/" }
+            New-Item -ItemType Directory -Path $bin, $exec | Out-Null
+            $setup = Write-StandIn -Bin $bin -Exec $exec -ShBin $shBin -Log $log -GitLfs $GitLfs -SpyGit:$SpyGit -ExecPathLfs:$ExecPathLfs
             Push-Location $repo
             try {
-                $command = "chmod +x '$shBin'/* 2>/dev/null; $setup exec `"`$@`""
+                $command = "chmod +x '$shBin'/* '$shExec'/* 2>/dev/null; $setup exec `"`$@`""
                 $output = $StdIn | & $script:Sh -c $command hook "$script:HookDir/$Name" @Arguments 2>&1 | Out-String
                 $code = $LASTEXITCODE
             }
@@ -219,11 +241,12 @@ Describe 'The git hooks hand on to Git LFS' {
             ($r.Log -split "`n")[0].Trim() | Should -Be ("args: $Name $($Arguments -join ' ')".Trim())
         }
 
-        It 'fails the push with a clear message when the repository uses LFS but git-lfs is missing (AC-5)' -Skip:$script:NoSh {
+        It 'fails the push with a clear message when the repository uses LFS but git cannot run git lfs (AC-5)' -Skip:$script:NoSh -Tag '91' {
             $r = Invoke-Hook -Name 'pre-push' -Arguments 'origin', 'https://example.invalid/repo' -StdIn "refs/heads/1-story $script:Sha refs/heads/1-story $script:Zero" -UsesLfs -GitLfs None
 
             $r.Code | Should -Be 2
-            $r.Output | Should -Match "uses Git LFS.*'git-lfs' was not found"
+            $r.Output | Should -Match "uses Git LFS.*git could not run 'git lfs'.*https://git-lfs\.com"
+            $r.Output | Should -Not -Match 'on your path'
         }
 
         It 'leaves a repository without LFS alone when git-lfs is missing (AC-6)' -Skip:$script:NoSh -ForEach @(
@@ -236,6 +259,35 @@ Describe 'The git hooks hand on to Git LFS' {
 
             $r.Code | Should -Be 0 -Because $r.Output
             $r.Output | Should -Not -Match 'git-lfs'
+        }
+
+        It 'hands <Name> on to the git-lfs that only the exec-path of git holds' -Skip:$script:NoSh -Tag '91' -ForEach @(
+            @{ Name = 'pre-push'; Arguments = @('origin', 'https://example.invalid/repo') }
+            @{ Name = 'post-checkout'; Arguments = @(('a' * 40), ('0' * 40), '1') }
+            @{ Name = 'post-commit'; Arguments = @() }
+            @{ Name = 'post-merge'; Arguments = @('0') }
+        ) {
+            $refLine = "refs/heads/1-story $script:Sha refs/heads/1-story $script:Zero"
+
+            $r = Invoke-Hook -Name $Name -Arguments $Arguments -StdIn $refLine -UsesLfs -GitLfs ExecPathOnly
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Output | Should -Not -Match 'git-lfs'
+            ($r.Log -split "`n")[0].Trim() | Should -Be ("exec-path: $Name $($Arguments -join ' ')".Trim())
+            if ($Name -eq 'pre-push') { $r.Log | Should -Match ([regex]::Escape("stdin: $refLine")) }
+        }
+
+        It 'uses the stand-in for <Name>, not the git-lfs in the exec-path of git' -Skip:$script:NoSh -Tag '91' -ForEach @(
+            @{ Name = 'pre-push'; Arguments = @('origin', 'https://example.invalid/repo') }
+            @{ Name = 'post-checkout'; Arguments = @(('a' * 40), ('0' * 40), '1') }
+            @{ Name = 'post-commit'; Arguments = @() }
+            @{ Name = 'post-merge'; Arguments = @('0') }
+        ) {
+            $r = Invoke-Hook -Name $Name -Arguments $Arguments -StdIn "refs/heads/1-story $script:Sha refs/heads/1-story $script:Zero" -UsesLfs -GitLfs Fake -ExecPathLfs
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            ($r.Log -split "`n")[0].Trim() | Should -Be ("args: $Name $($Arguments -join ' ')".Trim())
+            $r.Log | Should -Not -Match 'exec-path:'
         }
 
         It 'does not call git-lfs in a repository without LFS, so it sees no change (AC-6)' -Skip:$script:NoSh {

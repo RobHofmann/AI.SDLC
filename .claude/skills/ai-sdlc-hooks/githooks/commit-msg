@@ -1,0 +1,8 @@
+#!/bin/sh
+# Removes a Co-authored-by trailer that names a coding tool before git saves the commit (#53).
+# Remove-AiCoAuthorTrailer.ps1 does the work. A commit never fails here: without pwsh the message
+# stays as it is, and the hook always exits 0.
+if command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Remove-AiCoAuthorTrailer.ps1 -MessageFile "$1"
+fi
+exit 0

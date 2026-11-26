@@ -53,6 +53,16 @@
     Get-ApmDeployedFile -LockPath <apm.lock.yaml>
         Returns the paths under deployed_files in an APM lock: the files and folders APM installed.
 
+    Remove-ApmSecretVariable, Restore-ApmSecretVariable -Saved <hashtable>
+        Remove-ApmSecretVariable takes AISDLC_SONAR_MCP_TOKEN, AISDLC_SONAR_ORG and SONAR_TOKEN out of this
+        process and returns what it took; Restore-ApmSecretVariable puts it back. apm install writes the
+        value of a variable that an MCP server entry names into .mcp.json, so without this a person's
+        token could reach a commit (ADR 0018).
+
+    Invoke-WithoutSonarToken -ScriptBlock <scriptblock>
+        Runs the script block without those variables, and puts them back after it, also on an error.
+        Invoke-ApmInstall runs apm this way, and so do the other callers of apm install.
+
 .EXAMPLE
     . (Join-Path $PSScriptRoot 'AiSdlcSetup.ps1')
     $advice = Test-GitHubLogin
@@ -65,6 +75,38 @@
 #>
 
 $script:GitHookFolder = '.claude/skills/ai-sdlc-hooks/githooks'
+$script:ApmSecretVariables = @('AISDLC_SONAR_MCP_TOKEN', 'AISDLC_SONAR_ORG', 'SONAR_TOKEN')
+
+function Remove-ApmSecretVariable {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param()
+
+    $saved = @{}
+    foreach ($name in $script:ApmSecretVariables) {
+        if (Test-Path -LiteralPath "Env:$name") {
+            $saved[$name] = [Environment]::GetEnvironmentVariable($name)
+            Remove-Item -LiteralPath "Env:$name"
+        }
+    }
+    return $saved
+}
+
+function Restore-ApmSecretVariable {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][hashtable]$Saved)
+
+    foreach ($name in $Saved.Keys) { [Environment]::SetEnvironmentVariable($name, $Saved[$name]) }
+}
+
+function Invoke-WithoutSonarToken {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][scriptblock]$ScriptBlock)
+
+    $saved = Remove-ApmSecretVariable
+    try { & $ScriptBlock }
+    finally { Restore-ApmSecretVariable -Saved $saved }
+}
 
 function Test-GitHubLogin {
     [CmdletBinding()]
@@ -222,8 +264,7 @@ function Invoke-ApmInstall {
     if (-not $useLocal) {
         Push-Location -LiteralPath $RepoRoot
         try {
-            apm @Arguments | Out-Host
-            $code = $LASTEXITCODE
+            $code = Invoke-WithoutSonarToken { apm @Arguments | Out-Host; $LASTEXITCODE }
             if ($code -eq 0 -and $AuditCode) {
                 apm audit --ci | Out-Host
                 $AuditCode.Value = $LASTEXITCODE
@@ -257,8 +298,7 @@ function Invoke-ApmInstall {
         Write-Host "apm runs in a local worktree, because the repository is on a network share: $worktree"
         Push-Location -LiteralPath $worktree
         try {
-            apm @Arguments | Out-Host
-            $code = $LASTEXITCODE
+            $code = Invoke-WithoutSonarToken { apm @Arguments | Out-Host; $LASTEXITCODE }
             if ($code -eq 0 -and $AuditCode) {
                 apm audit --ci | Out-Host
                 $AuditCode.Value = $LASTEXITCODE

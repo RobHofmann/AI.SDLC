@@ -30,11 +30,20 @@
     with no output, so a bug here can never turn every edit into an error. An edit gets its gate result
     at once.
 
+    Claude Code starts the hook in the folder the session started in. For a session that works in a git
+    worktree under .claude/worktrees, that is the main checkout, so this script and its default root
+    are the ones of the main checkout. A file in such a worktree is judged as part of the worktree
+    (Get-HookCheckoutRoot in HookPayload.psm1): the root, the packs that apm.yml lists and the allow
+    lists are the ones of the worktree, and so is the shared allow list beside its copy of the
+    reading-level gate. Only data comes from the worktree: the gate and pack scripts that run are
+    always the ones installed with this hook.
+
 .PARAMETER Payload
     The hook payload as JSON. Read from stdin when not supplied.
 
 .PARAMETER RepoRoot
-    The repository root. Defaults to the folder that holds aisdlc.json, found from this script.
+    The repository root. Defaults to the folder that holds aisdlc.json, found from this script. A file in
+    a git worktree inside it is judged on the worktree instead.
 
 .PARAMETER SkillsRoot
     Where the packages are installed, read for their postEdit entries. Defaults to <RepoRoot>/.claude/skills.
@@ -66,8 +75,11 @@ Import-Module (Join-Path $PSScriptRoot 'HookPayload.psm1') -Force
 function Resolve-InsideRepo {
     param([string]$File, [string]$Root)
 
-    $full = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $Root $File }
-    $full = [IO.Path]::GetFullPath($full)
+    try {
+        $full = if ([IO.Path]::IsPathRooted($File)) { $File } else { Join-Path $Root $File }
+        $full = [IO.Path]::GetFullPath($full)
+    }
+    catch { return $null }
     $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
     if (-not $full.StartsWith($rootFull, [System.StringComparison]::OrdinalIgnoreCase)) { return $null }
     if (-not (Test-Path -LiteralPath $full)) { return $null }
@@ -81,7 +93,8 @@ function Get-MarkdownFeedback {
     $parts = [System.Collections.Generic.List[string]]::new()
 
     if (Test-Path -LiteralPath $ReadingLevelScript) {
-        $report = & pwsh -NoProfile -File $ReadingLevelScript -RepoRoot $RepoRoot -Path $Relative 2>&1 | Out-String
+        $sharedList = if ($SharedAllowListPath) { @('-SharedAllowListPath', $SharedAllowListPath) } else { @() }
+        $report = & pwsh -NoProfile -File $ReadingLevelScript -RepoRoot $RepoRoot -Path $Relative @sharedList 2>&1 | Out-String
         if ($LASTEXITCODE -eq 1) { $parts.Add("Reading level (C11) on ${Relative}:`n$($report.Trim())") }
     }
 
@@ -125,23 +138,36 @@ Import-Module (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSd
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 if (-not $SkillsRoot) { $SkillsRoot = Join-Path $RepoRoot '.claude' 'skills' }
 
-$feedback = [System.Collections.Generic.List[string]]::new()
-$packFiles = [System.Collections.Generic.List[object]]::new()
+$hookRoot = $RepoRoot
+$checkouts = [ordered]@{}
 foreach ($edited in $editedFiles) {
-    $full = Resolve-InsideRepo -File $edited -Root $RepoRoot
+    $full = Resolve-InsideRepo -File $edited -Root $hookRoot
     if (-not $full) { continue }
+    $checkout = Get-HookCheckoutRoot -File $full -RepoRoot $hookRoot
+    if (-not $checkouts.Contains($checkout)) { $checkouts[$checkout] = [System.Collections.Generic.List[string]]::new() }
+    $checkouts[$checkout].Add($full)
+}
 
-    $relative = [IO.Path]::GetRelativePath($RepoRoot, $full).Replace('\', '/')
-    $extension = [IO.Path]::GetExtension($full).ToLowerInvariant()
-    if ($extension -eq '.md') {
-        $text = Get-MarkdownFeedback -File $full -Relative $relative
+$feedback = [System.Collections.Generic.List[string]]::new()
+foreach ($checkout in $checkouts.Keys) {
+    $RepoRoot = $checkout
+    $sharedAllowList = Join-Path $checkout '.claude' 'skills' 'ai-sdlc-gates' 'scripts' 'data' 'reading-level-allowlist.txt'
+    $SharedAllowListPath = if ($checkout -ne $hookRoot) { $sharedAllowList }
+
+    $packFiles = [System.Collections.Generic.List[object]]::new()
+    foreach ($full in $checkouts[$checkout]) {
+        $relative = [IO.Path]::GetRelativePath($RepoRoot, $full).Replace('\', '/')
+        $extension = [IO.Path]::GetExtension($full).ToLowerInvariant()
+        if ($extension -eq '.md') {
+            $text = Get-MarkdownFeedback -File $full -Relative $relative
+            if ($text) { $feedback.Add($text) }
+        }
+        elseif ($extension) { $packFiles.Add([pscustomobject]@{ Full = $full; Relative = $relative; Extension = $extension }) }
+    }
+    if ($packFiles.Count -gt 0) {
+        $text = Get-PackFeedback -Files $packFiles
         if ($text) { $feedback.Add($text) }
     }
-    elseif ($extension) { $packFiles.Add([pscustomobject]@{ Full = $full; Relative = $relative; Extension = $extension }) }
-}
-if ($packFiles.Count -gt 0) {
-    $text = Get-PackFeedback -Files $packFiles
-    if ($text) { $feedback.Add($text) }
 }
 
 if ($feedback.Count -gt 0) { New-HookContextOutput -EventName 'PostToolUse' -Text ($feedback -join "`n`n") | Write-Output }

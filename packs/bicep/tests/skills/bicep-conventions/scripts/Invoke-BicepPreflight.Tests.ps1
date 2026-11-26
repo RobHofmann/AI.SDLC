@@ -7,8 +7,8 @@ Describe 'Invoke-BicepPreflight' {
         $script:Script = Join-Path $script:ScriptFolder 'Invoke-BicepPreflight.ps1'
 
         function New-BicepRepo {
-            param([string[]]$Templates)
-            $root = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+            param([string[]]$Templates, [string]$Parent = $TestDrive)
+            $root = Join-Path $Parent ([guid]::NewGuid().ToString('n'))
             New-Item -ItemType Directory -Path $root -Force | Out-Null
             Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{}'
             foreach ($rel in $Templates) {
@@ -44,14 +44,27 @@ Describe 'Invoke-BicepPreflight' {
         $row.Detail | Should -Not -Match 'main-a'
     }
 
-    It 'leaves out templates under .claude and apm_modules' {
-        $root = New-BicepRepo -Templates @('main.bicep', '.claude/skills/x/sample.bicep', 'apm_modules/pkg/sample.bicep')
+    It 'leaves out templates under .claude, .git, apm_modules and node_modules' -Tag '88' {
+        $root = New-BicepRepo -Templates @('main.bicep', '.claude/skills/x/sample.bicep', 'apm_modules/pkg/sample.bicep', '.git/x/sample.bicep', 'node_modules/pkg/sample.bicep')
         $global:BicepSeen = [System.Collections.Generic.List[string]]::new()
 
         & $script:Script -RepoRoot $root -Builder { param($Path) $global:BicepSeen.Add($Path); $true } | Out-Null
 
         $global:BicepSeen | Should -HaveCount 1
         $global:BicepSeen[0] | Should -Match 'main\.bicep$'
+    }
+
+    It 'builds the templates of a repository that sits inside a folder named .claude' -Tag '88' {
+        $root = New-BicepRepo -Templates @('infra/main.bicep', 'infra/broken.bicep', '.claude/skills/x/sample.bicep') -Parent (Join-Path $TestDrive '.claude' 'worktrees')
+        $seen = [System.Collections.Generic.List[string]]::new()
+        $builder = { param($Path) $seen.Add($Path); $Path -notmatch 'broken' }.GetNewClosure()
+
+        $row = & $script:Script -RepoRoot $root -Builder $builder
+
+        $row.Status | Should -Be 'FAIL'
+        $row.Detail | Should -Match 'infra/broken\.bicep'
+        $row.Detail | Should -Not -Match 'sample'
+        $seen | Should -HaveCount 2
     }
 
     Context 'the build errors and the exit code, for a workflow that calls it directly' {

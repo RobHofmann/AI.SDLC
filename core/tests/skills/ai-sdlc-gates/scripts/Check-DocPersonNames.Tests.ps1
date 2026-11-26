@@ -76,6 +76,36 @@ Describe 'Check-DocPersonNames' {
         $r.ExitCode | Should -Be 1
     }
 
+    It 'finds a contributor written as "Last, First" in a page (exit 1)' -Tag '89' {
+        Set-Doc 'docs/page.md' "# Page`nThe review was done by Fictus, Dana.`n"
+        $r = Invoke-Gate -RepoRoot $script:Root -Authors @('Dana Fictus')
+        $r.ExitCode | Should -Be 1
+        $r.Output | Should -Match 'Fictus, Dana'
+    }
+
+    It 'finds a contributor whose name has a particle, written as <Form> (exit 1)' -Tag '89' -ForEach @(
+        @{ Form = 'First particle Last'; Text = 'Sam van der Sample reviewed it.' }
+        @{ Form = 'particle Last, First'; Text = 'Reviewed by van der Sample, Sam.' }
+        @{ Form = 'Last, First particle'; Text = 'Reviewed by Sample, Sam van der.' }
+        @{ Form = 'First Last'; Text = 'Sam Sample reviewed it.' }
+    ) {
+        Set-Doc 'docs/page.md' "# Page`n$Text`n"
+        $r = Invoke-Gate -RepoRoot $script:Root -Authors @('Sam van der Sample')
+        $r.ExitCode | Should -Be 1 -Because $r.Output
+    }
+
+    It 'does not take ordinary words in lower case for a reversed name (exit 0)' -Tag '89' {
+        Set-Doc 'docs/page.md' "# Page`nRead the post, will you, and check it in may, will we.`n"
+        $r = Invoke-Gate -RepoRoot $script:Root -Authors @('Will Post', 'Will May')
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+    }
+
+    It 'does not take a middle name for a particle (exit 0 for the full form without it)' -Tag '89' {
+        Set-Doc 'docs/page.md' "# Page`nSam Lee reviewed it, and so did Robin.`n"
+        $r = Invoke-Gate -RepoRoot $script:Root -Authors @('Sam Robin Sample')
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+    }
+
     It 'strips an employee-id prefix from the author form (exit 1)' {
         Set-Doc 'docs/page.md' "# Page`nRobin Sample signed off on the approach.`n"
         $r = Invoke-Gate -RepoRoot $script:Root -Authors @('EMP_SAMPL123 - Robin Sample')

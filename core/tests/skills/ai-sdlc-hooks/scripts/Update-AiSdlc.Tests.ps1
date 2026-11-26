@@ -94,6 +94,156 @@ dependencies:
         $staged | Should -Contain 'AGENTS.md'
     }
 
+    It 'leaves .mcp.json with the placeholders when AISDLC_SONAR_MCP_TOKEN and AISDLC_SONAR_ORG are set, and brings the variables back' -Tag '84' {
+        $saved = @{ Mcp = $env:AISDLC_SONAR_MCP_TOKEN; Org = $env:AISDLC_SONAR_ORG; Sonar = $env:SONAR_TOKEN }
+        try {
+            $env:AISDLC_SONAR_MCP_TOKEN = 'fake-sonar-token-84'
+            $env:AISDLC_SONAR_ORG = 'fake-org-84'
+            $env:SONAR_TOKEN = 'fake-sonar-token-84'
+            $root = New-ConsumerRepo
+            $global:UpdateAiSdlcTest.McpRoot = $root
+            # Like apm: a variable that is set goes into the file as its value, a variable that is not set stays a placeholder.
+            Mock apm {
+                $global:UpdateAiSdlcTest.ApmCalls.Add(($args -join ' '))
+                if ($args[0] -eq 'install') {
+                    $token = if ($env:AISDLC_SONAR_MCP_TOKEN) { $env:AISDLC_SONAR_MCP_TOKEN } else { '${AISDLC_SONAR_MCP_TOKEN}' }
+                    $org = if ($env:AISDLC_SONAR_ORG) { $env:AISDLC_SONAR_ORG } else { '${AISDLC_SONAR_ORG}' }
+                    Set-Content -LiteralPath (Join-Path $global:UpdateAiSdlcTest.McpRoot '.mcp.json') -Value "{ `"mcpServers`": { `"sonarqube`": { `"headers`": { `"Authorization`": `"Bearer $token`", `"SONARQUBE_ORG`": `"$org`" } } } }"
+                }
+                $global:LASTEXITCODE = 0
+            }
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $mcp = Get-Content -LiteralPath (Join-Path $root '.mcp.json') -Raw
+            $mcp | Should -Match ([regex]::Escape('Bearer ${AISDLC_SONAR_MCP_TOKEN}')) -Because $out
+            $mcp | Should -Match ([regex]::Escape('${AISDLC_SONAR_ORG}'))
+            $mcp | Should -Not -Match 'fake-sonar-token-84'
+            $mcp | Should -Not -Match 'fake-org-84'
+            $env:AISDLC_SONAR_MCP_TOKEN | Should -Be 'fake-sonar-token-84'
+            $env:AISDLC_SONAR_ORG | Should -Be 'fake-org-84'
+            $env:SONAR_TOKEN | Should -Be 'fake-sonar-token-84'
+            $out | Should -Not -Match 'fake-sonar-token-84'
+        }
+        finally {
+            $env:AISDLC_SONAR_MCP_TOKEN = $saved.Mcp
+            $env:AISDLC_SONAR_ORG = $saved.Org
+            $env:SONAR_TOKEN = $saved.Sonar
+        }
+    }
+
+    Context 'the MCP file and the docs index of the new version' {
+        BeforeAll {
+            function Set-McpOnInstall {
+                param([string]$Root)
+                $global:UpdateAiSdlcTest.McpRoot = $Root
+                Mock apm {
+                    $global:UpdateAiSdlcTest.ApmCalls.Add(($args -join ' '))
+                    if ($args[0] -eq 'install') {
+                        Set-Content -LiteralPath (Join-Path $global:UpdateAiSdlcTest.McpRoot '.mcp.json') -Value '{ "mcpServers": { "new-server": { "url": "https://example.invalid/mcp" } } }'
+                    }
+                    $global:LASTEXITCODE = 0
+                }
+            }
+
+            function Set-TokenCheck {
+                param([string]$Root, [int]$Exit)
+                $folder = Join-Path $Root '.claude' 'skills' 'sonarcloud-mcp' 'scripts'
+                New-Item -ItemType Directory -Path $folder -Force | Out-Null
+                Set-Content -LiteralPath (Join-Path $folder 'Check-McpToken.ps1') -Value "param([string]`$RepoRoot) exit $Exit"
+            }
+
+            function Set-DocsIndexer {
+                param([string]$Root, [int]$Exit = 0)
+                $gates = Join-Path $Root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
+                Copy-Item -LiteralPath (Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination $gates
+                Set-Content -LiteralPath (Join-Path $Root 'aisdlc.json') -Value '{ "paths": { "docsRoots": ["docs", "docs-functional"] } }'
+                $write = if ($Exit -eq 0) { "New-Item -ItemType Directory -Path '$Root/docs' -Force | Out-Null; Set-Content -LiteralPath '$Root/docs/index.md' -Value '# Index (rebuilt)'; " } else { '' }
+                Set-Content -LiteralPath (Join-Path $gates 'Build-DocsIndex.ps1') -Value "param([string]`$RepoRoot) $write exit $Exit"
+            }
+        }
+
+        It 'stages a new .mcp.json only after the token check, and a tracked one without it' -Tag '85' {
+            $root = New-ConsumerRepo
+            Set-McpOnInstall -Root $root
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $LASTEXITCODE | Should -Be 0 -Because $out
+            @(git -C $root diff --cached --name-only) | Should -Not -Contain '.mcp.json'
+            $out | Should -Match 'not staged'
+        }
+
+        It 'stages .mcp.json after an update that adds an MCP server' -Tag '85' {
+            $root = New-ConsumerRepo
+            Set-Content -LiteralPath (Join-Path $root '.mcp.json') -Value '{ "mcpServers": {} }'
+            git -C $root add .mcp.json
+            git -C $root commit --quiet -m mcp --no-verify
+            Set-McpOnInstall -Root $root
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $LASTEXITCODE | Should -Be 0 -Because $out
+            @(git -C $root diff --cached --name-only) | Should -Contain '.mcp.json'
+        }
+
+        It 'runs the token check of the sonarcloud pack before it stages .mcp.json' -Tag '85' {
+            $root = New-ConsumerRepo
+            Set-McpOnInstall -Root $root
+            Set-TokenCheck -Root $root -Exit 0
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $LASTEXITCODE | Should -Be 0 -Because $out
+            @(git -C $root diff --cached --name-only) | Should -Contain '.mcp.json'
+        }
+
+        It 'stops, and stages neither .mcp.json nor the docs index, when .mcp.json holds a written-out token' -Tag '85' {
+            $root = New-ConsumerRepo
+            Set-McpOnInstall -Root $root
+            Set-TokenCheck -Root $root -Exit 1
+            Set-DocsIndexer -Root $root
+
+            { & (Join-Path $root '.claude' 'skills' 'ai-sdlc-hooks' 'scripts' 'Update-AiSdlc.ps1') -RepoRoot $root -Ref v1.2.0 -NoGates *> $null } | Should -Throw '*Check-McpToken.ps1 -Fix*'
+
+            $staged = @(git -C $root diff --cached --name-only)
+            $staged | Should -Not -Contain '.mcp.json'
+            $staged | Should -Not -Contain 'docs/index.md'
+        }
+
+        It 'leaves a .mcp.json that git ignores out of the commit' -Tag '85' {
+            $root = New-ConsumerRepo
+            Set-Content -LiteralPath (Join-Path $root '.gitignore') -Value '.mcp.json'
+            Set-McpOnInstall -Root $root
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $LASTEXITCODE | Should -Be 0 -Because $out
+            @(git -C $root diff --cached --name-only) | Should -Not -Contain '.mcp.json'
+        }
+
+        It 'rebuilds the index of each doc layer with the new version and stages it' -Tag '85' {
+            $root = New-ConsumerRepo
+            Set-DocsIndexer -Root $root
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $LASTEXITCODE | Should -Be 0 -Because $out
+            Get-Content -LiteralPath (Join-Path $root 'docs' 'index.md') -Raw | Should -Match 'rebuilt'
+            @(git -C $root diff --cached --name-only) | Should -Contain 'docs/index.md'
+        }
+
+        It 'updates a repository with no doc layer without an error' -Tag '85' {
+            $root = New-ConsumerRepo
+            Set-DocsIndexer -Root $root -Exit 2
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $LASTEXITCODE | Should -Be 0 -Because $out
+            @(git -C $root diff --cached --name-only) | Should -Not -Contain 'docs/index.md'
+        }
+    }
+
     It 'writes the allow rules of the installed packages and stages .claude/settings.json' {
         $root = New-ConsumerRepo
         $gates = Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'

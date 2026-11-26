@@ -54,7 +54,9 @@ session is in a file:
   so write it to a file before you compact.
 - **A decision you made along the way.** It belongs in an ADR in the ADR folder (`paths.adrFolder` in
   aisdlc.json), not in the chat.
-- **A lesson about how we work.** That is the [autolearn](autolearn.md) route, so run `capture-learning` first.
+- **A lesson about how we work.** That is the [autolearn](autolearn.md) route, so run `capture-learning` first. A
+  proposal that still waits for an answer is already kept in `temp/autolearn/pending.md`, so it
+  survives the compaction.
 - **A finding you have not acted on.** Put it in the work item or the pull request description.
 
 A plan that lives only in the conversation is simply gone after a compaction. Do not rely on a task

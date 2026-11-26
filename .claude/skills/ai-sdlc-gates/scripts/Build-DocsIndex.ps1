@@ -65,20 +65,44 @@ function Get-PageTitle([string[]]$lines) {
     return $null
 }
 
+# The text up to the first sentence end. A stop inside a code span, or one that a letter or digit
+# follows (as in v2.8.0), does not end the sentence, and neither does e.g., i.e., vs. or cf.
+function Get-FirstSentence([string]$text) {
+    $inCode = $false
+    for ($i = 0; $i -lt $text.Length; $i++) {
+        $c = $text[$i]
+        if ($c -eq '`') { $inCode = -not $inCode; continue }
+        if ($inCode -or $c -notin '.', '!', '?') { continue }
+        if ($i + 1 -lt $text.Length -and -not [char]::IsWhiteSpace($text[$i + 1])) { continue }
+        if ($c -eq '.' -and $text.Substring(0, $i) -match '(?i)(^|[\s(])(e\.g|i\.e|vs|cf)$') { continue }
+        return $text.Substring(0, $i + 1)
+    }
+    return $text
+}
+
+# The first sentence of the first paragraph, with the lines of the paragraph joined (#89). Only a line
+# that starts with ``` or ~~~ is a code fence; it ends the paragraph. A line that starts with a code
+# span is text.
 function Get-PageSummary([string]$text) {
     $body = [regex]::Replace($text, '\A\s*---\r?\n.*?\r?\n---\r?\n', '', 'Singleline')
-    foreach ($raw in ($body -split '\r?\n')) {
-        $line = $raw.Trim()
+    $lines = @($body -split '\r?\n')
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $line = $lines[$i].Trim()
         if ($line -eq '') { continue }
         if ($line -match '^#{1,6}\s') { continue }              # markdown heading
         if ($line -match '^>') { continue }                     # blockquote note
         if ($line -match '^(\*\*[^*]+:\*\*|__[^_]+:__)') { continue }     # bold metadata label (e.g. **Status:** Accepted)
         if ($line -match '^[-*+]\s' -or $line -match '^\d+\.\s') { $line = ($line -replace '^([-*+]|\d+\.)\s+', '') }
-        if ($line -match '^[`|]') { continue }                  # code fence or table row
-        $line = [regex]::Replace($line, '\[([^\]]+)\]\((?!https?:)[^)]+\)', '$1')
-        $sentence = [regex]::Match($line, '^(.*?[.!?])(\s|$)')
-        $summary = if ($sentence.Success) { $sentence.Groups[1].Value.Trim() } else { $line }
-        $summary = ($summary -replace '\s+', ' ').Trim()
+        if ($line -match '^(```|~~~|\|)') { continue }          # code fence or table row
+        $block = [System.Collections.Generic.List[string]]::new()
+        $block.Add($line)
+        for ($j = $i + 1; $j -lt $lines.Count; $j++) {
+            $next = $lines[$j].Trim()
+            if ($next -eq '' -or $next -match '^#{1,6}\s' -or $next -match '^[-*+]\s' -or $next -match '^\d+\.\s' -or $next -match '^(```|~~~|[|>])') { break }
+            $block.Add($next)
+        }
+        $joined = [regex]::Replace(($block -join ' '), '\[([^\]]+)\]\((?!https?:)[^)]+\)', '$1')
+        $summary = ((Get-FirstSentence $joined) -replace '\s+', ' ').Trim()
         if ($summary.Length -gt $maxSummaryLength) {
             $summary = $summary.Substring(0, $maxSummaryLength).TrimEnd() + '...'
         }

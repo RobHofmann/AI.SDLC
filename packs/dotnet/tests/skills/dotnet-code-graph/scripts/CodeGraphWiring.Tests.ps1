@@ -135,7 +135,7 @@ Describe 'The code graph is read through one checked door' {
 
             $hooks = @((Get-Content -LiteralPath $registration -Raw -Encoding utf8 | ConvertFrom-Json).hooks.PreToolUse |
                     Where-Object { @($_.matcher -split '\|') -contains 'Bash' -and @($_.matcher -split '\|') -contains 'PowerShell' } | ForEach-Object { $_.hooks } |
-                    Where-Object { $_.command -eq 'pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1' })
+                    Where-Object { $_.command -eq 'pwsh -NoProfile -Command "& (Join-Path ([Environment]::GetEnvironmentVariable(''CLAUDE_PROJECT_DIR'') ?? ''.'') ''.claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1'')"' })
 
             $hooks.Count | Should -BeGreaterThan 0
             @($hooks.if) | Should -Contain 'Bash(graphify*)'

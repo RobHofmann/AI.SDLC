@@ -62,7 +62,9 @@ After `-Apply`, a second dry run reports no file left to update.
 ## The pre-flight step
 
 With the bicep pack installed, the pre-flight runs `scripts/Invoke-BicepPreflight.ps1`. It builds every
-`.bicep` file outside `.claude/`, so a template that does not compile fails before the push. It needs
+`.bicep` file except in the repository's own `.claude`, `.git`, `apm_modules` and `node_modules`
+folders, so a worktree under `.claude/worktrees/` builds too. A template that does not compile fails
+before the push. It needs
 the Bicep CLI or the Azure CLI, and reports NOT-AVAIL when neither is installed.
 
 A workflow can call `Invoke-BicepPreflight.ps1` directly with `-FailOnError`. It then exits 1 when a

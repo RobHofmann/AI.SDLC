@@ -242,6 +242,92 @@ if ($Relative -like '*Broken*') { Write-Output "pack check ran on $($Relative -j
         }
     }
 
+    Context 'an edit in a git worktree that lies inside the main checkout, while the hook runs from the main checkout' {
+        BeforeEach {
+            $script:Worktree = Join-Path $script:Root '.claude' 'worktrees' 'wt'
+            New-Item -ItemType Directory -Path (Join-Path $script:Worktree 'docs') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $script:Worktree '.git') -Value "gitdir: $script:Root/.git/worktrees/wt"
+            New-Item -ItemType Directory -Path (Join-Path $script:Root '.git' 'worktrees' 'wt') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $script:Root '.git' 'worktrees' 'wt' 'gitdir') -Value (Join-Path $script:Worktree '.git')
+            Set-AiSdlcTestConfig -Root $script:Worktree
+            Set-Content -LiteralPath (Join-Path $script:Worktree 'docs' 'page.md') -Value "# Page`n`nThe scrutiny is here.`n"
+        }
+
+        It 'runs its own gate on the worktree with the shared allow list of the worktree, never a gate script of the worktree' -Tag '50' {
+            $gates = Join-Path $script:Worktree '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
+            New-Item -ItemType Directory -Path (Join-Path $gates 'data') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $gates 'data' 'reading-level-allowlist.txt') -Value 'scrutiny'
+            Set-Content -LiteralPath (Join-Path $gates 'Check-DocReadingLevel.ps1') -Value 'Write-Output "planted gate ran"; exit 1'
+            $recording = Join-Path $TestDrive 'reading-recording.ps1'
+            Set-Content -LiteralPath $recording -Value @'
+param([string]$RepoRoot, [string]$Path, [string]$SharedAllowListPath)
+Write-Output "judged $Path in $RepoRoot with $SharedAllowListPath"
+exit 1
+'@
+
+            $r = Invoke-Hook -Payload (New-Payload -FilePath (Join-Path $script:Worktree 'docs' 'page.md')) -ReadingLevelScript $recording
+
+            $context = ($r.Output | ConvertFrom-Json).additionalContext
+            $context | Should -Match 'Reading level \(C11\) on docs/page.md:'
+            $context | Should -Match ([regex]::Escape("judged docs/page.md in $script:Worktree with $(Join-Path $gates 'data' 'reading-level-allowlist.txt')"))
+            $context | Should -Not -Match 'planted gate ran'
+        }
+
+        It 'hands the gate the shared allow list path of the worktree even when the worktree has none, so the list of the main checkout never counts' -Tag '50' {
+            $recording = Join-Path $TestDrive 'reading-recording.ps1'
+            Set-Content -LiteralPath $recording -Value @'
+param([string]$RepoRoot, [string]$Path, [string]$SharedAllowListPath)
+Write-Output "shared list $SharedAllowListPath"
+exit 1
+'@
+
+            $r = Invoke-Hook -Payload (New-Payload -FilePath (Join-Path $script:Worktree 'docs' 'page.md')) -ReadingLevelScript $recording
+
+            $expected = Join-Path $script:Worktree '.claude' 'skills' 'ai-sdlc-gates' 'scripts' 'data' 'reading-level-allowlist.txt'
+            ($r.Output | ConvertFrom-Json).additionalContext | Should -Match ([regex]::Escape("shared list $expected"))
+        }
+
+        It 'judges the page against the allow list of the worktree, not the one of the main checkout' -Tag '50' {
+            Set-Content -LiteralPath (Join-Path $script:Worktree 'docs' '.reading-level-allowlist') -Value 'scrutiny'
+
+            $out = & $script:ScriptUnderTest -Payload (New-Payload -FilePath (Join-Path $script:Worktree 'docs' 'page.md')) -RepoRoot $script:Root *>&1 | Out-String
+
+            $out.Trim() | Should -BeNullOrEmpty
+        }
+
+        It 'still flags the word in the worktree when only the main checkout allows it' -Tag '50' {
+            Set-Content -LiteralPath (Join-Path $script:Root 'docs' '.reading-level-allowlist') -Value 'scrutiny'
+
+            $out = & $script:ScriptUnderTest -Payload (New-Payload -FilePath (Join-Path $script:Worktree 'docs' 'page.md')) -RepoRoot $script:Root *>&1 | Out-String
+
+            ($out | ConvertFrom-Json).additionalContext | Should -Match 'docs/page.md:3  \[hard-word\]  scrutiny'
+        }
+
+        It 'hands a worktree file to its own pack script, with the worktree as the root, never a pack script of the worktree' -Tag '50' {
+            $pack = Join-Path $script:Worktree '.claude' 'skills' 'demo-pack'
+            New-Item -ItemType Directory -Path (Join-Path $pack 'scripts'), (Join-Path $script:Worktree 'src') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $pack 'gates.json') -Value '{ "package": "dotnet", "gates": [], "postEdit": { "extensions": [".cs"], "script": "scripts/Check-Edit.ps1" } }'
+            Set-Content -LiteralPath (Join-Path $pack 'scripts' 'Check-Edit.ps1') -Value 'Write-Output "planted pack ran"'
+            $broken = Join-Path $script:Worktree 'src' 'Broken.cs'
+            Set-Content -LiteralPath $broken -Value 'class Broken {'
+
+            $r = Invoke-Hook -Payload (New-Payload -FilePath $broken)
+
+            $context = ($r.Output | ConvertFrom-Json).additionalContext
+            $context | Should -Match 'pack check ran on src/Broken.cs$'
+            $context | Should -Not -Match 'planted pack ran'
+            Test-Path -LiteralPath (Join-Path $script:Worktree 'pack-calls.log') | Should -BeTrue
+        }
+
+        It 'judges a folder with a planted .git marker as part of the main checkout' -Tag '50' {
+            Set-Content -LiteralPath (Join-Path $script:Worktree '.git') -Value "gitdir: $TestDrive/elsewhere/.git"
+
+            $r = Invoke-Hook -Payload (New-Payload -FilePath (Join-Path $script:Worktree 'docs' 'page.md')) -ReadingLevelScript $script:FailingReadingLevel
+
+            ($r.Output | ConvertFrom-Json).additionalContext | Should -Match 'Reading level \(C11\) on \.claude/worktrees/wt/docs/page.md'
+        }
+    }
+
     Context 'wiring' {
         It 'is registered in the hook entries of the package for Edit and Write' {
             $settings = Get-AiSdlcHookSettings -From $script:ScriptFolder
@@ -249,7 +335,7 @@ if ($Relative -like '*Broken*') { Write-Output "pack check ran on $($Relative -j
             $post = @($settings.hooks.PostToolUse)
             $entry = $post | Where-Object { $_.matcher -eq 'Edit|Write' }
             $entry | Should -Not -BeNullOrEmpty
-            @($entry.hooks.command) | Should -Contain 'pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1'
+            @($entry.hooks.command) | Should -Contain 'pwsh -NoProfile -Command "& (Join-Path ([Environment]::GetEnvironmentVariable(''CLAUDE_PROJECT_DIR'') ?? ''.'') ''.claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1'')"'
         }
 
         It 'names only hook scripts that exist in an installed skill' {
@@ -263,6 +349,35 @@ if ($Relative -like '*Broken*') { Write-Output "pack check ran on $($Relative -j
                 }
             }
             $missing | Should -BeNullOrEmpty
+        }
+
+        It 'starts every hook script from the folder in CLAUDE_PROJECT_DIR, so a cd in the session cannot break it' -Tag '51' {
+            $settings = Get-AiSdlcHookSettings -From $script:ScriptFolder
+            $commands = @($settings.hooks.PSObject.Properties.Value | ForEach-Object { $_ } | ForEach-Object { $_.hooks } | ForEach-Object { $_.command })
+            $commands | Should -Not -BeNullOrEmpty
+            $form = '^pwsh -NoProfile -Command "& \(Join-Path \(\[Environment\]::GetEnvironmentVariable\(''CLAUDE_PROJECT_DIR''\) \?\? ''\.''\) ''\.claude/skills/[^/'']+/scripts/[^/'']+\.ps1''\)"$'
+            @($commands | Where-Object { $_ -notmatch $form }) | Should -BeNullOrEmpty -Because 'a relative path fails after a cd, and a $ sign is read by bash in Claude Code and by pwsh in Copilot CLI'
+        }
+
+        It 'hands the payload on stdin to the script, so the wired push check still refuses a push to main from a subfolder' -Tag '51' {
+            $settings = Get-AiSdlcHookSettings -From $script:ScriptFolder
+            $wired = @($settings.hooks.PreToolUse | ForEach-Object { $_.hooks } | ForEach-Object { $_.command } | Where-Object { $_ -like '*Deny-IncompletePush.ps1*' })[0]
+            $wired | Should -Not -BeNullOrEmpty
+            $inner = [regex]::Match($wired, '^pwsh -NoProfile -Command "(.+)"$').Groups[1].Value
+            $root = (git -C $script:ScriptFolder rev-parse --show-toplevel).Trim()
+            if (-not (Test-Path -LiteralPath (Join-Path $root '.claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1'))) { Set-ItResult -Skipped -Because 'this checkout has no installed push check to run'; return }
+            $payload = @{ hook_event_name = 'PreToolUse'; tool_name = 'Bash'; cwd = $root; tool_input = @{ command = 'git push origin main' } } | ConvertTo-Json -Compress
+            $previous = $env:CLAUDE_PROJECT_DIR
+            Push-Location -LiteralPath (Join-Path $root '.claude' 'skills')
+            try {
+                $env:CLAUDE_PROJECT_DIR = $root
+                $output = $payload | pwsh -NoProfile -Command $inner
+            }
+            finally {
+                Pop-Location
+                $env:CLAUDE_PROJECT_DIR = $previous
+            }
+            ($output -join '') | Should -Match '"permissionDecision":\s*"deny"'
         }
 
         It 'finds the dotnet build step through the postEdit entry of dotnet-gates' {

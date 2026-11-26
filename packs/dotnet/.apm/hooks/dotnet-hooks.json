@@ -7,14 +7,14 @@
           {
             "type": "command",
             "if": "Bash(graphify*)",
-            "command": "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1",
+            "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1')\"",
             "timeout": 60,
             "statusMessage": "Checking the code graph is current..."
           },
           {
             "type": "command",
             "if": "PowerShell(*graphify*)",
-            "command": "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1",
+            "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/dotnet-code-graph/scripts/Deny-StaleGraphQuery.ps1')\"",
             "timeout": 60,
             "statusMessage": "Checking the code graph is current..."
           }
