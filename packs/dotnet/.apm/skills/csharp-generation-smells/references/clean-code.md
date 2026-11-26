@@ -43,30 +43,9 @@ list as the standing backlog, and do not add to it.
 
 ## Bucket 2 - advisory (checked in review and code generation, not gated)
 
-No analyzer checks these rules well. The `implement` step and the review step check them, not the
-build:
-
-- **A function does one thing**, at one level of abstraction.
-- **Command-query separation.** A method either does something or answers something, not both.
-- **Prefer polymorphism over a type switch** when a branch selects behaviour by type (see
-  [C# conventions](csharp.md), "Control flow over closed sets"). Map a closed set to a value with a
-  `switch` expression; put behaviour on the types instead of branching on a type code.
-- **Wrap conditions in a name.** Put a boolean expression that is not obvious behind a member with a
-  clear name.
-- **DRY where the repeated code is real**, not "just in case". Analyzers catch the same bodies and the
-  same literals; repeated ideas are a judgement call.
-- **Small classes** that hold together and have few reasons to change.
-- **Reuse before you build.** Before you add an interface, service, controller or model, search for one
-  that already owns the idea and extend it. Do not build a second reader next to a domain service that
-  already exposes the data. Do not build a second controller for a resource another controller owns. Put a new
-  type in the layer that owns the idea.
-- **A PowerShell `Get-*` function returns data and writes nothing.** SonarCloud checks this as
-  `powershelldre:S8677`. Do not `Write-Host` the reason a lookup failed; `Write-Output` would break the
-  return value. Keep the reason in a script-scoped variable and let the caller report it, or rename the
-  function to a verb that says it writes.
-- **YAGNI.** Build only what the acceptance criteria of the story need. No config options, parameters,
-  concurrency tokens or endpoints "in case we need them". An unused parameter or an option no caller
-  sets is dead weight; leave it out until a real need comes.
+No analyzer checks these rules well, so the plan, the build and the review check them. They hold in
+every language, so they live once on the [clean code page of code-conventions](/.claude/skills/code-conventions/references/clean-code.md):
+reuse before you build, build only what the story needs, and the rules for the shape of the code.
 
 ## Bucket 3 - judgement only
 
@@ -87,6 +66,7 @@ This keeps the gate honest: the build only fails on a rule that was clean when i
 ## Related
 
 - [C# conventions](csharp.md) - the wider C# style these rules sit inside.
-- [The csharp-generation-smells skill](../SKILL.md) - the review checks that hold Bucket 2.
+- [The csharp-generation-smells skill](../SKILL.md) - the C# review checks.
+- [Clean code for every language](/.claude/skills/code-conventions/references/clean-code.md) - the Bucket 2 rules.
 - [Comments](/.claude/skills/ai-sdlc-handbook/references/comments.md) - the Bucket 3 comment policy.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - clause C03 on secrets and C10 on comments.

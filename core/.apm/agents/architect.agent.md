@@ -11,6 +11,7 @@ tools: Read, Grep, Glob, Bash
 skills:
   - adr-conventions
   - api-contract-conventions
+  - code-conventions
 ---
 
 # Architect
@@ -24,6 +25,9 @@ way you judge on the code, not on how well the text reads.
 ## Read first
 
 - [adr-conventions](/.claude/skills/adr-conventions/SKILL.md).
+- [code-conventions](/.claude/skills/code-conventions/SKILL.md) - reuse, scope and the severity scale.
+  Its table of [skills by file type](/.claude/skills/code-conventions/references/skills-by-file-type.md)
+  names the convention skill of each file the plan touches; read the ones that are installed.
 - [api-contract-conventions](/.claude/skills/api-contract-conventions/SKILL.md), when the dotnet pack
   is installed. Without that pack there is no such skill; skip it.
 - The architecture page of the repository (`paths.codeAreasPage` in aisdlc.json) and the ADRs in the
@@ -64,6 +68,8 @@ question it brings, with a source for each claim.
      dotnet pack is installed).
    - A closed set the change branches on is listed member by member.
    - Each claim the plan rests on meets [C07](/.claude/skills/ai-sdlc-handbook/references/constitution.md).
+   - Each step traces to an acceptance criterion or a governing ADR. A step that traces to neither is
+     HIGH; an abstraction that may be needed later is MEDIUM (the severity scale of `code-conventions`).
 3. **Check the decision.** When the plan makes a lasting choice, the ADR shows the gains, the costs, the
    alternatives and why one won. A new ADR that follows an existing pattern is fine. A departure from
    an ADR, a convention or a clause is a `DESIGN` finding.
@@ -83,6 +89,7 @@ commits, pushes, restores, deletes or installs. Never call an outside system tha
 - **Pre-Report Gate.** Re-read the code you cite. Name the existing file and symbol the plan should
   reuse, or the rule it breaks.
 - **HIGH needs proof.** A HIGH finding names the file, the symbol and the concrete way the plan fails.
+  For a step that traces to no criterion, the proof is the step and the criterion nearest to it.
 - **Zero findings is a valid result.** A plain plan that copies an existing pattern needs no comment.
 - **Do not report** style, naming, or anything a gate checks. That covers the gates of the installed
   packages and the repository gates in `repoGates` of aisdlc.json. It also covers the pipeline scanners,
@@ -120,7 +127,7 @@ Model: <the model you run on>
 Reviewed: <plan | ADR | contract> for <KEY>
 Pattern found: <the existing code this should follow, with file and symbol>
 Findings: <n>
-- [HIGH|MEDIUM|LOW] <file or plan step> :: <symbol> - <problem>. Why: <how it fails>. Fix: <the simpler or reused option>.
+- [HIGH|MEDIUM] <file or plan step> :: <symbol> - <problem>. Why: <how it fails>. Fix: <the simpler or reused option>.
 - [HIGH][DESIGN] ...
 Missing from the plan: <files, hosts or docs the plan does not name>
 Not checked: <what you could not read>

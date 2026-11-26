@@ -6,6 +6,7 @@
     ".claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml",
     ".claude/skills/ai-sdlc-hooks/scripts/Deny-SharedFileEdit.ps1",
     ".claude/skills/ai-sdlc-handbook/references/layout.md",
+    ".claude/skills/code-conventions/references/skills-by-file-type.md",
     ".claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1",
     ".claude/skills/test-first-dotnet/SKILL.md",
     ".claude/skills/blazor-conventions/SKILL.md",

@@ -88,3 +88,4 @@ human checkpoints in [orchestration.md](orchestration.md) describe.
 - [Language and reading level](language.md) - the reading level and the language of every comment.
 - [Documentation wiki](docs-wiki.md) - the pages where the longer explanation goes.
 - [Skill patterns](pattern.md) - the shape of a skill, and where its scripts live.
+- [Code conventions](/.claude/skills/code-conventions/SKILL.md) - the code rules for every language, this one among them.

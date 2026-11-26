@@ -86,9 +86,11 @@ grows, switch to the full path.
    on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in Copilot). It writes the failing test, sees it fail and makes it
    pass, then reports what it changed and the test result. Read its report and the diff before the
    next step. If you cannot run agents, or the agent cannot write files (as in Copilot CLI with
-   `copilot -p`), do the build in this session. In that case, load the stack skills of the installed packs, for
-   example `test-first-dotnet` and `csharp-generation-smells` from the dotnet pack. Either way, tag
-   each new test with the story key. Document the code as [C10](/.claude/skills/ai-sdlc-handbook/references/constitution.md) asks. Keep the build green with no new analyzer warnings on changed
+   `copilot -p`), do the build in this session. In that case, load
+   [code-conventions](/.claude/skills/code-conventions/SKILL.md) and the convention skills of the files
+   you touch, from its table of skills by file type, and follow the builder's steps yourself. A "New
+   story" draft in the report goes to the run's list of issue updates for `write-story`. Either way, tag
+   each new test with the story key. Keep the build green with no new analyzer warnings on changed
    projects.
 6. **Check.** Run the tests that map to the changed files, and
    `pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -SkipTests`, until green. A changed test
@@ -104,7 +106,8 @@ grows, switch to the full path.
    and `test-analyzer` from the dotnet pack. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in Copilot). Add
    `security-reviewer` on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC,
    outbound calls, JS interop or request logging. If you cannot run agents, or no pack ships a
-   reviewer, load the stack skills and review the diff yourself. For a diff that touches auth, RBAC,
+   reviewer, load `code-conventions` and the convention skills of the changed files, and review the
+   diff yourself. For a diff that touches auth, RBAC,
    outbound calls, JS interop or request logging, also load `blazor-authorization` (blazor pack) when it
    is installed. Then say in the evidence record that the review ran inline. Fix each
    finding or decline it with a reason, then check again. Run `update-constitution` in check mode.
@@ -135,7 +138,7 @@ Stop, say why, and wait on any condition on the stop list in orchestration.md:
 
 - an unclear story, or a clause or ADR conflict;
 - no convergence: 3 fix attempts on one check, 2 review rounds without progress, or a fourth round;
-- scope growth;
+- the story needs more than the plan names (a finding outside the story becomes a story draft instead);
 - a secret, permission, production, deploy or destructive git need;
 - a finding tagged `[HIGH][DESIGN]`.
 

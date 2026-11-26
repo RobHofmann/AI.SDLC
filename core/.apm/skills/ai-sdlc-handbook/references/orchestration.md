@@ -97,7 +97,9 @@ These are exceptions, not gates. The loop stops, says why, and waits when:
 2. the change would break a constitution clause, or depart from an ADR or a convention;
 3. the loop does not converge. The same check fails after 3 fix attempts, or there is no progress across
    2 review rounds. Or it would need a fourth review round;
-4. the scope grows beyond the story;
+4. the story itself needs more than the plan names. A finding that has nothing to do with the story is
+   not a stop. The agent drafts a new story for it and leaves the code alone
+   ("Scope: two cases" in [code-conventions](/.claude/skills/code-conventions/SKILL.md));
 5. it needs a secret, a new permission, anything in production, a deployment or a dangerous command.
    A dangerous command is a force push, skipping the hooks, `gh workflow run` or a `gh ... delete`.
    So is a role assignment, a secret in a secret store, a destructive git command, or a script that

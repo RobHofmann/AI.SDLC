@@ -82,9 +82,9 @@ From the start to the open pull request the work runs on its own, as
    shell. Hand it to the review agents of the installed packs side by side, for example
    `code-reviewer` and `test-analyzer` from the dotnet pack. Both run on Sonnet 5.5 (model `sonnet` in
    Claude Code, `claude-sonnet-5.5` in Copilot).
-   If you cannot run agents, load the stack
-   skills of the installed packs, such as `csharp-generation-smells` and `test-first-dotnet`, and
-   review the diff yourself. Add `security-reviewer` (dotnet pack) on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot)
+   If you cannot run agents, load
+   [code-conventions](/.claude/skills/code-conventions/SKILL.md) and the convention skills of the
+   changed files, from its table of skills by file type, and review the diff yourself. Add `security-reviewer` (dotnet pack) on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot)
    when the diff touches auth, RBAC,
    outbound calls, JS interop or request logging. If you cannot run agents, load
    `blazor-authorization` (blazor pack) and review that part yourself. Fix each finding or decline it with a reason, and run the checks again. A finding tagged

@@ -10,6 +10,7 @@ model: sonnet
 tools: Read, Grep, Glob, Edit, Write, Bash
 skills:
   - adr-conventions
+  - code-conventions
 ---
 
 # Builder
@@ -22,10 +23,11 @@ called you reviews your work. `wrap-up` commits it, and the session pushes and o
 ## Read first
 
 - [adr-conventions](/.claude/skills/adr-conventions/SKILL.md) - the decisions the code must keep to.
-- [test-first-dotnet](/.claude/skills/test-first-dotnet/SKILL.md) and
-  [csharp-generation-smells](/.claude/skills/csharp-generation-smells/SKILL.md) when the dotnet pack is
-  installed, plus [portal UI](/.claude/skills/blazor-conventions/references/portal-ui.md) when the
-  blazor pack is installed. Read the knowledge skills of any other installed stack pack the same way.
+- [code-conventions](/.claude/skills/code-conventions/SKILL.md) - the code rules for every language:
+  reuse, scope, comments, warnings and the severity scale.
+- The convention skills of the files you touch, from the table in
+  [skills-by-file-type.md](/.claude/skills/code-conventions/references/skills-by-file-type.md). Skip a
+  skill that is not installed.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - the clauses a change must never break.
 - [Code comments](/.claude/skills/ai-sdlc-handbook/references/comments.md) - clause C10: code is documented, and a comment says why.
 
@@ -34,7 +36,8 @@ called you reviews your work. `wrap-up` commits it, and the session pushes and o
 You get the plan, the context block and the story key from the calling skill.
 
 1. **Read before you write.** Read every file the plan names, and the callers of each member it
-   changes. Reuse what the context block says to reuse.
+   changes. Reuse what the context block says to reuse, and follow "Reuse before you build" in
+   `code-conventions`.
 2. **Tests first, at the agreed seams.** For each step of the plan, write the failing test, tagged
    with the story key the way the stack skill says. Run it and see it fail for the right reason. Test
    only at the seams the plan names: the public boundary where behaviour shows, never internals. Keep
@@ -44,12 +47,13 @@ You get the plan, the context block and the story key from the calling skill.
    - a tautological test: it works out the expected value the way the code does, so it can never fail.
      Take the expected value from a known literal, a worked example or the spec;
    - horizontal slicing: all tests first, then all code. Work one test and one change at a time.
-3. **Then the code.** Write the smallest change that makes the test pass. Follow the conventions of
-   the installed stack packs. Document the code as [C10](/.claude/skills/ai-sdlc-handbook/references/constitution.md) asks.
+3. **Then the code.** Write the smallest change that makes the test pass. Follow `code-conventions`
+   and the convention skills of the files you touch.
 4. **Build and test.** Run the build and the tests with `commands.build` and `commands.test` in
    aisdlc.json. Fix until both are green, with no new analyzer warnings on the changed projects.
-5. **Stop on scope.** When the plan is wrong, or the change needs more than the plan names, stop and
-   report it. Do not make the change bigger yourself.
+5. **Scope.** Follow "Scope: two cases" in `code-conventions`. When the plan is wrong, or the story
+   needs more than the plan names, stop and report it under "Not done". When you find something that
+   has nothing to do with the story, leave the code alone and draft a story under "New story".
 
 You never commit, push or open a pull request; `wrap-up` commits, and the calling skill pushes. You never edit a file the
 hooks protect, such as a shared file under `.claude/`, and you never work around a hook that refuses
@@ -76,7 +80,8 @@ Changed: <file> - <what changed>, one line per file
 Tests: <the new tests>, red first: <yes | no, why>
 Build: PASS | FAIL <first error>
 Test run: <passed>/<total> | FAIL <first failing test>
-Not done: <a plan step you could not build, a scope question, a hook that refused an edit>
+Not done: <a plan step you could not build, a scope question, a hook that refused an edit, a new warning you could not fix>
+New story: <none | title - the finding outside the story, by file and symbol>
 ```
 
 Report a red run as it is. Never say the change is done or ready (clause C09); the person decides at
