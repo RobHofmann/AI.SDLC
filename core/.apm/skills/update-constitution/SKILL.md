@@ -146,7 +146,7 @@ code" style non-clauses.
 1. Write the change under review to `temp/review.diff`. It is often not committed yet, so run
    `git add --intent-to-add .` first, so new files show, then write
    `git diff $(git merge-base origin/main HEAD)`. A diff of two commits leaves the working tree out.
-2. When the dotnet pack is installed, hand the check to its `code-reviewer` agent
+2. Hand the check to the `code-reviewer` agent
    on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in Copilot). It has no shell and reads the file. It reads the diff against every clause in `AGENTS.md`: the core, the pack and the repository clauses. It reports each
    clause the change breaks, with the file and the symbol. Without that agent, or if you cannot run
    agents, read the diff against the clauses and do the check yourself. A finding tagged `[HIGH][DESIGN]` is a stop-and-ask.
@@ -199,4 +199,4 @@ Either way, surface the existing file and the proposed change before touching it
 - If a new or amended clause needs a code or doc change to follow it, run `/implement` (Developer) or `/write-docs` (Tech Writer).
 - If the clause came out of a specific architectural decision, record it with `/write-adr` (Architect) and backlink it via `write-story` in update mode.
 - A clause that needs a gate gets one through `/add-gate` (Lead). Until then it is upheld in review,
-  and by the `code-reviewer` agent where the dotnet pack is installed.
+  and by the `code-reviewer` agent.

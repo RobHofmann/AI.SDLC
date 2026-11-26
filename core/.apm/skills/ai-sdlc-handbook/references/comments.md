@@ -78,9 +78,9 @@ Both read only the lines a change adds, and both skip generated files:
   types marked `[GeneratedCode]`.
 
 They run in `Invoke-LocalGates.ps1`, in the pre-push hook and in the pull request workflow. The
-`code-reviewer` agent of the dotnet pack flags a missing doc comment on public API and a comment that
-says what. For the other languages, code review and the review agents are the enforcement, as the
-human checkpoints in [orchestration.md](orchestration.md) describe.
+`code-reviewer` agent flags a missing doc comment on public API and a comment that says what, in every
+language. For the languages no gate reads, code review and the review agents are the enforcement, as
+the human checkpoints in [orchestration.md](orchestration.md) describe.
 
 ## Related
 

@@ -111,7 +111,7 @@ structurally rather than lost in the conversation.
 - **Voice:** concrete, file-and-symbol precise, distrusts vague instructions.
 - **Owns:** `implement`, `refactor`, `wrap-up`, `run-preflight`, `update-ai-sdlc`, the fix half of `fix-bug` (github-issues pack),
   and `fix-pr-feedback` and `write-pipeline` (github pack).
-- **Agent:** `builder`: the test-first build step of the build loop. `code-reviewer` (dotnet pack),
+- **Agent:** `builder`: the test-first build step of the build loop. `code-reviewer`,
   with Lead: the review step.
 
 ### QA
@@ -125,7 +125,7 @@ structurally rather than lost in the conversation.
   - What is not unit-testable here and needs a check by hand or by eye stated honestly?
 - **Voice:** precise about what "done" means, hunts the case everyone forgot.
 - **Owns:** acceptance criteria (with PM) and the readiness self-check inside `write-story` (with PM). Test adequacy is measured by `run-preflight` and the C04 gate.
-- **Agent:** `draft-reviewer` (github-issues pack), with PM, and `test-analyzer` (dotnet pack), which maps each acceptance criterion to the test that asserts it.
+- **Agent:** `draft-reviewer` (github-issues pack), with PM, and `test-analyzer`, which maps each acceptance criterion to the test that asserts it.
 
 ### Tech Writer
 
@@ -169,7 +169,7 @@ structurally rather than lost in the conversation.
 - **Voice:** holds the line on the non-negotiables without ceremony.
 - **Owns:** `update-constitution`, `capture-learning`,
   `add-gate`, `test-skills`, `check-pr-contract`, the contract.
-- **Agent:** `code-reviewer` and `security-reviewer` (dotnet pack), and `blind-judge`, which judges skills for `test-skills`.
+- **Agent:** `code-reviewer` and `security-reviewer`, and `blind-judge`, which judges skills for `test-skills`.
 - **Speaks when:** the work touches auth, data, secrets, input handling, or a key decision.
 
 ## Related

@@ -15,8 +15,8 @@ description: >
 # Test first in .NET
 
 Use this when a change adds or changes C# behaviour. `implement`, `refactor` and `fix-pr-feedback`
-load it when they build, the `builder` agent reads it, `fix-bug` loads it at its reproduce step, and
-the `test-analyzer` agent preloads it.
+load it when they build, the `builder` agent reads it, and `fix-bug` loads it at its reproduce step.
+The `test-analyzer` agent reads it from the table of file types in `code-conventions`.
 
 ## The loop
 

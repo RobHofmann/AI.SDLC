@@ -217,13 +217,13 @@ one-word answer cost 1.51 AI credits on claude-sonnet-5 and 43.51 on claude-opus
 | Agent | Model | Why |
 |---|---|---|
 | `architect` | `opus` | judges fit with the architecture and the ADRs |
-| `security-reviewer` (dotnet) | `opus` | a missed security defect costs the most |
+| `security-reviewer` | `opus` | a missed security defect costs the most |
 | `blind-judge` | `opus` | scores two outputs on judgement alone |
 | `draft-reviewer` (github-issues) | `opus` | judges whether a draft is ready for Checkpoint Alpha |
 | `substrate-walker` | `sonnet` | collects and sums up context |
 | `docs-reviewer` | `sonnet` | checks pages against the change and runs the doc gates |
-| `code-reviewer` (dotnet) | `sonnet` | works through a fixed checklist |
-| `test-analyzer` (dotnet) | `sonnet` | maps acceptance criteria to tests |
+| `code-reviewer` | `sonnet` | works through the rules of the convention skills |
+| `test-analyzer` | `sonnet` | maps acceptance criteria to tests |
 | `builder` | `sonnet` | writes the tests and the code to a plan the `architect` wrote |
 
 The session model matters less now. The heavy steps run on their own model, so Sonnet is enough for
@@ -291,8 +291,8 @@ A workflow skill hands work to an agent with a plain sentence that names the mod
 fallback in the next one. Neither tool promises to start an agent:
 
 > Hand the review to the `code-reviewer` agent on Sonnet 5.5 (model `sonnet` in Claude Code,
-> `claude-sonnet-5.5` in Copilot). If you cannot run agents, load the `csharp-generation-smells` skill
-> and do the review yourself.
+> `claude-sonnet-5.5` in Copilot). If you cannot run agents, load the `code-conventions` skill and the
+> convention skills of the changed files, and do the review yourself.
 
 The sentence names both spellings, because each tool takes its own. The running model passes the value
 to its own tool: the `model` parameter of the Agent tool in Claude Code, and of the `task` tool in

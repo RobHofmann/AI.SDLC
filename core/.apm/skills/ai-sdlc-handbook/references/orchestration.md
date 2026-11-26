@@ -46,7 +46,7 @@ for this. That script can change only the title and the description, never a sta
 1. The duplicate scan runs first. `grilling` looks up the facts that the code, the docs, the ADRs and
    the linked work items hold, through a sub-agent.
 2. `grilling` runs as a panel: the `draft-reviewer` agent of the github-issues pack (Product Manager, QA and
-   Analyst), the `architect` agent, and the `security-reviewer` agent of the dotnet pack (Lead). The
+   Analyst), the `architect` agent, and the `security-reviewer` agent (Lead). The
    main thread voices UX, and any role whose agent is not installed.
 3. A fact the substrate holds is looked up, not asked. Each decision goes to the person in rounds,
    each with a recommended answer that "yes" accepts. A round is not a gate: when the person says
@@ -62,10 +62,10 @@ for this. That script can change only the title and the description, never a sta
 3. The branch is created. Then the `builder` agent builds test-first on Sonnet, from the plan and the
    context block. Where it cannot run or cannot write files, the main session builds.
 4. The tests and the local gates run until green.
-5. The review agents of the installed packs review side by side, for example `code-reviewer` and
-   `test-analyzer` of the dotnet pack. `security-reviewer` joins when the diff touches auth, RBAC,
-   outbound calls, JS interop or request logging. Without a pack that ships review agents, the skill
-   reviews the diff itself. Nothing is committed before `wrap-up`, so the diff comes from the working
+5. The review agents of core review side by side: `code-reviewer` and `test-analyzer`. Each one reads
+   the convention skills of the changed files from the table in `code-conventions`.
+   `security-reviewer` joins when the diff touches auth, RBAC, secrets, network access, outbound calls,
+   JS interop or request logging. Where the agents cannot run, the skill reviews the diff itself. Nothing is committed before `wrap-up`, so the diff comes from the working
    tree: `git add --intent-to-add .`, then `git diff $(git merge-base origin/main HEAD)`.
 6. The findings are fixed and checked again.
 7. The evidence record is written. Then `wrap-up` runs, the single owner of the steps that finish a
@@ -209,16 +209,16 @@ Copilot CLI and Copilot in VS Code all read that folder. Neither tool promises t
 every hand-off names the fallback in the next sentence:
 
 > Hand the review to the `code-reviewer` agent on Sonnet 5.5 (model `sonnet` in Claude Code,
-> `claude-sonnet-5.5` in Copilot). If you cannot run agents, load the `csharp-generation-smells` skill
-> and do the review yourself.
+> `claude-sonnet-5.5` in Copilot). If you cannot run agents, load the `code-conventions` skill and the
+> convention skills of the changed files, and do the review yourself.
 
 In GitHub Copilot CLI the model in the hand-off is not optional. Its `task` tool refuses an agent whose
 file says `opus` or `sonnet` when the call passes no model, so the agent does not run at all. With
 `claude-opus-5.5` or `claude-sonnet-5.5` passed, it runs on that model.
 
-Some agents come from a pack: `draft-reviewer` from the github-issues pack, and `code-reviewer`,
-`test-analyzer` and `security-reviewer` from the dotnet pack. In a repository without that pack the
-agent is not there, so the skill takes the fallback in the same way.
+One agent comes from a pack: `draft-reviewer` from the github-issues pack. In a repository without
+that pack the agent is not there, so the skill takes the fallback in the same way. The review agents
+`code-reviewer`, `test-analyzer` and `security-reviewer` are in core, so every repository has them.
 
 Every agent is read-only except `builder`, which writes code and tests and nothing else. A reviewer
 that can write is no longer independent. The builder exists so the build step runs on a chosen model,
@@ -239,7 +239,7 @@ Two steps may run side by side only when they are really independent:
 Independent, for example:
 
 - `write-research-summary` and `draw-customer-journey` - different artifacts, no data dependency.
-- `code-reviewer` and `test-analyzer` (dotnet pack) on the same diff - both only read.
+- `code-reviewer` and `test-analyzer` on the same diff - both only read.
 - implementing two separate end-to-end slices of one story.
 
 Dependent, so they run one after the other, for example:

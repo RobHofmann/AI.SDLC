@@ -18,8 +18,8 @@ The `core` package provides shared AI-SDLC agents, skills, gates, hooks, workflo
 
 ### Agents
 
-Agents live under `core/.apm/agents/`. Each names its model: `opus` for `architect` and `blind-judge`,
-`sonnet` for `builder`, `docs-reviewer` and `substrate-walker`. `Check-AgentHygiene.ps1` allows only
+Agents live under `core/.apm/agents/`. Each names its model: `opus` for `architect`, `blind-judge` and
+`security-reviewer`, `sonnet` for `builder`, `code-reviewer`, `docs-reviewer`, `substrate-walker` and `test-analyzer`. `Check-AgentHygiene.ps1` allows only
 `opus`, `sonnet` or `inherit`. An `opus` agent names the model it runs on in a `Model:` line of its
 output. GitHub Copilot can run an agent on another model, and that line shows it. In Copilot the hand-off
 must pass the model, such as `claude-opus-5.5`: without it, the `task` tool does not start an agent whose
@@ -31,6 +31,10 @@ tools: they read issues with `gh` or the GitHub MCP read tools.
 - `builder` builds a planned change test-first: it writes the tests and the code, and runs the build and the tests. It never commits, pushes or opens a pull request.
 - `blind-judge` scores two task outputs without knowing which output used the tested skill. It reads and scores, but never edits.
 - `docs-reviewer` checks both documentation layers, their links, related ADRs, and documentation gates. It runs gates only in check mode.
+- `code-reviewer` reviews a change in any language against `code-conventions` and the convention skill of each changed file type. It looks for code no criterion asks for, swallowed failures, a second copy next to existing code, code rot, closed sets and comments that break C10.
+- `test-analyzer` checks whether the tests of a change prove each acceptance criterion, and flags tests that assert nothing or are surplus. It reads the test rules of each changed file type.
+- `security-reviewer` reviews a change in any language for security defects, and reads the `## Security` section of each changed file type's skill. It also voices the Lead in the `grilling` and `convene-personas` panels.
+- The three review agents moved here from the dotnet pack, so a repository with only core has them. They use the one severity scale of `code-conventions`: HIGH and MEDIUM. `update-constitution` uses `code-reviewer` in check mode.
 - `substrate-walker` gathers issue, architecture, spec, code, caller, reuse, and recent-change context. It reads but never writes. It reads issues with `gh` (read-only use) and greps the knowledge folder next to the repository docs when it exists.
 
 ### Skills

@@ -1,7 +1,7 @@
 # Convention skills by file type
 
-The `builder` agent, the build step of `implement` and `refactor`, and the `architect` agent read this
-table. It says which convention skill holds the rules of each kind of file. A change loads the skills
+The `builder` agent, the build step of `implement` and `refactor`, the `architect` agent, the
+`code-reviewer` agent, the `test-analyzer` agent and the `security-reviewer` agent read this table. It says which convention skill holds the rules of each kind of file. A change loads the skills
 of the file types it touches, and no others. A new language needs one row here and no other change in
 core.
 

@@ -102,14 +102,14 @@ grows, switch to the full path.
 7. **Review.** Nothing is committed yet, so build the diff from the working tree. Run
    `git add --intent-to-add .`, so new files show, then write
    `git diff $(git merge-base origin/main HEAD)` to `temp/review.diff`, since the reviewers have no
-   shell. Hand it to the review agents of the installed packs side by side, for example `code-reviewer`
-   and `test-analyzer` from the dotnet pack. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in Copilot). Add
-   `security-reviewer` on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC,
-   outbound calls, JS interop or request logging. If you cannot run agents, or no pack ships a
-   reviewer, load `code-conventions` and the convention skills of the changed files, and review the
-   diff yourself. For a diff that touches auth, RBAC,
-   outbound calls, JS interop or request logging, also load `blazor-authorization` (blazor pack) when it
-   is installed. Then say in the evidence record that the review ran inline. Fix each
+   shell. Hand it, with the story key and its acceptance criteria, to the review agents of core side by
+   side: `code-reviewer` and `test-analyzer`. Both run on Sonnet 5.5 (model `sonnet` in Claude Code,
+   `claude-sonnet-5.5` in Copilot), and each reads the convention skills of the changed files from the
+   table in `code-conventions`. Add `security-reviewer` on Opus 5.5 (model `opus` in Claude Code,
+   `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC, secrets, network access, outbound
+   calls, JS interop or request logging. If you cannot run agents, load `code-conventions`, the
+   convention skills of the changed files and each topic skill that fits, such as
+   `blazor-authorization`, and review the diff yourself. Then say in the evidence record that the review ran inline. Fix each
    finding or decline it with a reason, then check again. Run `update-constitution` in check mode.
 8. **Wrap up and record.** Write the pull request description in `temp/` in the evidence record shape
    from orchestration.md. Then run `wrap-up`, the single owner of the rest of the change. It searches

@@ -71,7 +71,7 @@ agent in `.claude/agents/` for independent thinking on a weighty decision. The a
 
 - `draft-reviewer` (github-issues pack) for the Product Manager, QA and Analyst;
 - `architect` for the Architect;
-- `security-reviewer` (dotnet pack) for the Lead.
+- `security-reviewer` for the Lead.
 
 All three run on Opus 5.5: model `opus` in Claude Code, `claude-opus-5.5` in Copilot. Pass the model
 with each hand-off.

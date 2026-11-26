@@ -5,6 +5,9 @@
     ".claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml",
     ".claude/skills/ai-sdlc-handbook/references/layout.md",
     ".claude/skills/code-conventions/references/skills-by-file-type.md",
+    ".claude/agents/code-reviewer.md",
+    ".claude/agents/test-analyzer.md",
+    ".claude/agents/security-reviewer.md",
     ".claude/skills/bicep-conventions/references/bicep.md",
     ".claude/skills/bicep-conventions/scripts/Get-BicepFacts.ps1"
   ],

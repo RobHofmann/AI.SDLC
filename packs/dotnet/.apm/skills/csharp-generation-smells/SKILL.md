@@ -4,8 +4,9 @@ kind: knowledge
 user-invocable: false
 description: >
   The ways generated C# and Razor drift from the house conventions where no analyzer catches it. They
-  cover errors through the pipeline, validation, logging, wire names, doc comments, naming, DI and
-  closed sets in C#. They also cover Razor component shape and test shape. The rules for every
+  cover errors through the pipeline, async and resources, validation, logging, wire names, doc
+  comments, naming, DI, closed sets and the C# security rules. They also cover Razor component shape
+  and test shape. The rules for every
   language live in code-conventions. Use when writing or reviewing C# or Razor in this repository. Also use at the build and
   review steps of implement, refactor or fix-pr-feedback, or when the
   code-reviewer agent reads a diff. Do NOT use to run the build or the gates (run-preflight) or to
@@ -20,8 +21,8 @@ holds the full rule; the page wins when the two differ. The rules that hold in e
 reuse before you build, build only what the story needs, a twin follows its sibling and fix the class,
 live once in [code-conventions](/.claude/skills/code-conventions/SKILL.md). This skill adds the C# and
 Razor rules only. `implement`, `refactor` and `fix-pr-feedback`
-load this at the build and review steps, the `builder` agent reads it, and the `code-reviewer` agent
-preloads it.
+load this at the build and review steps. The `builder`, `code-reviewer` and `security-reviewer` agents
+read it through the table of file types in `code-conventions`.
 
 ## Before you write
 
@@ -36,6 +37,8 @@ preloads it.
   null-check-then-`NotFound()`, return anonymous error bodies or wrap actions in `try/catch`. No
   defensive catch-and-log around a best-effort step unless it is a stated decision
   ([csharp.md](references/csharp.md)).
+- **Async and resources.** Use `await` on a task, never `.Result` or `.Wait()`; `async void` only for
+  an event handler; `using` on what you create ([csharp.md](references/csharp.md), "Async and resources").
 - **Validation.** `ValidateAsync` plus the validation exception the repository already uses, never
   `ValidateAndThrowAsync`.
 - **Logging.** Log the way the repository's own rules say (its constitution page, `paths.constitution`
@@ -62,6 +65,12 @@ preloads it.
   such as a `PageTitle`.
 - The full rules: `blazor-conventions`, when the blazor pack is installed.
 
+## Security
+
+The `security-reviewer` agent reads this section when a change touches a C# file. The C# security
+rules are on [security.md](references/security.md): access control, Graph and ARM scope, queries built
+from input, deserialization and error bodies.
+
 ## Tests
 
 - Mock every constructor dependency; never pass `null`.
@@ -79,6 +88,7 @@ preloads it.
 - [C# conventions](references/csharp.md) - language, DI, testing and closed sets.
 - [Code conventions](/.claude/skills/code-conventions/SKILL.md) - the rules for every language.
 - [Clean Code rules](references/clean-code.md) - the analyzer rules of C#.
+- [Security](references/security.md) - the C# security rules.
 - [Code comments policy](/.claude/skills/ai-sdlc-handbook/references/comments.md) - clause C10 and its gates.
 - [API conventions](/.claude/skills/api-contract-conventions/references/api.md) - thin controllers, one domain each.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - C01 and C10.

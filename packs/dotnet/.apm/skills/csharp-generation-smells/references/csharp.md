@@ -40,6 +40,13 @@ exception types.
 - Throw a typed domain exception and let one central formatter map it to `ProblemDetails`. Controllers
   stay thin and do not catch. An exception the formatter does not know reaches the client as a 500.
 
+## Async and resources
+
+- Use `await` on a task. Never block on it with `.Result`, `.Wait()` or `.GetAwaiter().GetResult()`.
+- Use `async void` only for an event handler. Every other async method returns a `Task`.
+- A task that runs without an `await` (fire and forget) states its reason in a comment (C10).
+- Put `using` on an `IDisposable` or `IAsyncDisposable` that the code creates.
+
 ## Visibility
 
 - **Give a field the least visibility it needs.** A field that only its own class reads should be

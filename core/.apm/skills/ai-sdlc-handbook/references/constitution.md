@@ -223,8 +223,8 @@ clause in each session.
   `.claude/skills/dotnet-gates/scripts/Check-XmlDocs.ps1` (advisory) reports an added public or
   protected declaration without a `///` doc comment - active. Both run in `Invoke-LocalGates.ps1` and in the
   pull request workflow. Skill - active: the build and review skills state the rule, and the
-  `code-reviewer` agent flags missing doc comments and comments that say what. Code review - active
-  for the other languages, which no gate reads.
+  `code-reviewer` agent of core flags missing doc comments and comments that say what, in every
+  language. Code review - active for the languages no gate reads.
 - **Short form:** Code is documented: public types and members carry doc comments. A comment says why,
   not what, and is never dead code or names an AI tool.
 
