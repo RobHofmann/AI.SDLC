@@ -129,13 +129,13 @@ Documentation scripts live under `core/.apm/skills/adopt-docs/scripts/` and `cor
 - `Get-FolderFacts.ps1` reads the contents of a unit folder.
 - `New-DocCandidate.ps1` collects the facts of each unit with no page into a facts file under `doc-candidates/`. It calls no model; `adopt-docs` hands each facts file to an agent that drafts the page.
 - `Repair-DocsWiki.ps1` applies safe machine repairs to existing documentation.
-- `Build-DocsIndex.ps1` generates `docs/index.md` and `docs-functional/index.md`. The summary of a page is the first whole sentence of its first paragraph, also when it wraps over lines or a line starts with a code span.
+- `Build-DocsIndex.ps1` generates `docs/index.md` and `docs-functional/index.md`. The summary of a page is the first whole sentence of its first paragraph. That holds when the sentence wraps over lines, or when a line starts with a code span.
 - `Check-DocCoverage.ps1` checks both documentation layers and unit pages.
 - `Check-DocsWiki.ps1` checks for orphans and broken relative links.
 - `Check-DocReadingLevel.ps1` checks text against the required reading level.
 - `Check-DocEmDashes.ps1` rejects the em-dash character.
 - `Check-DocLineCitations.ps1` rejects source references by line number.
-- `Check-DocPersonNames.ps1` checks for internal team member names. It looks for each full name as "First Last" and "Last, First", also with a particle such as "van der".
+- `Check-DocPersonNames.ps1` checks for internal team member names. It looks for each full name as "First Last" and "Last, First", also when a word such as "van der" stands before the last name.
 - `Check-DocRowContent.ps1` requires each documentation line to carry a fact.
 - `Check-DocLastChecked.ps1` lists the pages whose `Last checked` date is older than `docs.lastCheckedMaxAgeDays`. It is advisory and off by default.
 - `Check-DocSectionRefs.ps1` checks references to sections in other pages. It builds a link anchor the way GitHub does, with `-1` and `-2` for a repeated heading.
