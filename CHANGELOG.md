@@ -13,6 +13,7 @@ Each entry names its issue, as `#42`.
 - A pull request in AI.SDLC now says `Fixes #42`, so the merge closes its issue. Before, it said
   `Refs #42` and a person closed the issue by hand after the tag. `AGENTS.md` and the Releasing part of
   `README.md` say so. An update pull request in a consumer still says `Refs RobHofmann/AI.SDLC#42` (#9).
+
 ## v1.5.0 - 2026-11-26
 
 - `Check-PrivateTerms.ps1` and `Test-GitleaksBaseline.ps1` stop as "not checked" when `-RepoRoot` is
