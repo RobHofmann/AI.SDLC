@@ -20,6 +20,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0012: CI is a composite action inside the installed core](./adrs/0012-ci-is-a-composite-action-inside-the-installed-core.md) - Every consumer needs the same pull request checks: the APM integrity checks, the secret scan and the
 - [ADR 0013: Docs that span projects live in a knowledge repository](./adrs/0013-docs-that-span-projects-live-in-a-knowledge-repository.md) - Each repository documents itself in two layers of markdown (ADR 0008).
 - [ADR 0014: Every rule has one source of truth](./adrs/0014-every-rule-has-one-source-of-truth.md) - The core clauses lived in two places.
+- [ADR 0015: The tests of a shared package live outside the installed package](./adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md) - A shared script kept its Pester test next to it, in `<package>/.apm/skills/<skill>/scripts/`.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General

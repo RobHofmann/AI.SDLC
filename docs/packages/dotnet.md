@@ -82,7 +82,7 @@ The gate scripts live under `packs/dotnet/.apm/skills/dotnet-gates/scripts`.
 - `Invoke-DotnetPostEdit.ps1` builds the project that owns an edited C# or Razor file.
 - `Invoke-DotnetPreflight.ps1` runs the build with analyzers, tests, and coverage. No coverage file is a FAIL row that names the fix.
 
-Each of these scripts has its tests beside it under `packs/dotnet/.apm/skills/dotnet-gates/scripts`.
+The tests of these scripts sit under `packs/dotnet/tests/skills/dotnet-gates/scripts`, at the same names ([ADR 0015](../adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md)).
 
 ### Code graph scripts
 

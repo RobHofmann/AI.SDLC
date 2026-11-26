@@ -60,13 +60,13 @@ It defines these blocking gates:
 
 It lives at `packs/blazor/.apm/skills/blazor-conventions/scripts/Check-RazorAttributePlacement.ps1`.
 
-Its test file is `packs/blazor/.apm/skills/blazor-conventions/scripts/Check-RazorAttributePlacement.Tests.ps1`.
+Its test file is `packs/blazor/tests/skills/blazor-conventions/scripts/Check-RazorAttributePlacement.Tests.ps1`.
 
 `Check-RazorConventions.ps1` enforces the mechanical portal component conventions from `portal-ui.md`.
 
 It lives at `packs/blazor/.apm/skills/blazor-conventions/scripts/Check-RazorConventions.ps1`.
 
-Its test file is `packs/blazor/.apm/skills/blazor-conventions/scripts/Check-RazorConventions.Tests.ps1`.
+Its test file is `packs/blazor/tests/skills/blazor-conventions/scripts/Check-RazorConventions.Tests.ps1`.
 
 The package configuration file is `packs/blazor/apm.yml`.
 

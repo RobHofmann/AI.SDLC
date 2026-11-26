@@ -181,7 +181,7 @@ $results = $files | ForEach-Object -ThrottleLimit ([Math]::Max(1, $ThrottleLimit
     $tempQuoted = $using:runTemp
     $tempQuoted = $tempQuoted.Replace("'", "''")
     $import = if ($using:PesterVersion) { "Import-Module Pester -RequiredVersion '$($using:PesterVersion)'" } else { "Import-Module Pester -MinimumVersion 5.0" }
-    # With -CoverageFile the process measures the scripts next to its test file, with the profiler, and
+    # With -CoverageFile the process measures the scripts its test file tests, with the profiler, and
     # hands back its lines; Pester's own report goes to a temporary file that is removed.
     $coverage = if ($using:CoverageFile) {
         @"

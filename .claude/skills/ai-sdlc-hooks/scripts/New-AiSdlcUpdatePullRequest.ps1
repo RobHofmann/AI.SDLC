@@ -166,7 +166,7 @@ function Get-ConsumerStep {
 # The description of the update pull request, and the comment for what does not fit in its 4000 characters.
 function New-UpdateDescription {
     param([string]$From, [bool]$NamesChecked, [object[]]$Finding, [object[]]$Step)
-    $intro = "Takes the shared AI-SDLC at $Ref$(if ($From) { ", from $From" }). The AI.SDLC changelog lists what changed. A person reviews and merges this pull request."
+    $intro = "Takes the shared AI-SDLC at $Ref$(if ($From) { ", from $From" }). The AI.SDLC changelog lists what changed. The files under ``.claude/`` are a generated copy of the AI-SDLC packages. They are reviewed and tested in AI.SDLC, so review the release notes, not each file. A person reviews and merges this pull request."
     $range = if ($From) { "from $From to $Ref" } else { "up to $Ref" }
     if ($NamesChecked -and $Finding.Count -eq 0 -and $Step.Count -eq 0) {
         return [pscustomobject]@{ Description = "$intro`n`nNo file of this repository uses an old skill name, and no release $range lists steps for a consumer."; Comment = $null }

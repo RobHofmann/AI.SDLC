@@ -310,6 +310,15 @@ exit 0
 
             $r.Code | Should -Be 0 -Because $r.Output
             $r.Body | Should -Match 'No file of this repository uses an old skill name, and no release from v1\.0\.0 to v1\.1\.0 lists steps'
+            $r.Body | Should -Match 'so review the release notes, not each file\.'
+        }
+
+        It 'tells the reviewer that the files under .claude/ are a generated copy, reviewed and tested in AI.SDLC (#45)' {
+            $r = Invoke-Update -Consumer (New-Consumer) -Source (New-Source)
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Body | Should -Match ([regex]::Escape('The files under `.claude/` are a generated copy of the AI-SDLC packages.'))
+            $r.Body | Should -Match 'They are reviewed and tested in AI\.SDLC, so review the release notes, not each file\.'
         }
 
         It 'says the names were not checked when the new version has no Find-RetiredSkillNames.ps1' {

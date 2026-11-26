@@ -51,7 +51,7 @@ Scripts live under `packs/github/.apm/skills/github-pull-requests/scripts`.
 
 ### Tests
 
-Each test lives beside the related script, as `<Name>.Tests.ps1`.
+Each test is `<Name>.Tests.ps1` under `packs/github/tests/skills/github-pull-requests/scripts`, at the path of its script under `.apm/` ([ADR 0015](../adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md)).
 
 ## Dependencies
 

@@ -57,6 +57,7 @@ clear. The `adr-conventions` skill holds the full rules, and the `write-adr` ski
 | [0012](0012-ci-is-a-composite-action-inside-the-installed-core.md) | CI is a composite action inside the installed core | Accepted |
 | [0013](0013-docs-that-span-projects-live-in-a-knowledge-repository.md) | Docs that span projects live in a knowledge repository | Accepted |
 | [0014](0014-every-rule-has-one-source-of-truth.md) | Every rule has one source of truth | Accepted |
+| [0015](0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md) | The tests of a shared package live outside the installed package | Accepted |
 
 ## Related
 
