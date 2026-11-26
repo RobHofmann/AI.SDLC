@@ -59,8 +59,8 @@ lives in one place and the skills link to it.
 
 `Check-SkillHygiene.ps1` blocks when a skill has no `## Standing rules` section or when that section
 does not link both pages. The pointer sits in every skill rather than in the hook alone. GitHub
-Copilot CLI reads the same settings file and raises the prompt and stop events too. A Copilot session
-started in a subfolder runs no hook; [autolearn](autolearn.md) says more.
+Copilot CLI reads the same settings file and raises the prompt and stop events too. A Claude Code session
+started in a subfolder runs no project hook; [autolearn](autolearn.md) says more.
 
 ## Shape 1: reader / walker (substrate, single-shot)
 

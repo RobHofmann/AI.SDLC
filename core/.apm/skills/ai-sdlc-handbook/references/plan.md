@@ -43,7 +43,8 @@ These were checked, not assumed. Each one decides where something lives.
   `additionalContext` only at the top level of the output, so the hooks write it in both shapes. The
   `Stop` block works and forces one more turn. The compact hook fires before an edit, but its payload
   carries no transcript path, so in Copilot only its call count works
-  ([context management](context-management.md)). A session that starts in a subfolder runs no hook.
+  ([context management](context-management.md)). Copilot runs the hooks from the git root, also in a
+  session that starts in a subfolder (probed on Copilot CLI 1.0.112, 2026-11-15).
   (Sources: GitHub Docs "Using hooks with GitHub Copilot CLI" and "GitHub Copilot hooks reference".)
 - **`user-invocable: false` hides a skill in Claude Code only.** Claude Code keeps such a skill out of
   the slash-command list and the model still loads it. GitHub Copilot CLI 1.0.92 ignores the field,

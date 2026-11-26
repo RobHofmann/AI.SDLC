@@ -114,8 +114,8 @@ inside it, exits zero and stays silent.
 
 GitHub Copilot CLI reads the same `.claude/settings.json` and raises both events (probed on 1.0.100,
 2026-10-20). It reads the prompt context only at the top level of the hook output, so the script writes
-it in both shapes. It honours the `Stop` block too. A session that starts in a subfolder runs no hook,
-and an agent may run where no hook fires. That is why the `## Standing rules` block sits in every skill
+it in both shapes. It honours the `Stop` block too. Claude Code loads no project hook in a session that
+starts in a subfolder, and an agent may run where no hook fires. That is why the `## Standing rules` block sits in every skill
 and not only in the hook.
 
 ## Related

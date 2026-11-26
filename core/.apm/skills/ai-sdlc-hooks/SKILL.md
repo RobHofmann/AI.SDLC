@@ -14,8 +14,8 @@ description: >
 # AI-SDLC hooks
 
 The agent hooks run in every agent tool that reads `.claude/settings.json`, and the scripts they call
-sit in this skill's `scripts/` folder. Each hook command calls its script by a path relative to the
-repository root. The git hooks sit in `githooks/`, and `Initialize-AiSdlc.ps1` points
+sit in this skill's `scripts/` folder. Each hook command finds its script in the folder that
+`CLAUDE_PROJECT_DIR` names, or in the current folder when that is not set. The git hooks sit in `githooks/`, and `Initialize-AiSdlc.ps1` points
 `core.hooksPath` at that folder.
 
 ## The agent hooks
@@ -85,8 +85,10 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   `apply_patch`, which sends the text of the edit, and one such edit can name several files.
 - **Return context in both shapes.** After a prompt or an edit, Copilot CLI reads `additionalContext`
   at the top level, and Claude Code reads it in `hookSpecificOutput`. `New-HookContextOutput` writes both.
-- **Start the session in the root folder.** Copilot CLI runs no agent hook in a session that starts in
-  a subfolder. The git `pre-push` hook still holds there.
+- **Find the script through `CLAUDE_PROJECT_DIR`.** Claude Code runs a hook in the current folder of
+  the session, which a `cd` moves. So each hook command joins `CLAUDE_PROJECT_DIR`, or `.` when it is
+  not set, with the script path. It reads the variable through .NET, because bash in Claude Code and
+  pwsh in Copilot CLI would both read a `$` sign.
 - **Read repository paths from `aisdlc.json`** through `AiSdlcConfig.psm1` in the `ai-sdlc-gates` skill.
 
 ## When a hook refused a step

@@ -335,7 +335,7 @@ exit 1
             $post = @($settings.hooks.PostToolUse)
             $entry = $post | Where-Object { $_.matcher -eq 'Edit|Write' }
             $entry | Should -Not -BeNullOrEmpty
-            @($entry.hooks.command) | Should -Contain 'pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1'
+            @($entry.hooks.command) | Should -Contain 'pwsh -NoProfile -Command "& (Join-Path ([Environment]::GetEnvironmentVariable(''CLAUDE_PROJECT_DIR'') ?? ''.'') ''.claude/skills/ai-sdlc-hooks/scripts/Invoke-PostEditCheck.ps1'')"'
         }
 
         It 'names only hook scripts that exist in an installed skill' {
@@ -349,6 +349,35 @@ exit 1
                 }
             }
             $missing | Should -BeNullOrEmpty
+        }
+
+        It 'starts every hook script from the folder in CLAUDE_PROJECT_DIR, so a cd in the session cannot break it' -Tag '51' {
+            $settings = Get-AiSdlcHookSettings -From $PSScriptRoot
+            $commands = @($settings.hooks.PSObject.Properties.Value | ForEach-Object { $_ } | ForEach-Object { $_.hooks } | ForEach-Object { $_.command })
+            $commands | Should -Not -BeNullOrEmpty
+            $form = '^pwsh -NoProfile -Command "& \(Join-Path \(\[Environment\]::GetEnvironmentVariable\(''CLAUDE_PROJECT_DIR''\) \?\? ''\.''\) ''\.claude/skills/[^/'']+/scripts/[^/'']+\.ps1''\)"$'
+            @($commands | Where-Object { $_ -notmatch $form }) | Should -BeNullOrEmpty -Because 'a relative path fails after a cd, and a $ sign is read by bash in Claude Code and by pwsh in Copilot CLI'
+        }
+
+        It 'hands the payload on stdin to the script, so the wired push check still refuses a push to main from a subfolder' -Tag '51' {
+            $settings = Get-AiSdlcHookSettings -From $PSScriptRoot
+            $wired = @($settings.hooks.PreToolUse | ForEach-Object { $_.hooks } | ForEach-Object { $_.command } | Where-Object { $_ -like '*Deny-IncompletePush.ps1*' })[0]
+            $wired | Should -Not -BeNullOrEmpty
+            $inner = [regex]::Match($wired, '^pwsh -NoProfile -Command "(.+)"$').Groups[1].Value
+            $root = (git -C $PSScriptRoot rev-parse --show-toplevel).Trim()
+            if (-not (Test-Path -LiteralPath (Join-Path $root '.claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1'))) { Set-ItResult -Skipped -Because 'this checkout has no installed push check to run'; return }
+            $payload = @{ hook_event_name = 'PreToolUse'; tool_name = 'Bash'; cwd = $root; tool_input = @{ command = 'git push origin main' } } | ConvertTo-Json -Compress
+            $previous = $env:CLAUDE_PROJECT_DIR
+            Push-Location -LiteralPath (Join-Path $root '.claude' 'skills')
+            try {
+                $env:CLAUDE_PROJECT_DIR = $root
+                $output = $payload | pwsh -NoProfile -Command $inner
+            }
+            finally {
+                Pop-Location
+                $env:CLAUDE_PROJECT_DIR = $previous
+            }
+            ($output -join '') | Should -Match '"permissionDecision":\s*"deny"'
         }
 
         It 'finds the dotnet build step through the postEdit entry of dotnet-gates' {
