@@ -156,7 +156,7 @@ dependencies:
             function Set-DocsIndexer {
                 param([string]$Root, [int]$Exit = 0)
                 $gates = Join-Path $Root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
-                Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination $gates
+                Copy-Item -LiteralPath (Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination $gates
                 Set-Content -LiteralPath (Join-Path $Root 'aisdlc.json') -Value '{ "paths": { "docsRoots": ["docs", "docs-functional"] } }'
                 $write = if ($Exit -eq 0) { "New-Item -ItemType Directory -Path '$Root/docs' -Force | Out-Null; Set-Content -LiteralPath '$Root/docs/index.md' -Value '# Index (rebuilt)'; " } else { '' }
                 Set-Content -LiteralPath (Join-Path $gates 'Build-DocsIndex.ps1') -Value "param([string]`$RepoRoot) $write exit $Exit"

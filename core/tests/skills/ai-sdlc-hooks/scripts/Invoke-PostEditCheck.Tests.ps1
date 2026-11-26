@@ -352,7 +352,7 @@ exit 1
         }
 
         It 'starts every hook script from the folder in CLAUDE_PROJECT_DIR, so a cd in the session cannot break it' -Tag '51' {
-            $settings = Get-AiSdlcHookSettings -From $PSScriptRoot
+            $settings = Get-AiSdlcHookSettings -From $script:ScriptFolder
             $commands = @($settings.hooks.PSObject.Properties.Value | ForEach-Object { $_ } | ForEach-Object { $_.hooks } | ForEach-Object { $_.command })
             $commands | Should -Not -BeNullOrEmpty
             $form = '^pwsh -NoProfile -Command "& \(Join-Path \(\[Environment\]::GetEnvironmentVariable\(''CLAUDE_PROJECT_DIR''\) \?\? ''\.''\) ''\.claude/skills/[^/'']+/scripts/[^/'']+\.ps1''\)"$'
@@ -360,11 +360,11 @@ exit 1
         }
 
         It 'hands the payload on stdin to the script, so the wired push check still refuses a push to main from a subfolder' -Tag '51' {
-            $settings = Get-AiSdlcHookSettings -From $PSScriptRoot
+            $settings = Get-AiSdlcHookSettings -From $script:ScriptFolder
             $wired = @($settings.hooks.PreToolUse | ForEach-Object { $_.hooks } | ForEach-Object { $_.command } | Where-Object { $_ -like '*Deny-IncompletePush.ps1*' })[0]
             $wired | Should -Not -BeNullOrEmpty
             $inner = [regex]::Match($wired, '^pwsh -NoProfile -Command "(.+)"$').Groups[1].Value
-            $root = (git -C $PSScriptRoot rev-parse --show-toplevel).Trim()
+            $root = (git -C $script:ScriptFolder rev-parse --show-toplevel).Trim()
             if (-not (Test-Path -LiteralPath (Join-Path $root '.claude/skills/ai-sdlc-hooks/scripts/Deny-IncompletePush.ps1'))) { Set-ItResult -Skipped -Because 'this checkout has no installed push check to run'; return }
             $payload = @{ hook_event_name = 'PreToolUse'; tool_name = 'Bash'; cwd = $root; tool_input = @{ command = 'git push origin main' } } | ConvertTo-Json -Compress
             $previous = $env:CLAUDE_PROJECT_DIR

@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'SonarMcpToken' -Tag '84' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'SonarMcpToken.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'SonarMcpToken.psm1') -Force
         $script:Fake = 'fake-sonar-token-84'
         $script:SetCommand = 'pwsh .claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1'
     }
@@ -32,7 +34,7 @@ Describe 'SonarMcpToken' -Tag '84' {
 
         It 'is false when AISDLC_SONAR_MCP_TOKEN is inherited with an empty value' {
             $startInfo = [System.Diagnostics.ProcessStartInfo]::new((Get-Process -Id $PID).Path)
-            foreach ($argument in @('-NoProfile', '-NonInteractive', '-Command', "Import-Module '$(Join-Path $PSScriptRoot 'SonarMcpToken.psm1')' -Force; Test-TokenInProcess")) { $startInfo.ArgumentList.Add($argument) }
+            foreach ($argument in @('-NoProfile', '-NonInteractive', '-Command', "Import-Module '$(Join-Path $script:ScriptFolder 'SonarMcpToken.psm1')' -Force; Test-TokenInProcess")) { $startInfo.ArgumentList.Add($argument) }
             $startInfo.UseShellExecute = $false
             $startInfo.RedirectStandardOutput = $true
             $startInfo.Environment['AISDLC_SONAR_MCP_TOKEN'] = ''

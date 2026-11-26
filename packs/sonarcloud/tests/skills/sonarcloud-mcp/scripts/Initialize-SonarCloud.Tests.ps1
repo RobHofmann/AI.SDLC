@@ -1,9 +1,11 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Initialize-SonarCloud' -Tag '84' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-SonarCloud.ps1'
-        Import-Module (Join-Path $PSScriptRoot 'SonarMcpToken.psm1') -Force
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Initialize-SonarCloud.ps1'
+        Import-Module (Join-Path $script:ScriptFolder 'SonarMcpToken.psm1') -Force
         $script:Fake = 'fake-sonar-token-84'
         $script:SetCommand = 'pwsh .claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1'
     }
@@ -11,7 +13,7 @@ Describe 'Initialize-SonarCloud' -Tag '84' {
     AfterAll { Remove-Module SonarMcpToken -Force -ErrorAction SilentlyContinue }
 
     It 'is the setup script that gates.json names, next to the gates list' {
-        $gates = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'gates.json') -Raw | ConvertFrom-Json
+        $gates = Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw | ConvertFrom-Json
         $gates.setup | Should -BeExactly 'scripts/Initialize-SonarCloud.ps1'
         $gates.gates | Should -Not -BeNullOrEmpty
     }

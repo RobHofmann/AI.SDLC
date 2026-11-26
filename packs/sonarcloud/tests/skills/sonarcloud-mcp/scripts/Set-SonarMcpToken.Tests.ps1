@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Set-SonarMcpToken' -Tag '84' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Set-SonarMcpToken.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Set-SonarMcpToken.ps1'
         $script:Fake = 'fake-sonar-token-84'
         . $script:ScriptUnderTest
         $script:RealCurrentUser = ${function:Invoke-SonarCurrentUser}

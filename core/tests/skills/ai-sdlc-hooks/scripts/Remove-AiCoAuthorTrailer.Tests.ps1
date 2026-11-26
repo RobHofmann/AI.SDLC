@@ -1,5 +1,7 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 BeforeDiscovery {
     $sh = (Get-Command sh -ErrorAction SilentlyContinue).Source
     if (-not $sh -and $IsWindows) {
@@ -11,8 +13,8 @@ BeforeDiscovery {
 
 Describe 'Remove-AiCoAuthorTrailer' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path $PSScriptRoot 'Remove-AiCoAuthorTrailer.ps1'
-        $script:Hook = Join-Path $PSScriptRoot '..' 'githooks' 'commit-msg'
+        $script:ScriptUnderTest = Join-Path $script:ScriptFolder 'Remove-AiCoAuthorTrailer.ps1'
+        $script:Hook = Join-Path $script:ScriptFolder '..' 'githooks' 'commit-msg'
 
         function Invoke-Trailer {
             param([Parameter(Mandatory)][string]$Message)
@@ -132,7 +134,7 @@ Describe 'Remove-AiCoAuthorTrailer' {
 
     It 'ships the commit-msg hook as an executable file with LF line endings' -Tag '53' {
         $relative = 'core/.apm/skills/ai-sdlc-hooks/githooks/commit-msg'
-        $root = (git -C $PSScriptRoot rev-parse --show-toplevel).Trim()
+        $root = (git -C $script:ScriptFolder rev-parse --show-toplevel).Trim()
         if (-not (Test-Path -LiteralPath (Join-Path $root $relative))) { Set-ItResult -Skipped -Because 'this layout is not the AI.SDLC source'; return }
 
         $mode = ((git -C $root ls-files --stage -- $relative) -split '\s+')[0]

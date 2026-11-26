@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Invoke-SonarTokenHook' -Tag '84' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Invoke-SonarTokenHook.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Invoke-SonarTokenHook.ps1'
         $script:Fake = 'fake-sonar-token-84'
         $script:SetCommand = 'pwsh .claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1'
         . $script:ScriptUnderTest
@@ -111,14 +113,14 @@ Describe 'Invoke-SonarTokenHook' -Tag '84' {
     Context 'the wiring in sonarcloud-hooks.json, or in .claude/settings.json of a consumer' {
         BeforeAll {
             $script:Command = 'pwsh -NoProfile -Command "& (Join-Path ([Environment]::GetEnvironmentVariable(''CLAUDE_PROJECT_DIR'') ?? ''.'') ''.claude/skills/sonarcloud-mcp/scripts/Invoke-SonarTokenHook.ps1'')"'
-            $sourceFile = Join-Path $PSScriptRoot '..' '..' '..' 'hooks' 'sonarcloud-hooks.json'
+            $sourceFile = Join-Path $script:ScriptFolder '..' '..' '..' 'hooks' 'sonarcloud-hooks.json'
             if (Test-Path -LiteralPath $sourceFile) {
                 $script:Registration = (Resolve-Path -LiteralPath $sourceFile).Path
-                $script:InstalledRoot = Join-Path $PSScriptRoot '..' '..'
+                $script:InstalledRoot = Join-Path $script:ScriptFolder '..' '..'
             }
             else {
-                $script:Registration = Join-Path $PSScriptRoot '..' '..' '..' 'settings.json'
-                $script:InstalledRoot = Join-Path $PSScriptRoot '..' '..'
+                $script:Registration = Join-Path $script:ScriptFolder '..' '..' '..' 'settings.json'
+                $script:InstalledRoot = Join-Path $script:ScriptFolder '..' '..'
             }
             $script:Entries = @()
             if (Test-Path -LiteralPath $script:Registration) {
