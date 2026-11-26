@@ -213,6 +213,12 @@ exit 0
             $r.Output | Should -Match 'main or master is refused'
         }
 
+        It 'still refuses a push to main when -RepoRoot is provider-qualified' {
+            $payload = New-Payload -Command 'git push origin main'
+            $out = & $script:ScriptUnderTest -Payload $payload -CheckScript $script:CleanCheck -CurrentBranch 'main' -ReceiptRoot $script:Receipts -HeadTree $script:GreenTree -RepoRoot ('Microsoft.PowerShell.Core\FileSystem::' + $script:Installing) *>&1 | Out-String
+            $out | Should -Match '"permissionDecision":"deny"'
+            $out | Should -Match 'main or master is refused'
+        }
         It 'refuses a push to main that comes second in a chain' {
             $r = Invoke-Hook -Payload (New-Payload -Command 'git push origin 1-story && git push origin main') -CheckScript $script:CleanCheck
             $r.Output | Should -Match 'main or master is refused'
@@ -283,6 +289,28 @@ exit 0
             $r.Output | Should -Not -Match 'permissionDecision'
         }
 
+        It 'allows a plain push to main when -RepoRoot is provider-qualified, because git gets the plain path' {
+            $payload = New-Payload -Command 'git push origin main'
+            $out = & $script:ScriptUnderTest -Payload $payload -CheckScript $script:CleanCheck -CurrentBranch 'main' -ReceiptRoot $script:Receipts -HeadTree $script:GreenTree -RepoRoot ('Microsoft.PowerShell.Core\FileSystem::' + $script:OptedIn) *>&1 | Out-String
+            $out | Should -Not -Match 'permissionDecision'
+        }
+
+        It 'allows a plain push to main when -RepoRoot is a UNC path' -Skip:(-not $IsWindows) {
+            $unc = '\\localhost\' + $script:OptedIn.Substring(0, 1) + '$' + $script:OptedIn.Substring(2)
+            if (-not (Test-Path -LiteralPath $unc)) { Set-ItResult -Skipped -Because 'the admin share is not available'; return }
+            $names = 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0'
+            $saved = @{}
+            foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
+            try {
+                $env:GIT_CONFIG_COUNT = '1'; $env:GIT_CONFIG_KEY_0 = 'safe.directory'; $env:GIT_CONFIG_VALUE_0 = '*'
+                $payload = New-Payload -Command 'git push origin main'
+                $out = & $script:ScriptUnderTest -Payload $payload -CheckScript $script:CleanCheck -CurrentBranch 'main' -ReceiptRoot $script:Receipts -HeadTree $script:GreenTree -RepoRoot $unc *>&1 | Out-String
+            }
+            finally {
+                foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
+            }
+            $out | Should -Not -Match 'permissionDecision'
+        }
         It 'refuses <Command>, which may delete or rewrite the trunk' -ForEach @(
             @{ Command = 'git push --force origin main' }
             @{ Command = 'git push -f origin main' }
@@ -679,6 +707,42 @@ exit 0
             Remove-Item -LiteralPath $script:WorktreeReceipts, $script:MainReceipts -Recurse -ErrorAction SilentlyContinue
         }
 
+        It 'judges the worktree when the cwd is provider-qualified' {
+            Write-PreflightReceipt -ReceiptRoot $script:WorktreeReceipts -Tree $script:WorktreeTree -Status PASS | Out-Null
+
+            $out = Invoke-WorktreeHook -Command 'git push -u origin feature/wt' -Cwd ('Microsoft.PowerShell.Core\FileSystem::' + $script:Worktree)
+
+            $out | Should -BeNullOrEmpty
+            Get-JudgedRepository | Should -Be (Resolve-Path -LiteralPath $script:Worktree).ProviderPath
+        }
+
+        Context 'a session on a network share (UNC path)' {
+            BeforeAll {
+                $script:SavedGit = @{}
+                foreach ($name in 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0') {
+                    $script:SavedGit[$name] = [Environment]::GetEnvironmentVariable($name)
+                }
+                $env:GIT_CONFIG_COUNT = '1'
+                $env:GIT_CONFIG_KEY_0 = 'safe.directory'
+                $env:GIT_CONFIG_VALUE_0 = '*'
+            }
+
+            AfterAll {
+                foreach ($name in $script:SavedGit.Keys) { [Environment]::SetEnvironmentVariable($name, $script:SavedGit[$name]) }
+            }
+
+            It 'judges the worktree when the cwd is a UNC path' -Skip:(-not $IsWindows) {
+                $unc = '\\localhost\' + $script:Worktree.Substring(0, 1) + '$' + $script:Worktree.Substring(2)
+                if (-not (Test-Path -LiteralPath $unc)) { Set-ItResult -Skipped -Because 'the admin share is not available'; return }
+                Write-PreflightReceipt -ReceiptRoot $script:WorktreeReceipts -Tree $script:WorktreeTree -Status PASS | Out-Null
+
+                $out = Invoke-WorktreeHook -Command 'git push -u origin feature/wt' -Cwd $unc
+
+                $out | Should -BeNullOrEmpty
+                Get-JudgedRepository | Should -Not -Match 'FileSystem::'
+                (Get-JudgedRepository).Replace('\', '/') | Should -Be (Resolve-Path -LiteralPath $unc).ProviderPath.Replace('\', '/')
+            }
+        }
         It 'judges the worktree of the cwd, finish check and receipt alike, so its green commit goes out' {
             Write-PreflightReceipt -ReceiptRoot $script:WorktreeReceipts -Tree $script:WorktreeTree -Status PASS | Out-Null
 

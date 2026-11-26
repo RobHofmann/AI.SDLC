@@ -173,6 +173,8 @@ Setup and hook scripts include:
 
 `Deny-IncompletePush.ps1` refuses a push that leaves tests or documentation behind. A push that names no folder is judged on the repository of the `cwd` field of the hook payload. In a session that works in a git worktree, that is the worktree, even though the hook runs from the main checkout. The hook also reads a folder in quotes after `cd`, `pushd` or `Set-Location`, so a folder with a space works.
 
+A `cwd` or a repository on a network share (a UNC path) works too, because the hook gives git the plain file path.
+
 The agent never merges, because the owner's merge is the approval (Checkpoint Bravo). A check in the same hooks refuses `gh pr merge` and a `gh api` call to a merge endpoint. Like the other hooks, it lets a command through when it cannot read it.
 
 `Invoke-PostEditCheck.ps1` runs the house-style or build check that fits a file after an edit.

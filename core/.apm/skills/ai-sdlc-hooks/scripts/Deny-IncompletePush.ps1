@@ -169,7 +169,7 @@ function Get-SessionDirectory {
     if (-not $property -or [string]::IsNullOrWhiteSpace([string]$property.Value)) { return $null }
     $dir = ConvertFrom-BashDrivePath ([string]$property.Value)
     if (-not (Test-Path -LiteralPath $dir -PathType Container)) { return $null }
-    return (Resolve-Path -LiteralPath $dir).Path
+    return (Resolve-Path -LiteralPath $dir).ProviderPath
 }
 
 function Get-ShellName {
@@ -347,8 +347,9 @@ $hookRepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot
 
 $sessionDir = Get-SessionDirectory -Json $Payload
 $sessionRoot = if ($sessionDir) { try { [string](git -C $sessionDir rev-parse --show-toplevel 2>$null) } catch { '' } }
-$targetRoot = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Path }
-elseif ($sessionRoot) { (Resolve-Path -LiteralPath $sessionRoot.Trim()).Path }
+# ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, and git cannot read that (#29).
+$targetRoot = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).ProviderPath }
+elseif ($sessionRoot) { (Resolve-Path -LiteralPath $sessionRoot.Trim()).ProviderPath }
 else { $hookRepoRoot }
 $startPath = if ($sessionDir -and -not $RepoRoot) { $sessionDir } else { $targetRoot }
 $pushMatch = [regex]::Match($command, "$gitPrefix\s+push(?:\s|$)")
@@ -357,7 +358,7 @@ $pushDir = Get-PushDirectory -CommandLine $pushMatch.Value -Before $command.Subs
 if (-not $pushDir) { $pushDir = Get-CdDirectory -CommandLine $command -StartPath $startPath -Shell $shellName }
 if ($pushDir) {
     $top = try { [string](git -C $pushDir rev-parse --show-toplevel 2>$null) } catch { '' }
-    if ($top) { $targetRoot = (Resolve-Path -LiteralPath $top.Trim()).Path }
+    if ($top) { $targetRoot = (Resolve-Path -LiteralPath $top.Trim()).ProviderPath }
 }
 $targetInstalls = Test-Path -LiteralPath (Join-Path $targetRoot 'aisdlc.json') -PathType Leaf
 if (-not $ReceiptRoot -and $targetInstalls) { $ReceiptRoot = Join-Path $targetRoot (Get-AiSdlcConfig -RepoRoot $targetRoot).paths.preflightReceipts }

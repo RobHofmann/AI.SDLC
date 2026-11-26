@@ -27,6 +27,49 @@ Describe 'AiSdlcConfig' {
         Find-AiSdlcRepoRoot -StartPath (Join-Path $root 'sub') | Should -Be $root
     }
 
+    It 'finds the git top level from a provider-qualified start path, as git needs a plain path' {
+        $root = New-ConfigRepo -Json $null -Git
+        $qualified = 'Microsoft.PowerShell.Core\FileSystem::' + (Join-Path $root 'sub')
+
+        Find-AiSdlcRepoRoot -StartPath $qualified | Should -Be (Resolve-Path -LiteralPath $root).ProviderPath
+    }
+
+    It 'gives a plain repoRoot for a provider-qualified -RepoRoot' {
+        $root = New-ConfigRepo -Json $null -Git
+
+        $config = Get-AiSdlcConfig -RepoRoot "Microsoft.PowerShell.Core\FileSystem::$root"
+
+        $config.repoRoot | Should -Be (Resolve-Path -LiteralPath $root).ProviderPath
+        $config.repoRoot | Should -Not -Match 'FileSystem::'
+    }
+
+    Context 'a repository on a network share (UNC path)' {
+        BeforeAll {
+            $script:SavedGit = @{}
+            foreach ($name in 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0') {
+                $script:SavedGit[$name] = [Environment]::GetEnvironmentVariable($name)
+            }
+            $env:GIT_CONFIG_COUNT = '1'
+            $env:GIT_CONFIG_KEY_0 = 'safe.directory'
+            $env:GIT_CONFIG_VALUE_0 = '*'
+        }
+
+        AfterAll {
+            foreach ($name in $script:SavedGit.Keys) { [Environment]::SetEnvironmentVariable($name, $script:SavedGit[$name]) }
+        }
+
+        It 'finds the git top level and gives a plain repoRoot' -Skip:(-not $IsWindows) {
+            $root = New-ConfigRepo -Json $null -Git
+            $unc = '\\localhost\' + $root.Substring(0, 1) + '$' + $root.Substring(2)
+            if (-not (Test-Path -LiteralPath $unc)) { Set-ItResult -Skipped -Because 'the admin share is not available'; return }
+
+            $found = Find-AiSdlcRepoRoot -StartPath (Join-Path $unc 'sub')
+            $found | Should -Not -BeNullOrEmpty
+            $found | Should -Not -Match 'FileSystem::'
+            (Get-AiSdlcConfig -RepoRoot $unc).repoRoot | Should -Not -Match 'FileSystem::'
+        }
+    }
+
     It 'reads the values the repository sets and keeps the defaults for the rest' {
         $root = New-ConfigRepo -Json '{ "repository": "Demo", "paths": { "docsRoots": ["docs", "docs-functional"] } }'
 

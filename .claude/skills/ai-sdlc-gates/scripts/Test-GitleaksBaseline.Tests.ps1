@@ -262,6 +262,19 @@ Describe 'Test-GitleaksBaseline' {
         }
     }
 
+    It 'scans origin/main..HEAD of a provider-qualified -RepoRoot with the plain path, as git needs' {
+        $repo = New-GitRepo
+        git -C $repo update-ref refs/remotes/origin/main HEAD
+        Set-Content -LiteralPath (Join-Path $repo 'gitleaks-baseline.json') -Value '[]'
+
+        & $script:ScriptUnderTest -RepoRoot ('Microsoft.PowerShell.Core\FileSystem::' + $repo) -PinFile $script:PinFile *> $null
+
+        $LASTEXITCODE | Should -Be 0
+        Should -Invoke gitleaks -Times 1 -Exactly -ParameterFilter {
+            ($args -contains '--log-opts=origin/main..HEAD') -and ($args -contains "--source=$((Resolve-Path -LiteralPath $repo).ProviderPath)")
+        }
+    }
+
     It 'scans <Trunk>..HEAD in a local run when the trunk of the remote is <Name>, not the whole history' -ForEach @(
         @{ Name = 'master'; Refs = @('refs/remotes/origin/master'); Trunk = 'origin/master' }
         @{ Name = 'named only by origin/HEAD'; Refs = @('refs/remotes/origin/develop'); Head = 'refs/remotes/origin/develop'; Trunk = 'origin/HEAD' }

@@ -8,6 +8,14 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.4.4 - 2026-11-26
+
+- On a network share, the repository path is a UNC path, and PowerShell wrote it with a `FileSystem::`
+  prefix that git cannot read. So the agent push hook and the gates now give git the plain path, and
+  the hook reads `git.allowTrunkPush`. `Check-PrivateTerms.ps1` no longer fails to read the tracked
+  files when its root has that prefix. The same holds for `Test-GitleaksBaseline.ps1`,
+  `Sync-AllowRules.ps1`, `AiSdlcConfig.psm1` and `Add-AiSdlcConsumer.ps1` (#29).
+
 ## v1.4.3 - 2026-11-12
 
 - In a local run, `Test-GitleaksBaseline.ps1` scans `<trunk>..HEAD`, where the trunk is the first of

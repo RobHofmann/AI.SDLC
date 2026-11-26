@@ -130,7 +130,8 @@ param (
 
 $inPipeline = $env:GITHUB_ACTIONS -eq 'true'
 $notChecked = if ($inPipeline) { 1 } else { 2 }
-$currentDirectory = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Path } else { (Get-Location).Path }
+# ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, and git cannot read that (#29).
+$currentDirectory = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).ProviderPath } else { (Get-Location).ProviderPath }
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "Git is not installed or not available in the system PATH. Please install Git and try again."

@@ -73,7 +73,8 @@ param(
 
 Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
-$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+# ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, and git cannot read that (#29).
+$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).ProviderPath
 
 $ErrorActionPreference = 'Stop'
 
