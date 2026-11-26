@@ -60,9 +60,12 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
   of a gate that failed, and under each gate with `-List`. The [gate list](references/gate-catalog.md)
   shows every gate with both texts.
 - `requires: CoverageFile` runs the gate only when the runner gets `-CoverageFile`.
-- `mode` is Blocking, Advisory or Off. An Off gate runs nowhere: not in a local run, the pre-push hook,
-  the pull request action, the pre-flights, the post-edit hook or the agent push hook. A repository
-  sets the mode of a shared gate in `gateModes` of its own `aisdlc.json`, in any letter case; the
+- `inputs` is an optional list of path globs, such as `**/*.md`. A local run starts the gate only when
+  the change touches a file that matches, or the skill folder of its script; otherwise it shows
+  `NOT TOUCHED`. Every gate runs on a delete, a change to the gate setup, an unreadable change, with
+  `-All` and in GitHub Actions.
+- `mode` is Blocking, Advisory or Off. No run, hook or pre-flight starts an Off gate. A repository
+  sets the mode of a shared gate in `gateModes` of its own `aisdlc.json`, in any letter case. The
   summary shows where the mode comes from in its Source column. The secret scan and the private-terms
   gate refuse a weaker mode there. In a push hook a gate counts as Off only once the setting is in
   every pushed commit.

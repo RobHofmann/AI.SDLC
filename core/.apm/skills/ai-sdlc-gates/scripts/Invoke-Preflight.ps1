@@ -38,6 +38,19 @@
     origin/<github.trunk> from aisdlc.json (Get-AiSdlcMainBranch), which is origin/main unless the
     repository names another trunk.
 
+.PARAMETER Full
+    Run every gate and the full test command. Without it the run checks only what the change touches:
+    Invoke-LocalGates.ps1 leaves out a gate whose inputs the change does not touch, and the tests run
+    through commands.testChanged when aisdlc.json sets it. When it does not, commands.test runs, except
+    for a change that touches only pages: Markdown files and the docs/ and docs-functional/ folders.
+    Then the test row is N/A. A test command that exits 3 ran no test, because the change touches
+    nothing a test reads; that row is N/A too, and an N/A row does not stop the receipt. When a passing
+    receipt exists for an earlier commit of this branch, the change starts at that commit, not at the
+    merge base: a fix commit checks only what changed since the last green run. The script then sets
+    AISDLC_CHANGE_BASE to that commit for the gates and the test command, and restores it at the end.
+    The run is full anyway when the change deletes or moves a file, when git cannot read it, and in
+    GitHub Actions (GITHUB_ACTIONS is true). The pull request action always runs everything.
+
 .PARAMETER SkipTests
     Skip the tests: commands.test and the test step of each pack (they are on by default).
 
@@ -59,6 +72,7 @@
 [CmdletBinding()]
 param(
     [string]$TargetBranch,
+    [switch]$Full,
     [switch]$SkipTests,
     [switch]$IncludeSonar,
     [switch]$SkipScanners,
@@ -68,6 +82,7 @@ param(
 
 Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'PreflightReceipt.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'ChangedFiles.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 if (-not $ReceiptRoot) { $ReceiptRoot = Join-Path $RepoRoot (Get-AiSdlcConfig -RepoRoot $RepoRoot).paths.preflightReceipts }
 if (-not $TargetBranch) { $TargetBranch = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
@@ -81,6 +96,7 @@ function Add-Result([string]$Check, [string]$Status, [string]$Detail) {
 $includeExt = @('.cs', '.razor', '.cshtml', '.bicep', '.yml', '.yaml', '.ps1', '.psm1', '.py', '.toml', '.json', '.md')
 $excludeNames = @('packages.lock.json', 'package-lock.json')
 
+$previousChangeBase = $env:AISDLC_CHANGE_BASE
 Push-Location $RepoRoot
 try {
     $changed = @(git diff --name-only --diff-filter=AM "$TargetBranch...HEAD" 2>$null |
@@ -91,18 +107,43 @@ try {
 
     $packages = @(Get-AiSdlcPackage -RepoRoot $RepoRoot | Where-Object { $_.Preflight })
     $packTests = @($packages | Where-Object { (Test-Path -LiteralPath $_.Preflight) -and (Get-Command -Name $_.Preflight).Parameters.ContainsKey('SkipTests') } | ForEach-Object Skill)
-    $testCommand = [string](Get-AiSdlcConfig -RepoRoot $RepoRoot).commands.test
+    $commands = (Get-AiSdlcConfig -RepoRoot $RepoRoot).commands
+    $testCommand = [string]$commands.test
+    $testChanged = [string]$commands['testChanged']
+    $testName = 'commands.test'
+    $scopeFiles = $null
+    $fullWhy = if ($Full) { '-Full' } elseif ($env:GITHUB_ACTIONS -eq 'true') { 'a GitHub Actions run' } else { $null }
+    $since = $null
+    if (-not $fullWhy) {
+        $since = Find-PreflightBase -ReceiptRoot $ReceiptRoot -RepoRoot $RepoRoot -MainRef $TargetBranch
+        $change = Get-AiSdlcChange -RepoRoot $RepoRoot -BaseRef $(if ($since) { $since } else { $TargetBranch }) -IncludeWorkingTree
+        if (-not $change.Readable) { $fullWhy = "the change cannot be read ($($change.Reason))" }
+        elseif (@($change.Deleted).Count -gt 0) { $fullWhy = 'the change deletes or moves a file' }
+        else { $scopeFiles = @($change.Files) }
+    }
+    if ($fullWhy) { $since = $null }
+    $env:AISDLC_CHANGE_BASE = $since
+    $pagesOnly = ($null -ne $scopeFiles) -and -not @($scopeFiles | Where-Object { -not (Test-AiSdlcPathGlob -Path $_ -Glob @('**/*.md', 'docs/**', 'docs-functional/**')) }).Count
+    if ($testChanged.Trim() -and (-not $fullWhy -or -not $testCommand.Trim())) { $testCommand = $testChanged; $testName = 'commands.testChanged' }
+    if ($Full) { Write-Host 'Scope: -Full, so every gate runs and the tests run through commands.test.' -ForegroundColor Cyan }
+    elseif ($fullWhy) { Write-Host "Scope: every gate and every test, because of $fullWhy." -ForegroundColor Cyan }
+    elseif ($since) { Write-Host "Scope: only the gates and tests that the change since the last green pre-flight touches (commit $($since.Substring(0, 8))). -Full runs them all, and the pull request action always does." -ForegroundColor Cyan }
+    else { Write-Host 'Scope: only the gates and tests that this change touches. -Full runs them all, and the pull request action always does.' -ForegroundColor Cyan }
     $testJob = $null
-    if ($testCommand.Trim() -and -not $SkipTests) {
+    if ($testCommand.Trim() -and -not $SkipTests -and $pagesOnly -and $testName -eq 'commands.test' -and $packTests.Count -eq 0) {
+        Write-Host "`nTests: commands.test does not run, because the change touches only pages. -Full runs it." -ForegroundColor Cyan
+        Add-Result 'Tests (commands.test)' 'N/A' 'the change touches only pages, so no test ran; -Full and the pull request action run them'
+    }
+    elseif ($testCommand.Trim() -and -not $SkipTests) {
         if ($packTests.Count -gt 0) {
-            Write-Host "`nTests: commands.test is left to the $($packTests -join ', ') pre-flight, which runs the tests." -ForegroundColor Cyan
+            Write-Host "`nTests: $testName is left to the $($packTests -join ', ') pre-flight, which runs the tests." -ForegroundColor Cyan
         }
         else {
-            Write-Host "`nTests (commands.test) start now, beside the gates: $testCommand" -ForegroundColor Cyan
+            Write-Host "`nTests ($testName) start now, beside the gates: $testCommand" -ForegroundColor Cyan
             $testJob = Start-ThreadJob -ScriptBlock {
                 param([string]$Command, [string]$Root)
                 Set-Location -LiteralPath $Root
-                & pwsh -NoProfile -NonInteractive -Command $Command 2>&1 | ForEach-Object { "$_" }
+                & pwsh -NoProfile -NonInteractive -Command ($Command + "`n`$ok = `$?; if (-not `$ok) { exit `$(if (`$LASTEXITCODE) { `$LASTEXITCODE } else { 1 }) }") 2>&1 | ForEach-Object { "$_" }
                 "TESTS-EXIT:$LASTEXITCODE"
             } -ArgumentList $testCommand, $RepoRoot
         }
@@ -110,17 +151,20 @@ try {
 
     # 1. Deterministic gates, the same ones the shared pull request job runs.
     Write-Host "`n[1] Deterministic gates (Invoke-LocalGates)..." -ForegroundColor Cyan
-    & (Join-Path $PSScriptRoot 'Invoke-LocalGates.ps1') -RepoRoot $RepoRoot
+    $gateArgs = @{ RepoRoot = $RepoRoot }
+    if ($Full) { $gateArgs['All'] = $true }
+    & (Join-Path $PSScriptRoot 'Invoke-LocalGates.ps1') @gateArgs
     Add-Result 'Gates (Invoke-LocalGates)' ($(if ($LASTEXITCODE -eq 0) { 'PASS' } else { 'FAIL' })) 'Invoke-LocalGates.ps1'
 
     $step = 2
     if ($testJob) {
-        Write-Host "`n[$step] Tests (commands.test): $testCommand" -ForegroundColor Cyan
+        Write-Host "`n[$step] Tests ($testName): $testCommand" -ForegroundColor Cyan
         $step++
         $testLines = @(Receive-Job -Job $testJob -Wait -AutoRemoveJob)
         $testLines | Where-Object { $_ -notmatch '^TESTS-EXIT:' } | ForEach-Object { Write-Host $_ }
         $testExit = [int](($testLines | Where-Object { $_ -match '^TESTS-EXIT:' } | Select-Object -Last 1) -replace '^TESTS-EXIT:', '')
-        Add-Result 'Tests (commands.test)' ($(if ($testExit -eq 0) { 'PASS' } else { 'FAIL' })) "exit $testExit"
+        if ($testExit -eq 3) { Add-Result "Tests ($testName)" 'N/A' 'exit 3: the change touches no file that a test reads, so no test ran' }
+        else { Add-Result "Tests ($testName)" ($(if ($testExit -eq 0) { 'PASS' } else { 'FAIL' })) "exit $testExit" }
     }
 
     $packageArgs = @{
@@ -224,6 +268,7 @@ try {
     else { Add-Result 'Security scanners (Trivy/Checkov/Semgrep)' 'SKIP' '-SkipScanners set; no pipeline runs them' }
 }
 finally {
+    $env:AISDLC_CHANGE_BASE = $previousChangeBase
     Pop-Location
 }
 

@@ -207,6 +207,91 @@ Describe 'Invoke-LocalGates' {
         $result.Output | Should -Match 'checks: It checks the fixture\.'
     }
 
+    Context 'a local run checks only the gates the change touches (#48)' {
+        BeforeAll {
+            function New-ScopedRepo {
+                $root = New-StandardRepo -RepoGates '[ { "name": "repo gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking", "inputs": [ "**/*.md" ] } ]'
+                New-Item -ItemType Directory -Path (Join-Path $root 'src') -Force | Out-Null
+                Set-Content -LiteralPath (Join-Path $root 'src' 'app.cs') -Value 'class A {}'
+                Set-Content -LiteralPath (Join-Path $root 'README.md') -Value '# Readme'
+                git -C $root init --quiet -b main
+                git -C $root config user.email probe@example.invalid
+                git -C $root config user.name probe
+                git -C $root add -A
+                git -C $root commit --quiet -m base --no-verify
+                git -C $root update-ref refs/remotes/origin/main HEAD
+                return $root
+            }
+        }
+
+        It 'does not run a gate whose inputs the change does not touch, and shows it as NOT TOUCHED' -Tag '#48' {
+            $root = New-ScopedRepo
+            Add-Content -LiteralPath (Join-Path $root 'src' 'app.cs') -Value '// more'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Not -Match 'ran Check-Repo'
+            $result.Output | Should -Match 'repo gate\s+Blocking\s+NOT TOUCHED'
+            $result.Output | Should -Match 'ran Check-Core\.ps1' -Because 'a gate without inputs always runs'
+        }
+
+        It 'runs the gate when the change touches one of its inputs' -Tag '#48' {
+            $root = New-ScopedRepo
+            Add-Content -LiteralPath (Join-Path $root 'README.md') -Value 'more'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Output | Should -Match 'ran Check-Repo\.ps1'
+        }
+
+        It 'runs every gate when the change <Case>' -Tag '#48' -ForEach @(
+            @{ Case = 'deletes a file'; Act = { param($r) Remove-Item -LiteralPath (Join-Path $r 'src' 'app.cs') } }
+            @{ Case = 'touches aisdlc.json'; Act = { param($r) Add-Content -LiteralPath (Join-Path $r 'aisdlc.json') -Value ' ' } }
+        ) {
+            $root = New-ScopedRepo
+            & $Act $root
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Output | Should -Match 'ran Check-Repo\.ps1'
+            $result.Output | Should -Match 'Every gate runs, because'
+        }
+
+        It 'runs every gate when the change cannot be read' -Tag '#48' {
+            $root = New-ScopedRepo
+            git -C $root update-ref -d refs/remotes/origin/main
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Output | Should -Match 'ran Check-Repo\.ps1'
+            $result.Output | Should -Match 'the change cannot be read'
+        }
+
+        It 'runs every gate with -All and in GitHub Actions' -Tag '#48' {
+            $root = New-ScopedRepo
+            Add-Content -LiteralPath (Join-Path $root 'src' 'app.cs') -Value '// more'
+
+            $all = Invoke-Runner -Root $root -Extra @('-All')
+            $saved = $env:GITHUB_ACTIONS; $savedSummary = $env:GITHUB_STEP_SUMMARY
+            $env:GITHUB_ACTIONS = 'true'; $env:GITHUB_STEP_SUMMARY = Join-Path $TestDrive 'scoped-summary.md'
+            try { $ci = Invoke-Runner -Root $root }
+            finally { $env:GITHUB_ACTIONS = $saved; $env:GITHUB_STEP_SUMMARY = $savedSummary }
+
+            $all.Output | Should -Match 'ran Check-Repo\.ps1'
+            $ci.Output | Should -Match 'ran Check-Repo\.ps1'
+        }
+
+        It 'fails a gate whose inputs is not a list of path globs' -Tag '#48' {
+            $root = New-StandardRepo -RepoGates '[ { "name": "repo gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking", "inputs": "**/*.md" } ]'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 1
+            $result.Output | Should -Match 'it must be a list of one or more path globs'
+        }
+    }
+
     Context 'gate modes and gateModes (#49)' {
         It 'does not run an Off gate, shows it as OFF, and does not fail on its missing script' -Tag '#49' {
             $root = New-StandardRepo -CoreMode 'off'

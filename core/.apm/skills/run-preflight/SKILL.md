@@ -40,7 +40,9 @@ Two rules hold in every run of every skill, and each is defined in one place:
 ## Workflow
 
 1. **Run the deterministic and tool checks, loop to green.** Run `pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1`
-   (`-SkipTests` for speed; `-IncludeSonar` to also run the SonarCloud upload-and-wait gate with a token). It
+   (`-SkipTests` for speed; `-IncludeSonar` to also run the SonarCloud upload-and-wait gate with a token).
+   A plain run checks only what the change touches, since the last green pre-flight when there is one;
+   `-Full` runs every gate and `commands.test`. It
    runs:
    - `Invoke-LocalGates.ps1`: the gate set. It leaves out the self-tests of the shared gate scripts.
      No pull request job of a consumer runs them, and AI.SDLC tests them before each release.

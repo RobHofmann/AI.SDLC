@@ -47,6 +47,40 @@ Describe 'The pre-flight receipt' {
         Test-CleanTree -RepoRoot $repo | Should -BeFalse
     }
 
+    Context 'Find-PreflightBase (#48)' {
+        BeforeAll {
+            function New-BranchRepo {
+                $repo = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+                New-Item -ItemType Directory -Path $repo -Force | Out-Null
+                git -C $repo init --quiet -b main
+                git -C $repo config user.email probe@example.invalid
+                git -C $repo config user.name probe
+                git -C $repo commit --quiet --allow-empty -m base --no-verify
+                git -C $repo update-ref refs/remotes/origin/main HEAD
+                git -C $repo commit --quiet --allow-empty -m one --no-verify
+                return $repo
+            }
+        }
+
+        It 'gives the commit of a passing receipt on this branch' -Tag '#48' {
+            $repo = New-BranchRepo
+            $receipts = Join-Path $repo 'receipts'
+            $commit = (git -C $repo rev-parse HEAD).Trim()
+            Write-PreflightReceipt -ReceiptRoot $receipts -Tree (git -C $repo rev-parse 'HEAD^{tree}').Trim() -Status PASS -Commit $commit | Out-Null
+            git -C $repo commit --quiet --allow-empty -m fix --no-verify
+
+            Find-PreflightBase -ReceiptRoot $receipts -RepoRoot $repo -MainRef origin/main | Should -Be $commit
+        }
+
+        It 'gives nothing for a receipt whose commit is not in the history of HEAD, so a stale receipt checks more' -Tag '#48' {
+            $repo = New-BranchRepo
+            $receipts = Join-Path $repo 'receipts'
+            Write-PreflightReceipt -ReceiptRoot $receipts -Tree 'abc' -Status PASS -Commit ('f' * 40) | Out-Null
+
+            Find-PreflightBase -ReceiptRoot $receipts -RepoRoot $repo -MainRef origin/main | Should -BeNullOrEmpty
+        }
+    }
+
     It 'is written by the pre-flight and read by the push hook' {
         (Get-Content -LiteralPath (Join-Path $script:ScriptFolder 'Invoke-Preflight.ps1') -Raw) | Should -Match 'Write-PreflightReceipt'
         (Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-hooks' 'scripts' 'Deny-IncompletePush.ps1') -Raw) | Should -Match 'Test-PreflightReceipt'

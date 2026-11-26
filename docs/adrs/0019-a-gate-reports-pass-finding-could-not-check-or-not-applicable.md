@@ -41,9 +41,9 @@ That contract had three faults (#46):
 
 - A blocking gate that could not reach its source left the pull request build green. A failed
   gitleaks download or a missing setting looked like a pass to anyone who did not read the warnings.
-- There was no value for "nothing to check here". Gates printed OK and exited 0, or crashed, when
-  there was nothing to check, for example a pull request rule on a push, or a skill gate in a
-  repository with no skills.
+- There was no value for "nothing to check here". With nothing to check, gates printed OK and exited
+  0, or crashed. Examples are a pull request rule on a push, or a skill gate in a repository with no
+  skills.
 - `Deny-IncompletePush.ps1` read any exit code other than 0 as "the change is unfinished".
 
 ## Decision
@@ -57,8 +57,8 @@ That contract had three faults (#46):
      prints why in one plain line.
 2. **Exit 2 of a Blocking gate fails the pull request build.** `Invoke-LocalGates.ps1` and
    `Invoke-Gate.ps1` both apply this when `GITHUB_ACTIONS` is `true`. In a local run and in the
-   pre-push hook exit 2 stays a warning, because a person cannot always set up every service on
-   their own machine. Exit 2 of an Advisory gate is a warning everywhere.
+   pre-push hook exit 2 stays a warning. A person cannot always set up every service on their own
+   machine. Exit 2 of an Advisory gate is a warning everywhere.
 3. **Exit 3 never blocks and writes no annotation.** The run summary shows the gate as `N/A`.
 4. **A crashed gate keeps its mode.** A crashed Blocking gate fails the run; a crashed Advisory gate
    gives a warning.
@@ -66,22 +66,21 @@ That contract had three faults (#46):
    check. When the push goes through after exit 2, it shows a note. After exit 3 it stays silent,
    like exit 0.
 6. **A contract test holds every gate to this.** `GateContract.Tests.ps1` runs each gate of the core,
-   the packs and `repoGates` in an empty repository. The exit code must be in a set listed per gate,
-   a gate that exits 2 prints a `FIX:` line, and no gate prints a workflow command itself.
+   the packs and `repoGates` in an empty repository. The exit code must be in a set listed per gate.
+   A gate that exits 2 prints a `FIX:` line, and no gate prints a workflow command itself.
 
 The rest of ADR 0005 stays: the `FIX:` line, the located findings, the change rules, the pointer
 gate and the advisory-first path.
 
 2026-11-26 (#49): `mode` has a third value, `Off`, and a repository sets the mode of a shared gate in
-`gateModes` of its own `aisdlc.json`. An Off gate does not run in a local run, the pre-push hook, the
-pull request action, the pre-flights, the post-edit hook or the agent push hook, so it has no exit code
-and never fails a run. The runner still checks the entry, refuses any other mode, and shows the gate as
-`OFF`. A gateModes key that names no shared gate that runs fails the run, and then no key is used. A
-push hook counts a gate as Off only when every pushed commit holds the same gate settings, so an edit
-to Off counts only once it is committed. The secret scan (C03) and the private-terms gate
+`gateModes` of its own `aisdlc.json`. No hook, pre-flight or run starts an Off gate, so it has no exit
+code and never fails a run. The runner still checks the entry, refuses any other mode, and shows the
+gate as `OFF`. A gateModes key that names no shared gate that runs fails the run, and then no key is
+used. A push hook counts a gate as Off only when every pushed commit holds the same gate settings. So
+an edit to Off counts only once it is committed. The secret scan (C03) and the private-terms gate
 ([ADR 0011](0011-the-public-repository-holds-no-private-information.md)) refuse a weaker mode in
-gateModes, because what they guard cannot be taken back after a push. The exit codes and what each mode
-does with them stay the same.
+gateModes. What they guard cannot be taken back after a push. The exit codes and what each mode does
+with them stay the same.
 
 ## Consequences
 
@@ -100,7 +99,7 @@ does with them stay the same.
   blocks every pull request until it is back. A person can rerun the job when the service returns.
 
 - A repository can switch a shared gate Off. Every run shows the choice in the Source column and with a
-  warning, so a reviewer sees it, but the gate no longer guards that repository.
+  warning. A reviewer sees it, but the gate no longer guards that repository.
 
 **Neutral:**
 

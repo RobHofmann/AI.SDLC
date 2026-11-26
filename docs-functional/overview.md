@@ -12,7 +12,7 @@ approves a story or another document, before it is written to an issue or a page
   working; a pack adds what one technology needs ([what a pack adds](packs.md)).
 - **Gates that give the same answer on your machine and in the workflow.** A push runs the blocking
   gates first, so a broken change stops before the pull request. A green pull request build means
-  every blocking gate really checked: a blocking gate that could not check fails the build, and a
+  every blocking gate really checked. A blocking gate that could not check fails the build, and a
   gate with nothing to check shows as `N/A`. A repository can make a shared gate stricter, softer or
   Off in its own `aisdlc.json`, and every run shows that choice. The secret scan always stays on.
 - **Docs that stay complete and true.** Every repository has a technical and a functional layer, and

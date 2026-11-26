@@ -66,6 +66,20 @@
     name of a repository gate, a gate of a pack that apm.yml does not list, or a gateModes that is not
     an object. A value that is not allowed fails that gate, and the gate is not run.
 
+    "inputs" is an optional list of path globs from the repository root, such as "**/*.md". A local run
+    then runs the gate only when the change touches a file that matches one of them, or a file in the
+    skill folder of the gate script (the tool folder for a repository gate). The change is what the
+    branch committed since the merge base with origin/<github.trunk>, with the staged, edited and new
+    files. When AISDLC_CHANGE_BASE names a commit, the change starts there instead; Invoke-Preflight.ps1
+    sets it to the commit of the last green pre-flight. Every gate runs when the change deletes or moves
+    a file, when it touches aisdlc.json, a gates.json or the skill folder of this runner, and when git
+    cannot read the change. The files a tool writes (sync-manifest.json, skill-catalog.json and
+    gate-catalog.md) do not count for the skill folder rules, because a gate without inputs checks them.
+    A gate without "inputs" always runs. GitHub Actions (GITHUB_ACTIONS is true) and -All run every gate.
+    A gate that did not run shows NOT TOUCHED: it checked nothing and never blocks. An "inputs" value that
+    is not a list of one or more non-empty strings fails that gate as a blocking failure. ADR 0020 in
+    AI.SDLC records why a local run checks only what the change touches.
+
     When AISDLC_PUSHED_COMMITS names commits, as the pre-push hook sets it, a gate counts as Off only
     when each of those commits holds the same aisdlc.json and gates.json files as the working tree, and
     git shows no uncommitted change to them. Otherwise an Off gate runs in its package mode, so an edit
@@ -124,6 +138,9 @@
     counts as several names. The summary lists each as SKIP. A caller uses it when a gate cannot hold in
     its setup, and says why.
 
+.PARAMETER All
+    Run every gate, also a gate whose inputs the change does not touch. GitHub Actions always does.
+
 .PARAMETER BlockingOnly
     Run only the blocking gates, as the pre-push hook does. A gate entry that is not valid stays in the
     run whatever its mode, also an Advisory entry without a checks or fix text, so the push fails on it.
@@ -148,6 +165,7 @@ param(
     [switch]$BlockingOnly,
     [switch]$SkipTests,
     [string[]]$SkipScript,
+    [switch]$All,
     [switch]$List
 )
 
@@ -181,6 +199,14 @@ function Add-Gate {
     else { $offNote = $false }
     $viaModes = if ($packageMode) { "aisdlc.json (gateModes), package mode $packageMode" } else { 'aisdlc.json (gateModes)' }
     $modeFrom = if ($Package -eq 'repo') { 'aisdlc.json (repoGates)' } elseif ($resolved.Source -eq 'aisdlc.json') { $viaModes } else { 'package' }
+    $inputs = @()
+    $hasInputs = if ($Entry -is [System.Collections.IDictionary]) { $Entry.Contains('inputs') } else { [bool]$Entry.PSObject.Properties['inputs'] }
+    if ($hasInputs) {
+        $list = @($Entry.inputs)
+        $good = ($Entry.inputs -is [System.Collections.IList]) -and $list.Count -gt 0 -and @($list | Where-Object { -not ($_ -is [string]) -or [string]::IsNullOrWhiteSpace($_) }).Count -eq 0
+        if ($good) { $inputs = @($list | ForEach-Object { $_.Trim() }) }
+        else { $problems.Add(("inputs is '{0}', and it must be a list of one or more path globs" -f ($Entry.inputs | ConvertTo-Json -Compress -Depth 2))) }
+    }
     foreach ($field in @('checks', 'fix')) {
         $value = $Entry.$field
         if (-not ($value -is [string]) -or [string]::IsNullOrWhiteSpace($value)) { $problems.Add(("{0} is missing or empty, and every gate needs a {0} text" -f $field)) }
@@ -200,6 +226,11 @@ function Add-Gate {
             OffNotCounted = $offNote
             Clause        = if ($Entry.clause) { [string]$Entry.clause } else { $Package }
             Checks        = if ($Entry.checks -is [string]) { $Entry.checks.Trim() } else { '' }
+            Inputs        = $inputs
+            Home          = $(
+                $scriptFull = Join-Path $Base $Entry.script
+                if ((Split-Path -Leaf (Split-Path -Parent $scriptFull)) -eq 'scripts') { Split-Path -Parent (Split-Path -Parent $scriptFull) } else { Split-Path -Parent $scriptFull }
+            )
             NeedsCoverage = $needsCoverage
             Invalid       = if ($problems.Count -gt 0) { ("Invalid gate entry '{0}': {1}. The gate was not run." -f $Entry.name, ($problems -join '; ')) } else { $null }
         })
@@ -253,6 +284,8 @@ if ($gateModeSetting.Problem.Count -gt 0) {
             OffNotCounted = $false
             Clause        = 'AI-SDLC'
             Checks        = ''
+            Inputs        = @()
+            Home          = $RepoRoot
             NeedsCoverage = $false
             Invalid       = ("Invalid gateModes in aisdlc.json: {0}. No key of gateModes was used." -f (@($gateModeSetting.Problem | ForEach-Object { $_.Text }) -join '; '))
         })
@@ -280,6 +313,7 @@ if ($List) {
         Write-Host ("{0,-13} {1,-9} {2,-12} {3}" -f $g.Package, $g.Mode, $g.Clause, $g.Name)
         Write-Host ("{0,-13} runs in: {1}" -f '', (Get-GateStage -Gate $g))
         Write-Host ("{0,-13} mode from: {1}" -f '', $g.ModeFrom)
+        if ($g.Inputs.Count -gt 0) { Write-Host ("{0,-13} runs when a change touches: {1}, or its own skill or tool folder; always with -All and in GitHub Actions" -f '', ($g.Inputs -join ', ')) }
         if ($g.Checks) { Write-Host ("{0,-13} checks: {1}" -f '', $g.Checks) }
         if ($g.Invalid) { Write-Host ("{0,-13} {1}" -f '', $g.Invalid) }
     }
@@ -317,6 +351,36 @@ if ($SkipScript) {
     $kept = @($gates | Where-Object { $_.Invalid -or (Split-Path -Leaf $_.Script) -notin $names })
     $gates.Clear()
     foreach ($g in $kept) { $gates.Add($g) }
+}
+
+$untouched = @()
+$scoped = @($gates | Where-Object { -not $_.Invalid -and $_.Inputs.Count -gt 0 })
+if (-not $All -and -not $inPipeline -and $scoped.Count -gt 0) {
+    Import-Module (Join-Path $PSScriptRoot 'ChangedFiles.psm1') -Force
+    $changeBase = Get-AiSdlcChangeBase -RepoRoot $RepoRoot
+    if ($changeBase.Reason) { Write-Host ("The change starts at the merge base, because {0}." -f $changeBase.Reason) -ForegroundColor DarkGray }
+    $baseRef = if ($changeBase.Base) { $changeBase.Base } else { Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
+    $change = Get-AiSdlcChange -RepoRoot $RepoRoot -BaseRef $baseRef -IncludeWorkingTree
+    $relativeTo = { param([string]$Full) [IO.Path]::GetRelativePath($RepoRoot, $Full).Replace('\', '/').TrimEnd('/') + '/' }
+    $runnerHome = & $relativeTo (Split-Path -Parent $PSScriptRoot)
+    $everything = @('aisdlc.json', '**/gates.json')
+    $written = @('sync-manifest.json', 'skill-catalog.json', 'gate-catalog.md')
+    $handMade = @($change.Files | Where-Object { (Split-Path -Leaf $_) -notin $written })
+    $why = if (-not $change.Readable) { "the change cannot be read ($($change.Reason))" }
+    elseif (@($change.Deleted).Count -gt 0) { 'the change deletes or moves a file, which any gate may refer to' }
+    elseif (@($handMade | Where-Object { (Test-AiSdlcPathGlob -Path $_ -Glob $everything) -or $_.StartsWith($runnerHome, [StringComparison]::OrdinalIgnoreCase) }).Count -gt 0) { 'the change touches the gate setup: aisdlc.json, a gates.json or the skill folder of this runner' }
+    else { $null }
+    if ($why) { Write-Host ("Every gate runs, because {0}." -f $why) -ForegroundColor DarkGray }
+    else {
+        $untouched = @($scoped | Where-Object {
+                $g = $_
+                $gateHome = & $relativeTo $g.Home
+                @($change.Files | Where-Object { (Test-AiSdlcPathGlob -Path $_ -Glob $g.Inputs) -or ($_ -in $handMade -and $_.StartsWith($gateHome, [StringComparison]::OrdinalIgnoreCase)) }).Count -eq 0
+            })
+        $kept = @($gates | Where-Object { $_ -notin $untouched })
+        $gates.Clear()
+        foreach ($g in $kept) { $gates.Add($g) }
+    }
 }
 
 $runs = @($gates | Where-Object { -not $_.Invalid } | ForEach-Object -ThrottleLimit ([Math]::Max(1, [Environment]::ProcessorCount)) -Parallel {
@@ -372,6 +436,7 @@ foreach ($g in $gates) {
 }
 
 foreach ($g in $skipped) { $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'SKIP'; Source = $g.Source }) }
+foreach ($g in $untouched) { $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'NOT TOUCHED'; Source = $g.Source }) }
 foreach ($g in $off) { $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = 'Off'; Status = 'OFF'; Source = $g.Source }) }
 
 $toolTestsFailed = $false
@@ -404,6 +469,9 @@ $advisoryCrashes = @($results | Where-Object { $_.Status -eq 'CRASHED' -and $_.M
 
 if ($notApplicable.Count -gt 0) {
     Write-Host ("{0} gate(s) not applicable here (exit 3). They checked nothing and never block." -f $notApplicable.Count)
+}
+if ($untouched.Count -gt 0) {
+    Write-Host ("{0} gate(s) did not run, because the change touches none of their inputs (NOT TOUCHED). They checked nothing; the pull request action runs them, and -All runs them here." -f $untouched.Count)
 }
 if ($off.Count -gt 0) {
     Write-Host ("{0} gate(s) are Off (OFF). They did not run and checked nothing." -f $off.Count)

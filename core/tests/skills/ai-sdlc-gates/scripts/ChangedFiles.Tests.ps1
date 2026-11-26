@@ -93,6 +93,50 @@ Describe 'ChangedFiles' {
         }
     }
 
+    Context 'Get-AiSdlcChange -IncludeWorkingTree, Test-AiSdlcPathGlob and Get-AiSdlcChangeBase (#48)' {
+        It 'adds the edited, new and deleted files of the working tree to the committed ones' -Tag '#48' {
+            $root = New-ChangeRepo
+            Add-Content -LiteralPath (Join-Path $root 'keep.txt') -Value 'edited'
+            Set-Content -LiteralPath (Join-Path $root 'new.txt') -Value 'new'
+            Remove-Item -LiteralPath (Join-Path $root 'gone.txt')
+
+            $change = Get-AiSdlcChange -RepoRoot $root -BaseRef origin/main -IncludeWorkingTree
+
+            $change.Readable | Should -BeTrue
+            $change.Files | Should -Contain 'keep.txt'
+            $change.Files | Should -Contain 'new.txt'
+            $change.Deleted | Should -Be @('gone.txt')
+        }
+
+        It 'matches <Path> against <Glob> as <Expected>' -Tag '#48' -ForEach @(
+            @{ Path = 'docs/a.md'; Glob = '**/*.md'; Expected = $true }
+            @{ Path = 'a.md'; Glob = '**/*.md'; Expected = $true }
+            @{ Path = 'docs/sub/a.md'; Glob = 'docs/*.md'; Expected = $false }
+            @{ Path = '.claude/skills/x/SKILL.md'; Glob = '.claude/**'; Expected = $true }
+            @{ Path = 'src/a.cs'; Glob = '**/*.md'; Expected = $false }
+            @{ Path = 'docs/.reading-level-allowlist'; Glob = '**/.reading-level-allowlist'; Expected = $true }
+        ) {
+            Test-AiSdlcPathGlob -Path $Path -Glob @($Glob) | Should -Be $Expected
+        }
+
+        It 'gives the change base only for a full commit hash in the history of HEAD, so a stale value checks more' -Tag '#48' {
+            $root = New-ChangeRepo
+            $head = (git -C $root rev-parse HEAD).Trim()
+            $saved = $env:AISDLC_CHANGE_BASE
+            try {
+                $env:AISDLC_CHANGE_BASE = $head
+                (Get-AiSdlcChangeBase -RepoRoot $root).Base | Should -Be $head
+                $env:AISDLC_CHANGE_BASE = 'f' * 40
+                $stale = Get-AiSdlcChangeBase -RepoRoot $root
+                $stale.Base | Should -BeNullOrEmpty
+                $stale.Reason | Should -Match 'not in the history of HEAD'
+                $env:AISDLC_CHANGE_BASE = 'abc'
+                (Get-AiSdlcChangeBase -RepoRoot $root).Reason | Should -Match 'not a full commit hash'
+            }
+            finally { $env:AISDLC_CHANGE_BASE = $saved }
+        }
+    }
+
     Context 'Get-AiSdlcChangedLine' {
         It 'returns the lines the file gained and lost since the base' -Tag '#80' {
             $root = New-ChangeRepo

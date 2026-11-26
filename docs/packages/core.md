@@ -116,10 +116,12 @@ Blocking gates check:
 The one advisory gate checks change completeness. It reads the commits since the base and the edits that
 are not committed yet. It also reads the new files git does not ignore, because `wrap-up` runs it before it commits.
 
+A commit can carry a `No-Test` or `No-Docs` trailer with a listed reason and a why. Git reads the trailer, and it clears the finding for the files of that commit only. The check prints each waiver it used, did not use or did not need. Only `wrap-up` writes a trailer, after `test-analyzer` or `docs-reviewer` agrees with the reason.
+
 `Invoke-LocalGates.ps1` runs gates from installed AI-SDLC packages and the repository.
 
 A gate reports through its exit code: 0 pass, 1 finding, 2 could not check, 3 not applicable. Any other
-code counts as 1. In the pull request action a Blocking gate that exits 2 fails the job; in a local run
+code counts as 1. In the pull request action a Blocking gate that exits 2 fails the job. In a local run
 and in the pre-push hook it is a warning (`UNVERIFIED`). A gate that exits 3 shows as `N/A` and never
 blocks. A crashed Advisory gate is a warning. `GateContract.Tests.ps1` runs every gate in an empty
 repository and checks its code. [ADR 0019](../adrs/0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md)
@@ -135,6 +137,12 @@ A gate has the mode Blocking, Advisory or Off. A repository sets the mode of a s
 Off gate runs in no hook, pre-flight or run, and shows as `OFF`. The secret scan and the private-terms
 gate cannot be set weaker than Blocking there. A push hook counts a gate as Off only when every
 pushed commit holds the same gate settings.
+
+A gate may name its `inputs`, a list of path globs. A local run then starts it only when the change
+touches one of them, and shows it as `NOT TOUCHED` otherwise; GitHub Actions and `-All` run every gate.
+`Invoke-Preflight.ps1` measures a scoped run from the last green pre-flight (`Find-PreflightBase` in
+`PreflightReceipt.psm1`) and runs `commands.testChanged` when it is set; `-Full` runs everything.
+[ADR 0020](../adrs/0020-a-local-run-checks-what-the-change-touches.md) records the choice.
 
 `Invoke-LocalGates.ps1 -SkipScript <file name>` leaves out the gates of that script and lists them as `SKIP`.
 The gates, the pre-flight and `tools/Invoke-PesterParallel.ps1` compare a change with `origin/<github.trunk>`
