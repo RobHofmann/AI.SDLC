@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-DocLastChecked' {
     BeforeAll {
-        $script:Gate = Join-Path $PSScriptRoot 'Check-DocLastChecked.ps1'
+        $script:Gate = Join-Path $script:ScriptFolder 'Check-DocLastChecked.ps1'
 
         # A repository with aisdlc.json, AGENTS.md and a docs/ folder with the given pages.
         function New-Repo {
@@ -73,7 +75,7 @@ Describe 'Check-DocLastChecked' {
     }
 
     It 'is registered as an Advisory core gate' {
-        $gates = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'gates.json') -Raw | ConvertFrom-Json
+        $gates = Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw | ConvertFrom-Json
         $entry = @($gates.gates | Where-Object { $_.script -eq 'scripts/Check-DocLastChecked.ps1' })
         $entry.Count | Should -Be 1
         $entry[0].mode | Should -Be 'Advisory'

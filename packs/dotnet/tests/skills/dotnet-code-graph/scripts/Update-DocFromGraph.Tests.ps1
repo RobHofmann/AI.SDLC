@@ -1,11 +1,13 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Update-DocFromGraph' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Update-DocFromGraph.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Update-DocFromGraph.ps1'
 
         $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
-        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
+        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' }
         Import-Module (Join-Path $aiSdlcGates 'DocToolTestHarness.psm1') -Force
 
         function New-Repo {
@@ -393,7 +395,7 @@ Describe 'Update-DocFromGraph' {
             $content.IndexOf('Resolve-DocumentedProject -DocPath') | Should -BeGreaterThan -1
             $content.IndexOf('$documentsAProject') | Should -BeLessThan $content.IndexOf('Resolve-DocumentedProject -DocPath')
 
-            Import-Module (Join-Path $PSScriptRoot '..' '..' 'dotnet-gates' 'scripts' 'DocSurface.psm1') -Force
+            Import-Module (Join-Path $script:ScriptFolder '..' '..' 'dotnet-gates' 'scripts' 'DocSurface.psm1') -Force
             $root = New-Repo -Files @{ 'Demo/src/Shared.Thing/A.cs' = 'public class A { }' }
             ((Get-ProjectPageFolder -RepoRoot $root) -join ',') | Should -Be 'docs/libraries/,docs/handlers/'
         }

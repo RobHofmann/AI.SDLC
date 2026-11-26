@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Initialize-AiSdlc' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-AiSdlc.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Initialize-AiSdlc.ps1'
         $script:HooksPath = '.claude/skills/ai-sdlc-hooks/githooks'
 
         function New-TempRepo {
@@ -226,7 +228,7 @@ if (`$Plan) { if (-not `$Minimal) { '$Skill install' }; return }
         Import-Module (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
         $checked = 0
         foreach ($skill in 'dotnet-gates', 'dotnet-code-graph', 'azure-devops-pull-requests') {
-            $folder = Find-AiSdlcSkillFolder -Name $skill -From $PSScriptRoot
+            $folder = Find-AiSdlcSkillFolder -Name $skill -From $script:ScriptFolder
             if (-not $folder) { continue }
             $manifest = Get-Content -LiteralPath (Join-Path $folder 'gates.json') -Raw | ConvertFrom-Json
             $manifest.setup | Should -Not -BeNullOrEmpty -Because "$skill declares a setup step"

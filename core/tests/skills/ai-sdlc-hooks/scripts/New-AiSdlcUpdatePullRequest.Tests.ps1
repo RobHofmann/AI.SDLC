@@ -1,5 +1,7 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'New-AiSdlcUpdatePullRequest' {
     BeforeAll {
         $script:TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('aisdlc-update-pr-' + [guid]::NewGuid().ToString('n'))
@@ -69,8 +71,8 @@ What a consumer does: the step of v1.0.0.
             $hooks = Join-Path $seed '.claude' 'skills' 'ai-sdlc-hooks' 'scripts'
             $gates = Join-Path $seed '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
             New-Item -ItemType Directory -Path $hooks, $gates -Force | Out-Null
-            Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'New-AiSdlcUpdatePullRequest.ps1'), (Join-Path $PSScriptRoot 'AiSdlcSetup.ps1') -Destination $hooks
-            Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination $gates
+            Copy-Item -LiteralPath (Join-Path $script:ScriptFolder 'New-AiSdlcUpdatePullRequest.ps1'), (Join-Path $script:ScriptFolder 'AiSdlcSetup.ps1') -Destination $hooks
+            Copy-Item -LiteralPath (Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination $gates
             Set-Content -LiteralPath (Join-Path $seed 'apm.yml') -Value "dependencies:`n  apm:`n    - git: $script:SourceUrl`n      path: core`n      ref: $Ref"
             Set-Content -LiteralPath (Join-Path $hooks 'Update-AiSdlc.ps1') -Value @"
 param([string]`$RepoRoot, [string]`$Ref, [switch]`$NoGates)

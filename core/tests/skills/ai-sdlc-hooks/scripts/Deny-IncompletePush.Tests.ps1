@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Deny-IncompletePush' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Deny-IncompletePush.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Deny-IncompletePush.ps1'
 
         $script:GapCheck = Join-Path -Path $TestDrive -ChildPath 'gap.ps1'
         Set-Content -Path $script:GapCheck -Value @'
@@ -17,7 +19,7 @@ Write-Output 'no behaviour change'
 exit 0
 '@
 
-        Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..' '..' 'ai-sdlc-gates' 'scripts' 'PreflightReceipt.psm1') -Force
+        Import-Module (Join-Path -Path $script:ScriptFolder -ChildPath '..' '..' 'ai-sdlc-gates' 'scripts' 'PreflightReceipt.psm1') -Force
         $script:Receipts = Join-Path -Path $TestDrive -ChildPath 'preflight'
         $script:GreenTree = 'a' * 40
         $script:UncheckedTree = 'b' * 40

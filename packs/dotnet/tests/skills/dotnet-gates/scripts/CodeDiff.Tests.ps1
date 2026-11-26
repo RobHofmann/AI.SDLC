@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'CodeDiff' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'CodeDiff.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'CodeDiff.psm1') -Force
     }
 
     AfterAll {
@@ -40,7 +42,7 @@ Describe 'CodeDiff' {
     }
 
     It 'names the problem when there is no merge base' {
-        $result = Get-CodeDiffText -RepoRoot $PSScriptRoot -BaseRef 'refs/heads/no-such-branch-for-this-test'
+        $result = Get-CodeDiffText -RepoRoot $script:ScriptFolder -BaseRef 'refs/heads/no-such-branch-for-this-test'
         $result.Problem | Should -Match 'no merge base'
         $result.Text | Should -Be ''
     }

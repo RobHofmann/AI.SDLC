@@ -1,5 +1,7 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'DocToolTestHarness' {
     BeforeAll {
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
@@ -119,7 +121,7 @@ Describe 'DocToolTestHarness' {
         }
 
         It 'finds the real ai-sdlc-hooks skill from this folder' {
-            Find-AiSdlcSkillFolder -Name 'ai-sdlc-hooks' -From $PSScriptRoot | Should -Not -BeNullOrEmpty
+            Find-AiSdlcSkillFolder -Name 'ai-sdlc-hooks' -From $script:ScriptFolder | Should -Not -BeNullOrEmpty
         }
     }
 

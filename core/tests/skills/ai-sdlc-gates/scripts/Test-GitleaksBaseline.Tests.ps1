@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Test-GitleaksBaseline' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path $PSScriptRoot 'Test-GitleaksBaseline.ps1'
+        $script:ScriptUnderTest = Join-Path $script:ScriptFolder 'Test-GitleaksBaseline.ps1'
         $script:SavedEnv = @{ GITHUB_ACTIONS = $env:GITHUB_ACTIONS; PR_BASE_SHA = $env:PR_BASE_SHA }
 
         function gitleaks { }
@@ -66,7 +68,7 @@ Describe 'Test-GitleaksBaseline' {
     }
 
     It 'pins every shipped rule set to a fixed commit or tag with a SHA-256' {
-        $shipped = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'gitleaks-rules.json') -Raw | ConvertFrom-Json).configurations
+        $shipped = (Get-Content -LiteralPath (Join-Path $script:ScriptFolder 'gitleaks-rules.json') -Raw | ConvertFrom-Json).configurations
 
         foreach ($name in 'GitleaksUdmCombo', 'UDMSecretChecksv8', 'GitleaksOriginal') {
             $shipped.$name.url | Should -Match '^https://'
@@ -309,7 +311,7 @@ Describe 'Test-GitleaksBaseline' {
     }
 
     It 'is the blocking C03 gate of the core, so Invoke-LocalGates.ps1 runs it everywhere' {
-        $entry = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'gates.json') -Raw | ConvertFrom-Json).gates | Where-Object { $_.script -eq 'scripts/Test-GitleaksBaseline.ps1' })
+        $entry = @((Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw | ConvertFrom-Json).gates | Where-Object { $_.script -eq 'scripts/Test-GitleaksBaseline.ps1' })
 
         $entry | Should -HaveCount 1
         $entry[0].mode | Should -Be 'Blocking'
@@ -317,7 +319,7 @@ Describe 'Test-GitleaksBaseline' {
     }
 
     It 'runs once in the shared action: as a gate, after the gitleaks install, and not as a step of its own' {
-        $action = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'assets' 'actions' 'ai-sdlc-pr' 'action.yml') -Raw
+        $action = Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'assets' 'actions' 'ai-sdlc-pr' 'action.yml') -Raw
         $code = (($action -split "`n") | Where-Object { $_ -notmatch '^\s*#' }) -join "`n"
 
         $code | Should -Not -Match 'Test-GitleaksBaseline\.ps1'
@@ -329,7 +331,7 @@ Describe 'Test-GitleaksBaseline' {
 
 Describe 'Test-GitleaksBaseline with the real gitleaks, as a pull request run in GitHub Actions runs it' -Skip:(-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path $PSScriptRoot 'Test-GitleaksBaseline.ps1'
+        $script:ScriptUnderTest = Join-Path $script:ScriptFolder 'Test-GitleaksBaseline.ps1'
         $script:Pwsh = Join-Path $PSHOME ($IsWindows ? 'pwsh.exe' : 'pwsh')
 
         function New-PullRequestMerge {

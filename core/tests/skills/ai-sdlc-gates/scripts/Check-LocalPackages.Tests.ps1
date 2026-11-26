@@ -1,10 +1,12 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-LocalPackages' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'AiSdlcConfig.psm1') -Force
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
-        $script:ScriptUnderTest = Join-Path $PSScriptRoot 'Check-LocalPackages.ps1'
+        $script:ScriptUnderTest = Join-Path $script:ScriptFolder 'Check-LocalPackages.ps1'
 
         function Invoke-Gate {
             param([Parameter(Mandatory)][string]$RepoRoot)

@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'HookPayload' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'HookPayload.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'HookPayload.psm1') -Force
 
         function ConvertTo-Payload {
             param([hashtable]$Payload)

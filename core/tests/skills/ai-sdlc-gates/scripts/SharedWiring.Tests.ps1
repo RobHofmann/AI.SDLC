@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'The shared scripts are wired the same way in every repository' {
     BeforeAll {
-        $script:SkillsRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..' '..')).Path
+        $script:SkillsRoot = (Resolve-Path -LiteralPath (Join-Path $script:ScriptFolder '..' '..')).Path
         $script:SourceRoot = $null
         if ((Split-Path -Leaf (Split-Path -Parent $script:SkillsRoot)) -eq '.apm') {
             $dir = $script:SkillsRoot
@@ -33,14 +35,24 @@ Describe 'The shared scripts are wired the same way in every repository' {
             return $null
         }
 
+        function Get-TestFolder {
+            param([Parameter(Mandatory)][string]$ScriptsFolder)
+            if (-not $script:SourceRoot) { return $ScriptsFolder }
+            return $ScriptsFolder -replace '(?<=[\\/])\.apm(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', 'tests'
+        }
+
         function Get-ScriptFile {
             param([string[]]$Include = @('*.ps1', '*.psm1'), [switch]$WithTests)
             $files = foreach ($skill in (Get-SkillFolder)) {
                 $scripts = Join-Path $skill.FullName 'scripts'
                 if (-not (Test-Path -LiteralPath $scripts)) { continue }
-                Get-ChildItem -LiteralPath $scripts -File | Where-Object {
-                    $name = $_.Name
-                    @($Include | Where-Object { $name -like $_ }).Count -gt 0
+                $folders = if ($WithTests) { @($scripts, (Get-TestFolder -ScriptsFolder $scripts) | Select-Object -Unique) } else { @($scripts) }
+                foreach ($folder in $folders) {
+                    if (-not (Test-Path -LiteralPath $folder)) { continue }
+                    Get-ChildItem -LiteralPath $folder -File | Where-Object {
+                        $name = $_.Name
+                        @($Include | Where-Object { $name -like $_ }).Count -gt 0
+                    }
                 }
             }
             if (-not $WithTests) { $files = $files | Where-Object { $_.Name -notlike '*.Tests.ps1' } }
@@ -78,7 +90,7 @@ Describe 'The shared scripts are wired the same way in every repository' {
         It 'every Check and Invoke script has a matching Pester file, apart from the ones exempted here by name' {
             $offenders = foreach ($file in (Get-ScriptFile -Include 'Check-*.ps1', 'Invoke-*.ps1')) {
                 if ($script:NoTestExemption.Contains($file.Name)) { continue }
-                $test = Join-Path $file.DirectoryName ($file.BaseName + '.Tests.ps1')
+                $test = Join-Path (Get-TestFolder -ScriptsFolder $file.DirectoryName) ($file.BaseName + '.Tests.ps1')
                 if (-not (Test-Path -LiteralPath $test)) { "$($file.Name) has no $($file.BaseName).Tests.ps1" }
             }
 
@@ -88,7 +100,7 @@ Describe 'The shared scripts are wired the same way in every repository' {
         It 'exempts no script that now has a Pester file, so the list cannot go stale' {
             $stale = foreach ($file in (Get-ScriptFile -Include 'Invoke-*.ps1', 'Check-*.ps1')) {
                 if (-not $script:NoTestExemption.Contains($file.Name)) { continue }
-                if (Test-Path -LiteralPath (Join-Path $file.DirectoryName ($file.BaseName + '.Tests.ps1'))) { "$($file.Name) is exempted but has a Pester file" }
+                if (Test-Path -LiteralPath (Join-Path (Get-TestFolder -ScriptsFolder $file.DirectoryName) ($file.BaseName + '.Tests.ps1'))) { "$($file.Name) is exempted but has a Pester file" }
             }
 
             @($stale) | Should -BeNullOrEmpty
@@ -320,6 +332,29 @@ Describe 'The shared scripts are wired the same way in every repository' {
             $skill | Should -Match 'Invoke-GraphifyIndex\.ps1'
             $skill | Should -Match 'Get-ProjectConsumer'
             $skill | Should -Match 'Service Bus'
+        }
+    }
+
+    Context 'the tests of a package sit outside the installed package (#45)' {
+        It 'every file under tests/ of a package sits in tests/skills/NAME/scripts, next to a .apm folder of the same skill' {
+            if (-not $script:SourceRoot) { Set-ItResult -Skipped -Because 'this layout is not the AI.SDLC source'; return }
+
+            $packages = @(Join-Path $script:SourceRoot 'core') + @(Get-ChildItem -LiteralPath (Join-Path $script:SourceRoot 'packs') -Directory | ForEach-Object FullName)
+            $seen = 0
+            $offenders = foreach ($package in $packages) {
+                $tests = Join-Path $package 'tests'
+                if (-not (Test-Path -LiteralPath $tests)) { continue }
+                foreach ($file in (Get-ChildItem -LiteralPath $tests -Recurse -File)) {
+                    $seen++
+                    $relative = [IO.Path]::GetRelativePath($tests, $file.FullName).Replace('\', '/')
+                    if ($relative -notmatch '^skills/[^/]+/scripts/[^/]+$') { "$relative is not directly under tests/skills/NAME/scripts"; continue }
+                    $scripts = Join-Path $package '.apm' (Split-Path -Parent $relative)
+                    if (-not (Test-Path -LiteralPath $scripts -PathType Container)) { "$relative has no .apm folder of the same skill" }
+                }
+            }
+
+            $seen | Should -BeGreaterThan 0 -Because 'an empty scan cannot pass'
+            @($offenders) | Should -BeNullOrEmpty
         }
     }
 }

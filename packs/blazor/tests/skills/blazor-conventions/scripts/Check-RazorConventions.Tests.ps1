@@ -1,13 +1,15 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-RazorConventions' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-RazorConventions.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-RazorConventions.ps1'
 
         # A temp tree that is clean: the correct multi-line attribute form, a state class with no
         # interface, and the one file allowed to declare a document root.
         $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
-        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
+        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' }
         Import-Module (Join-Path $aiSdlcGates 'DocToolTestHarness.psm1') -Force
         $script:RepoRoot = Join-Path -Path $TestDrive -ChildPath 'repo'
         New-Item -ItemType Directory -Path $script:RepoRoot -Force | Out-Null

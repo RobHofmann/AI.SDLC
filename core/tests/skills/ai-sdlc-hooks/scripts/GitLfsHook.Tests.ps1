@@ -1,5 +1,7 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 BeforeDiscovery {
     function Find-Sh {
         $found = (Get-Command sh -ErrorAction SilentlyContinue).Source
@@ -19,7 +21,7 @@ BeforeDiscovery {
 # `git lfs install` put in .git/hooks. These tests prove the AI-SDLC hooks hand on to Git LFS.
 Describe 'The git hooks hand on to Git LFS' {
     BeforeAll {
-        $script:HookDir = (Resolve-Path (Join-Path $PSScriptRoot '..' 'githooks')).Path -replace '\\', '/'
+        $script:HookDir = (Resolve-Path (Join-Path $script:ScriptFolder '..' 'githooks')).Path -replace '\\', '/'
         $script:Sh = (Get-Command sh -ErrorAction SilentlyContinue).Source
         if (-not $script:Sh -and $IsWindows) {
             $gitSh = Join-Path (Split-Path (Split-Path (Get-Command git).Source)) 'bin' 'sh.exe'

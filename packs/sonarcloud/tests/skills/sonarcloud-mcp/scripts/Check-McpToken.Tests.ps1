@@ -1,10 +1,12 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-McpToken' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-McpToken.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-McpToken.ps1'
         $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
-        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
+        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' }
         Import-Module (Join-Path $aiSdlcGates 'DocToolTestHarness.psm1') -Force
         $script:SavedTokens = @{ AISDLC_SONAR_MCP_TOKEN = $env:AISDLC_SONAR_MCP_TOKEN; SONAR_TOKEN = $env:SONAR_TOKEN }
 

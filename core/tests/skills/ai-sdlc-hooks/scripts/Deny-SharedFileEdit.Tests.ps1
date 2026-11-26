@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Deny-SharedFileEdit' {
     BeforeAll {
-        $script:Hook = Join-Path $PSScriptRoot 'Deny-SharedFileEdit.ps1'
+        $script:Hook = Join-Path $script:ScriptFolder 'Deny-SharedFileEdit.ps1'
         Import-Module (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
 
         $script:Lock = @'

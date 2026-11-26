@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-ChangeCompleteness' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-ChangeCompleteness.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-ChangeCompleteness.ps1'
         $script:Root = Join-Path $TestDrive 'repo'
         New-Item -ItemType Directory -Path $script:Root -Force | Out-Null
         Set-Content -LiteralPath (Join-Path $script:Root 'aisdlc.json') -Encoding utf8 -Value (@{

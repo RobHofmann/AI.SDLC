@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'PullRequestDescription' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'PullRequestDescription.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'PullRequestDescription.psm1') -Force
     }
 
     Context 'ConvertTo-PrDescriptionLine' {

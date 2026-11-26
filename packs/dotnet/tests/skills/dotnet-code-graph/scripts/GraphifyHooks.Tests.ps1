@@ -1,9 +1,11 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Graphify git hooks' {
     BeforeAll {
-        $script:HookDir = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-hooks' 'githooks'
-        if (-not (Test-Path -LiteralPath $script:HookDir)) { $script:HookDir = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-hooks' 'githooks' }
+        $script:HookDir = Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-hooks' 'githooks'
+        if (-not (Test-Path -LiteralPath $script:HookDir)) { $script:HookDir = Join-Path $script:ScriptFolder '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-hooks' 'githooks' }
         $script:HookDir = (Resolve-Path -LiteralPath $script:HookDir).Path
 
         function Get-Sh {

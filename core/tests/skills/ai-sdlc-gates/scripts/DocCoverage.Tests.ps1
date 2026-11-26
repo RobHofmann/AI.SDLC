@@ -1,9 +1,11 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'DocCoverage' {
     BeforeAll {
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
-        Import-Module (Join-Path $PSScriptRoot 'DocCoverage.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'DocCoverage.psm1') -Force
 
         function New-UnitRepo {
             param([hashtable]$Files = @{}, [hashtable]$Paths, [hashtable]$Docs)

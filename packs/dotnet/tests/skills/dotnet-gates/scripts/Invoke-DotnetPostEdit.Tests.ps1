@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Invoke-DotnetPostEdit' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Invoke-DotnetPostEdit.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Invoke-DotnetPostEdit.ps1'
 
         $script:FailingBuild = Join-Path -Path $TestDrive -ChildPath 'build-fail.ps1'
         Set-Content -Path $script:FailingBuild -Value @'

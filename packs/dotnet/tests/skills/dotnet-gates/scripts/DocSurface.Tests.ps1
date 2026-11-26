@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'DocSurface' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'DocSurface.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'DocSurface.psm1') -Force
         $script:Family = @(
             [pscustomobject]@{ Folder = 'docs/libraries/'; Prefix = 'Shared.' }
             [pscustomobject]@{ Folder = 'docs/handlers/'; Prefix = 'Workers.' }

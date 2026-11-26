@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'GateAnnotation' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'GateAnnotation.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'GateAnnotation.psm1') -Force
 
         function Invoke-Annotation {
             param([string[]]$Lines, [int]$ExitCode, [string]$Mode = 'Blocking')

@@ -1,13 +1,15 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'The pull request feedback loop' {
     BeforeAll {
-        $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
-        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
+        $aiSdlcGates = Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts'
+        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $script:ScriptFolder '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
         Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
-        Import-Module (Join-Path $PSScriptRoot 'PullRequestFeedback.psm1') -Force
-        $script:GetFeedback = Join-Path $PSScriptRoot 'Get-PullRequestFeedback.ps1'
-        $script:Reply = Join-Path $PSScriptRoot 'Reply-PullRequestThread.ps1'
+        Import-Module (Join-Path $script:ScriptFolder 'PullRequestFeedback.psm1') -Force
+        $script:GetFeedback = Join-Path $script:ScriptFolder 'Get-PullRequestFeedback.ps1'
+        $script:Reply = Join-Path $script:ScriptFolder 'Reply-PullRequestThread.ps1'
 
         function New-Thread {
             param([string]$Id, [string]$Login, [string]$Content, [string]$Type = 'User', [switch]$Resolved, [string]$Commit = 'head1', [string]$Published = '2026-09-23T10:05:00Z')
@@ -367,7 +369,7 @@ Describe 'The pull request feedback loop' {
             @{ Script = 'Reply-PullRequestThread.ps1' }
             @{ Script = 'Wait-WorkflowRun.ps1' }
         ) {
-            $settingsPath = Join-Path (Find-AiSdlcRepoRoot -StartPath $PSScriptRoot) '.claude' 'settings.json'
+            $settingsPath = Join-Path (Find-AiSdlcRepoRoot -StartPath $script:ScriptFolder) '.claude' 'settings.json'
             if (-not (Test-Path -LiteralPath $settingsPath)) {
                 Set-ItResult -Skipped -Because 'no .claude/settings.json at the repository root; the allow list belongs to the repository that installs the pack'
                 return

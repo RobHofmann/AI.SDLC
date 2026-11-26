@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Find-RetiredSkillNames' {
     BeforeAll {
-        $script:Source = Join-Path $PSScriptRoot 'Find-RetiredSkillNames.ps1'
+        $script:Source = Join-Path $script:ScriptFolder 'Find-RetiredSkillNames.ps1'
         Import-Module (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
         # A manifest whose core package delivers .claude/skills/x/SKILL.md, the one installed file.
         $script:InstalledX = '{ "retired": { "old-skill": "new-skill" }, "packages": { "core": { "files": { ".claude/skills/x/SKILL.md": "0" } } } }'

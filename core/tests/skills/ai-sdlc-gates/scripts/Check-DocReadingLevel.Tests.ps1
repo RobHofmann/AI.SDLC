@@ -1,9 +1,11 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-DocReadingLevel' {
     BeforeAll {
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-DocReadingLevel.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-DocReadingLevel.ps1'
 
         function Invoke-Gate {
             param([Parameter(Mandatory)][string]$RepoRoot, [hashtable]$Extra = @{})
@@ -68,7 +70,7 @@ Describe 'Check-DocReadingLevel' {
         }
 
         It 'ships a shared allow list beside the script' {
-            Test-Path -LiteralPath (Join-Path $PSScriptRoot 'data' 'reading-level-allowlist.txt') | Should -BeTrue
+            Test-Path -LiteralPath (Join-Path $script:ScriptFolder 'data' 'reading-level-allowlist.txt') | Should -BeTrue
         }
 
         It 'reads the handbook language page beside the gates skill when aisdlc.json sets none' {

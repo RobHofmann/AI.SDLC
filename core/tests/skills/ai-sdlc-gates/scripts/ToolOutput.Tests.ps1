@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'ToolOutput' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'ToolOutput.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'ToolOutput.psm1') -Force
     }
 
     It 'formats a number the same way whatever the current culture is' {

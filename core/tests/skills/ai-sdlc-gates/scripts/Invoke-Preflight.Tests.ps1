@@ -1,5 +1,7 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Invoke-Preflight' {
     BeforeAll {
         $script:Made = [System.Collections.Generic.List[string]]::new()
@@ -20,7 +22,7 @@ Describe 'Invoke-Preflight' {
             git -C $root config user.email probe@example.invalid
             git -C $root config user.name probe
             foreach ($name in 'Invoke-Preflight.ps1', 'AiSdlcConfig.psm1', 'PreflightReceipt.psm1', 'GitleaksConfig.psm1') {
-                Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $scripts
+                Copy-Item -LiteralPath (Join-Path $script:ScriptFolder $name) -Destination $scripts
             }
             Set-Content -LiteralPath (Join-Path $scripts 'gitleaks-rules.json') -Value $script:RulesPin
             $calls = Join-Path $root 'gate-calls.txt'

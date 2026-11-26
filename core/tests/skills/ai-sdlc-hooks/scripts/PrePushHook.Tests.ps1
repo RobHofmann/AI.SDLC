@@ -1,5 +1,7 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 BeforeDiscovery {
     function Find-Sh {
         $found = (Get-Command sh -ErrorAction SilentlyContinue).Source
@@ -14,7 +16,7 @@ BeforeDiscovery {
 
 Describe 'The pre-push git hook' {
     BeforeAll {
-        $script:Hook = Join-Path $PSScriptRoot '..' 'githooks' 'pre-push'
+        $script:Hook = Join-Path $script:ScriptFolder '..' 'githooks' 'pre-push'
         $script:Sh = (Get-Command sh -ErrorAction SilentlyContinue).Source
         if (-not $script:Sh -and $IsWindows) {
             $gitSh = Join-Path (Split-Path (Split-Path (Get-Command git).Source)) 'bin' 'sh.exe'
@@ -170,8 +172,8 @@ Describe 'The pre-push git hook' {
                 $hooks = Join-Path $root '.claude' 'skills' 'ai-sdlc-hooks' 'githooks'
                 $gates = Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
                 New-Item -ItemType Directory -Path $hooks, $gates -Force | Out-Null
-                Copy-Item -Path (Join-Path $PSScriptRoot '..' 'githooks' '*') -Destination $hooks
-                Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination $gates
+                Copy-Item -Path (Join-Path $script:ScriptFolder '..' 'githooks' '*') -Destination $hooks
+                Copy-Item -LiteralPath (Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination $gates
                 if (-not $IsWindows) { chmod +x (Get-ChildItem -LiteralPath $hooks).FullName }
                 git -C $root config core.hooksPath '.claude/skills/ai-sdlc-hooks/githooks'
                 git -C $root commit --quiet --allow-empty -m two --no-verify
@@ -186,7 +188,7 @@ Describe 'The pre-push git hook' {
 
     It 'never falls back to Windows PowerShell, which cannot run a gate that needs PowerShell 7' {
         foreach ($name in 'pre-push', 'graphify-refresh') {
-            $text = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'githooks' $name) -Raw
+            $text = Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'githooks' $name) -Raw
             $text | Should -Not -Match 'PWSH=powershell' -Because "$name must skip, not run the gates in Windows PowerShell 5.1"
         }
     }
@@ -296,7 +298,7 @@ Describe 'The pre-push git hook' {
                 Set-Content -LiteralPath (Join-Path $dotnet 'Check-DocDrift.ps1') -Value "Write-Host 'drift ran on its own'; exit 0"
                 $sha = $script:Sha
                 if ($Receipt -ne 'None') {
-                    $source = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
+                    $source = Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts'
                     foreach ($name in 'Test-PushReceipt.ps1', 'AiSdlcConfig.psm1', 'PreflightReceipt.psm1') { Copy-Item -LiteralPath (Join-Path $source $name) -Destination $gates }
                     git -C $root config user.email probe@example.invalid
                     git -C $root config user.name probe
@@ -404,7 +406,7 @@ Describe 'The pre-push git hook' {
                 git -C $work config core.autocrlf false
                 Set-Content -LiteralPath (Join-Path $gates 'Invoke-LocalGates.ps1') -Value 'param([switch]$BlockingOnly) Write-Host "runner ran"; exit 0'
                 Set-Content -LiteralPath (Join-Path $gates 'Check-ChangeCompleteness.ps1') -Value 'exit 0'
-                $source = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
+                $source = Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts'
                 foreach ($name in 'Test-PushSendsNothingNew.ps1', 'PreflightReceipt.psm1') { Copy-Item -LiteralPath (Join-Path $source $name) -Destination $gates }
                 git -C $work add -A
                 git -C $work commit --quiet -m one --no-verify

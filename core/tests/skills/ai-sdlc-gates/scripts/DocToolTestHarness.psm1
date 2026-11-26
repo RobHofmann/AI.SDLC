@@ -46,7 +46,8 @@
 
 .PARAMETER From
     For Find-AiSdlcSkillFolder and Get-AiSdlcHookSettings: the scripts folder of the calling test,
-    usually $PSScriptRoot.
+    usually $script:ScriptFolder. In the AI.SDLC source the tests sit under <package>/tests, so that
+    variable maps the folder of the test back to the scripts folder under <package>/.apm.
 
 .EXAMPLE
     Set-AiSdlcTestConfig -Root $root -Paths @{ docsRoots = @('docs') }
@@ -57,13 +58,13 @@
     No packs writes apm.yml with core only.
 
 .EXAMPLE
-    Find-AiSdlcSkillFolder -Name dotnet-gates -From $PSScriptRoot
+    Find-AiSdlcSkillFolder -Name dotnet-gates -From $script:ScriptFolder
     Finds a sibling skill in an installed repository (.claude/skills/<name>) and in the AI.SDLC source
     layout (core/.apm/skills/<name> or packs/<pack>/.apm/skills/<name>). Returns nothing when the
     skill is in neither, for example a pack the repository did not install.
 
 .EXAMPLE
-    (Get-AiSdlcHookSettings -From $PSScriptRoot).hooks.Stop
+    (Get-AiSdlcHookSettings -From $script:ScriptFolder).hooks.Stop
     Reads the hook entries: from the hooks/*.json files of the package in the AI.SDLC source layout,
     or from .claude/settings.json of the repository where the packages are installed.
 #>

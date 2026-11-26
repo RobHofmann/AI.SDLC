@@ -1,9 +1,11 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Test-PushSendsNothingNew' {
     BeforeAll {
-        $script:Script = Join-Path $PSScriptRoot 'Test-PushSendsNothingNew.ps1'
-        Import-Module (Join-Path $PSScriptRoot 'PreflightReceipt.psm1') -Force
+        $script:Script = Join-Path $script:ScriptFolder 'Test-PushSendsNothingNew.ps1'
+        Import-Module (Join-Path $script:ScriptFolder 'PreflightReceipt.psm1') -Force
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
         $script:Zero = '0' * 40
 

@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Initialize-GitHub' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-GitHub.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Initialize-GitHub.ps1'
     }
 
     AfterEach {
@@ -16,14 +18,14 @@ Describe 'Initialize-GitHub' {
     }
 
     It 'lists the pull request scripts in the allow list of its gates.json' {
-        $allow = (Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'gates.json') -Raw | ConvertFrom-Json).allow
+        $allow = (Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw | ConvertFrom-Json).allow
         foreach ($name in 'Get-PullRequestFeedback.ps1', 'Reply-PullRequestThread.ps1', 'Wait-WorkflowRun.ps1', 'New-PullRequest.ps1', 'Update-PullRequest.ps1') {
             $allow | Should -Contain "pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/$name*"
         }
     }
 
     It 'never allows a merge or an approval in its gates.json' {
-        $allow = (Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'gates.json') -Raw | ConvertFrom-Json).allow
+        $allow = (Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw | ConvertFrom-Json).allow
         @($allow | Where-Object { $_ -match 'gh pr merge|--approve|gh pr review|gh api' }).Count | Should -Be 0
     }
 

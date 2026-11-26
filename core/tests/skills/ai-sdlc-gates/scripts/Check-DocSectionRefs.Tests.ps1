@@ -1,10 +1,12 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-DocSectionRefs' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'AiSdlcConfig.psm1') -Force
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-DocSectionRefs.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-DocSectionRefs.ps1'
 
         function Invoke-Gate {
             param([string]$RepoRoot = $script:Root, [hashtable]$Extra = @{})
@@ -246,7 +248,7 @@ Describe 'Check-DocSectionRefs' {
 
     Context 'the repository it guards' {
         It 'is green on the real repository, so it carries no old debt' {
-            $repo = (Find-AiSdlcRepoRoot -StartPath $PSScriptRoot)
+            $repo = (Find-AiSdlcRepoRoot -StartPath $script:ScriptFolder)
 
             $r = Invoke-Gate -RepoRoot $repo
 

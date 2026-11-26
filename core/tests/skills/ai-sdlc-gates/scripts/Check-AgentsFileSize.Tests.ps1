@@ -1,17 +1,20 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 BeforeDiscovery {
-    Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
-    $repo = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot
+    $scriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm'
+    Import-Module (Join-Path $scriptFolder 'AiSdlcConfig.psm1') -Force
+    $repo = Find-AiSdlcRepoRoot -StartPath $scriptFolder
     $script:NotInstalled = -not ($repo -and (Test-Path -LiteralPath (Join-Path $repo 'aisdlc.json')))
 }
 
 
 Describe 'Check-AgentsFileSize' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'AiSdlcConfig.psm1') -Force
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-AgentsFileSize.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-AgentsFileSize.ps1'
 
         function Invoke-Gate {
             param([Parameter(Mandatory)][string]$RepoRoot, [hashtable]$Extra = @{})
@@ -78,7 +81,7 @@ Describe 'Check-AgentsFileSize' {
     }
 
     It 'holds the real AGENTS.md within the default limits' -Skip:$script:NotInstalled {
-        $repo = (Find-AiSdlcRepoRoot -StartPath $PSScriptRoot)
+        $repo = (Find-AiSdlcRepoRoot -StartPath $script:ScriptFolder)
 
         $r = Invoke-Gate -RepoRoot $repo
 

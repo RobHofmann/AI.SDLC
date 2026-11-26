@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'The code graph is read through one checked door' {
     BeforeAll {
-        $script:SkillsRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..' '..')).Path
+        $script:SkillsRoot = (Resolve-Path -LiteralPath (Join-Path $script:ScriptFolder '..' '..')).Path
         $script:SourceRoot = $null
         if ((Split-Path -Leaf (Split-Path -Parent $script:SkillsRoot)) -eq '.apm') {
             $dir = $script:SkillsRoot

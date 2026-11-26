@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'The pre-flight receipt' {
     BeforeAll {
-        Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'PreflightReceipt.psm1') -Force
+        Import-Module (Join-Path -Path $script:ScriptFolder -ChildPath 'PreflightReceipt.psm1') -Force
         $script:Root = Join-Path -Path $TestDrive -ChildPath 'preflight'
     }
 
@@ -46,7 +48,7 @@ Describe 'The pre-flight receipt' {
     }
 
     It 'is written by the pre-flight and read by the push hook' {
-        (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Invoke-Preflight.ps1') -Raw) | Should -Match 'Write-PreflightReceipt'
-        (Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-hooks' 'scripts' 'Deny-IncompletePush.ps1') -Raw) | Should -Match 'Test-PreflightReceipt'
+        (Get-Content -LiteralPath (Join-Path $script:ScriptFolder 'Invoke-Preflight.ps1') -Raw) | Should -Match 'Write-PreflightReceipt'
+        (Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-hooks' 'scripts' 'Deny-IncompletePush.ps1') -Raw) | Should -Match 'Test-PreflightReceipt'
     }
 }

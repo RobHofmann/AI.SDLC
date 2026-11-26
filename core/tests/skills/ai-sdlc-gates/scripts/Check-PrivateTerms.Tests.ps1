@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-PrivateTerms' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path $PSScriptRoot 'Check-PrivateTerms.ps1'
+        $script:ScriptUnderTest = Join-Path $script:ScriptFolder 'Check-PrivateTerms.ps1'
         $script:SavedTerms = $env:AISDLC_PRIVATE_TERMS
         $script:SavedBranch = $env:PR_SOURCE_BRANCH
         $script:SavedTitle = $env:PR_TITLE

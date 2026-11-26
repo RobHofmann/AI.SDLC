@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Install-Apm' {
     BeforeAll {
-        $script:Script = Join-Path $PSScriptRoot 'Install-Apm.ps1'
+        $script:Script = Join-Path $script:ScriptFolder 'Install-Apm.ps1'
 
         function New-FakeRelease {
             param([string]$Platform = 'linux-x86_64')
@@ -114,7 +116,7 @@ Describe 'Install-Apm' {
     }
 
     It 'pins a version and a 64-character digest for every published platform' {
-        $pin = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'apm-version.json') -Raw | ConvertFrom-Json
+        $pin = Get-Content -LiteralPath (Join-Path $script:ScriptFolder 'apm-version.json') -Raw | ConvertFrom-Json
 
         $pin.version | Should -Match '^v\d+\.\d+\.\d+$'
         $pin.sha256 | Should -Match '^[0-9a-f]{64}$'

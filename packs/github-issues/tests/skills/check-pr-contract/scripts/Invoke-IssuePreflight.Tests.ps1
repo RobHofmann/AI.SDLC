@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Invoke-IssuePreflight' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Invoke-IssuePreflight.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Invoke-IssuePreflight.ps1'
         $script:NoGh = 'gh-absent-for-test'
     }
 
@@ -80,8 +82,8 @@ Describe 'Invoke-IssuePreflight' {
             $gates = Join-Path $script:Skills 'ai-sdlc-gates' 'scripts'
             New-Item -ItemType Directory -Path $script:Copy, $gates -Force | Out-Null
             Copy-Item -LiteralPath $script:ScriptUnderTest -Destination $script:Copy
-            $realGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
-            if (-not (Test-Path -LiteralPath $realGates)) { $realGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
+            $realGates = Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts'
+            if (-not (Test-Path -LiteralPath $realGates)) { $realGates = Join-Path $script:ScriptFolder '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
             Copy-Item -LiteralPath (Join-Path $realGates 'AiSdlcConfig.psm1') -Destination $gates
 
             $script:FakeGh = Join-Path $TestDrive 'fake-gh.ps1'
@@ -103,7 +105,7 @@ Describe 'Invoke-IssuePreflight' {
     }
 
     It 'is the preflight the github-issues pack declares' {
-        $manifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'gates.json') -Raw | ConvertFrom-Json
+        $manifest = Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw | ConvertFrom-Json
         $manifest.package | Should -Be 'github-issues'
         $manifest.preflight | Should -Be 'scripts/Invoke-IssuePreflight.ps1'
     }

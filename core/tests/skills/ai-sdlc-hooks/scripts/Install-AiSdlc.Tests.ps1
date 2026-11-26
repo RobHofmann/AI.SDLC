@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Install-AiSdlc' {
     BeforeAll {
-        $script:Source = Join-Path -Path $PSScriptRoot -ChildPath 'Install-AiSdlc.ps1'
+        $script:Source = Join-Path -Path $script:ScriptFolder -ChildPath 'Install-AiSdlc.ps1'
 
         function apm { }
         function gh { }
@@ -15,7 +17,7 @@ Describe 'Install-AiSdlc' {
             $gatesDir = Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
             New-Item -ItemType Directory -Path $coreDir, $gatesDir -Force | Out-Null
             git -C $root init --quiet
-            Copy-Item -LiteralPath $script:Source, (Join-Path $PSScriptRoot 'WindowsLongPaths.ps1'), (Join-Path $PSScriptRoot 'AiSdlcSetup.ps1') -Destination $coreDir
+            Copy-Item -LiteralPath $script:Source, (Join-Path $script:ScriptFolder 'WindowsLongPaths.ps1'), (Join-Path $script:ScriptFolder 'AiSdlcSetup.ps1') -Destination $coreDir
             Set-Content -LiteralPath (Join-Path $gatesDir 'Install-Apm.ps1') -Value @(
                 'param([switch]$AddToPath)'
                 '$global:InstallAiSdlcTest.InstallerCalls++'
@@ -76,7 +78,7 @@ Describe 'Install-AiSdlc' {
     }
 
     It 'sits next to Initialize-AiSdlc.ps1, the core setup it hands over to' {
-        Test-Path -LiteralPath (Join-Path $PSScriptRoot 'Initialize-AiSdlc.ps1') | Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $script:ScriptFolder 'Initialize-AiSdlc.ps1') | Should -BeTrue
     }
 
     It 'installs from the committed lock with apm install --frozen, then runs the installed core' {
@@ -155,7 +157,7 @@ Describe 'Install-AiSdlc' {
 
     It 'advises the clone command when the knowledge folder is missing, and still installs' {
         $root = New-TempRepo -WithLock
-        Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination (Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts')
+        Copy-Item -LiteralPath (Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Destination (Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts')
         Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "paths": { "knowledgeRoot": "Knowledge" }, "knowledge": { "repository": "contoso/knowledge" } }'
         $out = & (Join-Path $root '.claude' 'skills' 'ai-sdlc-hooks' 'scripts' 'Install-AiSdlc.ps1') *>&1 | Out-String
         $out | Should -Match 'Setup advice: .*gh repo clone contoso/knowledge Knowledge'

@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'AiSdlcConfig' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'AiSdlcConfig.psm1') -Force
 
         function New-ConfigRepo {
             param([string]$Json, [switch]$Git, [string]$Apm)

@@ -1,5 +1,7 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 $reorderCases = @(
     @{
         Name = 'top-level declarations and chronological deployable grouping'
@@ -97,7 +99,7 @@ $lineEndingCases = @(
 
 Describe 'Reorder-BicepPropertyOrder' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Reorder-BicepPropertyOrder.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Reorder-BicepPropertyOrder.ps1'
 
         function Invoke-ReorderScript {
             param(

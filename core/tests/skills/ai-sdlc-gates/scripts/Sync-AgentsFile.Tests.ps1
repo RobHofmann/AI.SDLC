@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Sync-AgentsFile' {
     BeforeAll {
-        $script:Script = Join-Path $PSScriptRoot 'Sync-AgentsFile.ps1'
+        $script:Script = Join-Path $script:ScriptFolder 'Sync-AgentsFile.ps1'
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
 
         function New-AgentsRepo {

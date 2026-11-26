@@ -1,9 +1,11 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Build-DocsIndex' {
     BeforeAll {
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Build-DocsIndex.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Build-DocsIndex.ps1'
 
         function Invoke-Builder {
             param([hashtable]$Extra = @{})

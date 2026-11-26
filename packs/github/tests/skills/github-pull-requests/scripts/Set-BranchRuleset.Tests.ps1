@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Set-BranchRuleset' {
     BeforeAll {
-        $script:Tool = Join-Path $PSScriptRoot 'Set-BranchRuleset.ps1'
+        $script:Tool = Join-Path $script:ScriptFolder 'Set-BranchRuleset.ps1'
 
         function global:New-RulesetJson {
             param([int]$Id = 9, [string[]]$Checks = @('build-and-test', 'ai-sdlc'), [int]$Approvals = 0, [string]$Enforcement = 'active', [switch]$NoBranchGuards)

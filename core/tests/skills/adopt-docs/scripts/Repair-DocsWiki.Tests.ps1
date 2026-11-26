@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Repair-DocsWiki' {
     BeforeAll {
-        $script:Tool = Join-Path $PSScriptRoot 'Repair-DocsWiki.ps1'
+        $script:Tool = Join-Path $script:ScriptFolder 'Repair-DocsWiki.ps1'
         Import-Module (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
         $script:Em = [string][char]0x2014
 

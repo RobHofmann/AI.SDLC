@@ -1,11 +1,13 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-CommentHygiene' {
     BeforeAll {
-        $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
-        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
+        $aiSdlcGates = Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts'
+        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $script:ScriptFolder '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
         Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-CommentHygiene.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-CommentHygiene.ps1'
 
         function New-Diff {
             param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string[]]$Added, [int]$Start = 10)
@@ -184,6 +186,6 @@ Describe 'Check-CommentHygiene' {
     }
 
     It 'is registered as a blocking C10 gate of the dotnet pack' {
-        (Get-Content (Join-Path $PSScriptRoot '..' 'gates.json') -Raw) | Should -Match '"script": "scripts/Check-CommentHygiene.ps1", "clause": "C10", "mode": "Blocking"'
+        (Get-Content (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw) | Should -Match '"script": "scripts/Check-CommentHygiene.ps1", "clause": "C10", "mode": "Blocking"'
     }
 }

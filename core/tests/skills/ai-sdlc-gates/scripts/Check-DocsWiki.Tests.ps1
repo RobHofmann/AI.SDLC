@@ -1,9 +1,11 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-DocsWiki' {
     BeforeAll {
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-DocsWiki.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-DocsWiki.ps1'
         function Invoke-Gate {
             param([Parameter(Mandatory)][string]$RepoRoot, [switch]$Strict)
             $out = & $script:ScriptUnderTest -RepoRoot $RepoRoot -Strict:$Strict *>&1 | Out-String

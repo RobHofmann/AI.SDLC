@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Invoke-LocalGates' {
     BeforeAll {
-        $script:Runner = Join-Path $PSScriptRoot 'Invoke-LocalGates.ps1'
+        $script:Runner = Join-Path $script:ScriptFolder 'Invoke-LocalGates.ps1'
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
 
         function New-GateRepo {

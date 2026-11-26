@@ -1,11 +1,13 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-XmlDocs' {
     BeforeAll {
-        $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
-        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
+        $aiSdlcGates = Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts'
+        if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $script:ScriptFolder '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
         Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-XmlDocs.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-XmlDocs.ps1'
 
         function New-Diff {
             param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string[]]$Added, [int]$Start = 1)
@@ -133,6 +135,6 @@ Describe 'Check-XmlDocs' {
     }
 
     It 'is registered as an advisory C10 gate of the dotnet pack' {
-        (Get-Content (Join-Path $PSScriptRoot '..' 'gates.json') -Raw) | Should -Match '"script": "scripts/Check-XmlDocs.ps1", "clause": "C10", "mode": "Advisory"'
+        (Get-Content (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw) | Should -Match '"script": "scripts/Check-XmlDocs.ps1", "clause": "C10", "mode": "Advisory"'
     }
 }

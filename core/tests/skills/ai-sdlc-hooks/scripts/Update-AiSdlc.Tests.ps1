@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Update-AiSdlc' {
     BeforeAll {
-        $script:Source = Join-Path -Path $PSScriptRoot -ChildPath 'Update-AiSdlc.ps1'
+        $script:Source = Join-Path -Path $script:ScriptFolder -ChildPath 'Update-AiSdlc.ps1'
 
         function apm { }
 
@@ -14,7 +16,7 @@ Describe 'Update-AiSdlc' {
             git -C $root init --quiet
             git -C $root config user.email probe@example.invalid
             git -C $root config user.name probe
-            Copy-Item -LiteralPath $script:Source, (Join-Path $PSScriptRoot 'WindowsLongPaths.ps1'), (Join-Path $PSScriptRoot 'AiSdlcSetup.ps1') -Destination $hooks
+            Copy-Item -LiteralPath $script:Source, (Join-Path $script:ScriptFolder 'WindowsLongPaths.ps1'), (Join-Path $script:ScriptFolder 'AiSdlcSetup.ps1') -Destination $hooks
             Set-Content -LiteralPath (Join-Path $root 'apm.yml') -Value @"
 name: consumer
 dependencies:
@@ -194,7 +196,7 @@ dependencies:
 
     It 'lists the lines of the repository that still use a retired skill name, and changes none of them' {
         $root = New-ConsumerRepo
-        Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Find-RetiredSkillNames.ps1') -Destination (Join-Path $root '.claude' 'skills' 'ai-sdlc-hooks' 'scripts')
+        Copy-Item -LiteralPath (Join-Path $script:ScriptFolder 'Find-RetiredSkillNames.ps1') -Destination (Join-Path $root '.claude' 'skills' 'ai-sdlc-hooks' 'scripts')
         Set-Content -LiteralPath (Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'sync-manifest.json') -Value '{ "retired": { "old-skill": "new-skill" }, "packages": {} }'
         Set-Content -LiteralPath (Join-Path $root 'CLAUDE.md') -Value "Build every change with the ``old-skill`` skill."
         git -C $root add -A

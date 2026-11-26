@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Enable-WindowsLongPath' {
     BeforeAll {
-        . (Join-Path $PSScriptRoot 'WindowsLongPaths.ps1')
+        . (Join-Path $script:ScriptFolder 'WindowsLongPaths.ps1')
     }
 
     BeforeEach {

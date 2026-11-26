@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Invoke-BicepPreflight' {
     BeforeAll {
-        $script:Script = Join-Path $PSScriptRoot 'Invoke-BicepPreflight.ps1'
+        $script:Script = Join-Path $script:ScriptFolder 'Invoke-BicepPreflight.ps1'
 
         function New-BicepRepo {
             param([string[]]$Templates)

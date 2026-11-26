@@ -1,9 +1,11 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Initialize-CodeGraph' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-CodeGraph.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Initialize-CodeGraph.ps1'
         $script:Text = Get-Content -LiteralPath $script:ScriptUnderTest -Raw -Encoding utf8
-        $script:Pinned = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'graphify-version.json') -Raw -Encoding utf8 | ConvertFrom-Json).graphifyVersion
+        $script:Pinned = (Get-Content -LiteralPath (Join-Path $script:ScriptFolder 'graphify-version.json') -Raw -Encoding utf8 | ConvertFrom-Json).graphifyVersion
     }
 
     It 'plans the pinned install by default, and nothing with -Minimal or -SkipGraphify' {

@@ -1,7 +1,9 @@
 #requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'AiSdlcSetup' {
     BeforeAll {
-        . (Join-Path $PSScriptRoot 'AiSdlcSetup.ps1')
+        . (Join-Path $script:ScriptFolder 'AiSdlcSetup.ps1')
         function gh { }
     }
 

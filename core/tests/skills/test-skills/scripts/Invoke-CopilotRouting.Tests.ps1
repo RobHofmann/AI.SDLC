@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Invoke-CopilotRouting' {
     BeforeAll {
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Invoke-CopilotRouting.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Invoke-CopilotRouting.ps1'
         $script:Root = Join-Path ([System.IO.Path]::GetTempPath()) ("copilot-routing-" + [guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory -Path $script:Root -Force | Out-Null
         $script:PromptFile = Join-Path $script:Root 'prompts.md'

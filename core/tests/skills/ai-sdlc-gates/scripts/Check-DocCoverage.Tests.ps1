@@ -1,10 +1,12 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-DocCoverage' {
     BeforeAll {
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
-        Import-Module (Join-Path $PSScriptRoot 'DocCoverage.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-DocCoverage.ps1'
+        Import-Module (Join-Path $script:ScriptFolder 'DocCoverage.psm1') -Force
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-DocCoverage.ps1'
 
         function New-CoverageRepo {
             param([hashtable]$Files = @{}, [hashtable]$Docs, [switch]$NoFunctional)

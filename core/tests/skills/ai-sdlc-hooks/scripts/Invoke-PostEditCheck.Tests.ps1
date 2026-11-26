@@ -1,10 +1,12 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Invoke-PostEditCheck' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Force
         Import-Module (Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Invoke-PostEditCheck.ps1'
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Invoke-PostEditCheck.ps1'
 
         $script:FailingReadingLevel = Join-Path -Path $TestDrive -ChildPath 'reading-fail.ps1'
         Set-Content -Path $script:FailingReadingLevel -Value @'
@@ -242,7 +244,7 @@ if ($Relative -like '*Broken*') { Write-Output "pack check ran on $($Relative -j
 
     Context 'wiring' {
         It 'is registered in the hook entries of the package for Edit and Write' {
-            $settings = Get-AiSdlcHookSettings -From $PSScriptRoot
+            $settings = Get-AiSdlcHookSettings -From $script:ScriptFolder
             $settings | Should -Not -BeNullOrEmpty
             $post = @($settings.hooks.PostToolUse)
             $entry = $post | Where-Object { $_.matcher -eq 'Edit|Write' }
@@ -251,12 +253,12 @@ if ($Relative -like '*Broken*') { Write-Output "pack check ran on $($Relative -j
         }
 
         It 'names only hook scripts that exist in an installed skill' {
-            $settings = Get-AiSdlcHookSettings -From $PSScriptRoot
+            $settings = Get-AiSdlcHookSettings -From $script:ScriptFolder
             $commands = @($settings.hooks.PSObject.Properties.Value | ForEach-Object { $_ } | ForEach-Object { $_.hooks } | ForEach-Object { $_.command })
             $commands | Should -Not -BeNullOrEmpty
             $missing = foreach ($command in $commands) {
                 foreach ($match in [regex]::Matches($command, '\.claude/skills/([^/\s]+)/(\S+\.ps1)')) {
-                    $skill = Find-AiSdlcSkillFolder -Name $match.Groups[1].Value -From $PSScriptRoot
+                    $skill = Find-AiSdlcSkillFolder -Name $match.Groups[1].Value -From $script:ScriptFolder
                     if (-not $skill -or -not (Test-Path -LiteralPath (Join-Path $skill $match.Groups[2].Value))) { $match.Value }
                 }
             }
@@ -264,7 +266,7 @@ if ($Relative -like '*Broken*') { Write-Output "pack check ran on $($Relative -j
         }
 
         It 'finds the dotnet build step through the postEdit entry of dotnet-gates' {
-            $dotnetGates = Find-AiSdlcSkillFolder -Name 'dotnet-gates' -From $PSScriptRoot
+            $dotnetGates = Find-AiSdlcSkillFolder -Name 'dotnet-gates' -From $script:ScriptFolder
             if (-not $dotnetGates) { Set-ItResult -Skipped -Because 'the dotnet pack is not installed here, so there is no dotnet-gates skill to read'; return }
             $gates = Get-Content -LiteralPath (Join-Path $dotnetGates 'gates.json') -Raw | ConvertFrom-Json
             @($gates.postEdit.extensions) | Should -Be @('.cs', '.razor')

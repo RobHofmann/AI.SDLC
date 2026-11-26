@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Install-Gitleaks' {
     BeforeAll {
-        $script:Script = Join-Path $PSScriptRoot 'Install-Gitleaks.ps1'
+        $script:Script = Join-Path $script:ScriptFolder 'Install-Gitleaks.ps1'
 
         function New-FakeRelease {
             param([string]$Platform = 'linux-x86_64')
@@ -114,7 +116,7 @@ Describe 'Install-Gitleaks' {
     }
 
     It 'pins a version and a 64-character digest for every published platform' {
-        $pin = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'gitleaks-version.json') -Raw | ConvertFrom-Json
+        $pin = Get-Content -LiteralPath (Join-Path $script:ScriptFolder 'gitleaks-version.json') -Raw | ConvertFrom-Json
 
         $pin.version | Should -Match '^v\d+\.\d+\.\d+$'
         foreach ($platform in 'linux-x86_64', 'linux-arm64', 'darwin-x86_64', 'darwin-arm64', 'windows-x86_64') {
@@ -123,8 +125,8 @@ Describe 'Install-Gitleaks' {
     }
 
     It 'pins the gitleaks version whose rules gitleaks-rules.json pins' {
-        $pin = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'gitleaks-version.json') -Raw | ConvertFrom-Json
-        $rules = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'gitleaks-rules.json') -Raw | ConvertFrom-Json
+        $pin = Get-Content -LiteralPath (Join-Path $script:ScriptFolder 'gitleaks-version.json') -Raw | ConvertFrom-Json
+        $rules = Get-Content -LiteralPath (Join-Path $script:ScriptFolder 'gitleaks-rules.json') -Raw | ConvertFrom-Json
 
         $rules.configurations.GitleaksOriginal.url | Should -Match ([regex]::Escape("/gitleaks/gitleaks/$($pin.version)/"))
     }

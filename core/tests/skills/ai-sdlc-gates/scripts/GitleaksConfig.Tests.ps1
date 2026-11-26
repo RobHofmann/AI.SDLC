@@ -1,8 +1,10 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'GitleaksConfig' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'GitleaksConfig.psm1') -Force
+        Import-Module (Join-Path $script:ScriptFolder 'GitleaksConfig.psm1') -Force
 
         # A line as sync-manifest.json holds it. The hash is made here, so this file holds no such line itself.
         function New-ManifestLine {

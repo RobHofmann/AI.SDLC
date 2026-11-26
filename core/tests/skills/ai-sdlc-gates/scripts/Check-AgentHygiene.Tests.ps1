@@ -1,9 +1,11 @@
 #requires -Version 7.4
 
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
 Describe 'Check-AgentHygiene' {
     BeforeAll {
-        Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
-        $script:ScriptUnderTest = Join-Path -Path $PSScriptRoot -ChildPath 'Check-AgentHygiene.ps1'
+        Import-Module (Join-Path $script:ScriptFolder 'AiSdlcConfig.psm1') -Force
+        $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Check-AgentHygiene.ps1'
 
         function New-Workspace {
             $root = Join-Path -Path $TestDrive -ChildPath ([System.Guid]::NewGuid().ToString('N'))
@@ -339,7 +341,7 @@ Describe 'Check-AgentHygiene' {
     }
 
     It 'is registered as a blocking gate in gates.json' {
-        (Get-Content (Join-Path $PSScriptRoot '..' 'gates.json') -Raw) | Should -Match '"script": "scripts/Check-AgentHygiene.ps1"[^\r\n]*"mode": "Blocking"'
+        (Get-Content (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw) | Should -Match '"script": "scripts/Check-AgentHygiene.ps1"[^\r\n]*"mode": "Blocking"'
     }
 
     It 'passes a Standing rules section that links the two pages by any relative path' {
