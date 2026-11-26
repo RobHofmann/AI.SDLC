@@ -98,8 +98,9 @@ pwsh tools/Add-AiSdlcConsumer.ps1 -TargetRepo <path>    # set up the AI-SDLC in 
 ```
 
 `repoGates` in `aisdlc.json` lists the gates above but the Pester runner and `Test-Consumers.ps1`, so the
-pre-push hook runs them, unless a passing pre-flight receipt covers the push. `commands.test` runs the
-tests of `core/`, `packs/` and `tools/` in the pre-flight. The pull request workflow,
+pre-push hook runs them, unless a passing pre-flight receipt covers the push. `commands.testChanged`
+runs only the tests a change reaches in a scoped pre-flight, and `commands.test` runs them all with
+`-Full`. The pull request workflow,
 `.github/workflows/pr.yml`, runs them all: the Pester shares, the test consumers and the shared AI-SDLC
 step. That step runs every core, pack and repo gate once. `Test-Consumers.ps1` needs APM, gitleaks and, on Windows, long paths.
 

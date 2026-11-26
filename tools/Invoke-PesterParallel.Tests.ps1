@@ -279,8 +279,81 @@ Describe 'Invoke-PesterParallel' {
 
             $r = Invoke-Changed -Root $root
 
+            $r.Code | Should -Be 3 -Because $r.Output
+            $r.Output | Should -Match 'Not applicable: no changed script'
+        }
+    }
+
+    Context 'the tests that a changed module or data file reaches, with -Changed (#93)' {
+        BeforeAll {
+            function New-ReachTree {
+                $root = New-TestTree @{
+                    'a/Helper.psm1'         = "function Get-X { 1 }"
+                    'a/Wrapper.psm1'        = "Import-Module (Join-Path `$PSScriptRoot 'Helper.psm1')"
+                    'a/Use-Wrapper.ps1'     = "Import-Module (Join-Path `$PSScriptRoot 'Wrapper.psm1')"
+                    'a/Use-Wrapper.Tests.ps1' = "Describe 'w' { It 'w' { 1 | Should -Be 1 } }"
+                    'a/Read-Data.ps1'       = "Get-Content (Join-Path `$PSScriptRoot 'rules.json')"
+                    'a/Read-Data.Tests.ps1' = "Describe 'd' { It 'd' { 1 | Should -Be 1 } }"
+                    'a/Other.ps1'           = "'other'"
+                    'a/Other.Tests.ps1'     = "Describe 'o' { It 'o' { 1 | Should -Be 1 } }"
+                    'a/rules.json'          = '{}'
+                    'a/apm.yml'             = "name: a`nversion: 1.0.0`n"
+                }
+                git -C $root init --quiet
+                git -C $root config --local user.email probe@example.invalid
+                git -C $root config --local user.name probe
+                git -C $root add -A
+                git -C $root commit --quiet -m base --no-verify
+                return $root
+            }
+
+            function Invoke-Reach {
+                param([string]$Root, [string[]]$Extra = @('-Changed'))
+                $run = Invoke-ScriptInProcess -Path $script:Tool -Arguments (@('-RepoRoot', $Root, '-Path', 'a', '-Base', 'HEAD', '-ListOnly') + $Extra)
+                [pscustomobject]@{ Code = $run.ExitCode; Output = $run.Output; Files = @([regex]::Matches($run.Output, '(?m)^Would run: (\S+)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object) }
+            }
+        }
+
+        It 'follows a changed module through the modules and scripts that import it, to their tests' -Tag '#93' {
+            $root = New-ReachTree
+            Add-Content -LiteralPath (Join-Path $root 'a' 'Helper.psm1') -Value '# more'
+
+            $r = Invoke-Reach -Root $root
+
             $r.Code | Should -Be 0 -Because $r.Output
-            $r.Output | Should -Match 'No changed script'
+            $r.Files | Should -Be @('a/Use-Wrapper.Tests.ps1')
+        }
+
+        It 'runs the tests of the scripts that name a changed data file' -Tag '#93' {
+            $root = New-ReachTree
+            Set-Content -LiteralPath (Join-Path $root 'a' 'rules.json') -Value '{ "x": 1 }'
+
+            $r = Invoke-Reach -Root $root
+
+            $r.Files | Should -Be @('a/Read-Data.Tests.ps1')
+        }
+
+        It 'runs no test and exits 3 for a page or an apm.yml that changes only its version' -Tag '#93' {
+            $root = New-ReachTree
+            Set-Content -LiteralPath (Join-Path $root 'a' 'apm.yml') -Value "name: a`nversion: 1.0.1`n"
+            Set-Content -LiteralPath (Join-Path $root 'a' 'notes.md') -Value '# notes'
+
+            $r = Invoke-Reach -Root $root
+
+            $r.Code | Should -Be 3 -Because $r.Output
+        }
+
+        It 'runs every test file with -ChangedOutsideCi in GitHub Actions, and the reached ones outside it' -Tag '#93' {
+            $root = New-ReachTree
+            Add-Content -LiteralPath (Join-Path $root 'a' 'Other.ps1') -Value "'more'"
+
+            $local = Invoke-Reach -Root $root -Extra @('-ChangedOutsideCi')
+            $saved = $env:GITHUB_ACTIONS; $env:GITHUB_ACTIONS = 'true'
+            try { $ci = Invoke-Reach -Root $root -Extra @('-ChangedOutsideCi') }
+            finally { $env:GITHUB_ACTIONS = $saved }
+
+            $local.Files | Should -Be @('a/Other.Tests.ps1')
+            $ci.Files | Should -HaveCount 3
         }
     }
 
