@@ -179,8 +179,8 @@ Describe 'Set-SonarMcpToken' -Tag '84' {
         It 'gives the token file mode 600 and its folder mode 700' -Skip:$IsWindows {
             Invoke-Run | Out-Null
 
-            (Get-Item -LiteralPath $script:TokenFile).UnixFileMode.ToString() | Should -BeExactly 'UserRead, UserWrite'
-            (Get-Item -LiteralPath (Split-Path $script:TokenFile)).UnixFileMode.ToString() | Should -BeExactly 'UserRead, UserWrite, UserExecute'
+            (Get-Item -LiteralPath $script:TokenFile).UnixFileMode | Should -Be ([IO.UnixFileMode]'UserRead, UserWrite')
+            (Get-Item -LiteralPath (Split-Path $script:TokenFile)).UnixFileMode | Should -Be ([IO.UnixFileMode]'UserRead, UserWrite, UserExecute')
         }
 
         It 'replaces the old file content, also when the old token was longer, and keeps mode 600' {
@@ -193,7 +193,7 @@ Describe 'Set-SonarMcpToken' -Tag '84' {
 
             $r.Code | Should -Be 0
             Get-Content -LiteralPath $script:TokenFile -Raw | Should -BeExactly $script:Fake
-            if (-not $IsWindows) { (Get-Item -LiteralPath $script:TokenFile).UnixFileMode.ToString() | Should -BeExactly 'UserRead, UserWrite' }
+            if (-not $IsWindows) { (Get-Item -LiteralPath $script:TokenFile).UnixFileMode | Should -Be ([IO.UnixFileMode]'UserRead, UserWrite') }
         }
 
         It 'keeps the old file content when the answer to the replace question is n' {

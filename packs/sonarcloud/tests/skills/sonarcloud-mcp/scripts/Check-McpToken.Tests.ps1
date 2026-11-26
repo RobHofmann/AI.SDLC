@@ -132,7 +132,7 @@ Describe 'Check-McpToken' {
 
     It 'has the pack send the seven tool groups the skills use, in SONARQUBE_TOOLSETS' -Tag '86' {
         $apm = Join-Path $PSScriptRoot '..' '..' '..' '..' 'apm.yml'
-        if (-not (Test-Path -LiteralPath $apm)) { Set-ItResult -Skipped -Because 'this layout has no apm.yml of the sonarcloud pack'; return }
+        if (-not (Test-Path -LiteralPath $apm) -or -not (Select-String -LiteralPath $apm -Pattern '^name: ai-sdlc-sonarcloud$' -Quiet)) { Set-ItResult -Skipped -Because 'this layout has no apm.yml of the sonarcloud pack'; return }
 
         $line = @(Get-Content -LiteralPath $apm | Where-Object { $_ -match '^\s+SONARQUBE_TOOLSETS:' })
 
