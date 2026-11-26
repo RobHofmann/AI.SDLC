@@ -148,7 +148,7 @@ Describe 'Check-AgentHygiene' {
 
     It 'fails an MCP tool of a connector whose name differs per person: <Tool>' -Tag '89' -ForEach @(
         @{ Tool = 'mcp__claude_ai_Contoso__get_issue' }
-        @{ Tool = 'mcp__1a59c906-04da-521d-bda7-7f71b9f9e01c__read' }
+        @{ Tool = 'mcp__0f8fad5b-d9cb-469f-a165-70867728950e__read' }
     ) {
         New-Agent -Ws $script:Ws -Tools "tools: Read, $Tool"
         $r = Invoke-AgentHygiene -Ws $script:Ws
