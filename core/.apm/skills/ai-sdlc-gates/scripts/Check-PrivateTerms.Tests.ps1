@@ -109,6 +109,15 @@ Describe 'Check-PrivateTerms' {
         $r.Output | Should -Match '(?m)^FIX: '
     }
 
+    It 'scans the tracked files when -RepoRoot is provider-qualified' {
+        $root = New-TermsRepo -Files @{ 'docs/page.md' = "# Page`nBuilt for Fabrikam." }
+
+        $r = Invoke-Check -Root ('Microsoft.PowerShell.Core\FileSystem::' + $root) -Options @{ TermsFile = (New-TermsFile -Lines 'Fabrikam') }
+
+        $r.Code | Should -Be 1
+        $r.Output | Should -Match 'docs/page\.md:2  rule 1'
+    }
+
     It 'matches case-sensitively unless the rule starts with (?i)' {
         $root = New-TermsRepo -Files @{ 'docs/page.md' = 'fabrikam in lower case.' }
 

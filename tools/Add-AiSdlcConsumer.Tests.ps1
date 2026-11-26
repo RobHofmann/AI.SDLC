@@ -482,6 +482,25 @@ Describe 'Add-AiSdlcConsumer' {
         $result.Output | Should -Match 'not a git repository'
     }
 
+    It 'accepts a provider-qualified -TargetRepo, as git needs a plain path' {
+        $target = New-TargetRepo -Remote 'https://github.com/contoso/portal.git'
+
+        $result = Invoke-Tool -Target ('Microsoft.PowerShell.Core\FileSystem::' + $target)
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Not -Match 'not a git repository'
+        Test-Path -LiteralPath (Join-Path $target 'aisdlc.json') -PathType Leaf | Should -BeTrue
+    }
+
+    It 'still refuses AI.SDLC itself when its path is provider-qualified' {
+        $aiSdlcRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).ProviderPath
+
+        $result = Invoke-Tool -Target ('Microsoft.PowerShell.Core\FileSystem::' + $aiSdlcRoot)
+
+        $result.Code | Should -Not -Be 0
+        $result.Output | Should -Match 'The target is AI.SDLC itself'
+    }
+
     It 'writes nothing with -WhatIf' {
         $target = New-TargetRepo -Remote 'https://github.com/contoso/portal.git' -Files @{ 'src/App.sln' = '' }
         $result = Invoke-Tool -Target $target -Extra @('-WhatIf')

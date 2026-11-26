@@ -87,7 +87,8 @@ function Sync-KnowledgeDirectory {
         Write-Host "Knowledge folder: $root is not there, so the agent gets no read access to it. Clone the knowledge repository there to add it."
         return
     }
-    $full = (Resolve-Path -LiteralPath $full).Path.Replace('\', '/')
+    # ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, which breaks the allow rule (#29).
+    $full =(Resolve-Path -LiteralPath $full).ProviderPath.Replace('\', '/')
     $localPath = Join-Path $RepoRoot '.claude' 'settings.local.json'
     $local = [ordered]@{}
     if (Test-Path -LiteralPath $localPath -PathType Leaf) {

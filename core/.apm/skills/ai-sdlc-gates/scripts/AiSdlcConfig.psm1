@@ -161,7 +161,8 @@ function Find-AiSdlcRepoRoot {
     [CmdletBinding()]
     param([string]$StartPath = (Get-Location).Path)
 
-    $dir = (Resolve-Path -LiteralPath $StartPath).Path
+    # ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, and git cannot read that (#29).
+    $dir = (Resolve-Path -LiteralPath $StartPath).ProviderPath
     if (Test-Path -LiteralPath $dir -PathType Leaf) { $dir = Split-Path $dir -Parent }
 
     while ($dir) {
@@ -171,8 +172,8 @@ function Find-AiSdlcRepoRoot {
         $dir = $parent
     }
 
-    $top = git -C (Resolve-Path -LiteralPath $StartPath).Path rev-parse --show-toplevel 2>$null
-    if ($LASTEXITCODE -eq 0 -and $top) { return (Resolve-Path -LiteralPath $top).Path }
+    $top = git -C (Resolve-Path -LiteralPath $StartPath).ProviderPath rev-parse --show-toplevel 2>$null
+    if ($LASTEXITCODE -eq 0 -and $top) { return (Resolve-Path -LiteralPath $top).ProviderPath }
     return $null
 }
 
@@ -241,7 +242,7 @@ function Get-AiSdlcConfig {
 
     $config = Merge-AiSdlcDefaults -Defaults $script:Defaults -Values $values
     $config['packs'] = Get-AiSdlcApmPack -RepoRoot $RepoRoot
-    $config['repoRoot'] = (Resolve-Path -LiteralPath $RepoRoot).Path
+    $config['repoRoot'] = (Resolve-Path -LiteralPath $RepoRoot).ProviderPath
     $config['configFile'] = if ($values) { $file } else { $null }
     return [pscustomobject]$config
 }

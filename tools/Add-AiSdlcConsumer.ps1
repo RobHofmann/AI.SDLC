@@ -177,11 +177,12 @@ function Get-WorkflowCheckName {
 }
 
 if (-not (Test-Path -LiteralPath $TargetRepo -PathType Container)) { throw "The target folder does not exist: $TargetRepo" }
-$TargetRepo = (Resolve-Path -LiteralPath $TargetRepo).Path
+# ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, and git cannot read that (#29).
+$TargetRepo = (Resolve-Path -LiteralPath $TargetRepo).ProviderPath
 $top = git -C $TargetRepo rev-parse --show-toplevel 2>$null
 if ($LASTEXITCODE -ne 0 -or -not $top) { throw "The target is not a git repository: $TargetRepo" }
-$TargetRepo = (Resolve-Path -LiteralPath $top.Trim()).Path
-if ($TargetRepo -eq (Resolve-Path -LiteralPath $aiSdlcRoot).Path) { throw 'The target is AI.SDLC itself. Pass the path of the repository to set up.' }
+$TargetRepo = (Resolve-Path -LiteralPath $top.Trim()).ProviderPath
+if ($TargetRepo -eq (Resolve-Path -LiteralPath $aiSdlcRoot).ProviderPath) { throw 'The target is AI.SDLC itself. Pass the path of the repository to set up.' }
 
 $remote = (git -C $TargetRepo remote get-url origin 2>$null) -join ''
 $githubRepository = ''

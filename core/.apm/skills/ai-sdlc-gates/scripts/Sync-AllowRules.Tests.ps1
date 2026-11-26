@@ -109,6 +109,21 @@ Describe 'Sync-AllowRules' {
         $result.Settings.permissions.Contains('additionalDirectories') | Should -BeFalse
     }
 
+    It 'writes a knowledge folder on a network share (UNC path) without the FileSystem:: prefix' -Skip:(-not $IsWindows) {
+        $knowledge = Join-Path $TestDrive 'Knowledge'
+        New-Item -ItemType Directory -Path $knowledge -Force | Out-Null
+        $unc = '//localhost/' + $knowledge.Substring(0, 1) + '$' + $knowledge.Substring(2).Replace('\', '/')
+        if (-not (Test-Path -LiteralPath $unc)) { Set-ItResult -Skipped -Because 'the admin share is not available'; return }
+        $root = New-AllowRepo -Config ('{ "paths": { "knowledgeRoot": "' + $unc + '" } }') -Settings '{}'
+
+        $result = Invoke-Sync -Root $root
+
+        $result.Code | Should -Be 0
+        $local = Get-Content -LiteralPath (Join-Path $root '.claude' 'settings.local.json') -Raw | ConvertFrom-Json -AsHashtable
+        @($local.permissions.additionalDirectories) | Should -Be @($unc)
+        @($local.permissions.additionalDirectories)[0] | Should -Not -Match 'FileSystem::'
+    }
+
     It 'keeps settings.local.json out of git through .git/info/exclude, once' {
         $root = New-AllowRepo -Config '{ "paths": { "knowledgeRoot": "Knowledge" } }' -Settings '{}'
         New-Item -ItemType Directory -Path (Join-Path $root 'Knowledge') -Force | Out-Null
