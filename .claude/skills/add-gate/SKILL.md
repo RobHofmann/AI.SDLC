@@ -66,7 +66,9 @@ The [layout page](/.claude/skills/ai-sdlc-handbook/references/layout.md) says ho
 
 Write `Check-<Name>.ps1` in the place Step 1 chose: the `scripts/` folder of the owning skill in
 AI.SDLC, or the tools folder. Use the shape every existing gate follows. Read `Check-DocEmDashes.ps1`
-or `Check-ArtifactGraph.ps1` as the model, and do not invent a new shape:
+or `Check-ArtifactGraph.ps1` as the model, and do not invent a new shape. The PowerShell rules for
+every script, such as the help block and the exit-code check after a native call, are in
+[powershell-conventions](/.claude/skills/powershell-conventions/SKILL.md). This step adds the gate shape:
 
 - `#Requires -Version 7`, and a comment-based `.SYNOPSIS` / `.DESCRIPTION` stating the rule and that
   it fails closed.

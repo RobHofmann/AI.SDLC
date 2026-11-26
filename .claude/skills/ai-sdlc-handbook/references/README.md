@@ -191,6 +191,7 @@ A knowledge skill says how we do one thing and links the page that holds the ful
 | `docs-wiki-conventions` | core | The two doc layers as one checked wiki |
 | `adr-conventions` | core | When a decision needs an ADR and how it is written |
 | `code-conventions` | core | The code rules for every language, the severity scale, and the convention skill of each file type |
+| `powershell-conventions` | core | The PowerShell rules: help block, strict mode, exit-code checks, Pester tests and script security |
 | `csharp-generation-smells` | dotnet | The C# and Razor rules where no analyzer looks, and the C# security rules |
 | `test-first-dotnet` | dotnet | Test-first, the story trait, AAA markers, the coverage ratchet |
 | `api-contract-conventions` | dotnet | The wire rules and the spec that moves with its endpoint |

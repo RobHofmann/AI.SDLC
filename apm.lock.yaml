@@ -149,6 +149,10 @@ dependencies:
   - .claude/skills/implement
   - .claude/skills/implement/SKILL.md
   - .claude/skills/implement/references/story-context-template.md
+  - .claude/skills/powershell-conventions
+  - .claude/skills/powershell-conventions/SKILL.md
+  - .claude/skills/powershell-conventions/references/house-style.md
+  - .claude/skills/powershell-conventions/references/not-decided.md
   - .claude/skills/refactor
   - .claude/skills/refactor/SKILL.md
   - .claude/skills/run-preflight
@@ -192,7 +196,7 @@ dependencies:
     .claude/agents/spec-reviewer.md: sha256:dc57ee27f58e06287ae1dd029a2e3393cb2e8c84a80eebc887a7937198a10535
     .claude/agents/substrate-walker.md: sha256:26c1a53c36401f00a9b06466eefe15564587dd18a99ff201991ad0ca36da8499
     .claude/agents/test-analyzer.md: sha256:184f60a0101c3142aeb45e02df48d91b1bb82ef86ab13dc4cf4b3606df3fdaf7
-    .claude/skills/add-gate/SKILL.md: sha256:5d87c43cf9130156bc25f0632e13c5998c4d5e10c201fa40e6a83e03da1d2a12
+    .claude/skills/add-gate/SKILL.md: sha256:f0ca73ecd07c6884c373ea7d1a28da7f43e36832727c56fd233cbbf8a27800ae
     .claude/skills/adopt-docs/SKILL.md: sha256:d8ad916309e7df9c61452adc0885972df2c346069ccbd743fa5851b23e5fdef1
     .claude/skills/adopt-docs/scripts/Get-FolderFacts.ps1: sha256:284192c11c55902839adadee0dfbb8e4a6c6c700f35fba4d31e84128d9d5fb2b
     .claude/skills/adopt-docs/scripts/New-DocCandidate.ps1: sha256:b4640636c67d330220ed71b2a2c26c1801f37bc8a9d8c9eb987ed93561d9017b
@@ -250,13 +254,13 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/data/reading-level-allowlist.txt: sha256:224f9807c308400db0f7f04ea38151cfbcf34c967d2433205cf24d07baa94d19
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
-    .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:00847bce392c1efc3e7deeaf0d755a19ca46c6e661a74a7be9da2d7a0b2745ac
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:ff3965c8b745d802d07f69e587cc0e0df7b2d05a7c9bc7183dfb00ed52456385
+    .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:3432ba4d84597403a8c8b711199e50d94b88e25285ef5435b6e4ea3970ab2459
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:e4e5fa26c8597ec85da2812e1b03d24b1ca2a5fc807bb1da31d70e6ccfb99f96
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
-    .claude/skills/ai-sdlc-handbook/references/README.md: sha256:4eaed699b27185967de377c6bb728a6afe5aa6b77a0f73d307697c79de1eb1ce
+    .claude/skills/ai-sdlc-handbook/references/README.md: sha256:b45ce8a708f54d6521bc44f08f97997bc1f9a950f76e235094a1eecae9271581
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
     .claude/skills/ai-sdlc-handbook/references/autolearn.md: sha256:f24e6f4bc651670e6ca4790a1db9ccb26a168d7b0ed178ffffdb80c06303a216
-    .claude/skills/ai-sdlc-handbook/references/comments.md: sha256:60f0f3b0461ce97088e11354e89d10b7777a594b6adb8f4387774ae28ef6b0d6
+    .claude/skills/ai-sdlc-handbook/references/comments.md: sha256:ca8122804196f4c5c032f0c3352b58657564076ae67d55412ccbcfdc9c2a2f25
     .claude/skills/ai-sdlc-handbook/references/constitution.md: sha256:8e22e7c2c874c3d2dc926b801f97fd01fa856fb024f2a001ca3bda35917fce30
     .claude/skills/ai-sdlc-handbook/references/consumer-own.md: sha256:64321f5c9d8e5b43fcac9c48af14b8336e00cdce1c278aaa593249d084a0b6c8
     .claude/skills/ai-sdlc-handbook/references/context-management.md: sha256:258054a51cc67bed8238cd72bd0c094932e196fdc5d56889a20deec7b7bc525b
@@ -298,7 +302,7 @@ dependencies:
     .claude/skills/capture-learning/SKILL.md: sha256:d814eab2d08cd86a20d48a8940f982456a673db9f63abb19671019cebcb12bc0
     .claude/skills/code-conventions/SKILL.md: sha256:e52af7ac82b3ddd4d1565117157e6868496d0c3ee89545255814a74cabdb75b2
     .claude/skills/code-conventions/references/clean-code.md: sha256:aa32d7a18eae2cb946883392c6b66435ef417cb762f66a128c833a4b776f4941
-    .claude/skills/code-conventions/references/skills-by-file-type.md: sha256:ec669097f7ada2d8de450b5e579756c0d76cf077a483efb7e1e376e79ddae167
+    .claude/skills/code-conventions/references/skills-by-file-type.md: sha256:04c7598aef621621abad72e1907b22f943293319a7e187a59b9fe9f7f882efa0
     .claude/skills/convene-personas/SKILL.md: sha256:365eacf55a39238d1f5c19701294d21bc2896877f1346f6f78b307ecf245ee59
     .claude/skills/docs-wiki-conventions/SKILL.md: sha256:e0903077d2e2b589f23fd69084555246c6bb9f0c43b34e56e9e2ccaf2954e75f
     .claude/skills/grill-me/LICENSE-upstream.md: sha256:b77f224d2bb77cd3bd67ad44a9ae2e845e4eae25085fd225bedd013859965716
@@ -311,6 +315,9 @@ dependencies:
     .claude/skills/handoff/SKILL.md: sha256:edffe7885f364ce968b59a712313679cdd61730e8f53eb81da2b8f34595fa33b
     .claude/skills/implement/SKILL.md: sha256:5eaa0781e32a1d15cedacf3c6ddaddc12464071058198c50cc3aa899080cb3eb
     .claude/skills/implement/references/story-context-template.md: sha256:8ff16c0668d10221aaadf91fd4261c92fb2a3dde723e38d3a56261718f7b9bac
+    .claude/skills/powershell-conventions/SKILL.md: sha256:c7d024dc99e63f93ddf8f0114801c00059109bc8cd4841f6f852787c7525af6d
+    .claude/skills/powershell-conventions/references/house-style.md: sha256:1061fc409c437ce3c87935516edfa08007d50c4b6bf25f30cb749cf27e8e3a53
+    .claude/skills/powershell-conventions/references/not-decided.md: sha256:b671d3ee16665b485760bf4b6ea6646f93a2da36e6e0e67ec3937edd6668fc83
     .claude/skills/refactor/SKILL.md: sha256:64d787c574ae39b1d52ea25efa9ec4f232c9475fe0ea9f13dd2ae7f7189f8732
     .claude/skills/run-preflight/SKILL.md: sha256:2133b9eae51c072958885e737e1be1d1d8b4c79edbd2067282065688ea4f8af6
     .claude/skills/summary/SKILL.md: sha256:a7433afea6888ace80427513e68b4629fce3f1b48ec92313d9d72bdec6c40610
@@ -578,7 +585,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:5d87c43cf9130156bc25f0632e13c5998c4d5e10c201fa40e6a83e03da1d2a12
+  content_hash: sha256:f0ca73ecd07c6884c373ea7d1a28da7f43e36832727c56fd233cbbf8a27800ae
 - kind: project-relative
   target: claude
   value: .claude/skills/adopt-docs
@@ -1127,7 +1134,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:00847bce392c1efc3e7deeaf0d755a19ca46c6e661a74a7be9da2d7a0b2745ac
+  content_hash: sha256:3432ba4d84597403a8c8b711199e50d94b88e25285ef5435b6e4ea3970ab2459
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/sync-manifest.json
@@ -1136,7 +1143,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:ff3965c8b745d802d07f69e587cc0e0df7b2d05a7c9bc7183dfb00ed52456385
+  content_hash: sha256:e4e5fa26c8597ec85da2812e1b03d24b1ca2a5fc807bb1da31d70e6ccfb99f96
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
@@ -1163,7 +1170,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:4eaed699b27185967de377c6bb728a6afe5aa6b77a0f73d307697c79de1eb1ce
+  content_hash: sha256:b45ce8a708f54d6521bc44f08f97997bc1f9a950f76e235094a1eecae9271581
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook/references/artifact-graph.md
@@ -1190,7 +1197,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:60f0f3b0461ce97088e11354e89d10b7777a594b6adb8f4387774ae28ef6b0d6
+  content_hash: sha256:ca8122804196f4c5c032f0c3352b58657564076ae67d55412ccbcfdc9c2a2f25
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook/references/constitution.md
@@ -1649,7 +1656,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:ec669097f7ada2d8de450b5e579756c0d76cf077a483efb7e1e376e79ddae167
+  content_hash: sha256:04c7598aef621621abad72e1907b22f943293319a7e187a59b9fe9f7f882efa0
 - kind: project-relative
   target: claude
   value: .claude/skills/convene-personas
@@ -2118,6 +2125,42 @@ deployments:
   - ./packs/github-issues
   active_owner: ./packs/github-issues
   content_hash: sha256:e145788abba206300e7620377aec42cde965972f3cf3088217185bf3aa6426d6
+- kind: project-relative
+  target: claude
+  value: .claude/skills/powershell-conventions
+  runtime: null
+  scope: project
+  owners:
+  - ./core
+  active_owner: ./core
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/powershell-conventions/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - ./core
+  active_owner: ./core
+  content_hash: sha256:c7d024dc99e63f93ddf8f0114801c00059109bc8cd4841f6f852787c7525af6d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/powershell-conventions/references/house-style.md
+  runtime: null
+  scope: project
+  owners:
+  - ./core
+  active_owner: ./core
+  content_hash: sha256:1061fc409c437ce3c87935516edfa08007d50c4b6bf25f30cb749cf27e8e3a53
+- kind: project-relative
+  target: claude
+  value: .claude/skills/powershell-conventions/references/not-decided.md
+  runtime: null
+  scope: project
+  owners:
+  - ./core
+  active_owner: ./core
+  content_hash: sha256:b671d3ee16665b485760bf4b6ea6646f93a2da36e6e0e67ec3937edd6668fc83
 - kind: project-relative
   target: claude
   value: .claude/skills/refactor

@@ -21,6 +21,7 @@ core.
 | `.cs` | `csharp-generation-smells`, `test-first-dotnet` | dotnet | the .NET analyzers in the build, on the clean code page of `csharp-generation-smells` |
 | `.razor` | `blazor-conventions` | blazor | the .NET build, and the Razor gates of `blazor-conventions` |
 | `.bicep`, `.bicepparam` | `bicep-conventions` | bicep | the Bicep linter, which `bicep build` runs |
+| `.ps1`, `.psm1`, `.psd1` | `powershell-conventions` | core | none in the build |
 | `.yml`, `.yaml` under `.github/workflows/` | `github-actions-conventions` | github | none in the build |
 
 A YAML file outside `.github/workflows/` matches no row, so it gets the shared rules only.
