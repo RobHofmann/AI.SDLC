@@ -29,6 +29,74 @@ Describe 'PesterCoverage' {
 
             @(Get-CoverageTarget -TestFile (Join-Path $folder 'Run-It.Tests.ps1')).Count | Should -Be 1
         }
+
+        It 'returns nothing for a test file under tests whose .apm folder does not exist (#45)' {
+            $root = New-Folder
+            $tests = Join-Path $root 'core' 'tests' 'skills' 'gone' 'scripts'
+            New-Item -ItemType Directory -Path $tests -Force | Out-Null
+
+            @(Get-CoverageTarget -TestFile (Join-Path $tests 'Gone.Tests.ps1')) | Should -HaveCount 0
+        }
+
+        It 'measures the scripts under .apm for a test file under tests, and leaves out the test harness (#45)' {
+            $root = New-Folder
+            $scripts = Join-Path $root 'core' '.apm' 'skills' 'x' 'scripts'
+            $tests = Join-Path $root 'core' 'tests' 'skills' 'x' 'scripts'
+            New-Item -ItemType Directory -Path $scripts, $tests -Force | Out-Null
+            foreach ($name in 'Do-Thing.ps1', 'Helper.psm1') { Set-Content -LiteralPath (Join-Path $scripts $name) -Value '' }
+            foreach ($name in 'Do-Thing.Tests.ps1', 'DocToolTestHarness.psm1') { Set-Content -LiteralPath (Join-Path $tests $name) -Value '' }
+
+            $targets = @(Get-CoverageTarget -TestFile (Join-Path $tests 'Do-Thing.Tests.ps1'))
+
+            $targets | Should -Be @((Join-Path $scripts 'Do-Thing.ps1'), (Join-Path $scripts 'Helper.psm1'))
+        }
+    }
+
+    Context 'Get-ScriptFolderOfTest (#45)' {
+        It 'maps the tests folder of a skill to the .apm folder of the same skill' {
+            $root = New-Folder
+            $tests = Join-Path $root 'packs' 'dotnet' 'tests' 'skills' 'dotnet-gates' 'scripts'
+
+            Get-ScriptFolderOfTest -TestFile (Join-Path $tests 'Run-It.Tests.ps1') | Should -Be (Join-Path $root 'packs' 'dotnet' '.apm' 'skills' 'dotnet-gates' 'scripts')
+        }
+
+        It 'leaves the folder of a test file outside a tests tree as it is' {
+            $root = New-Folder
+            $tools = Join-Path $root 'tools'
+
+            Get-ScriptFolderOfTest -TestFile (Join-Path $tools 'Run-It.Tests.ps1') | Should -Be $tools
+        }
+
+        It 'changes only the tests folder that sits right above the skills folder' {
+            $root = New-Folder
+            $tests = Join-Path $root 'tests' 'core' 'tests' 'skills' 'x' 'scripts'
+
+            Get-ScriptFolderOfTest -TestFile (Join-Path $tests 'Run-It.Tests.ps1') | Should -Be (Join-Path $root 'tests' 'core' '.apm' 'skills' 'x' 'scripts')
+        }
+    }
+
+    Context 'Get-TestFileOfScript (#45)' {
+        It 'maps a script under .apm to the test file in the mirrored tests folder' {
+            $root = New-Folder
+            $script = Join-Path $root 'core' '.apm' 'skills' 'x' 'scripts' 'Run-It.ps1'
+
+            Get-TestFileOfScript -ScriptFile $script | Should -Be (Join-Path $root 'core' 'tests' 'skills' 'x' 'scripts' 'Run-It.Tests.ps1')
+        }
+
+        It 'maps a script outside a skill folder to the test file next to it' {
+            $root = New-Folder
+
+            Get-TestFileOfScript -ScriptFile (Join-Path $root 'tools' 'Run-It.ps1') | Should -Be (Join-Path $root 'tools' 'Run-It.Tests.ps1')
+        }
+
+        It 'is the reverse of Get-ScriptFolderOfTest' {
+            $root = New-Folder
+            $script = Join-Path $root 'packs' 'dotnet' '.apm' 'skills' 'x' 'scripts' 'Run-It.ps1'
+
+            $test = Get-TestFileOfScript -ScriptFile $script
+
+            Join-Path (Get-ScriptFolderOfTest -TestFile $test) 'Run-It.ps1' | Should -Be $script
+        }
     }
 
     Context 'ConvertTo-CoverageLine' {

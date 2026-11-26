@@ -3,7 +3,7 @@
 Describe 'Invoke-PesterParallel' {
     BeforeAll {
         $script:Tool = Join-Path $PSScriptRoot 'Invoke-PesterParallel.ps1'
-        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
 
         function New-TestTree {
             param([hashtable]$Files)
@@ -266,6 +266,75 @@ Describe 'Invoke-PesterParallel' {
 
             $r.Code | Should -Be 0 -Because $r.Output
             $r.Output | Should -Match 'No changed script'
+        }
+    }
+
+    Context 'the test files of changed scripts under .apm, with -Changed (#45)' {
+        BeforeAll {
+            function New-MirrorTree {
+                $root = New-TestTree @{
+                    'core/.apm/skills/x/scripts/Get-One.ps1'        = "'one'"
+                    'core/tests/skills/x/scripts/Get-One.Tests.ps1' = "Describe 'one' { It 'one' { 1 | Should -Be 1 } }"
+                    'core/.apm/skills/x/scripts/Get-Two.ps1'        = "'two'"
+                    'core/tests/skills/x/scripts/Get-Two.Tests.ps1' = "Describe 'two' { It 'two' { 1 | Should -Be 1 } }"
+                    'core/.apm/skills/x/scripts/No-Test.ps1'        = "'none'"
+                    'tools/Get-Tool.ps1'                            = "'tool'"
+                    'tools/Get-Tool.Tests.ps1'                      = "Describe 'tool' { It 'tool' { 1 | Should -Be 1 } }"
+                }
+                git -C $root init --quiet
+                git -C $root config --local user.email probe@example.invalid
+                git -C $root config --local user.name probe
+                git -C $root add -A
+                git -C $root commit --quiet -m base --no-verify
+                return $root
+            }
+
+            function Invoke-MirrorChanged {
+                param([string]$Root, [string[]]$Path)
+                $run = Invoke-ScriptInProcess -Path $script:Tool -Arguments @('-RepoRoot', $Root, '-Path', $Path, '-Changed', '-Base', 'HEAD', '-ListOnly')
+                [pscustomobject]@{ Code = $run.ExitCode; Output = $run.Output; Files = @([regex]::Matches($run.Output, '(?m)^Would run: (\S+)') | ForEach-Object { $_.Groups[1].Value }) }
+            }
+        }
+
+        It 'runs the test file in the mirrored tests folder of a changed script under .apm' {
+            $root = New-MirrorTree
+            Add-Content -LiteralPath (Join-Path $root 'core' '.apm' 'skills' 'x' 'scripts' 'Get-One.ps1') -Value "'more'"
+
+            $r = Invoke-MirrorChanged -Root $root -Path 'core', 'tools'
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Files | Should -Be @('core/tests/skills/x/scripts/Get-One.Tests.ps1')
+        }
+
+        It 'runs every test file when a changed script under .apm has no test file in the tests folder' {
+            $root = New-MirrorTree
+            Add-Content -LiteralPath (Join-Path $root 'core' '.apm' 'skills' 'x' 'scripts' 'No-Test.ps1') -Value "'more'"
+
+            $r = Invoke-MirrorChanged -Root $root -Path 'core', 'tools'
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Output | Should -Match 'core/\.apm/skills/x/scripts/No-Test\.ps1 has no test file'
+            $r.Files | Should -HaveCount 3
+        }
+
+        It 'runs the test file next to a changed script in tools' {
+            $root = New-MirrorTree
+            Add-Content -LiteralPath (Join-Path $root 'tools' 'Get-Tool.ps1') -Value "'more'"
+
+            $r = Invoke-MirrorChanged -Root $root -Path 'core', 'tools'
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Files | Should -Be @('tools/Get-Tool.Tests.ps1')
+        }
+
+        It 'runs a changed test file in the tests folder itself' {
+            $root = New-MirrorTree
+            Add-Content -LiteralPath (Join-Path $root 'core' 'tests' 'skills' 'x' 'scripts' 'Get-Two.Tests.ps1') -Value '# more'
+
+            $r = Invoke-MirrorChanged -Root $root -Path 'core'
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Files | Should -Be @('core/tests/skills/x/scripts/Get-Two.Tests.ps1')
         }
     }
 

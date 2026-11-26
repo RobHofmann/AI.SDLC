@@ -3,7 +3,7 @@
 Describe 'Check-RetiredSkillNames' {
     BeforeAll {
         $script:Gate = Join-Path $PSScriptRoot 'Check-RetiredSkillNames.ps1'
-        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
 
         function New-SharedRepo {
             param([hashtable]$Files, [string]$Retired = "# Demo release`nold-skill new-skill`n")

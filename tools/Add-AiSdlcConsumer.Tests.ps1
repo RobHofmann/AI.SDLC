@@ -3,7 +3,7 @@
 Describe 'Add-AiSdlcConsumer' {
     BeforeAll {
         $script:Tool = Join-Path $PSScriptRoot 'Add-AiSdlcConsumer.ps1'
-        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
         # The script ends without exit, so pwsh -File gives 0 even when its last native command failed.
         # In this process that exit code would stay in $LASTEXITCODE, so this wrapper sets it to 0 after a
         # normal end. The script only ever calls exit 0, and a terminating error still gives 1.

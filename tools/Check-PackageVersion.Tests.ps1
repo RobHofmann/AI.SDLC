@@ -3,7 +3,7 @@
 Describe 'Check-PackageVersion' {
     BeforeAll {
         $script:Tool = Join-Path $PSScriptRoot 'Check-PackageVersion.ps1'
-        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
 
         function New-Repo {
             param([string]$Changelog = "# Changelog`n`n## v2.0.0 - 2026-10-20`n`nStory: #1.`n`n## v1.5.0 - 2026-10-19`n", [hashtable]$Versions = @{ core = '"2.0.0"'; 'packs/github-issues' = '"2.0.0"' })

@@ -400,6 +400,19 @@ Describe 'Check-DocDrift' {
         $r.Output | Should -Match '\[stale\].*GoneTool\.cs'
     }
 
+    It 'does not report a test that AI.SDLC keeps as stale, when the sync manifest lists it in sharedTests (#45)' {
+        $root = New-Repo -Files @{
+            'src/Policy.cs'                                   = 'public static class Policy { public const string Alpha = "a"; }'
+            '.claude/skills/ai-sdlc-gates/sync-manifest.json' = '{ "packages": {}, "retired": {}, "sharedTests": [ "Deny-IncompletePush.Tests.ps1", "DocToolTestHarness.psm1" ] }'
+            'docs/adrs/0001-x.md'                             = "# ADR`n`n``Policy.cs`` holds ``Alpha``. ``Deny-IncompletePush.Tests.ps1`` covers the hook, and ``Gone.Tests.ps1`` covered the old one."
+        }
+
+        $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root }
+
+        $r.Output | Should -Not -Match '\[stale\].*Deny-IncompletePush'
+        $r.Output | Should -Match '\[stale\].*Gone\.Tests\.ps1'
+    }
+
     It 'still reports a broken file reference on an ADR, because a rotted pointer is not a conclusion' {
         $root = New-Repo -Files @{
             'src/Policy.cs'       = 'public static class Policy { public const string Alpha = "a"; }'

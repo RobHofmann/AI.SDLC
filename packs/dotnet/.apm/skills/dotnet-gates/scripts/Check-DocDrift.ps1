@@ -14,6 +14,9 @@
     page never names, and [thin] a project page that names few of its project's public methods, which is
     informational and never drift.
 
+    A test of a shared script that the page names is not [stale] when its name is in sharedTests of the
+    installed sync manifest: AI.SDLC keeps those tests and does not install them.
+
     Advisory by default; -FailOnDrift exits non-zero. What it checks, what it deliberately does not, the
     measured coverage and the alternatives that were tried and rejected are all in
     .claude/skills/dotnet-code-graph/references/code-graph.md, under "Finding documentation that has fallen behind".
@@ -169,6 +172,10 @@ try {
 finally { Pop-Location }
 
 $trackedNames = [System.Collections.Generic.HashSet[string]]::new()
+$syncManifest = Join-Path $RepoRoot '.claude' 'skills' 'ai-sdlc-gates' 'sync-manifest.json'
+if (Test-Path -LiteralPath $syncManifest -PathType Leaf) {
+    foreach ($name in @((Get-Content -LiteralPath $syncManifest -Raw | ConvertFrom-Json).sharedTests)) { if ($name) { [void]$trackedNames.Add([string]$name) } }
+}
 $sourceByName = @{}
 foreach ($path in $tracked) {
     if (-not $path) { continue }
