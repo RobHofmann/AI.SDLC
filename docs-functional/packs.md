@@ -29,7 +29,7 @@ Each pack can bring any of these, and the core picks them up by itself:
 
 | Pack | Install it when | What it adds, in short |
 |---|---|---|
-| `dotnet` | the repository has a .NET solution | C# rules and their security checks, test-first, seven gates, the code graph, a page per project |
+| `dotnet` | the repository has a .NET solution | C# rules and their security checks, an opt-in `.editorconfig` block that lets the build warn on a style break, test-first, seven gates, the code graph, a page per project |
 | `blazor` | the repository has a Blazor app | the Razor and authorization conventions, and two gates on the components; it brings `css` and `javascript` with it |
 | `css` | the repository has style sheets, also without Blazor | the CSS conventions |
 | `javascript` | the repository has browser JavaScript, also without Blazor | the JavaScript conventions |

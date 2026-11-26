@@ -48,6 +48,8 @@ The full rules, with an example and two public sources each, are on
 - A controller action has a `[ProducesResponseType]`, a route `Name` and a kebab-case route.
 - No `#region`. Target-typed `new()`, `[]`, `var`, expression bodies, a file-scoped namespace and the
   `is` pattern; a switch expression with a default arm, also for two cases.
+- A repository can let the build check the short forms with the recommended `.editorconfig` block:
+  [code-style-block.md](references/code-style-block.md) says how to take it.
 
 ## While you write
 
@@ -105,6 +107,7 @@ from input, deserialization and error bodies.
 
 - [House style](references/house-style.md) - the C# house rules, with an example and two sources each.
 - [Not decided](references/not-decided.md) - the C# points of taste, with the default for a new file.
+- [Code style block](references/code-style-block.md) - the recommended `.editorconfig` block and what it leaves out.
 - [C# conventions](references/csharp.md) - language, DI, testing and closed sets.
 - [Code conventions](/.claude/skills/code-conventions/SKILL.md) - the rules for every language.
 - [Clean Code rules](references/clean-code.md) - the analyzer rules of C#.

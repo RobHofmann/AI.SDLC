@@ -168,4 +168,5 @@ lists each one.
 - [The csharp-conventions skill](../SKILL.md) - the short rules a build and a review check.
 - [C# conventions](csharp.md) - errors, logging, DI, closed sets and the test style.
 - [Not decided](not-decided.md) - the C# points of taste, with the default for a new file.
+- [Code style block](code-style-block.md) - the analyzer rules that check these rules in the build.
 - [Code conventions](/.claude/skills/code-conventions/SKILL.md) - the rules for every language, and what to do on a point not decided.
