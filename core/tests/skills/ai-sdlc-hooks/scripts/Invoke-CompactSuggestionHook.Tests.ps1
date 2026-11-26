@@ -446,7 +446,7 @@ Describe 'Invoke-CompactSuggestionHook' {
 
             $entry = @($settings.hooks.PreToolUse | Where-Object { $_.matcher -eq 'Edit|Write' })
             $entry.Count | Should -Be 1 -Because 'the hook runs before an Edit or a Write'
-            @($entry[0].hooks.command) | Should -Contain 'pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-CompactSuggestionHook.ps1'
+            @($entry[0].hooks.command) | Should -Contain 'pwsh -NoProfile -Command "& (Join-Path ([Environment]::GetEnvironmentVariable(''CLAUDE_PROJECT_DIR'') ?? ''.'') ''.claude/skills/ai-sdlc-hooks/scripts/Invoke-CompactSuggestionHook.ps1'')"'
         }
     }
 }

@@ -197,7 +197,7 @@ Describe 'Invoke-AutolearnHook' {
 
             foreach ($eventName in 'UserPromptSubmit', 'Stop') {
                 $commands = @($settings.hooks.$eventName.hooks.command)
-                $commands | Should -Contain 'pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1' -Because "the $eventName event runs the hook"
+                $commands | Should -Contain 'pwsh -NoProfile -Command "& (Join-Path ([Environment]::GetEnvironmentVariable(''CLAUDE_PROJECT_DIR'') ?? ''.'') ''.claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1'')"' -Because "the $eventName event runs the hook"
             }
         }
     }
