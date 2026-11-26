@@ -24,6 +24,27 @@ Each entry names its issue, as `#42`.
 - `tools/Test-Consumers.ps1` fails when an install puts a test file under `.claude/`. It then copies
   the tests next to the installed scripts of each test consumer and runs them, as before.
 - The update pull request says that `.claude/` is a generated copy, reviewed and tested in AI.SDLC.
+- The new core skill `code-conventions` holds the code rules for every language once: reuse before you
+  build, build only what the story needs, two scope cases, the comment rule of C10 and no new warning.
+  It also holds one severity scale, HIGH and MEDIUM, with no LOW. Its page `skills-by-file-type.md`
+  names the convention skill of each file type. `csharp-generation-smells` keeps only the C# and Razor
+  rules, and links to it. The `builder` and `architect` agents preload it (#55).
+- `code-reviewer`, `test-analyzer` and `security-reviewer` move from the dotnet pack to core, and
+  review every language. Each preloads `code-conventions` and reads the rules of each changed file type
+  from its table. The C# checks move into `csharp-generation-smells`, with a new security page, and the
+  Razor checks into `blazor-conventions`. The dotnet pack ships no agent. The names do not change, so a
+  consumer with the dotnet pack gets each agent once, now from core. ADR 0017 records the move (#56).
+- `walk-substrate` runs the new `Find-NearestExample.ps1` for a C# or Razor change. It names the test
+  class of each touched type and the test doubles of its dependencies, or says "none found". The
+  builder reuses, then extends, then writes new code, and reports a `Reused:` line. The plan names
+  where the tests of each type go. A plan that adds product code only for a test seam, and a change
+  where no criterion maps to a test, are on the stop list (#58).
+- The new core agent `spec-reviewer` checks the change against the approved GitHub issue, next to the
+  code review. `implement` reads the issue with `gh` and passes it in. The evidence record keeps the two
+  reports apart, and `refactor` does not run it. ADR 0016 records the decision (#57).
+- `/implement <n> manual` is a step-by-step mode that stops for the person at four points. The light
+  path is gone: every change gets a plan, which opens with an `Approach:` line. The evidence record
+  names the model of each step (#59).
 
 What a consumer does when it takes this release:
 

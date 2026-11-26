@@ -138,6 +138,13 @@ Record the broken edge by name in the attention section; never abort the whole w
 - Test coverage gaps on the touched paths in the test root (`paths.testRoot`, which mirrors
   `paths.sourceRoot`), shown as a pointer, not a
   prescription.
+- Nearest examples, only when the change touches C# or Razor; the script reads no other language.
+  For each type the change touches, its existing test class. Also the test doubles of its
+  dependencies in the same test project, shared ones first. Run
+  `pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1 -Type <Type>, <Type>`, and add
+  `-Dependency <Type>` for a dependency the story adds. Copy its lines into the block as they are,
+  "none found" included: the builder then writes new code on purpose, not because it did not look.
+  For another stack, write "not run: no C# or Razor in this change" instead.
 
 ## Step 3: assemble (attention section first, under ~3KB)
 
@@ -175,6 +182,8 @@ dump gets ignored; a tight block with a sharp attention section gets acted on.
 - Contract drift on touched endpoints, flagged
 - Test coverage gaps on the touched paths
 - Entry points, flow, key files (each with its role), reuse, avoid
+- Nearest examples: per touched type, the test class and the test doubles (shared first), or
+  "none found" with what was searched
 
 ## Not read
 - Files skipped for the read budget, so the caller can ask for them

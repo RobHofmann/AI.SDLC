@@ -46,7 +46,7 @@ for this. That script can change only the title and the description, never a sta
 1. The duplicate scan runs first. `grilling` looks up the facts that the code, the docs, the ADRs and
    the linked work items hold, through a sub-agent.
 2. `grilling` runs as a panel: the `draft-reviewer` agent of the github-issues pack (Product Manager, QA and
-   Analyst), the `architect` agent, and the `security-reviewer` agent of the dotnet pack (Lead). The
+   Analyst), the `architect` agent, and the `security-reviewer` agent (Lead). The
    main thread voices UX, and any role whose agent is not installed.
 3. A fact the substrate holds is looked up, not asked. Each decision goes to the person in rounds,
    each with a recommended answer that "yes" accepts. A round is not a gate: when the person says
@@ -62,10 +62,14 @@ for this. That script can change only the title and the description, never a sta
 3. The branch is created. Then the `builder` agent builds test-first on Sonnet, from the plan and the
    context block. Where it cannot run or cannot write files, the main session builds.
 4. The tests and the local gates run until green.
-5. The review agents of the installed packs review side by side, for example `code-reviewer` and
-   `test-analyzer` of the dotnet pack. `security-reviewer` joins when the diff touches auth, RBAC,
-   outbound calls, JS interop or request logging. Without a pack that ships review agents, the skill
-   reviews the diff itself. Nothing is committed before `wrap-up`, so the diff comes from the working
+5. Two reviews run side by side, each in its own agent, so neither sees the other's reasoning. The
+   spec review of the `spec-reviewer` agent asks whether the change is the right thing. It compares
+   the diff with the approved issue and the governing ADRs. The session reads the issue with `gh` and
+   passes it in, because the agent has no shell. The review agents `code-reviewer` and `test-analyzer`
+   ask whether it is built right. Each one reads the convention skills of the changed files from the
+   table in `code-conventions`. The spec review belongs to `implement`; `refactor` keeps the
+   behaviour, so it runs only the code review. `security-reviewer` joins when the diff touches auth, RBAC, secrets, network access, outbound calls,
+   JS interop or request logging. Where the agents cannot run, the skill reviews the diff itself. Nothing is committed before `wrap-up`, so the diff comes from the working
    tree: `git add --intent-to-add .`, then `git diff $(git merge-base origin/main HEAD)`.
 6. The findings are fixed and checked again.
 7. The evidence record is written. Then `wrap-up` runs, the single owner of the steps that finish a
@@ -97,15 +101,39 @@ These are exceptions, not gates. The loop stops, says why, and waits when:
 2. the change would break a constitution clause, or depart from an ADR or a convention;
 3. the loop does not converge. The same check fails after 3 fix attempts, or there is no progress across
    2 review rounds. Or it would need a fourth review round;
-4. the scope grows beyond the story;
+4. the story itself needs more than the plan names. A finding that has nothing to do with the story is
+   not a stop. The agent drafts a new story for it and leaves the code alone
+   ("Scope: two cases" in [code-conventions](/.claude/skills/code-conventions/SKILL.md));
 5. it needs a secret, a new permission, anything in production, a deployment or a dangerous command.
    A dangerous command is a force push, skipping the hooks, `gh workflow run` or a `gh ... delete`.
    So is a role assignment, a secret in a secret store, a destructive git command, or a script that
    migrates stored data. See [where the gates are enforced](#where-the-gates-are-enforced);
 6. a reviewer finds a HIGH problem that needs a design change;
-7. the pull request loop would need a fourth bot review round, or its wait passes 45 minutes.
+7. the pull request loop would need a fourth bot review round, or its wait passes 45 minutes;
+8. in `implement`, the plan adds product code only so a test can reach it. Examples are a new
+   interface or wrapper with one real user, a public or virtual member, or a constructor parameter
+   that only a test passes. A seam should exist already; ask the person before the code changes shape
+   for a test;
+9. in `implement`, no acceptance criterion maps to a test or a check. Then nothing shows that the
+   change does what the story asks, so the loop opens no pull request and says so.
 
 A new ADR that follows an existing pattern does not stop the loop.
+
+## Step-by-step mode
+
+`/implement <n> manual` runs the same loop, but stops for the person at four points. This is the
+step-by-step mode. It is a test of the loop: the person sees where extra code starts, and corrects it
+at that step. Each stop holds for every change, a small one too: no size rule skips the walk, the plan
+or a stop.
+
+1. After the walk: the person checks the context block, and the nearest examples it names.
+2. After the plan: the person reads the approach, and confirms each seam and where the tests go,
+   before any test is written.
+3. Before the code of each test: the main session builds itself, one test at a time. It shows the
+   failing test and waits before it writes the code that makes it pass.
+4. Before the review fixes: the person sees both review reports and picks what to fix.
+
+Without `manual` the loop runs on its own, and stops only on the stop list above.
 
 ## The evidence record
 
@@ -114,8 +142,11 @@ and holds:
 
 - each acceptance criterion with the test that asserts it;
 - every check result;
-- every review finding, marked fixed or declined with the reason;
+- the spec review and the code review as two separate reports, never merged into one list, each
+  finding marked fixed or declined with the reason;
 - the ADRs written;
+- the model of the session, and the model of each agent step: the walk, the plan, the build and each
+  review;
 - what was not checked, for example "not deployed to dev";
 - whether each review ran in an agent or inline;
 - a **Merge danger** part: the door and the blast radius, as below.
@@ -207,16 +238,17 @@ Copilot CLI and Copilot in VS Code all read that folder. Neither tool promises t
 every hand-off names the fallback in the next sentence:
 
 > Hand the review to the `code-reviewer` agent on Sonnet 5.5 (model `sonnet` in Claude Code,
-> `claude-sonnet-5.5` in Copilot). If you cannot run agents, load the `csharp-generation-smells` skill
-> and do the review yourself.
+> `claude-sonnet-5.5` in Copilot). If you cannot run agents, load the `code-conventions` skill and the
+> convention skills of the changed files, and do the review yourself.
 
 In GitHub Copilot CLI the model in the hand-off is not optional. Its `task` tool refuses an agent whose
 file says `opus` or `sonnet` when the call passes no model, so the agent does not run at all. With
 `claude-opus-5.5` or `claude-sonnet-5.5` passed, it runs on that model.
 
-Some agents come from a pack: `draft-reviewer` from the github-issues pack, and `code-reviewer`,
-`test-analyzer` and `security-reviewer` from the dotnet pack. In a repository without that pack the
-agent is not there, so the skill takes the fallback in the same way.
+One agent comes from a pack: `draft-reviewer` from the github-issues pack. In a repository without
+that pack the agent is not there, so the skill takes the fallback in the same way. The review agents
+`spec-reviewer`, `code-reviewer`, `test-analyzer` and `security-reviewer` are in core, so every
+repository has them.
 
 Every agent is read-only except `builder`, which writes code and tests and nothing else. A reviewer
 that can write is no longer independent. The builder exists so the build step runs on a chosen model,
@@ -237,7 +269,7 @@ Two steps may run side by side only when they are really independent:
 Independent, for example:
 
 - `write-research-summary` and `draw-customer-journey` - different artifacts, no data dependency.
-- `code-reviewer` and `test-analyzer` (dotnet pack) on the same diff - both only read.
+- `code-reviewer` and `test-analyzer` on the same diff - both only read.
 - implementing two separate end-to-end slices of one story.
 
 Dependent, so they run one after the other, for example:

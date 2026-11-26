@@ -10,8 +10,10 @@ Each pack can bring any of these, and the core picks them up by itself:
 
 - **Skills**: commands a person types or internal steps another skill calls, such as `write-api-spec` from the `dotnet` pack,
   and rulebooks an agent reads, such as `bicep-conventions`.
-- **Review agents**: readers that report findings and never edit, such as `code-reviewer` and
-  `security-reviewer` from the `dotnet` pack.
+- **Rules the review agents read**: the core has the review agents `code-reviewer`, `test-analyzer`
+  and `security-reviewer`, so every repository has them. Each one reads the rulebook of the changed
+  files, such as the C# rules of the `dotnet` pack. The core skill `code-conventions` holds the rules
+  for every language and a table of the rulebook of each file type. A new pack adds its row there.
 - **Gates**: checks that run on your machine before a push and again in the pull request workflow.
   The coverage gate of the `dotnet` pack runs in the pre-flight, and in the pull request workflow when a
   test step hands it the coverage. The starter workflow of a new .NET repository does that.
@@ -26,7 +28,7 @@ Each pack can bring any of these, and the core picks them up by itself:
 
 | Pack | Install it when | What it adds, in short |
 |---|---|---|
-| `dotnet` | the repository has a .NET solution | C# rules, test-first, three review agents, seven gates, the code graph, a page per project |
+| `dotnet` | the repository has a .NET solution | C# rules and their security checks, test-first, seven gates, the code graph, a page per project |
 | `blazor` | the repository has a Blazor app | the component and authorization conventions, and two gates on the components |
 | `bicep` | the repository has Bicep templates | the Bicep conventions, the Bicep pre-flight, a page per building block |
 | `github` | the repository lives on GitHub | the pull request helpers, the feedback loop on a pull request, the workflow conventions, and the ruleset on the main branch |

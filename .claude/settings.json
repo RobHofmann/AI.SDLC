@@ -237,7 +237,11 @@
       "Bash(git push --set-upstream origin *)",
       "PowerShell(git push --set-upstream origin *)",
       "Bash(git push -u origin *)",
-      "PowerShell(git push -u origin *)"
+      "PowerShell(git push -u origin *)",
+      "Bash(pwsh -NoProfile -File .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)",
+      "Bash(pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)",
+      "PowerShell(pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)"
     ]
   }
 }

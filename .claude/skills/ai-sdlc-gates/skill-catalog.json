@@ -8,6 +8,7 @@
       "ai-sdlc-handbook",
       "ai-sdlc-hooks",
       "capture-learning",
+      "code-conventions",
       "convene-personas",
       "docs-wiki-conventions",
       "grill-me",
@@ -74,17 +75,17 @@
       "architect",
       "blind-judge",
       "builder",
+      "code-reviewer",
       "docs-reviewer",
-      "substrate-walker"
+      "security-reviewer",
+      "spec-reviewer",
+      "substrate-walker",
+      "test-analyzer"
     ],
     "bicep": [],
     "blazor": [],
     "discovery": [],
-    "dotnet": [
-      "code-reviewer",
-      "security-reviewer",
-      "test-analyzer"
-    ],
+    "dotnet": [],
     "github": [],
     "github-issues": [
       "draft-reviewer"

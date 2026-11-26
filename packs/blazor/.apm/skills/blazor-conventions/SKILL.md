@@ -6,8 +6,8 @@ description: >
   The Blazor component conventions and the two gates that hold them. They cover attributes on their
   own line, no interface over a state class, no inline style block, one document root. It also covers the state
   change event pattern and its singleton trap, and a null result from the API client handled at the
-  call site. Use when writing or reviewing a .razor file or a component's state class, or when a Razor
-  gate failed. Also use when a component subscribes to a state change. Do NOT use for authorization in
+  call site. Then what a component must dispose, and the Razor security rules. Use when writing or
+  reviewing a .razor file or a component's state class, or when a Razor gate failed. Also use when a component subscribes to a state change. Do NOT use for authorization in
   the portal (blazor-authorization), for C# rules that are not about components
   (csharp-generation-smells) or to write a new gate (add-gate).
 ---
@@ -43,6 +43,17 @@ pwsh .claude/skills/blazor-conventions/scripts/Check-RazorAttributePlacement.ps1
   does not fit, write an ADR.
 - **Keep styling in the component's `*.razor.css`.** A scoped stylesheet does not travel with a class
   name copied from another component.
+- **Dispose what the component holds:** a subscription, a `DotNetObjectReference`, a JS module. No
+  state change after dispose, and work that runs once in `OnAfterRender` checks `firstRender`.
+
+## Security
+
+The `security-reviewer` agent reads this section when a change touches a Razor file.
+
+- **Read [blazor-authorization](/.claude/skills/blazor-authorization/SKILL.md) in full** for a change
+  to authorization. It holds the checks on render mode, the router, page attributes and policy handlers.
+- **No raw HTML from input** in a `MarkupString` or through JS interop.
+- **A JS interop call never receives a secret**, such as a token or a connection string.
 
 ## Sources
 

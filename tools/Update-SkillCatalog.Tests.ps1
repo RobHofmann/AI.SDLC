@@ -33,14 +33,15 @@ Describe 'Update-SkillCatalog' {
     }
 
     It 'lists each skill and agent under the package that ships it' {
-        $root = New-PackageRepo -Skills @('core:guide-me', 'core:ai-sdlc-gates', 'dotnet:test-first-dotnet') -Agents @('core:architect', 'dotnet:code-reviewer')
+        $root = New-PackageRepo -Skills @('core:guide-me', 'core:ai-sdlc-gates', 'dotnet:test-first-dotnet') -Agents @('core:architect', 'core:code-reviewer', 'github-issues:draft-reviewer')
 
         Invoke-Tool -Root $root | Out-Null
         $catalog = Get-Content (Join-Path $root 'core/.apm/skills/ai-sdlc-gates/skill-catalog.json') -Raw | ConvertFrom-Json
 
         $catalog.skills.core | Should -Be @('ai-sdlc-gates', 'guide-me')
         $catalog.skills.dotnet | Should -Be @('test-first-dotnet')
-        $catalog.agents.dotnet | Should -Be @('code-reviewer')
+        $catalog.agents.core | Should -Be @('architect', 'code-reviewer')
+        $catalog.agents.'github-issues' | Should -Be @('draft-reviewer')
     }
 
     It 'passes the check right after a write' {

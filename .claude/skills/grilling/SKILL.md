@@ -102,7 +102,7 @@ When two roles pull different ways, ask it as one question with both choices, an
 **The panel runs as agents where it can.** Each panel agent runs on Opus 5.5 (model `opus` in Claude
 Code, `claude-opus-5.5` in Copilot). Hand the Product Manager, QA and Analyst questions to the
 `draft-reviewer` agent (github-issues pack). Hand the Architect questions to the `architect` agent, and the Lead
-questions to the `security-reviewer` agent (dotnet pack). If you cannot run agents, or the pack of an
+questions to the `security-reviewer` agent. If you cannot run agents, or the pack of an
 agent is not installed, voice that persona yourself from the registry. The main thread voices Designer
 / UX. The agents only read; they never write.
 

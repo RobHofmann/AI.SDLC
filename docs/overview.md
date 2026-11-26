@@ -32,7 +32,7 @@ core finds each part by its place or its file name, so a pack never registers it
 | Part | Where in the pack | What the core does with it |
 |---|---|---|
 | Skills | `.apm/skills/<name>/SKILL.md`, workflow or knowledge | Installed to `.claude/skills/`; a workflow skill is a command a person types or an internal step another skill calls (`user-invocable: false`), a knowledge skill is rules an agent reads |
-| Agents | `.apm/agents/<name>.agent.md` | Installed to `.claude/agents/`; a skill hands work to it by name, for example `code-reviewer` in the `dotnet` pack |
+| Agents | `.apm/agents/<name>.agent.md` | Installed to `.claude/agents/`; a skill hands work to it by name, for example `code-reviewer` in core or `draft-reviewer` in the `github-issues` pack |
 | Hooks | `.apm/hooks/<pack>-hooks.json` | APM merges the entries into `.claude/settings.json`; the `dotnet` pack adds the stale-graph stop this way |
 | Gates | `gates` in a skill's `gates.json`: name, script, mode `Blocking` or `Advisory`, args, and `clause`: a clause id, a rule family such as `AI-SDLC`, or left out, and then the runner shows the package name | `Invoke-LocalGates.ps1` runs them in the push hook, the pull request workflow and a local run |
 | Setup step | `setup` in `gates.json`, a script | `Install-AiSdlc.ps1` runs it once per clone, for example the .NET restore or the Graphify install |

@@ -189,7 +189,8 @@ A knowledge skill says how we do one thing and links the page that holds the ful
 | `ai-sdlc-hooks` | core | The hooks and the git hooks, and why one refused a step |
 | `docs-wiki-conventions` | core | The two doc layers as one checked wiki |
 | `adr-conventions` | core | When a decision needs an ADR and how it is written |
-| `csharp-generation-smells` | dotnet | The ways generated C# and Razor drift from the conventions where no analyzer looks |
+| `code-conventions` | core | The code rules for every language, the severity scale, and the convention skill of each file type |
+| `csharp-generation-smells` | dotnet | The C# and Razor rules where no analyzer looks, and the C# security rules |
 | `test-first-dotnet` | dotnet | Test-first, the story trait, AAA markers, the coverage ratchet |
 | `api-contract-conventions` | dotnet | The wire rules and the spec that moves with its endpoint |
 | `dotnet-gates` | dotnet | The gates the dotnet pack adds |
@@ -220,9 +221,10 @@ the model of the session is. Claude Code, Copilot CLI and Copilot in VS Code all
 | `blind-judge` | core | Lead | `opus` | `test-skills` Layer 2 |
 | `builder` | core | Developer | `sonnet` | the test-first build step of `implement` |
 | `draft-reviewer` | github-issues | Product Manager, QA, Analyst | `opus` | `grilling` and `/convene-personas` panels; blind review of every Checkpoint Alpha draft |
-| `code-reviewer` | dotnet | Lead, Developer | `sonnet` | the review step; `refactor`; `update-constitution` check mode |
-| `test-analyzer` | dotnet | QA | `sonnet` | the review step of `implement` and `refactor` (a bug fix from `fix-bug` reaches it inside `implement`) |
-| `security-reviewer` | dotnet | Lead | `opus` | the review step when auth, RBAC, outbound calls, JS interop or request logging move; `grilling` and `/convene-personas` panels |
+| `spec-reviewer` | core | Product Manager, QA | `opus` | the review step of `implement`, next to the code review; not `refactor` |
+| `code-reviewer` | core | Lead, Developer | `sonnet` | the review step; `refactor`; `update-constitution` check mode |
+| `test-analyzer` | core | QA | `sonnet` | the review step of `implement` and `refactor` (a bug fix from `fix-bug` reaches it inside `implement`) |
+| `security-reviewer` | core | Lead | `opus` | the review step when auth, RBAC, secrets, network access, outbound calls, JS interop or request logging move; `grilling` and `/convene-personas` panels |
 
 Why each agent uses its model, and which model to pick for a skill, is in
 [pattern.md](pattern.md#the-model-of-each-step). Sonnet is enough for the main session, because the
@@ -291,9 +293,10 @@ sized to how much depth it needs.
   gates, the analyzer rules, the tests and coverage, and gitleaks. So you catch failures without the
   push-and-wait round-trip. One core gate, `Check-PrivateTerms.ps1`, blocks the terms of a private list
   in a public repository. The list itself lives outside the repository.
-- **Coding conventions** - [comments.md](comments.md) and [language.md](language.md) hold the conventions
-  every repository shares. Each stack pack carries its own conventions in the `references/` folder of its
-  knowledge skills, for example `csharp-generation-smells` for C# or `bicep-conventions` for Bicep. The
+- **Coding conventions** - the `code-conventions` skill holds the code rules every repository shares,
+  with [comments.md](comments.md) and [language.md](language.md). Its table of skills by file type names
+  the convention skill of each stack pack, for example `csharp-generation-smells` for C# or
+  `bicep-conventions` for Bicep. The
   create-phase skills follow them and several gates enforce them.
 - **Docs wiki, and whether it is true** - [docs-wiki.md](docs-wiki.md). Two different questions, both
   checked by script. *Reachable*: `Check-DocsWiki.ps1` lints orphans, broken relative links and

@@ -5,34 +5,21 @@ units:
 
 # dotnet
 
-The `dotnet` pack adds review agents, development rules, code graph tools, and gates for .NET repositories.
+The `dotnet` pack adds development rules, code graph tools, and gates for .NET repositories. It ships no agent.
 
 ## What it contains
 
-### Review agents
+### Rules the review agents read
 
-Review agents read changes and report findings. They never edit files or return approval or blocking verdicts.
+The review agents `code-reviewer`, `test-analyzer` and `security-reviewer` live in [core](core.md). Each one reads the convention skills of the changed files from the table of file types in `code-conventions`. For a `.cs` file that table names `csharp-generation-smells` and `test-first-dotnet`.
 
-- `code-reviewer` reviews C# and Razor changes for defects that gates may miss. It lives at `packs/dotnet/.apm/agents/code-reviewer.agent.md`.
-- `security-reviewer` reviews .NET changes for security defects. It lives at `packs/dotnet/.apm/agents/security-reviewer.agent.md`.
-- `test-analyzer` checks whether tests prove the acceptance criteria and changed behavior. It lives at `packs/dotnet/.apm/agents/test-analyzer.agent.md`.
-
-`code-reviewer` checks async blocking, missing using statements, swallowed exceptions, Blazor lifecycle issues, and JavaScript interop clean-up.
-
-It also checks for parallel service paths, code rot and generated code smells. Code rot is a fix on top of an earlier fix, or a second implementation of one job.
-
-`code-reviewer` and `test-analyzer` run on `sonnet`, and `security-reviewer` runs on `opus`.
-
-`security-reviewer` checks access control, `[AllowAnonymous]`, Blazor in-circuit authorization, RBAC scope, SSRF, injection, and not safe deserialization.
-
-It also checks secrets or personal data in logs and internal details exposed through `ProblemDetails`.
-
-`test-analyzer` checks story-tagged tests, acceptance criterion coverage, changed behavior, error paths, and tests without assertions.
+- `csharp-generation-smells` holds the C# review checks, such as async and resources, errors through the pipeline and closed sets. Its `## Security` section and its page `references/security.md` hold the C# security checks: access control, Graph and ARM scope, queries built from input, deserialization and error bodies.
+- `test-first-dotnet` holds the C# test rules that `test-analyzer` reads. Examples are one test class per type, the Story trait and real assertions. It also asks for a mock for every constructor dependency, and no controller test for an action that only forwards a call.
 
 ### Development skills
 
 - `api-contract-conventions` defines REST wire rules at `packs/dotnet/.apm/skills/api-contract-conventions/SKILL.md`.
-- `csharp-generation-smells` defines C# and Razor generation rules at `packs/dotnet/.apm/skills/csharp-generation-smells/SKILL.md`.
+- `csharp-generation-smells` defines the C# and Razor rules at `packs/dotnet/.apm/skills/csharp-generation-smells/SKILL.md`. The rules for every language, such as reuse before you build, live once in `code-conventions` of core.
 - `dotnet-code-graph` covers the local Graphify code graph at `packs/dotnet/.apm/skills/dotnet-code-graph/SKILL.md`.
 - `dotnet-gates` covers .NET gates and local run steps at `packs/dotnet/.apm/skills/dotnet-gates/SKILL.md`.
 - `nuget-vulnerability-remediation` covers vulnerable NuGet package fixes at `packs/dotnet/.apm/skills/nuget-vulnerability-remediation/SKILL.md`.
@@ -147,11 +134,7 @@ The code graph tools use a pinned Graphify CLI version.
 
 The test guidance uses xUnit, Moq, and AutoFixture. Coverage uses a recorded baseline and includes an 80% target for new code in SonarCloud.
 
-The `implement`, `refactor`, and `fix-pr-feedback` flows use the review agents and development skills at their review steps. A bug fix from `fix-bug` reaches them inside `implement`.
-
-`update-constitution` uses `code-reviewer` in check mode.
-
-The `grilling` and `convene-personas` panels use `security-reviewer` as the Lead voice.
+The `implement`, `refactor`, and `fix-pr-feedback` flows load the development skills at their build and review steps, through the table of file types in `code-conventions`. A bug fix from `fix-bug` reaches them inside `implement`.
 
 ## Related
 

@@ -18,8 +18,8 @@ The `core` package provides shared AI-SDLC agents, skills, gates, hooks, workflo
 
 ### Agents
 
-Agents live under `core/.apm/agents/`. Each names its model: `opus` for `architect` and `blind-judge`,
-`sonnet` for `builder`, `docs-reviewer` and `substrate-walker`. `Check-AgentHygiene.ps1` allows only
+Agents live under `core/.apm/agents/`. Each names its model: `opus` for `architect`, `blind-judge`,
+`security-reviewer` and `spec-reviewer`, `sonnet` for `builder`, `code-reviewer`, `docs-reviewer`, `substrate-walker` and `test-analyzer`. `Check-AgentHygiene.ps1` allows only
 `opus`, `sonnet` or `inherit`. An `opus` agent names the model it runs on in a `Model:` line of its
 output. GitHub Copilot can run an agent on another model, and that line shows it. In Copilot the hand-off
 must pass the model, such as `claude-opus-5.5`: without it, the `task` tool does not start an agent whose
@@ -31,6 +31,11 @@ tools: they read issues with `gh` or the GitHub MCP read tools.
 - `builder` builds a planned change test-first: it writes the tests and the code, and runs the build and the tests. It never commits, pushes or opens a pull request.
 - `blind-judge` scores two task outputs without knowing which output used the tested skill. It reads and scores, but never edits.
 - `docs-reviewer` checks both documentation layers, their links, related ADRs, and documentation gates. It runs gates only in check mode.
+- `spec-reviewer` checks whether a change is the right thing. It compares the diff with the approved GitHub issue and the governing ADRs, and reports missing, unasked and wrong behaviour, each with the criterion quoted. It reads criteria under `✅ Success Criteria` and `✅ Acceptance Criteria`. It has no shell, so `implement` reads the issue with `gh` and passes it in. `refactor` does not run it. See [ADR 0016](../adrs/0016-a-spec-review-runs-next-to-the-code-review.md).
+- `code-reviewer` reviews a change in any language against `code-conventions` and the convention skill of each changed file type. It looks for code no criterion asks for, swallowed failures and a second copy next to existing code. It also checks code rot, closed sets and comments that break C10.
+- `test-analyzer` checks whether the tests of a change prove each acceptance criterion, and flags tests that assert nothing or are surplus. It reads the test rules of each changed file type.
+- `security-reviewer` reviews a change in any language for security defects, and reads the `## Security` section of each changed file type's skill. It also voices the Lead in the `grilling` and `convene-personas` panels.
+- The three review agents moved here from the dotnet pack, so a repository with only core has them. They use the one severity scale of `code-conventions`: HIGH and MEDIUM. `update-constitution` uses `code-reviewer` in check mode.
 - `substrate-walker` gathers issue, architecture, spec, code, caller, reuse, and recent-change context. It reads but never writes. It reads issues with `gh` (read-only use) and greps the knowledge folder next to the repository docs when it exists.
 
 ### Skills
@@ -44,8 +49,8 @@ steps of the core are `walk-substrate`, `run-preflight` and `grilling`.
 Workflow skills include:
 
 - `guide-me` reports the current lifecycle phase and next step. Without an issue, it reads the skill descriptions and names the command that fits a situation.
-- `walk-substrate` gathers context before implementation. It is an internal step.
-- `implement` runs the development flow from a refined story to a tested pull request.
+- `walk-substrate` gathers context before implementation. It is an internal step. For a change to C# or Razor it runs `scripts/Find-NearestExample.ps1`. That script names the test class of each touched type and the test doubles of its dependencies. When it finds nothing, it says "none found" and what it searched, and it always exits 0.
+- `implement` runs the development flow from a refined story to a tested pull request. Every change gets a plan, a one-line fix too, and the plan opens with an `Approach:` line. `/implement <n> manual` is the step-by-step mode. It stops for the person after the walk and after the plan. It also stops before the code of each test and before the review fixes. The evidence record names the model of the session and of each agent step.
 - `refactor` improves code structure without changing observable behaviour. Like `implement`, it starts only from a refined issue: the `refined` label and a `size:<n>` label.
 - `wrap-up` updates tests, documentation, issues, and gates after code works. Then it commits and runs the pre-flight on that commit. It works only on a branch named with an issue number (`42-short-name`).
 - `run-preflight` runs local pull-request checks before a push. It is an internal step that `wrap-up` calls.
@@ -57,6 +62,10 @@ Documentation and decision skills include:
 - `docs-wiki-conventions` defines rules for documentation layers, links, style, and checks.
 - `write-adr` creates MADR-style records in `docs/adrs/`. Started by a person, it ends like `write-prd`.
 - `adr-conventions` defines the repository format and rules for architecture decisions.
+
+Code skills include:
+
+- `code-conventions` holds the code rules for every language once. Examples are reuse before you build, build only what the story needs, two scope cases, the comment rule of C10 and no new warning. It also holds one severity scale for every reviewer and the plan: HIGH and MEDIUM, with no LOW. Its page `references/skills-by-file-type.md` is a table that names the convention skill of each file type and its pack. A new language adds one row there. The `builder`, `architect`, `code-reviewer`, `test-analyzer`, `security-reviewer` and `spec-reviewer` agents preload it. See [ADR 0017](../adrs/0017-the-shared-code-rules-and-the-review-agents-live-in-core.md).
 - `update-constitution` creates, changes, or checks the project constitution. Started by a person, a create or a change ends like `write-prd`.
 
 Framework support skills include:
@@ -213,7 +222,7 @@ Keep both documentation layers and a page for each unit. The documentation cover
 
 `implement`, `fix-bug` (github-issues pack), and `refactor` use `walk-substrate` before implementation.
 
-`implement` uses `architect` to write the plan and `builder` to build it test-first. `write-docs` uses `docs-reviewer` after documentation updates. Each hand-off names the model in both spellings: `opus` or `sonnet` for Claude Code, `claude-opus-5.5` or `claude-sonnet-5.5` for Copilot.
+`implement` uses `architect` to write the plan and `builder` to build it test-first. The plan names the test class each touched type's tests go in (`Tests go in:`), and the builder reports what it reused (`Reused:`). The order is reuse, then extend, then new code, as `code-conventions` says. Two things stop the loop. One is a plan that adds product code only for a test seam. The other is a change where no acceptance criterion maps to a test or a check. `write-docs` uses `docs-reviewer` after documentation updates. Each hand-off names the model in both spellings: `opus` or `sonnet` for Claude Code, `claude-opus-5.5` or `claude-sonnet-5.5` for Copilot.
 
 `wrap-up` uses tests, both documentation layers, issues, and gates to complete a change. It is the single owner of the docs, the ADR check, the story and pull request contract, the lessons step, the commit and the pre-flight. `implement`, `refactor`, `fix-pr-feedback` and `adopt-docs` call it. `write-prd`, `write-pipeline` of the github pack, and `write-hypothesis`, `draw-customer-journey` and `write-research-summary` of the discovery pack call it for the repository files they write. `write-platform-note` of the knowledge pack writes to the knowledge repository instead, through its own branch and pull request there. `write-adr`, `update-constitution`, `write-docs`, `add-gate`, `capture-learning` and `write-api-spec` of the dotnet pack call it only when a person starts them. When `wrap-up` calls `write-docs`, `write-adr` or `capture-learning` itself, they write the files and do not call it back. None of them runs those steps itself; they push the commit it made. It stops before its first step on `main`, `master` or a branch with no issue number.
 
@@ -243,5 +252,6 @@ The PowerShell tests use Pester.
 - [tools](../tools.md) - the scripts that check this repository and set up a consumer.
 - [github](github.md) - the pack that opens the pull requests the gates check.
 - [dotnet](dotnet.md) - the largest pack, which builds on the core gates.
+- [ADR 0017](../adrs/0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) - why the shared code rules and the review agents live in core.
 - [Own skills, agents and hooks](../../core/.apm/skills/ai-sdlc-handbook/references/consumer-own.md) - the handbook page on what a consumer adds itself.
 - [Index](../index.md) - every page of this layer.

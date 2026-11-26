@@ -21,6 +21,8 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0013: Docs that span projects live in a knowledge repository](./adrs/0013-docs-that-span-projects-live-in-a-knowledge-repository.md) - Each repository documents itself in two layers of markdown (ADR 0008).
 - [ADR 0014: Every rule has one source of truth](./adrs/0014-every-rule-has-one-source-of-truth.md) - The core clauses lived in two places.
 - [ADR 0015: The tests of a shared package live outside the installed package](./adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md) - A shared script kept its Pester test next to it, in `<package>/.apm/skills/<skill>/scripts/`.
+- [ADR 0016: A spec review runs next to the code review](./adrs/0016-a-spec-review-runs-next-to-the-code-review.md) - The review step of `implement` asks whether a change is built right.
+- [ADR 0017: The shared code rules and the review agents live in core](./adrs/0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) - The code rules that hold in every language lived inside `csharp-generation-smells` of the dotnet pack.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General
@@ -34,7 +36,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [blazor](./packages/blazor.md) - The `blazor` package provides checks and guidance for portal authorization and Blazor component conventions.
 - [core](./packages/core.md) - The `core` package provides shared AI-SDLC agents, skills, gates, hooks, workflow guidance, and documentation tools.
 - [discovery](./packages/discovery.md) - The `discovery` pack provides skills for research synthesis, customer journey mapping, and evidence-based hypothesis framing during discovery.
-- [dotnet](./packages/dotnet.md) - The `dotnet` pack adds review agents, development rules, code graph tools, and gates for .NET repositories.
+- [dotnet](./packages/dotnet.md) - The `dotnet` pack adds development rules, code graph tools, and gates for .NET repositories.
 - [github-issues](./packages/github-issues.md) - The `github-issues` package supports GitHub issue creating, updates, triage, review, conventions, and PR contract checks.
 - [github](./packages/github.md) - The `github` package supports opening, updating, checking, and reviewing pull requests on GitHub, and the GitHub Actions workflows of a repository.
 - [knowledge](./packages/knowledge.md) - The `packs/knowledge` unit holds the skills for the notes on how a platform behaves.

@@ -16,8 +16,8 @@ description: >
 
 A portal with page authorization should have its design recorded in an ADR in the ADR folder
 (`paths.adrFolder` in aisdlc.json). Find that ADR and read it before you change anything in this area;
-the rest of this skill assumes you have. The `security-reviewer` agent loads it when it reviews a
-diff that touches the files below. `implement`, `refactor` and `fix-pr-feedback` load it
+the rest of this skill assumes you have. The `security-reviewer` agent of core reads it when it
+reviews a diff that touches the files below. `implement`, `refactor` and `fix-pr-feedback` load it
 themselves when they review a security-relevant diff without agents.
 
 ## When it applies
