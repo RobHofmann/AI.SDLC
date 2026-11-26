@@ -102,7 +102,10 @@ the body, the labels (kind, priority and size among them), the links and the com
 6. **Check for a duplicate.** Search for issues on the same topic (`gh issue list --state all --search`,
    with `--json` kept small). Prefer a link over a new issue.
 7. **Draft the triage.** Draft a dated comment that starts with `Triage YYYY-MM-DD`. It holds what was
-   and was not reproduced, with the loop command and the branch. It also holds the class, the impact
+   and was not reproduced, with the loop command and the branch. It also holds the investigation: the
+   times, the log counts and the run names. The body of the bug gets only the conclusion, within the
+   section budgets of `github-issue-conventions`. The triage comment is the evidence of the triage, so it keeps its
+   `Triage YYYY-MM-DD` form. It also holds the class, the impact
    and priority, any duplicate, and the next step. For a bug, put an estimate in it, and say that a person adds the
    `refined` label and the size label before the fix starts. Propose a label change (kind, priority); do
    not apply it in silence. When the triage shows the title or the body is now wrong, bring

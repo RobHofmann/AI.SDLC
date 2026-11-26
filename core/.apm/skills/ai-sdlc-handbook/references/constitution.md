@@ -13,7 +13,7 @@ code. A detailed convention belongs on a conventions page, and a single decision
 hook, skill, code review. The status is active, or deferred with the planned target. A deferred check
 is tracked debt, not a wish.
 
-**Version:** 1.0
+**Version:** 1.1
 
 ## Clause IDs
 
@@ -183,14 +183,18 @@ clause in each session.
 - **Statement:** On its own judgement, an agent never marks an acceptance criterion done. It also never
   moves a work item to a done or checked state, or resolves a flagged conflict. It shows the evidence (a
   test name, a response, a gate result) for a human to confirm. It does not approve or merge a pull request
-  either. Opening a pull request is a request for review, not a sign-off, and needs no confirmation.
+  either. Opening a pull request is a request for review, not a sign-off, and needs no confirmation. The
+  agent opens every pull request as a draft, and only the person publishes it (ADR 0024). The one status
+  move the agent makes is the in-review label, on the person's publish and GitHub's state (ADR 0022).
+  The merge closes the issue through `Fixes #n`.
 - **Rationale:** An agent can be wrong or make things up, so a green check it set itself is not
   evidence. Keeping the sign-off with a human keeps the acceptance record trustworthy. The two human
   checkpoints in [orchestration.md](orchestration.md) apply the same boundary to the whole flow.
 - **Enforcement:** skill - active (the verification and build skills report evidence and never mark a
-  criterion done); code review - active.
-- **Short form:** An agent never signs off for a human; it shows the evidence, and a PR is a request for
-  review.
+  criterion done). Hook - active: `Deny-AgentMerge.ps1` refuses an agent command that merges a pull
+  request or publishes a draft. Code review - active.
+- **Short form:** An agent never signs off for a human; it shows the evidence. A PR is a draft request
+  for review, and only the person publishes it.
 
 ## C10: Code is documented, and a comment says why
 
@@ -233,7 +237,8 @@ clause in each session.
 - **Statement:** Every text a repository keeps is English. So is every record an agent writes into a
   work item tracker, a wiki, a pull request or git. All of it is written at the reading level in
   [language.md](language.md). Sentences are at CEFR B2: one main idea, at most one extra part, never
-  over 25 words. Words are at CEFR B1. The exact name of a thing is a fact and stays as it is; the team records
+  over 25 words. Words are at CEFR B1. The text also follows the ASD-STE100 writing rules in
+  [language.md](language.md). The exact name of a thing is a fact and stays as it is; the team records
   such names in the reading-level allow list (`paths.readingLevelAllowlist` in `aisdlc.json`). Quoted
   text is copied as it is. Chat with an agent follows the language the user writes in, at the same
   level.
@@ -244,7 +249,8 @@ clause in each session.
 - **Enforcement:** `.claude/skills/ai-sdlc-gates/scripts/Check-DocReadingLevel.ps1` (blocking gate in
   `Invoke-LocalGates.ps1` and in the pull request workflow) - active. Skill - active: the
   `## Communication` part of `AGENTS.md` and the `## Standing rules` block of every skill state the rule.
-  Code review - active for work items, wiki pages and chat, which no gate reaches.
+  Code review - active for work items, wiki pages and chat, which no gate reaches. It also checks the
+  ASD-STE100 rules, because no gate checks them except the 25-word limit.
 - **Short form:** Everything we keep is English, at CEFR B2 sentences and B1 words.
 
 ## C12: One source of truth

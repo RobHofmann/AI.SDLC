@@ -17,6 +17,8 @@ It reviews draft Checkpoint Alpha documents before a person sees them. It checks
 
 It checks other documents against their node templates. These checks cover evidence, issue anchors, lifecycle headers, and graph links.
 
+It fails a section over its budget and an issue with more than 5 criteria (8 in the old form). It also fails a criterion that names a file, a class, a setting or a rule ID. It also fails an evidence comment that holds a requirement or a decision ([ADR 0023](../adrs/0023-a-story-has-six-sections-with-budgets-at-most-5-criteria-and-ste100.md)).
+
 The agent also asks the Product Manager, QA, and Analyst questions in the `grilling` and `convene-personas` panels. It only reads and reports.
 
 ### Skills
@@ -26,7 +28,15 @@ The agent also asks the Product Manager, QA, and Analyst questions in the `grill
 - `github-issue-conventions` lives at `packs/github-issues/.apm/skills/github-issue-conventions/SKILL.md`. It defines the conventions for drafting, sizing, reviewing, and updating issues. It covers the labels `refined`, `to-refine` and `spike`, a size as a `size:<n>` label, and an epic as a parent issue with sub-issues.
 - `write-story` lives at `packs/github-issues/.apm/skills/write-story/SKILL.md`. It creates or drafts issues and derives testable acceptance criteria. It is also the single writer for an existing issue. Its update mode brings an issue in line with what shipped. Other skills call it to record PR links, ADR backlinks, issue links, comments and labels. It also splits an epic into vertical slices, as sub-issues.
 
+- `move-story` lives at `packs/github-issues/.apm/skills/move-story/SKILL.md`. It adds the in-review label to the open stories of a pull request. It does that only when the person says the draft is published and GitHub shows it is no longer a draft ([ADR 0022](../adrs/0022-a-published-pull-request-puts-its-stories-in-review-with-a-label.md)). It never moves a closed issue, and a failed move is a warning. `Get-StoryMovePlan.ps1` plans the move and writes nothing; `Invoke-StoryMove.ps1` creates the label when it is missing, adds it and reads it back.
+
 The story template lives at `packs/github-issues/.apm/skills/write-story/references/story-template.md`.
+
+### The issue form
+
+A new issue has six sections, goal first: goal, background, approach, value, acceptance criteria, and risks. Each section has a budget: at most 3 bullets for the background, the value and the risks, and at most 5 for the approach. A story, bug or task has at most 5 criteria under `✅ Acceptance Criteria`; an epic and a spike have no limit. An issue with the heading `✅ Success Criteria` has the old form, with an ELI5 and at most 8 criteria. Every reader accepts both forms, and an old issue keeps its form unless a person asks.
+
+The body holds conclusions only. Test results, probes and measurements go in one evidence comment per run, which starts with `Evidence YYYY-MM-DD HH:mm`. The one other dated comment is the docs impact of `grilling`, which starts with `📚 Docs impact YYYY-MM-DD HH:mm` and says per docs page what it will say. `write-story` posts both with `gh issue comment` after the Checkpoint Alpha go. The walk carries them into the context block: evidence as context, the docs impact as docs scope. Update mode rewrites a section the agent wrote, and only adds to text a person wrote.
 
 The package configuration lives at `packs/github-issues/apm.yml`.
 
@@ -54,11 +64,13 @@ Its test is `packs/github-issues/tests/skills/check-pr-contract/scripts/Invoke-I
 
 ## Dependencies
 
-The issue skills use the repository named in `tracker.repository` of `aisdlc.json`, or the git remote when it is empty.
+The issue skills use the repository named in `tracker.repository` of `aisdlc.json`, or the git remote when it is empty. The in-review label is `tracker.inReviewLabel`, `in-review` by default.
 
 `github-issue-conventions` covers the issue key (`#42`, or `owner/repo#42` across repositories), the labels, sizes, sub-issues, duplicate scans, and readiness checks.
 
 The `draft-reviewer` agent uses `github-issue-conventions` when it checks a draft.
+
+`core/tests/skills/ai-sdlc-gates/scripts/StoryTemplate.Tests.ps1` checks the six headings of the template, the budgets and the limit of 5 criteria. It also checks that the readers name both criteria headings.
 
 `check-pr-contract` reads the PR and substrate. `wrap-up` runs it inside `run-preflight`, before the pull request opens.
 

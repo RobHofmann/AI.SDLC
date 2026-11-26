@@ -24,6 +24,7 @@ reader, a person or an agent, then finds a true page for each part instead of gu
 ## What to know
 
 - A draft is a proposal from an agent. Nothing reaches a page until a person has checked it against the code.
+- The questions before a story end with a docs impact: which pages change, and what each will say. The build of the story writes those pages, and checks each line against the code first.
 - A page that covers a unit under another name says so in its front matter (`unit: <path>`).
 - A unit that nobody uses can be left out, with the reason in the pull request.
 

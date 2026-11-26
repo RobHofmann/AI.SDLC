@@ -40,7 +40,8 @@ The non-negotiable ordering is: **gather, triage, fix, learn, then resolve.** Th
 comes through `implement`. This skill runs as a loop until the bot findings are gone ([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)).
 Load the `github-pull-requests` skill first for the repository and the `gh` traps.
 
-1. **Gather.** Bot reviews start on their own on GitHub when the repository has them; the loop asks for none.
+1. **Gather.** `New-PullRequest.ps1` asked Copilot for the first review when it opened the draft. Other bot
+   reviews start on their own on GitHub when the repository has them.
 2. **Wait.** `pwsh .claude/skills/github-pull-requests/scripts/Get-PullRequestFeedback.ps1 -PullRequestId <pr> -Wait -ReturnOnReview`. Run it again
    while it reports `timeout`. It returns `ready` when the checks of the head commit are done.
    The result holds every unresolved thread tagged `sonarcloud`, `gitleaks`, `bot` or `human`, any failed check with its run id,
@@ -54,13 +55,18 @@ Load the `github-pull-requests` skill first for the repository and the `gh` trap
    before `wrap-up`, without `-ReturnOnReview`, and run it again while it reports `timeout`. It returns when the checks of the old commit are done,
    which is most often already the case. Fix a failed check together with the review findings. Then
    run `wrap-up` on the fixes; it captures the lessons from the open review, commits and runs the
-   pre-flight. Push, update the PR description, then answer each thread
+   pre-flight. Push, update the PR description, then ask Copilot again with
+   `pwsh .claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1 -Id <pr>`. It asks only when 20
+   or more lines changed since the commit Copilot last reviewed. Run it only after your own push. Then answer each thread
    with `pwsh .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1 -PullRequestId <pr> -ThreadId <id> -Message "..."`.
    Add `-Resolve` for a thread tagged `sonarcloud` or `gitleaks`. The script never resolves a thread a person started (C09): it replies, and that person resolves it.
    A thread tagged `bot` comes from another bot, so it is treated like a person's thread: reply without `-Resolve` (with it, the script exits 1 and writes nothing).
 5. **Repeat from 1** while a check failed, a bot thread is open, or the last bot review raised new
    threads. The loop ends at Checkpoint Bravo when three things hold. The checks pass, no bot thread is open, and
-   the bot review of the latest commit raised nothing new. Human threads that are answered but still open are left
+   the bot review of the latest commit raised nothing new. When the person then says the draft is published,
+   run `move-story` (github-issues pack): it adds the in-review label to the open stories of the pull request. When the last push was too small for a new
+   Copilot review, no review of the latest commit comes, so the third point holds. Copilot may give no
+   review on a draft within the wait. Then say so in the evidence record, and end the loop on the first two points. Human threads that are answered but still open are left
    for the reviewer.
 
 **Stop and ask** on the stop list in orchestration.md. Also stop and ask in these cases:

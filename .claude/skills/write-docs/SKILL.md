@@ -88,6 +88,13 @@ the handbook page `docs-wiki.md` for the full rule. The points below are how thi
    page says what deployments do for a user; the technical page says how they work. A page that
    describes only the latest change to an area nobody documented reads like a changelog. This is a
    rule for this skill, not a gate: `Check-DocCoverage.ps1` knows only units, not areas.
+   **A docs impact is scope.** `grilling` may hand you a docs impact, or the context block may carry
+   the `📚 Docs impact` comment of the issue. Each page in it is in scope. Write what it says the page
+   will say, in the voice of that page, and check it against the code like any other claim (step 6).
+   A line the code does not support is a finding to report, not a line to write. One exception: a
+   correction that the person confirmed in a docs impact replaces the old text. That is a glossary word
+   or a claim that grilling found stale. A second version next to the old one would leave the page in
+   conflict with itself. Everything else stays add-only.
 3. **Map to docs.** For each affected surface, find the doc(s) that describe it in both layers.
    `paths.sourceDocMap` in aisdlc.json maps each source folder to its doc folders. For example:
    - API endpoint -> the API page for that resource (technical); behaviour change -> the lifecycle or

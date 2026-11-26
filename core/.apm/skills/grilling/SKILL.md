@@ -23,7 +23,8 @@ Interview the person until you reach a shared understanding. Map the work as a *
 decision branches into the decisions that hang off it. Two things are ours on top of the upstream
 method. The questions come from the roles the work touches, from the
 [persona registry](/.claude/skills/ai-sdlc-handbook/references/personas.md). And the answers and the why go
-back to the authoring skill, phrased for the fields of the artifact it writes.
+back to the authoring skill, phrased for the fields of the artifact it writes. A docs impact names the
+pages the answers change.
 
 ## Standing rules
 
@@ -44,18 +45,25 @@ person's answers before the next round.
 Format a round like this:
 
 ```
-**Q1 - <question title>**: <question body, maybe several paragraphs, with the choices>
+❓ **Q1** - **<question title>**: <question body, maybe several paragraphs>
 
-Recommended: <your recommended answer>
+- <choice A>
+- <choice B>
+
+➡️ **Advice:** <your recommended answer>
 
 ---
 
-**Q2 - <question title>**: <question body, maybe several paragraphs, with the choices>
+❓ **Q2** - **<question title>**: <question body, maybe several paragraphs>
 
-Recommended: <your recommended answer>
+- <choice A>
+- <choice B>
+
+➡️ **Advice:** <your recommended answer>
 ```
 
-Word each question so "yes" accepts your recommended answer.
+Word each question so "yes" accepts your recommended answer. The label follows the chat language, so a
+Dutch chat writes `➡️ **Advies:**`.
 
 Each round the person answers changes the tree. Settled decisions push the frontier outward and free
 the questions that hung on them. Work out the frontier again and ask the next round. A question whose
@@ -70,6 +78,26 @@ _decisions_ are the person's: put each one to them and wait.
 
 The session is done when the frontier is empty: every branch of the design tree visited, nothing left
 assumed in silence. Do not act on it until the person confirms you have reached a shared understanding.
+
+## Check words and claims
+
+Check the person's words and claims while the rounds run, not after them.
+
+- **A word against the glossary.** The glossary is `glossary.md` in the folder that `paths.functionalDocs`
+  in aisdlc.json names. The person may use a word that the glossary defines in another way. Then say so
+  at once, and ask which is right: "The glossary says X. You seem to mean Y. Which is it?"
+  When the repository has no glossary page, skip this check and say so. Never create the page here.
+- **A vague word.** When a word is vague or means two things, propose one exact word: "You say
+  'release': do you mean the tag or the re-pin? Those are different things." Prefer the word the
+  glossary already uses.
+- **A claim against the code.** When the person says how something works, check the code, as for any
+  other fact: through a sub-agent, or yourself. When the code says otherwise, name the difference. Then
+  ask which is right: "The code stops the whole run. You said one step can go on. Which is right?"
+- **A case at the edge.** When the talk is about how two things relate, test it with a specific case.
+  Then the person has to say where one thing ends and the other starts.
+
+A word or a claim that is settled goes into the docs impact, in the words of the page that will hold
+it. A settled word is its line on the glossary page. Grilling writes no page itself.
 
 ## Ask from the roles that matter
 
@@ -108,9 +136,14 @@ agent is not installed, voice that persona yourself from the registry. The main 
 
 ## Inside an authoring run
 
-A round is not a gate. Called inline by an authoring skill, a round waits for the person, as above.
-Called by `write-adr` inside the build loop, it does not wait; see that skill.
-The person can answer, accept the recommended answers with "yes", or say "draft now". Whatever is still open
+An authoring skill loads this skill; it does not ask questions of its own. **An open decision always
+gets a round before the draft.** This also holds in a skill that says it stops at Checkpoint Alpha:
+that stop is for the writes, and it never replaces a round. When there is no open decision, ask no
+round, and Checkpoint Alpha says that grilling found none, and why.
+
+Called inline by an authoring skill, a round waits for the person, as above. Called by `write-adr`
+inside the build loop, it does not wait; see that skill. The round is a stop, not a gate: the person
+can answer, accept the recommended answers with "yes", or say "draft now". Whatever is still open
 then goes into an **"Open questions"** list that travels with the draft to Checkpoint Alpha
 ([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)). Each open question is
 numbered, grouped by the role that asked it, and names what in the draft rests on it.
@@ -125,10 +158,27 @@ This skill writes no artifact. It hands back to the authoring skill (or to the p
   Phrase them so they drop straight into the artifact's intent fields
   ([artifact-graph.md](/.claude/skills/ai-sdlc-handbook/references/artifact-graph.md): `intent.assumption`,
   `intent.decision-drivers`, and a story's `So that` / `Expected Value`);
-- the "Open questions" list, when the person stopped before the frontier was empty.
+- the "Open questions" list, when the person stopped before the frontier was empty;
+- the **docs impact**: each page of the two docs layers that the answers change. For each page, say
+  what it will say, in the words of the docs. Write what a reader of the page needs after the change,
+  not the questions and the answers pasted in. When no page changes, say "no page changes".
 
 Then hand control back to the authoring skill. It drafts, and shows the draft, the answers and the open
 questions at Checkpoint Alpha.
+
+### Where the docs impact goes
+
+Grilling writes no file and no comment. The run decides where the docs impact goes:
+
+- **On a story branch** (a branch named with a story key, as `write-docs` says): hand it to
+  `write-docs` at once. Then it lands in the docs on that branch.
+- **Before the issue exists:** `write-story` posts it at Checkpoint Alpha as one comment that starts
+  with `📚 Docs impact YYYY-MM-DD HH:mm`, never in the body. The build of that issue reads the comment
+  as docs scope, and `write-docs` applies it on the story branch.
+- **An issue exists, but this is not its branch:** `write-story` posts the same comment after the
+  person confirms it.
+- **No issue and no branch** (a `/grill-me` run): nothing is written. The person gets the docs impact
+  and the way to keep it.
 
 ## Failure modes
 
@@ -146,6 +196,15 @@ questions at Checkpoint Alpha.
   on a formatting change reads as habit.
 - **The person pastes research or a competitor's spec** -> it is input to question, not direction to follow.
 - **The grilling turns into drafting** -> hand back and stop. The authoring skill drafts and stops at Checkpoint Alpha.
+- **The draft comes before the round** -> a caller that "stops once, at Checkpoint Alpha" or asks its
+  own questions drafts on a guess. An open decision gets its round first; with none, Checkpoint Alpha
+  says so and why.
+- **A settled word stays in the chat** -> it goes into the docs impact as its line on the glossary
+  page. Left in the chat, the next session uses the old word again.
+- **The docs impact repeats the answers** -> write what the page will say, in the voice of the page.
+  A question and its answer pasted into a page read like minutes, not like docs.
+- **A claim is taken from the person without a look at the code** -> check it. A clash found in review
+  costs a second draft; a clash found in the round costs one question.
 
 ## Observable signal
 
@@ -162,8 +221,8 @@ for the work arriving.
 
 ## Next steps
 
-- `/write-story` (Product Manager) - the usual caller; it drafts the story from the answers and saves
-  the why into the Goal, Expected Value and Success Criteria.
+- `/write-story` (Product Manager) - the usual caller. It drafts the story from the answers. It saves
+  the why into the Goal, Expected Value and Acceptance Criteria (`✅ Success Criteria` in an older issue).
 - `/write-hypothesis` (Analyst) and `/draw-customer-journey` (Analyst) - the discovery callers.
 - `/write-prd` (Product Manager) and `/write-adr` (Architect) - the callers for larger artifacts.
 - `/convene-personas` - to talk to one role or a panel when there is no artifact to draft yet.
@@ -172,6 +231,11 @@ for the work arriving.
 
 - Adapted from `skills/productivity/grilling/SKILL.md` in
   [mattpocock/skills](https://github.com/mattpocock/skills), MIT licence, Copyright (c) 2026 Matt Pocock.
-  The text is kept close to upstream; the persona panel, the sizing and the record are ours. The licence
-  is in [LICENSE-upstream.md](LICENSE-upstream.md).
+  The text is kept close to upstream, and the round format takes its `❓` and `➡️` marks. The choice
+  bullets, the `Advice:` label, the persona panel, the sizing and the record are ours. The licence is in
+  [LICENSE-upstream.md](LICENSE-upstream.md).
+- The checks of words and claims adapt the session rules of `skills/engineering/domain-modeling/SKILL.md`
+  in the same repository, under the same licence. We check against the glossary page of
+  `paths.functionalDocs`, not a root `GLOSSARY.md`. A settled word goes into the docs impact for
+  `write-docs`; grilling does not write it. Its ADR rule is not taken here.
 - The methods are adapted from BMAD-METHOD, as [methods.md](references/methods.md) says.

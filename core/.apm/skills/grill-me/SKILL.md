@@ -25,12 +25,26 @@ Two rules hold in every run of every skill, and each is defined in one place:
 - **Autolearn.** A lesson from this session that would change a future run goes to its durable home,
   proposed and never written in silence. See [autolearn](/.claude/skills/ai-sdlc-handbook/references/autolearn.md).
 
+## The docs impact
+
+`grilling` ends with a docs impact: each docs page the answers change, and what it will say. Where it
+goes depends on where you run it:
+
+- **On a story branch**, hand it to `write-docs`. Run on its own, that skill shows the diffs before it
+  writes.
+- **With an issue but not on its branch**, `write-story` posts it as one `📚 Docs impact YYYY-MM-DD HH:mm`
+  comment on the issue after you confirm. The build of that issue applies it.
+- **With no issue and no branch**, write nothing. Show the docs impact, and tell the person how to keep
+  it: run `/write-story` for a docs story, which posts the docs impact as its comment.
+
 ## Failure modes
 
 - **There is no artifact in view** -> that is fine. `grilling` still records the answers and the why in
   chat, and the person decides what to write.
 - **The interview turns into drafting** -> stop when the frontier is empty and the person confirms. To
   write the result, run the authoring skill that owns it.
+- **The docs impact is written with no issue and no branch** -> nothing is written then. A docs change
+  needs a story key for its branch, so the person starts a docs story with `/write-story`.
 
 ## Observable signal
 
@@ -42,6 +56,7 @@ is still open.
 - `/write-story` (Product Manager), `/write-prd` (Product Manager) or `/write-adr` (Architect) - write
   the settled plan into the artifact that keeps it.
 - `/convene-personas` - to talk to one role in a free conversation instead.
+- `/write-docs` (Tech Writer) - on a story branch, apply the docs impact.
 
 ## Sources
 

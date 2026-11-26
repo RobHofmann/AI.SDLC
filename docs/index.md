@@ -24,6 +24,9 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0016: A spec review runs next to the code review](./adrs/0016-a-spec-review-runs-next-to-the-code-review.md) - The review step of `implement` asks whether a change is built right.
 - [ADR 0017: The shared code rules and the review agents live in core](./adrs/0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) - The code rules that hold in every language lived inside `csharp-generation-smells` of the dotnet pack.
 - [ADR 0018: The SonarCloud MCP token lives in a user store](./adrs/0018-the-sonarcloud-mcp-token-lives-in-a-user-store.md) - The `sonarqube` MCP server of the sonarcloud pack sends the header `Bearer ${AISDLC_SONAR_MCP_TOKEN}`.
+- [ADR 0022: A published pull request puts its stories in review with a label](./adrs/0022-a-published-pull-request-puts-its-stories-in-review-with-a-label.md) - A GitHub issue has two states, open and closed.
+- [ADR 0023: A story has six sections with budgets, at most 5 plain criteria, and follows ASD-STE100](./adrs/0023-a-story-has-six-sections-with-budgets-at-most-5-criteria-and-ste100.md) - An issue had seven sections with no size limit, and a dev-ready story could add an eighth.
+- [ADR 0024: The agent opens a draft pull request, and the person publishes it](./adrs/0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md) - The agent opened every pull request as ready for review.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General

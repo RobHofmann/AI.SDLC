@@ -49,8 +49,13 @@ for this. That script can change only the title and the description, never a sta
    Analyst), the `architect` agent, and the `security-reviewer` agent (Lead). The
    main thread voices UX, and any role whose agent is not installed.
 3. A fact the substrate holds is looked up, not asked. Each decision goes to the person in rounds,
-   each with a recommended answer that "yes" accepts. A round is not a gate: when the person says
-   "draft now", the rest go into an "Open questions" list in the draft, answered at Checkpoint Alpha.
+   each with a recommended answer that "yes" accepts. An open decision always gets a round before the
+   draft, also in a skill that stops at Checkpoint Alpha. When there is none, Checkpoint Alpha says so
+   and why. A round is a stop, not a gate. When the person says "draft now", the rest go into an "Open
+   questions" list in the draft, answered at Checkpoint Alpha. `grilling` ends with a docs impact. On a
+   story branch, `write-docs` applies it. When the issue is created, or when it exists but the run is on
+   another branch, `write-story` posts it after the confirmation as one `📚 Docs impact YYYY-MM-DD HH:mm`
+   comment. With no issue and no branch, nothing is written.
 4. After drafting, `draft-reviewer` reviews the draft blind, whatever its type, so the author does
    not grade its own draft. Without the github-issues pack, the author checks the draft against its node
    template and says so at Checkpoint Alpha.
@@ -215,6 +220,23 @@ the author, and the owner cannot approve it. So the ruleset on the default branc
 request and the required status checks, with zero required approvals. The owner's merge is the
 approval. The hook `Deny-AgentMerge` refuses `gh pr merge` and a `gh api` call to a merge endpoint, so
 the agent never merges.
+
+The agent opens every pull request as a draft, with a `## Before you publish` block at the top of the
+description (ADR 0024). Only the person publishes it. At Checkpoint Bravo the person checks the draft,
+clicks Ready for review, then merges. The same hook refuses `gh pr ready` and the
+`markPullRequestReadyForReview` mutation, so the agent never publishes a draft.
+
+The loop asks Copilot for a review at set moments, with `Request-CopilotReview.ps1`. It asks right
+after it opens the pull request. It asks again after its own push, when 20 or more lines changed since
+the commit that Copilot last reviewed. A smaller push asks for no new round. A failed request is a warning.
+
+## The issue status
+
+The agent moves the status of an issue in one way only: the in-review label (`tracker.inReviewLabel`,
+`in-review` by default), through the `move-story` skill of the github-issues pack (ADR 0022). It adds
+the label when the person says the draft is published and GitHub shows the pull request open and no
+longer a draft. It never moves a closed issue, and a failed move is a warning. The merge closes the
+issue through `Fixes #n`; the agent never closes or reopens an issue.
 
 ## The pull request feedback loop
 

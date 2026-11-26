@@ -5,6 +5,7 @@ BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\
 Describe 'Update-PullRequest' {
     BeforeAll {
         $script:ScriptUnderTest = Join-Path -Path $script:ScriptFolder -ChildPath 'Update-PullRequest.ps1'
+        $script:BlockHeading = '## Before you publish'
 
         function Invoke-Helper {
             param([hashtable]$Parameters)
@@ -25,12 +26,26 @@ Describe 'Update-PullRequest' {
             return [string[]]$list
         }
 
+        # A fake gh. The read-back echoes the last body file an edit received, so it matches what was sent.
+        # It starts with an old body. -ViewBody changes what the read-back shows; it receives the state.
         function New-Invoker {
-            param([hashtable]$State, [string]$Title = 'T', [string]$Description = "## Summary`n`n* one")
+            param([hashtable]$State, [string]$Title = 'T', [bool]$IsDraft = $true, [scriptblock]$ViewBody)
+            $State.Edits = [System.Collections.Generic.List[object]]::new()
+            $State.EditCount = 0
+            $State.Calls = [System.Collections.Generic.List[string]]::new()
+            $State.Body = 'old body'
             return {
                 param($ghArgs)
-                if ($ghArgs[1] -eq 'edit') { $State.Edits.Add((ConvertTo-Recorded -GhArgs $ghArgs)); return '' }
-                return ([ordered]@{ number = 7; title = $Title; body = $Description } | ConvertTo-Json)
+                $State.Calls.Add(([string[]]$ghArgs) -join ' ')
+                if ($ghArgs[1] -eq 'edit') {
+                    $State.Edits.Add((ConvertTo-Recorded -GhArgs $ghArgs))
+                    $State.EditCount++
+                    $index = [array]::IndexOf($ghArgs, '--body-file')
+                    if ($index -ge 0) { $State.Body = Get-Content -LiteralPath $ghArgs[$index + 1] -Raw }
+                    return ''
+                }
+                $body = if ($ViewBody) { & $ViewBody $State } else { $State.Body }
+                return ([ordered]@{ number = 7; title = $Title; body = $body; isDraft = $IsDraft } | ConvertTo-Json)
             }.GetNewClosure()
         }
     }
@@ -40,7 +55,7 @@ Describe 'Update-PullRequest' {
     }
 
     It 'passes only the repository, the title and the description to gh pr edit' {
-        $state = @{ Edits = [System.Collections.Generic.List[object]]::new() }
+        $state = @{}
         Invoke-Helper -Parameters @{ Id = 7; Title = 'T'; Description = "## Summary`n`n* one"; GhInvoker = (New-Invoker -State $state) } | Out-Null
 
         $state.Edits[0][0..2] | Should -Be @('pr', 'edit', '7')
@@ -49,8 +64,8 @@ Describe 'Update-PullRequest' {
     }
 
     It 'passes a multi-line description as one body file' {
-        $state = @{ Edits = [System.Collections.Generic.List[object]]::new() }
-        Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n`n* one"; GhInvoker = (New-Invoker -State $state) } | Out-Null
+        $state = @{}
+        Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n`n* one"; GhInvoker = (New-Invoker -State $state -IsDraft $false) } | Out-Null
 
         $args0 = $state.Edits[0]
         $idx = [array]::IndexOf($args0, '--body-file')
@@ -58,8 +73,51 @@ Describe 'Update-PullRequest' {
         $args0 | Should -Not -Contain '--title'
     }
 
+    It 'reads the pull request before the edit when a description is passed' {
+        $state = @{}
+        Invoke-Helper -Parameters @{ Id = 7; Description = 'new text'; GhInvoker = (New-Invoker -State $state) } | Out-Null
+
+        $state.Calls[0] | Should -BeLike 'pr view 7 *--json number,url,title,body,isDraft'
+        $state.Calls[1] | Should -BeLike 'pr edit 7 *'
+    }
+
+    It 'puts the Before you publish block at the top of the description of a draft' {
+        $state = @{}
+        Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n`n* one"; GhInvoker = (New-Invoker -State $state -IsDraft $true) } | Out-Null
+
+        $state.Body | Should -BeLike "$($script:BlockHeading)*"
+        $state.Body | Should -BeLike "*click Ready for review.`n`n## Summary`n`n* one"
+    }
+
+    It 'holds the block exactly once on a draft, even when the given description already holds it' {
+        $state = @{}
+        Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n`n* one"; GhInvoker = (New-Invoker -State $state -IsDraft $true) } | Out-Null
+        $first = $state.Body
+
+        Invoke-Helper -Parameters @{ Id = 7; Description = ($first + "`n`n* more"); GhInvoker = (New-Invoker -State $state -IsDraft $true) } | Out-Null
+
+        ([regex]::Matches($state.Body, [regex]::Escape($script:BlockHeading))).Count | Should -Be 1
+        $state.Body | Should -BeLike "$($script:BlockHeading)*"
+        $state.Body | Should -BeLike '*## Summary*'
+    }
+
+    It 'passes the description as given on a published pull request' {
+        $state = @{}
+        Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n`n* one"; GhInvoker = (New-Invoker -State $state -IsDraft $false) } | Out-Null
+
+        $state.Body | Should -BeExactly "## Summary`n`n* one"
+        $state.Body | Should -Not -BeLike "*$($script:BlockHeading)*"
+    }
+
+    It 'never passes a draft or ready flag to gh' {
+        $state = @{}
+        Invoke-Helper -Parameters @{ Id = 7; Title = 'T'; Description = 'new text'; GhInvoker = (New-Invoker -State $state -IsDraft $true) } | Out-Null
+
+        @($state.Calls | Where-Object { $_ -match '--draft|--ready|pr ready' }).Count | Should -Be 0
+    }
+
     It 'changes the title alone and keeps the description' {
-        $state = @{ Edits = [System.Collections.Generic.List[object]]::new() }
+        $state = @{}
         $pr = Invoke-Helper -Parameters @{ Id = 7; Title = 'Show the owner'; GhInvoker = (New-Invoker -State $state -Title 'Show the owner') }
 
         $state.Edits[0] | Should -Not -Contain '--body-file'
@@ -70,15 +128,21 @@ Describe 'Update-PullRequest' {
         { Invoke-Helper -Parameters @{ Id = 7; GhInvoker = { '{}' } } } | Should -Throw '*Nothing to change*'
     }
 
-    It 'refuses a description over 65536 characters and never calls gh' {
-        $state = @{ Edits = [System.Collections.Generic.List[object]]::new() }
+    It 'refuses a description over 65536 characters and never edits' {
+        $state = @{}
         { Invoke-Helper -Parameters @{ Id = 7; Description = ('x' * 65537); GhInvoker = (New-Invoker -State $state) } } | Should -Throw '*rejects more than 65536*'
         $state.Edits.Count | Should -Be 0
     }
 
+    It 'refuses an empty or whitespace-only description on a draft, though the block would make it non-empty' {
+        $state = @{}
+        { Invoke-Helper -Parameters @{ Id = 7; Description = "  `n "; GhInvoker = (New-Invoker -State $state -IsDraft $true) } } | Should -Throw '*empty or whitespace-only*'
+        $state.Edits.Count | Should -Be 0
+    }
+
     It 'accepts a description line that starts with a dash' {
-        $state = @{ Edits = [System.Collections.Generic.List[object]]::new() }
-        { Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n- a bullet"; GhInvoker = (New-Invoker -State $state -Description "## Summary`n- a bullet") } } | Should -Not -Throw
+        $state = @{}
+        { Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n- a bullet"; GhInvoker = (New-Invoker -State $state) } } | Should -Not -Throw
         $state.Edits.Count | Should -Be 1
     }
 
@@ -88,22 +152,17 @@ Describe 'Update-PullRequest' {
     }
 
     It 'makes one corrective call when the description reads back cut off, then succeeds' {
-        $state = @{ Edits = [System.Collections.Generic.List[object]]::new(); Views = 0 }
-        $invoker = {
-            param($ghArgs)
-            if ($ghArgs[1] -eq 'edit') { $state.Edits.Add((ConvertTo-Recorded -GhArgs $ghArgs)); return '' }
-            $state.Views++
-            $desc = if ($state.Views -eq 1) { '## Summary' } else { "## Summary`n`nthe full body is here" }
-            return ([ordered]@{ number = 7; title = 'T'; body = $desc } | ConvertTo-Json)
-        }.GetNewClosure()
+        $state = @{}
+        $invoker = New-Invoker -State $state -ViewBody { param($s) if ($s.EditCount -eq 1) { '## Summary' } else { $s.Body } }
 
         $pr = Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n`nthe full body is here"; GhInvoker = $invoker } 3>$null
         $state.Edits.Count | Should -Be 2
-        $pr.body | Should -Be "## Summary`n`nthe full body is here"
+        $pr.body | Should -BeLike "*## Summary`n`nthe full body is here"
     }
 
     It 'throws when the description is still cut off after the corrective call' {
-        $invoker = { param($ghArgs) if ($ghArgs[1] -eq 'edit') { return '' }; return ([ordered]@{ number = 7; title = 'T'; body = '## Summary' } | ConvertTo-Json) }
+        $state = @{}
+        $invoker = New-Invoker -State $state -ViewBody { param($s) if ($s.EditCount -ge 1) { '## Summary' } else { $s.Body } }
         { Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n`na much longer body that must survive"; GhInvoker = $invoker } 3>$null } |
             Should -Throw '*truncated after a corrective update*'
     }
@@ -115,34 +174,28 @@ Describe 'Update-PullRequest' {
 
     It 'passes the description as a file that keeps blank lines and quotes, and removes it after the call' {
         $description = "## Summary`n`nsay `"yes`" > no`n`n* one"
-        $state = @{ Path = $null; Content = $null }
+        $state = @{}
+        $inner = New-Invoker -State $state -IsDraft $false
         $invoker = {
             param($ghArgs)
-            if ($ghArgs[1] -eq 'edit') {
-                $state.Path = $ghArgs[[array]::IndexOf($ghArgs, '--body-file') + 1]
-                $state.Content = Get-Content -LiteralPath $state.Path -Raw
-                return ''
-            }
-            return ([ordered]@{ number = 7; title = 'T'; body = "## Summary`n`nsay `"yes`" > no`n`n* one" } | ConvertTo-Json)
+            if ($ghArgs[1] -eq 'edit') { $state.Path = $ghArgs[[array]::IndexOf($ghArgs, '--body-file') + 1] }
+            return (& $inner $ghArgs)
         }.GetNewClosure()
 
         Invoke-Helper -Parameters @{ Id = 7; Description = $description; GhInvoker = $invoker } | Out-Null
 
-        $state.Content | Should -BeExactly $description
+        $state.Body | Should -BeExactly $description
         Test-Path -LiteralPath $state.Path | Should -BeFalse
     }
 
     It 'makes the corrective call when the read-back lost its blank lines' {
-        $state = @{ Edits = 0; Views = 0 }
-        $invoker = {
-            param($ghArgs)
-            if ($ghArgs[1] -eq 'edit') { $state.Edits++; return '' }
-            $state.Views++
-            $desc = if ($state.Views -eq 1) { "## Summary`nbody one`nbody two" } else { "## Summary`n`nbody one`n`nbody two" }
-            return ([ordered]@{ number = 7; title = 'T'; body = $desc } | ConvertTo-Json)
-        }.GetNewClosure()
+        $state = @{}
+        $invoker = New-Invoker -State $state -ViewBody {
+            param($s)
+            if ($s.EditCount -eq 1) { (($s.Body -split "`n") | Where-Object { $_ -ne '' }) -join "`n" } else { $s.Body }
+        }
 
         Invoke-Helper -Parameters @{ Id = 7; Description = "## Summary`n`nbody one`n`nbody two"; GhInvoker = $invoker } 3>$null | Out-Null
-        $state.Edits | Should -Be 2
+        $state.Edits.Count | Should -Be 2
     }
 }

@@ -47,7 +47,7 @@ When agents are available, the `substrate-walker` agent runs this walk in its ow
 the block, so the build's own context stays clean. Hand it the walk on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in Copilot). This skill defines the block that agent returns.
 The agent reads the issue and its comments with `gh issue view <n> --comments`.
 When its block says it could not read every comment, read them in the calling session with
-the same command. Add each decision and its reason to the attention
+the same command. Add their decisions and evidence to the attention
 section before the plan.
 It is also the inline fallback: a tool that cannot run agents follows the steps below itself. Either
 way the block has the same shape and the same 3 KB limit.
@@ -56,7 +56,8 @@ way the block has the same shape and the same 3 KB limit.
 
 The walk is run **once per work item per thread**. If the context block for this key already exists
 earlier in the conversation, reuse it; do not re-walk. Re-walk only if no block exists yet, or the
-work item changed materially since: its acceptance criteria, status, or linked artifacts moved. An
+work item changed materially since. That means its acceptance criteria, status, linked artifacts,
+comment count or evidence pointer moved. An
 action skill that calls this checks for an existing block first. It only calls a fresh walk when there
 is none.
 
@@ -79,11 +80,17 @@ Record the broken edge by name in the attention section; never abort the whole w
 
 **Upstream substrate (the why and the contract):**
 
-- The work item itself: title, body, acceptance criteria (`✅ Success Criteria`) with their
-  state, open or closed, labels, parent and sub-issues, linked issues, and the comment thread. Read the comments, do not read quickly
+- The work item itself: title, body, and acceptance criteria (`✅ Acceptance Criteria`, or `✅ Success Criteria` in an older issue).
+  Also its state, open or closed, labels, parent and sub-issues, linked issues, and the comment thread. Read the comments, do not read quickly
   past them. A triage verdict, a chosen option, an agreed scope, or a "do X not Y" decision often lives
   only in a comment. It outranks the description where the two disagree. Pull the latest such decision
-  and the reason for it, and carry it into the block.
+  and the reason for it, and carry it into the block. Carry the evidence comments too: each starts with
+  `Evidence YYYY-MM-DD HH:mm` and holds the test results, probes, measurements and traps that the body
+  points to. Evidence is context for the build, not scope: the criteria stay the scope. A requirement
+  in it that no criterion holds goes to the attention section, so the person decides before the build.
+  A comment that starts with `📚 Docs impact YYYY-MM-DD HH:mm` is the docs impact of `grilling`, and it
+  is docs scope. Carry each page and what it will say into the block, so `write-docs` applies it on the
+  story branch.
 - Its upstream graph by the `relates` / `intent` edges and the issue links (parent, sub-issues, "blocked by", `Relates to #n` lines). That is the hypothesis or
   PRD it traces to (`intent.hypothesis`), the journey, the API contract (`relates.spec`), and the
   governing ADR(s) (`relates.adr`). Pull the `because` reasons so the block says why each edge exists,
@@ -159,6 +166,10 @@ dump gets ignored; a tight block with a sharp attention section gets acted on.
 ## Attention
 - Decision recorded in the comment thread (triage verdict, chosen option, agreed scope) that governs the
   build, with its reason; flag where it overrides the description
+- Evidence from the comment thread (test results, probes, traps) that the build must respect, with the
+  comment date and time; context, not scope
+- Docs impact from the `📚 Docs impact` comment: each page and what it will say, docs scope for
+  `write-docs`
 - Governing ADR(s) the change must honour, and which the PR must reference
 - Contract drift on touched endpoints (specs/*.openapi.yaml vs current code)
 - Recent activity by others in the touched areas, coordinate before changing

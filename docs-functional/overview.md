@@ -3,7 +3,7 @@
 The AI-SDLC is one way of working that every repository shares. An agent does the work between two
 moments where a person decides. It writes the plan, the code, the tests and the docs, and it checks
 them with the same gates the pull request workflow runs. A person decides at two human checkpoints. The first is Checkpoint Alpha: a person
-approves a story or another document, before it is written to an issue or a page. The second is the review and merge of the pull request.
+approves a story or another document, before it is written to an issue or a page. The second is Checkpoint Bravo: the agent opens the pull request as a draft, and a person checks it, publishes it and merges it.
 
 ## What you get
 
@@ -32,13 +32,16 @@ approves a story or another document, before it is written to an issue or a page
 ## What to know
 
 - The shared files are read-only in a repository that installs them. A fix goes into AI.SDLC.
-- A person signs off, never the agent ([C09](../core/.apm/skills/ai-sdlc-handbook/references/constitution.md)). The owner's merge is the approval.
+- A person signs off, never the agent ([C09](../core/.apm/skills/ai-sdlc-handbook/references/constitution.md)). The agent opens a draft pull request, only a person publishes it, and the owner's merge is the approval.
 - Two reviews run before the pull request opens. One checks the change against the issue: a missing
   criterion, or code nobody asked for. The other checks how it is built. You read them as two short
   reports in the pull request.
 - The build reuses before it builds. Before the code, the walk names the code and the tests that
   already exist for what the change touches. The builder extends those first, so a review rarely has
   to ask for a second copy to be removed.
+- A story fits on one screen: six short sections, goal first, and at most 5 acceptance criteria. The test results behind it sit in a dated comment, not in the body.
+- Copilot reviews the pull request when the agent opens it, and again only after a change of 20 lines or more.
+- After you publish the draft, the agent adds the `in-review` label to its open stories. So a team sees with one search which stories wait for review.
 - The words this layer uses are in the [glossary](glossary.md).
 
 ## Related

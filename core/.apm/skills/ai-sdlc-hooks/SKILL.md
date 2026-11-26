@@ -22,7 +22,7 @@ points `core.hooksPath` at that folder.
 | Event | Script | What it does |
 |---|---|---|
 | Before a Bash or PowerShell command | `Deny-IncompletePush.ps1` | Refuses a push to `main` or `master` (a plain push may update it when `git.allowTrunkPush` is true), a push of an unfinished change, and a push of a commit without a green pre-flight receipt. A push that sends nothing new, such as a tag on a commit the remote has or a branch delete, needs no receipt |
-| Before a Bash or PowerShell command | `Deny-AgentMerge.ps1` | Refuses `gh pr merge` and a `gh api` call to a pull request merge endpoint, so the agent never merges (clause C09). The owner's merge is the approval at Checkpoint Bravo. Like the other hooks, it lets the command through when it cannot judge it |
+| Before a Bash or PowerShell command | `Deny-AgentMerge.ps1` | Refuses `gh pr merge`, a `gh api` call to a pull request merge endpoint, `gh pr ready` and the `markPullRequestReadyForReview` mutation, so the agent never merges or publishes a draft (clause C09, ADR 0024). The owner's merge is the approval at Checkpoint Bravo. Like the other hooks, it lets the command through when it cannot judge it |
 | Before an edit or write | `Deny-SharedFileEdit.ps1` | Refuses an edit to a file listed in `apm.lock.yaml`, and names its source in AI.SDLC |
 | Before an edit or write | `Invoke-CompactSuggestionHook.ps1` | Suggests a compact at a logical boundary when the context window is full |
 | After an edit or write | `Invoke-PostEditCheck.ps1` | Runs the reading-level and em-dash gates on a markdown file, and hands any other file to the `postEdit` script of the pack that claims its extension, for example the dotnet build of a C# file |

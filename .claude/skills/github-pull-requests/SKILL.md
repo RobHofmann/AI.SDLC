@@ -21,8 +21,9 @@ Use this at the PR preflight and at the end of the loop. `implement`, `refactor`
 `write-research-summary` load it before they push, and `fix-bug` through `implement`. After a standalone run, `write-adr`,
 `update-constitution`, `write-docs`, `add-gate`, `capture-learning` and `write-api-spec` load it too. The push and the pull request run with no prompt. Checkpoint Bravo is the person's review of the pull request on GitHub ([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)).
 A push to `main` or `master` is refused, unless the repository sets `git.allowTrunkPush` in `aisdlc.json`. The link from the PR to its story is a tracker update, so it joins the
-one list of tracker updates for the run. The agent opens the pull request as a request for review; it never
-approves, reviews with approval, or merges one (C09). A hook refuses `gh pr merge` and a merge call through `gh api`.
+one list of tracker updates for the run. The agent opens the pull request as a draft request for review; it never
+publishes, approves, reviews with approval, or merges one (C09, ADR 0024). A hook refuses `gh pr merge`, a merge call
+through `gh api`, `gh pr ready` and the `markPullRequestReadyForReview` mutation.
 
 ## The constants
 
@@ -39,23 +40,22 @@ approves, reviews with approval, or merges one (C09). A hook refuses `gh pr merg
   signed in, and gives a WARN row with the command to run when it is not. It never fails the setup.
 - An auth error (`HTTP 401`, `gh auth login` in the message) means a new `gh auth login`, not a token.
 
-## The preflight, before the first code change
+## The preflight and the Copilot review
 
-Check that a working PR path exists before you build, so the last step cannot dead-end. Try in order,
-and record which one works:
-
-1. **The helper `.claude/skills/github-pull-requests/scripts/New-PullRequest.ps1`** (entry function `New-PullRequest`),
-   backed by `gh`, the normal path. First run `gh auth status` and `gh repo view`.
-2. **The GitHub MCP**, only if it can really write to this repository. It runs with its own token;
-   a `403` means that token lacks write access, and `gh auth login` does not fix it. Skip the MCP for repo writes then.
-3. **The browser URL**, as the last fallback:
-   `https://github.com/<owner>/<repo>/compare/main...<branch>?expand=1`.
+Before the first code change, check that a working pull request path exists, so the last step cannot
+dead-end. `scripts/Request-CopilotReview.ps1 -Id <number>` asks Copilot for a review, after your own push
+only. Both are in [the pull request path and the Copilot review](references/pr-path-and-copilot.md).
 
 ## Opening the pull request
 
 - Call the helper from PowerShell, not from bash with a `@'...'@` here-string; bash lets the `@` markers slip into the description.
+- The helper opens the pull request as a draft (`gh pr create --draft`) and puts a `## Before you publish`
+  block at the top of the description, once. The block tells the person to read and test the change
+  before they publish it. Only the person publishes the draft, with Ready for review (ADR 0024).
 - The helper passes the description as a file (`gh pr create --body-file <file>`). It reads the PR back
   with `gh pr view --json`, and throws on a lost line, a cut-off or an empty description.
+- Right after the create, the helper asks Copilot for the first review with `Request-CopilotReview.ps1
+  -Force`, unless you pass `-SkipCopilotReview`. A failed request is a warning, never a failure.
 - The description is the evidence record from `temp/`. It holds each acceptance criterion with its
   test and every check result. It also holds every review finding, fixed or declined with the reason,
   the ADRs, and what was not checked. It ends with a `## Merge danger` part: the door (one-way or
@@ -71,14 +71,15 @@ and record which one works:
 
 ## The read-back
 
-Read the PR back with `gh pr view <number> --json number,url,title,body` and measure the body in
+Read the PR back with `gh pr view <number> --json number,url,title,body,isDraft` and measure the body in
 PowerShell. `gh pr list` shows no body, so it cannot prove anything. An empty, title-length or
 first-heading-only description is a hard failure: fix it with `Update-PullRequest.ps1` before you go on.
 
 **The title and the description are the agent's to keep true, at any time, with no prompt.**
 `scripts/Update-PullRequest.ps1 -Id <number>` takes `-Title`, `-Description` or both, applies the rules
-above, and reads the result back. It passes nothing else to `gh pr edit`, so it can never add a reviewer,
-change the base or mark the pull request ready. Keep `gh pr edit` itself behind a prompt. Use it when the
+above, and reads the result back. On a draft it keeps the `## Before you publish` block at the top of a new
+description. It passes nothing else to `gh pr edit`, so it can never add a reviewer, change the base or mark
+the pull request ready. Keep `gh pr edit` itself behind a prompt. Use it when the
 branch has an open pull request already: `New-PullRequest.ps1` only calls `gh pr create`, which fails on a second one.
 
 ## After the pull request is open
@@ -100,13 +101,10 @@ It says `approval` when a run waits for a reviewer of an environment; that is a 
 Check that the story shows its PR: GitHub links them through `Fixes #42`. Otherwise put the PR URL on the story
 through `write-story` in update mode (github-issues pack). The change is not done while the story does not show its PR.
 
-A new repository sets its branch ruleset once, after the first workflow run, with `Set-BranchRuleset.ps1
--RequiredCheck <names>`. The ruleset on the default branch asks for a pull request with zero required approvals and
-the named status checks. It also blocks a force push and a deletion. The owner's merge is the approval. `-WhatIf` shows the change first.
-
 ## Sources
 
 - [Delivery metrics](references/delivery-metrics.md) - what `Get-PrMetrics.ps1` counts about the pull requests, and how to read it.
+- [The pull request path and the Copilot review](references/pr-path-and-copilot.md) - the preflight before a build, and when Copilot is asked.
 - [Orchestration](/.claude/skills/ai-sdlc-handbook/references/orchestration.md) - Checkpoint Bravo, the evidence record and the PR feedback loop.
 - [Run pre-flight](/.claude/skills/run-preflight/SKILL.md) - what runs before the push.
 

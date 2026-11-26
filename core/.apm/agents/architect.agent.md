@@ -124,8 +124,12 @@ Seams: <each public boundary the tests go through, with what it catches and what
 Tests go in: <type> -> <test file> :: <test class> | new <test class>, because none found, one line per touched type
 Hosts: <every host a shared-library change ships in>
 Decisions: <a lasting choice that needs an ADR, or none>
+Proof: <for each AC-n, the test that proves it, or "a check by hand" and what the person checks>
 Open questions: <what the context block could not answer>
 ```
+
+The `Proof:` field names every acceptance criterion. When you review a plan, a criterion it leaves
+out is HIGH.
 
 When you reviewed:
 

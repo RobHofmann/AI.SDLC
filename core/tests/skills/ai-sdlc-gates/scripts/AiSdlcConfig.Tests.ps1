@@ -206,6 +206,15 @@ Describe 'AiSdlcConfig' {
         Test-AiSdlcTrunkPushAllowed -RepoRoot $root -Ref 'refs/remotes/origin/missing' | Should -BeFalse
     }
 
+    It 'labels a story that waits for review in-review, and aisdlc.json can change the name' {
+        (Get-AiSdlcConfig -RepoRoot (New-ConfigRepo -Json $null -Git)).tracker.inReviewLabel | Should -Be 'in-review'
+
+        $config = Get-AiSdlcConfig -RepoRoot (New-ConfigRepo -Json '{ "tracker": { "inReviewLabel": "waits-for-review" } }')
+
+        $config.tracker.inReviewLabel | Should -Be 'waits-for-review'
+        $config.tracker.refinedLabel | Should -Be 'refined'
+    }
+
     It 'reads the other repositories whose issues a pull request may name from tracker.acceptedRepositories' {
         $config = Get-AiSdlcConfig -RepoRoot (New-ConfigRepo -Json '{ "tracker": { "acceptedRepositories": ["contoso/ai-sdlc"] } }')
 

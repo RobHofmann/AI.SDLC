@@ -34,7 +34,11 @@ You report what the code and the work items say. You never guess what they mean.
    (`gh issue view <n> --repo <owner/name> --json title,body,state,labels,comments`). Take the
    repository from `tracker.repository` in aisdlc.json, or the `origin` remote when that is empty.
    Note the comment count, and say so when you could not read every comment. A decision in a comment
-   outranks the body; carry it with its reason. Follow the parent, the sub-issues and the
+   outranks the body; carry it with its reason. Carry an evidence comment too (`Evidence YYYY-MM-DD HH:mm`):
+   the test results, probes, measurements and traps the body points to. Name it by its date and time,
+   as context for the build, never as scope. A requirement in it that no criterion holds goes to the
+   attention section. A comment that starts with `📚 Docs impact YYYY-MM-DD HH:mm` is docs scope:
+   carry each page and what it will say into the attention section, for `write-docs`. Follow the parent, the sub-issues and the
    `relates` edges to the PRD, the journey, the spec and the ADRs, and keep each `because`. A
    discovery page is a markdown file under `paths.discoveryRoot`. When `gh` is not signed in, say so in
    the block and walk the code only.
