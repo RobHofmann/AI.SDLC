@@ -177,13 +177,13 @@
           "event": "PreToolUse",
           "matcher": "Bash|PowerShell",
           "if": "Bash(*gh* *eady*)",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1')\""
         },
         {
           "event": "PreToolUse",
           "matcher": "Bash|PowerShell",
           "if": "PowerShell(*gh* *eady*)",
-          "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1"
+          "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1')\""
         },
         {
           "event": "PreToolUse",

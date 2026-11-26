@@ -35,14 +35,14 @@
           {
             "type": "command",
             "if": "Bash(*gh* *eady*)",
-            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1",
+            "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1')\"",
             "timeout": 30,
             "statusMessage": "Checking the command does not publish a draft pull request..."
           },
           {
             "type": "command",
             "if": "PowerShell(*gh* *eady*)",
-            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1",
+            "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1')\"",
             "timeout": 30,
             "statusMessage": "Checking the command does not publish a draft pull request..."
           }
