@@ -29,6 +29,22 @@ Describe 'Check-SpecDrift' {
             New-Item -ItemType Directory -Path $dir -Force | Out-Null
             Set-Content -LiteralPath (Join-Path $dir $Name) -Value "openapi: 3.0.0`npaths:`n  $($Path):`n    get: {}`n" -Encoding utf8
         }
+
+        function Save-Commit {
+            param([string]$Message = 'change', [switch]$AsBase)
+            if (-not (Test-Path -LiteralPath (Join-Path $script:Root '.git'))) {
+                git -C $script:Root init --quiet -b main
+                git -C $script:Root config user.email probe@example.invalid
+                git -C $script:Root config user.name probe
+                git -C $script:Root config core.autocrlf false
+            }
+            git -C $script:Root add -A
+            git -C $script:Root commit --quiet -m $Message --no-verify
+            if ($AsBase) { git -C $script:Root update-ref refs/remotes/origin/main HEAD }
+        }
+
+        $script:ControllerPath = 'Demo/src/Api.Demo/Controllers/OrderLinesController.cs'
+        $script:ControllerText = "[ApiController]`n[Route(`"api/order-lines`")]`npublic class OrderLinesController`n{`n    public void Get() { Log(`"one`"); }`n}`n"
     }
 
     BeforeEach {
@@ -139,11 +155,14 @@ Describe 'Check-SpecDrift' {
     }
 
     Context 'where the changed list comes from' {
-        It 'reads CHANGED_FILES from the environment when no list is passed' {
+        It 'reads CHANGED_FILES from the environment when no list is passed' -Tag '#80' {
             New-Spec
-            New-Controller -Relative 'Demo/src/Api.Demo/Controllers/OrderLinesController.cs'
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText
+            Save-Commit -Message base -AsBase
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText.Replace('/order-lines"', '/order-lines/{id}"')
+            Save-Commit
             try {
-                $env:CHANGED_FILES = "Demo/src/Api.Demo/Controllers/OrderLinesController.cs"
+                $env:CHANGED_FILES = $script:ControllerPath
 
                 $out = & $script:ScriptUnderTest -RepoRoot $script:Root *>&1 | Out-String
 
@@ -160,6 +179,126 @@ Describe 'Check-SpecDrift' {
 
             $r.ExitCode | Should -Be 3
             $r.Output | Should -Match 'no changed files'
+        }
+    }
+
+    Context 'it judges only the lines the change adds or removes' {
+        It 'passes when the change edits a line of an old controller that is not a route' -Tag '#80' {
+            New-Spec
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText
+            Save-Commit -Message base -AsBase
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText.Replace('Log("one")', 'Log("two")')
+            Save-Commit
+
+            $r = Invoke-Gate -RepoRoot $script:Root
+
+            $r.ExitCode | Should -Be 0
+            $r.Output | Should -Match 'Spec drift OK'
+        }
+
+        It 'reports a controller whose route line the change edits' -Tag '#80' {
+            New-Spec
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText
+            Save-Commit -Message base -AsBase
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText.Replace('order-lines"', 'order-lines/{id}"')
+            Save-Commit
+
+            $r = Invoke-Gate -RepoRoot $script:Root
+
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match "carries the resource 'order-lines'"
+        }
+
+        It 'reports a controller whose route line the change removes' -Tag '#80' {
+            New-Spec
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText
+            Save-Commit -Message base -AsBase
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText.Replace("[Route(`"api/order-lines`")]`n", '')
+            Save-Commit
+
+            $r = Invoke-Gate -RepoRoot $script:Root
+
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match "resource 'order-lines'"
+        }
+
+        It 'reports a controller that the change deletes' -Tag '#80' {
+            New-Spec
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText
+            Save-Commit -Message base -AsBase
+            Remove-Item -LiteralPath (Join-Path $script:Root $script:ControllerPath)
+            Save-Commit
+
+            $r = Invoke-Gate -RepoRoot $script:Root
+
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match "resource 'order-lines'"
+        }
+
+        It 'reports a DTO type that the change adds when a spec names it' -Tag '#80' {
+            New-Spec
+            Set-Content -LiteralPath (Join-Path $script:Root 'specs/order-lines.openapi.yaml') -Value "openapi: 3.0.0`ncomponents:`n  schemas:`n    OrderLineDto:`n      type: object`n" -Encoding utf8
+            New-Controller -Relative 'Demo/src/Shared.Demo/Models.cs' -Body "public class Other { }`n"
+            Save-Commit -Message base -AsBase
+            New-Controller -Relative 'Demo/src/Shared.Demo/Models.cs' -Body "public class Other { }`npublic record OrderLineDto(string Name);`n"
+            Save-Commit
+
+            $r = Invoke-Gate -RepoRoot $script:Root
+
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match "type 'OrderLineDto'"
+        }
+
+        It 'passes when the change edits a DTO file but not the declaration of the type the spec names' -Tag '#80' {
+            New-Spec
+            Set-Content -LiteralPath (Join-Path $script:Root 'specs/order-lines.openapi.yaml') -Value "openapi: 3.0.0`ncomponents:`n  schemas:`n    OrderLineDto:`n      type: object`n" -Encoding utf8
+            New-Controller -Relative 'Demo/src/Shared.Demo/Models.cs' -Body "public record OrderLineDto(string Name);`npublic class Other { }`n"
+            Save-Commit -Message base -AsBase
+            New-Controller -Relative 'Demo/src/Shared.Demo/Models.cs' -Body "public record OrderLineDto(string Name);`npublic class Other { public int Count; }`n"
+            Save-Commit
+
+            $r = Invoke-Gate -RepoRoot $script:Root
+
+            $r.ExitCode | Should -Be 0
+        }
+
+        It 'passes when the change adds a controller line outside the source root' -Tag '#80' {
+            New-Spec
+            New-Controller -Relative 'docs/example.cs' -Body $script:ControllerText
+            Save-Commit -Message base -AsBase
+            New-Controller -Relative 'docs/example.cs' -Body ($script:ControllerText + "`n")
+            Save-Commit
+
+            $r = Invoke-Gate -RepoRoot $script:Root
+
+            $r.ExitCode | Should -Be 0
+        }
+
+        It 'exits 2 with a FIX line when CHANGED_FILES is set and there is no merge base' -Tag '#80' {
+            New-Spec
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText
+            Save-Commit -Message base
+            try {
+                $env:CHANGED_FILES = $script:ControllerPath
+
+                $out = & $script:ScriptUnderTest -RepoRoot $script:Root *>&1 | Out-String
+
+                $LASTEXITCODE | Should -Be 2
+                $out | Should -Match '(?m)^FIX: '
+                $out | Should -Not -Match 'carries the resource'
+            }
+            finally { $env:CHANGED_FILES = $null }
+        }
+
+        It 'is not applicable in a local run with no merge base, and does not judge whole files' -Tag '#80' {
+            New-Spec
+            New-Controller -Relative $script:ControllerPath -Body $script:ControllerText
+            Save-Commit -Message base
+
+            $out = & $script:ScriptUnderTest -RepoRoot $script:Root *>&1 | Out-String
+
+            $LASTEXITCODE | Should -Be 3
+            $out | Should -Not -Match 'carries the resource'
         }
     }
 }

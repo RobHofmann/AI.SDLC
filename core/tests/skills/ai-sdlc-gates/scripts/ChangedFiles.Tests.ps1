@@ -92,4 +92,92 @@ Describe 'ChangedFiles' {
             $change.Files | Should -Be @('a/b.txt')
         }
     }
+
+    Context 'Get-AiSdlcChangedLine' {
+        It 'returns the lines the file gained and lost since the base' -Tag '#80' {
+            $root = New-ChangeRepo
+            Set-Content -LiteralPath (Join-Path $root 'code.txt') -Value @('one', 'two', 'three')
+            git -C $root add -A
+            git -C $root commit --quiet -m more --no-verify
+            git -C $root update-ref refs/remotes/origin/main HEAD
+            Set-Content -LiteralPath (Join-Path $root 'code.txt') -Value @('one', 'TWO', 'three', 'four')
+            git -C $root commit --quiet -am edit --no-verify
+            $base = (Get-AiSdlcChange -RepoRoot $root -BaseRef origin/main).Base
+
+            $lines = Get-AiSdlcChangedLine -RepoRoot $root -Base $base -Path 'code.txt'
+
+            $lines | Should -Be @('two', 'TWO', 'four')
+        }
+
+        It 'returns null without a base' -Tag '#80' {
+            $root = New-ChangeRepo
+
+            Get-AiSdlcChangedLine -RepoRoot $root -Base '' -Path 'keep.txt' | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'Get-AiSdlcLineChange' {
+        BeforeAll {
+            function New-LineRepo {
+                $root = New-ChangeRepo
+                Set-Content -LiteralPath (Join-Path $root 'code.txt') -Value @('one', 'two', 'three')
+                git -C $root add -A
+                git -C $root commit --quiet -m lines --no-verify
+                git -C $root update-ref refs/remotes/origin/main HEAD
+                return $root
+            }
+        }
+
+        It 'returns the added line numbers as they are on disk, and the text of the removed lines' -Tag '#80' {
+            $root = New-LineRepo
+            Set-Content -LiteralPath (Join-Path $root 'code.txt') -Value @('zero', 'one', 'TWO', 'three')
+            git -C $root commit --quiet -am edit --no-verify
+            $base = (Get-AiSdlcChange -RepoRoot $root -BaseRef origin/main).Base
+
+            $change = Get-AiSdlcLineChange -RepoRoot $root -Base $base -Path 'code.txt'
+
+            $change.Added | Should -Be @(1, 3)
+            $change.Removed | Should -Be @('two')
+        }
+
+        It 'counts an edit that is not committed yet, because it diffs the working tree' -Tag '#80' {
+            $root = New-LineRepo
+            $base = (Get-AiSdlcChange -RepoRoot $root -BaseRef origin/main -Explicit @('code.txt')).Base
+            Set-Content -LiteralPath (Join-Path $root 'code.txt') -Value @('one', 'two', 'three', 'four')
+
+            $change = Get-AiSdlcLineChange -RepoRoot $root -Base $base -Path 'code.txt'
+
+            $change.Added | Should -Be @(4)
+            $change.Removed | Should -BeNullOrEmpty
+        }
+
+        It 'follows a rename, so a moved file does not count as all added' -Tag '#80' {
+            $root = New-LineRepo
+            git -C $root mv code.txt moved.txt
+            Add-Content -LiteralPath (Join-Path $root 'moved.txt') -Value 'four'
+            git -C $root add -A
+            git -C $root commit --quiet -m move --no-verify
+            $base = (Get-AiSdlcChange -RepoRoot $root -BaseRef origin/main).Base
+
+            $change = Get-AiSdlcLineChange -RepoRoot $root -Base $base -Path 'moved.txt'
+
+            $change.Added | Should -Be @(4)
+            $change.Removed | Should -BeNullOrEmpty
+        }
+
+        It 'returns null without a base' -Tag '#80' {
+            $root = New-LineRepo
+
+            Get-AiSdlcLineChange -RepoRoot $root -Base '' -Path 'code.txt' | Should -BeNullOrEmpty
+        }
+
+        It 'counts every line as added with -AssumeNew and no base' -Tag '#80' {
+            $root = New-LineRepo
+
+            $change = Get-AiSdlcLineChange -RepoRoot $root -Base '' -Path 'code.txt' -AssumeNew
+
+            $change.Added | Should -Be @(1, 2, 3)
+            $change.Removed | Should -BeNullOrEmpty
+        }
+    }
 }

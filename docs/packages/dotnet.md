@@ -41,7 +41,7 @@ The Graphify code graph reference lives in `packs/dotnet/.apm/skills/dotnet-code
 The `dotnet-gates` skill defines these blocking gates:
 
 - `The change adds no commented-out code, open TODO or AI tool name in a C# or Razor comment`
-- `Every test class carries a Story trait with a well-formed story key`
+- `Test classes and methods that the change adds carry a Story trait with a real key`
 - `JSON wire names in C# and in specs are PascalCase`
 - `Docs match the code they cite`
 - `Line coverage stays at the baseline, and a gain of a point is written to the baseline file`
@@ -58,10 +58,10 @@ The gate scripts live under `packs/dotnet/.apm/skills/dotnet-gates/scripts`.
 
 - `Check-ApiPascalCase.ps1` enforces `DOTNET-01`.
 - `Check-CommentHygiene.ps1` enforces `C10` on added C# and Razor comments: no commented-out code, no `TODO` without an issue key, no AI tool name.
-- `Check-Coverage.ps1` enforces the `C04` coverage baseline, in the pre-flight and in the shared pull request step when the workflow passes `coverage-file`. It also fails when coverage is a point or more above the baseline and the change did not raise the baseline file, so a gain is kept. A gain of less than a point passes and prints the new figure.
-- `Check-DocDrift.ps1` compares documentation claims with cited code.
-- `Check-SpecDrift.ps1` checks whether an existing spec moves with its endpoint.
-- `Check-StoryTraits.ps1` checks xUnit test classes for valid AI-SDLC Story traits.
+- `Check-Coverage.ps1` enforces the `C04` coverage baseline, in the pre-flight and in the shared pull request step when the workflow passes `coverage-file`. It also fails when coverage is a point or more above the baseline and the change did not raise the baseline file. So a gain is kept. A gain of less than a point passes and prints the new figure.
+- `Check-DocDrift.ps1` compares documentation claims with cited code. It judges only the lines the change adds, changes or removes. Drift that the change caused fails, and older drift is listed as not blocking.
+- `Check-SpecDrift.ps1` checks whether an existing spec moves with its endpoint. It reads only the routes and DTO types on the lines the change adds or removes.
+- `Check-StoryTraits.ps1` checks test classes for valid AI-SDLC Story traits, in xUnit, NUnit and MSTest. It judges only the lines the change adds or changes. A class or method that the change adds needs a real story key, and `LEGACY-0` stays allowed on older code.
 - `Check-XmlDocs.ps1` reports added public or protected C# declarations without a `///` doc comment (`C10`, advisory).
 - `CodeDiff.psm1` reads the C# and Razor lines a change adds, for the two `C10` gates.
 - `DocSurface.psm1` provides shared page and cited-code rules for three documentation tools.
