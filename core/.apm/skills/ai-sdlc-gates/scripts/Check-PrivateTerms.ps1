@@ -40,6 +40,8 @@
 
     Exit codes follow the gate contract: 0 nothing found or skipped, 1 a finding, 2 could not check
     (no list, or a rule that is not a valid regular expression). With -Required, no list exits 1.
+    A repository root that is not an existing folder is "could not check" too: exit 2 in a local run,
+    and exit 1 with -Required or in GitHub Actions.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script.
@@ -74,6 +76,14 @@ param(
 
 Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
+# Without this stop, Resolve-Path fails without ending the script, and git -C '' then reads the current
+# folder, so the gate would check another repository than the one named (#32).
+if (-not $RepoRoot -or -not (Test-Path -LiteralPath $RepoRoot -PathType Container)) {
+    Write-Host "Private terms could not be checked: the repository root '$RepoRoot' is not an existing folder." -ForegroundColor Yellow
+    Write-Host 'FIX: Pass -RepoRoot with the folder of the repository, or run the gate from inside it.' -ForegroundColor Yellow
+    if ($Required -or $env:GITHUB_ACTIONS -eq 'true') { exit 1 }
+    exit 2
+}
 # ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, and git cannot read that (#29).
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).ProviderPath
 
