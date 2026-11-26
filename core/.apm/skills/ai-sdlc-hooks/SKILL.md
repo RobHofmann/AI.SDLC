@@ -14,9 +14,8 @@ description: >
 # AI-SDLC hooks
 
 The agent hooks run in every agent tool that reads `.claude/settings.json`, and the scripts they call
-sit in this skill's `scripts/` folder. Each hook command finds its script in the folder that
-`CLAUDE_PROJECT_DIR` names, or in the current folder when that is not set. The git hooks sit in `githooks/`, and `Initialize-AiSdlc.ps1` points
-`core.hooksPath` at that folder.
+sit in this skill's `scripts/` folder. The git hooks sit in `githooks/`, and `Initialize-AiSdlc.ps1`
+points `core.hooksPath` at that folder.
 
 ## The agent hooks
 
@@ -49,9 +48,7 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   Git ignores the LFS hooks in `.git/hooks` once `core.hooksPath` is set, so these hooks hand on to
   Git LFS themselves. A repository whose `.gitattributes` never names `filter=lfs` sees no change.
   When the repository uses LFS but git cannot run `git lfs`, the push fails with a clear message.
-- `githooks/commit-msg` runs `scripts/Remove-AiCoAuthorTrailer.ps1` on the message before git saves
-  the commit. It removes a `Co-authored-by` line in the trailer block that names a coding tool, and
-  keeps a line that names a person. It never fails a commit, and does nothing when `pwsh` is missing.
+- `githooks/commit-msg` removes a `Co-authored-by` trailer that names a coding tool; it never fails.
 - A clone that still points `core.hooksPath` at an older folder, such as `.githooks/`, moves to
   `githooks/` the next time `Initialize-AiSdlc.ps1` runs.
 - `scripts/Install-AiSdlc.ps1` is the one command for a fresh clone. It checks Windows long paths
@@ -88,11 +85,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   `apply_patch`, which sends the text of the edit, and one such edit can name several files.
 - **Return context in both shapes.** After a prompt or an edit, Copilot CLI reads `additionalContext`
   at the top level, and Claude Code reads it in `hookSpecificOutput`. `New-HookContextOutput` writes both.
-- **Find the script through `CLAUDE_PROJECT_DIR`.** Claude Code runs a hook in the current folder of
-  the session, which a `cd` moves. So each hook command joins `CLAUDE_PROJECT_DIR`, or `.` when it is
-  not set, with the script path. It reads the variable through .NET, because bash in Claude Code and
-  pwsh in Copilot CLI would both read a `$` sign. `pwsh -Command` turns any exit code but 0 into 1,
-  so a hook refuses with its JSON decision and exit 0, never with exit 2.
+- **Find the script through `CLAUDE_PROJECT_DIR`**, so a `cd` does not break the hook. `pwsh -Command`
+  turns any exit code but 0 into 1, so a hook refuses with its JSON decision and exit 0.
 - **Read repository paths from `aisdlc.json`** through `AiSdlcConfig.psm1` in the `ai-sdlc-gates` skill.
 
 ## When a hook refused a step
@@ -103,12 +97,7 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   that commit. Never push with `--no-verify`.
 - The push check judges the repository the push targets. A push that names no folder is judged on
   the repository of the `cwd` field of the hook payload. In a session that works in a git worktree,
-  that is the worktree, even though the hook itself runs from the main checkout.
-- The edit hooks judge a file in a git worktree inside the main checkout, such as one under
-  `.claude/worktrees`, on that worktree. The shared-file check reads the `apm.lock.yaml` of the
-  worktree, or the one of the main checkout when the worktree has none. The reading-level check uses
-  the allow lists of the worktree, so a word added to an allow list on a branch counts at once there.
-  The scripts that run are always the hook's own, never scripts of the worktree.
+  that is the worktree, even though the hook runs from the main checkout. The edit hooks do the same.
 - A push names a folder only in the plain forms: `git -C <dir> push`, and one `cd`, `pushd` or
   `Set-Location` right before the push, joined with `&&` or `;`. The folder may stand in quotes, and a
   relative folder starts at the `cwd`. Any other form is judged on the repository of the `cwd`. That
