@@ -150,6 +150,7 @@ Hook files live under `core/.apm/skills/ai-sdlc-hooks/`.
 
 Git hooks include:
 
+- `commit-msg`
 - `git-lfs-hook`
 - `graphify-refresh`
 - `post-checkout`
@@ -161,6 +162,9 @@ Git hooks include:
 `git-lfs-hook` is not a hook itself. `pre-push`, `post-checkout`, `post-commit` and `post-merge` call it
 to hand on to Git LFS, because git ignores the LFS hooks in `.git/hooks` once `core.hooksPath` is set.
 It does nothing in a repository whose `.gitattributes` never names `filter=lfs`.
+
+`commit-msg` runs `Remove-AiCoAuthorTrailer.ps1`, which removes a `Co-authored-by` trailer that names a
+coding tool, so nothing in git names a tool as an author. A trailer that names a person stays.
 
 Setup and hook scripts include:
 

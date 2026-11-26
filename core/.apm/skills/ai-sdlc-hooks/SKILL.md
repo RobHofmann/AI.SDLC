@@ -48,7 +48,10 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
 - `githooks/git-lfs-hook` is shared by `pre-push`, `post-checkout`, `post-commit` and `post-merge`.
   Git ignores the LFS hooks in `.git/hooks` once `core.hooksPath` is set, so these hooks hand on to
   Git LFS themselves. A repository whose `.gitattributes` never names `filter=lfs` sees no change.
-  When the repository uses LFS but `git-lfs` is missing, the push fails with a clear message.
+  When the repository uses LFS but git cannot run `git lfs`, the push fails with a clear message.
+- `githooks/commit-msg` runs `scripts/Remove-AiCoAuthorTrailer.ps1` on the message before git saves
+  the commit. It removes a `Co-authored-by` line in the trailer block that names a coding tool, and
+  keeps a line that names a person. It never fails a commit, and does nothing when `pwsh` is missing.
 - A clone that still points `core.hooksPath` at an older folder, such as `.githooks/`, moves to
   `githooks/` the next time `Initialize-AiSdlc.ps1` runs.
 - `scripts/Install-AiSdlc.ps1` is the one command for a fresh clone. It checks Windows long paths
