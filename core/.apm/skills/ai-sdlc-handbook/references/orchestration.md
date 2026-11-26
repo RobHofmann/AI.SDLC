@@ -150,6 +150,7 @@ and holds:
 - the spec review and the code review as two separate reports, never merged into one list, each
   finding marked fixed or declined with the reason;
 - the ADRs written;
+- each waiver, a `No-Test`, `No-Docs` or `No-ADR` trailer, with its reason and the agent that agreed;
 - the model of the session, and the model of each agent step: the walk, the plan, the build and each
   review;
 - what was not checked, for example "not deployed to dev";
@@ -202,8 +203,14 @@ What stays in `.claude/settings.json` is not enforcement:
   push or a delete. The other checks still run on that push. It also refuses a
   push that leaves tests or docs behind, and a push whose commit has no green pre-flight receipt. A push
   that sends nothing new needs no receipt. Each pushed ref is a delete, or its commit is already on
-  the remote it goes to. A release tag is an example. A branch policy on
-  `main` should refuse a direct push on the server as well.
+  the remote it goes to. A release tag is an example. The hook looks the receipt up for the commit of
+  each pushed ref, not for `HEAD`. It also refuses a push it cannot check. That covers a matching or
+  wildcard push, and a push that can reach `main` through `push.default`, `remote.<name>.push` or
+  `remote.<name>.mirror`. It covers `git -c` with one of those settings or `core.hooksPath`, a commit it
+  cannot tell, and two repositories in one command. It refuses any push while `aisdlc.json` or a hook
+  module is broken. After such a refusal the agent stops and asks the person. It gives the push command
+  in a code block the person can run. Only a person pushes with `--no-verify`. A branch policy on `main` should refuse a direct push on the server
+  as well.
 
 The commands that must never run unseen are on the stop list above, item 5:
 

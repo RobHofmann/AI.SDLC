@@ -171,8 +171,22 @@ run_gates() (
             export "GIT_CONFIG_KEY_$n=safe.directory" "GIT_CONFIG_VALUE_$n=$safe_dir" "GIT_CONFIG_COUNT=$((n + 1))"
             runner="$gate_root/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1"
         fi
-        echo "pre-push: running blocking CA gates ($runner -BlockingOnly)..."
-        AISDLC_PUSHED_COMMITS="$pushed" "$PWSH" -NoProfile -File "$runner" -BlockingOnly
+        # A gate with inputs runs only when the change touches them. When a pushed ref is not the
+        # checked-out commit, the working tree says nothing about what is pushed, so every gate runs.
+        head=$(git rev-parse HEAD 2>/dev/null)
+        all_flag=""
+        for sha in $pushed; do
+            case "$sha" in
+                0000000000000000000000000000000000000000) ;;
+                "$head") ;;
+                *) all_flag="-All" ;;
+            esac
+        done
+        if [ -n "$all_flag" ]; then
+            echo "pre-push: a pushed ref is not the checked-out commit, so every blocking gate runs, not only the ones the change touches."
+        fi
+        echo "pre-push: running blocking CA gates ($runner -BlockingOnly $all_flag)..."
+        AISDLC_PUSHED_COMMITS="$pushed" "$PWSH" -NoProfile -File "$runner" -BlockingOnly $all_flag
         status=$?
     fi
 
@@ -197,7 +211,7 @@ run_gates() (
 
     if [ "$status" -ne 0 ]; then
         echo "" >&2
-        echo "pre-push: blocking gate(s) failed. Fix the issues above, or push with --no-verify to bypass intentionally." >&2
+        echo "pre-push: blocking gate(s) failed. Fix the issues above. When you cannot, an agent stops and asks the person, and gives the push command in a code block the person can run. Only a person pushes with --no-verify." >&2
         return 1
     fi
     return 0
