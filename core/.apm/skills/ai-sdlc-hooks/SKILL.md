@@ -91,7 +91,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
 - **Find the script through `CLAUDE_PROJECT_DIR`.** Claude Code runs a hook in the current folder of
   the session, which a `cd` moves. So each hook command joins `CLAUDE_PROJECT_DIR`, or `.` when it is
   not set, with the script path. It reads the variable through .NET, because bash in Claude Code and
-  pwsh in Copilot CLI would both read a `$` sign.
+  pwsh in Copilot CLI would both read a `$` sign. `pwsh -Command` turns any exit code but 0 into 1,
+  so a hook refuses with its JSON decision and exit 0, never with exit 2.
 - **Read repository paths from `aisdlc.json`** through `AiSdlcConfig.psm1` in the `ai-sdlc-gates` skill.
 
 ## When a hook refused a step

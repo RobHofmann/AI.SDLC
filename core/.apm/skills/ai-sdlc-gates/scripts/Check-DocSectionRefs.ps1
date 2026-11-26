@@ -110,7 +110,7 @@ function ConvertTo-Slug {
     $text = [regex]::Replace($text, '\[([^\]]*)\]\([^)]*\)', '$1')
     $text = [regex]::Replace($text, '(?<![\p{L}\p{N}_])(_{1,2})(?=\S)(.+?)(?<=\S)\1(?![\p{L}\p{N}_])', '$2')
     $text = $text -replace '[^\p{L}\p{M}\p{N}\p{Pc} \-]', ''
-    return $text.Trim() -replace ' ', '-'
+    return $text -replace ' ', '-'
 }
 
 function Get-HeadingAnchor {

@@ -94,6 +94,12 @@ Describe 'Check-DocPersonNames' {
         $r.ExitCode | Should -Be 1 -Because $r.Output
     }
 
+    It 'does not take ordinary words in lower case for a reversed name (exit 0)' -Tag '89' {
+        Set-Doc 'docs/page.md' "# Page`nRead the post, will you, and check it in may, will we.`n"
+        $r = Invoke-Gate -RepoRoot $script:Root -Authors @('Will Post', 'Will May')
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+    }
+
     It 'does not take a middle name for a particle (exit 0 for the full form without it)' -Tag '89' {
         Set-Doc 'docs/page.md' "# Page`nSam Lee reviewed it, and so did Robin.`n"
         $r = Invoke-Gate -RepoRoot $script:Root -Authors @('Sam Robin Sample')

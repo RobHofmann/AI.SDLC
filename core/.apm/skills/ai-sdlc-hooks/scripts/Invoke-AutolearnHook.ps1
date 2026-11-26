@@ -252,7 +252,8 @@ switch ($hookEvent) {
         elseif (Test-IsAdviceUpdate -Text $prompt) {
             $parts.Add($adviceUpdateInstruction)
         }
-        $reminder = Get-OpenProposalReminder -Hook $hook -SeenPath ([IO.Path]::ChangeExtension($flagPath, '.seen'))
+        # A failure here must not take the correction or advice note with it.
+        $reminder = try { Get-OpenProposalReminder -Hook $hook -SeenPath ([IO.Path]::ChangeExtension($flagPath, '.seen')) } catch { $null }
         if ($reminder) { $parts.Add($reminder) }
         if ($parts.Count -gt 0) { Write-PromptContext -Text ($parts -join ' ') }
         exit 0

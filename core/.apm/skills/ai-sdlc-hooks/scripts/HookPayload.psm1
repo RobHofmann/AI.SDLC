@@ -117,6 +117,15 @@ function Get-HookCheckoutRoot {
         worktree. Any other .git entry, such as a nested repository or a planted marker, and any path
         that cannot be read, leaves the file with RepoRoot. A folder with only its own aisdlc.json, such
         as a test consumer, is not a checkout either and stays part of RepoRoot.
+
+    .PARAMETER File
+        The full path of the edited file.
+
+    .PARAMETER RepoRoot
+        The main checkout the hook runs from.
+
+    .EXAMPLE
+        Get-HookCheckoutRoot -File $full -RepoRoot $RepoRoot
     #>
     [CmdletBinding()]
     param(

@@ -46,6 +46,10 @@ Describe 'Remove-AiCoAuthorTrailer' {
         @{ Name = 'Kai Jansen <kai.jansen@example.com>' }
         @{ Name = 'Devin Sample <devin@example.com>' }
         @{ Name = 'Aida Fictus <aida@example.com>' }
+        @{ Name = 'Claude Dupont <claude.dupont@example.com>' }
+        @{ Name = 'Jan Smit <jan@contoso.ai>' }
+        @{ Name = 'Priya Rao <priya@cursor.example.com>' }
+        @{ Name = 'Ai Tanaka <ai@example.com>' }
     ) {
         $message = "Pair work (#1)`n`nCo-authored-by: $Name`n"
 
@@ -73,6 +77,25 @@ Describe 'Remove-AiCoAuthorTrailer' {
         $r = Invoke-Trailer $message
 
         $r.Text | Should -Be $message
+    }
+
+    It 'removes the trailer above the comment lines of a commit made in an editor, and keeps the comments' -Tag '53' {
+        $r = Invoke-Trailer "Change (#1)`n`nCo-authored-by: Copilot <c@example.com>`n# Please enter the commit message.`n# Lines starting with '#' will be ignored.`n"
+
+        $r.Text | Should -Be "Change (#1)`n`n# Please enter the commit message.`n# Lines starting with '#' will be ignored.`n"
+    }
+
+    It 'stops at the scissors line of a verbose commit' -Tag '53' {
+        $r = Invoke-Trailer "Change (#1)`n`nCo-authored-by: Claude <noreply@anthropic.com>`n# ------------------------ >8 ------------------------`n# Do not modify or remove the line above.`ndiff --git a/x b/x`n"
+
+        $r.Text | Should -Not -Match 'Co-authored-by'
+        $r.Text | Should -Match 'diff --git a/x b/x'
+    }
+
+    It 'removes a trailer by its fixed bot address, whatever the name' -Tag '53' {
+        $r = Invoke-Trailer "Change (#1)`n`nCo-authored-by: Some Bot <noreply@anthropic.com>`n"
+
+        $r.Text | Should -Be "Change (#1)`n"
     }
 
     It 'leaves a missing message file alone and exits 0' -Tag '53' {

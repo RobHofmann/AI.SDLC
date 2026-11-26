@@ -188,6 +188,15 @@ Describe 'Check-DocSectionRefs' {
             $r.ExitCode | Should -Be 0 -Because $r.Output
         }
 
+        It 'keeps the hyphen of a space before a dropped mark, as GitHub does' -Tag '89' {
+            Set-Page -Relative 'docs/ask.md' -Text "# Ask`n`n## Is it done ?`n"
+            Set-Page -Relative 'docs/source.md' -Text "[x](ask.md#is-it-done-) explains it."
+
+            $r = Invoke-Gate
+
+            $r.ExitCode | Should -Be 0 -Because $r.Output
+        }
+
         It 'reads the text of a link in a heading, not its target' -Tag '89' {
             Set-Page -Relative 'docs/linked.md' -Text "# Linked`n`n## See [the guide](guide.md) first`n"
             Set-Page -Relative 'docs/source.md' -Text "[x](linked.md#see-the-guide-first) explains it."

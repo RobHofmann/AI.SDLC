@@ -142,7 +142,8 @@ if ($matchTokens.Count -eq 0) {
 }
 
 # Each name is looked for as "First Last" and as "Last, First". A name with a particle also has
-# "particle Last, First" and "Last, First particle" (#89). Initials are not looked for.
+# "particle Last, First" and "Last, First particle" (#89). Initials are not looked for. The reversed
+# forms match the case of the roster only, so "the post, will you" never matches a committer Will Post.
 $forms = [System.Collections.Generic.List[string]]::new()
 foreach ($token in $matchTokens) {
     $words = @($token -split '\s+')
@@ -150,10 +151,10 @@ foreach ($token in $matchTokens) {
     $first = [regex]::Escape($words[0])
     $last = [regex]::Escape($words[-1])
     $particles = if ($words.Count -gt 2) { [regex]::Escape(($words[1..($words.Count - 2)] -join ' ')) } else { '' }
-    $forms.Add("$last,\s*$first")
+    $forms.Add("(?-i:$last,\s*$first)")
     if ($particles) {
-        $forms.Add("$particles $last,\s*$first")
-        $forms.Add("$last,\s*$first $particles")
+        $forms.Add("(?-i:$particles $last,\s*$first)")
+        $forms.Add("(?-i:$last,\s*$first $particles)")
     }
 }
 $escaped = $forms | Sort-Object -Property Length -Descending

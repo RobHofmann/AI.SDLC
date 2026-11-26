@@ -122,6 +122,8 @@ if (-not $PSBoundParameters.ContainsKey('Payload')) {
 $files = @(Get-HookEditedFile -Json $Payload)
 if ($files.Count -eq 0) { exit 0 }
 
+# CLAUDE_PROJECT_DIR first, so a cd out of the repository does not switch the guard off.
+if (-not $RepoRoot -and [Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR')) { $RepoRoot = Find-RepoRootFast -StartPath ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR')) }
 if (-not $RepoRoot) { $RepoRoot = Find-RepoRootFast -StartPath (Get-Location).Path }
 if (-not $RepoRoot) { exit 0 }
 $rootFull = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
