@@ -25,11 +25,22 @@ the analysis of a pull request or of main, never of a feature branch.
 
 ## Set up your token once
 
+- **An agent never asks for the token, never runs the set script and never prints the environment.**
+  The token is the person's own secret; it must not pass through a session, a command line or a log
+  (ADR 0018 of AI.SDLC). When the token is
+  missing, tell the person to run the script below in their own terminal.
 - Make a token in SonarQube Cloud: My Account, Security. It has the rights of your own account.
-- Set it as the user environment variable `AISDLC_SONAR_MCP_TOKEN` on your machine.
+- Run `pwsh .claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1` in your own terminal. It asks
+  for the token with hidden input, checks it with SonarCloud and only then stores it. On Windows it
+  stores your user variable `AISDLC_SONAR_MCP_TOKEN`. On macOS and Linux it writes
+  `~/.config/ai-sdlc/sonar-mcp-token` with mode 600, and prints the one line your shell profile needs.
+  On macOS, start Claude Code or VS Code from a terminal, because an app started another way does not
+  read the shell profile.
+- `Initialize-AiSdlc.ps1` shows a "SonarCloud MCP token" row, and a new session gets one line when the
+  token is missing or the session did not read it.
 - Set the user environment variable `AISDLC_SONAR_ORG` to the organization key, the same value as
   `sonarcloud.organization`. The server sends it in the `SONARQUBE_ORG` header. The dotnet
-  pre-flight (`-IncludeSonar`) reads `SONAR_TOKEN`, so set that one too when you run the scan.
+  pre-flight (`-IncludeSonar`) reads `SONAR_TOKEN` first, and falls back to `AISDLC_SONAR_MCP_TOKEN`.
 - Start Claude Code again in the repository, and approve the `sonarqube` server when it asks.
 - The name is the same for everyone. A rename in `.mcp.json` makes every person change their variable,
   so the gate `Check-McpToken.ps1` fails on any other name.
@@ -40,15 +51,27 @@ the analysis of a pull request or of main, never of a feature branch.
 
 - `.mcp.json` holds `Authorization: Bearer ${AISDLC_SONAR_MCP_TOKEN}` and `SONARQUBE_ORG: ${AISDLC_SONAR_ORG}`.
   The tool fills in the values when it starts the server, so the file is the same on every machine.
-- apm install fills it in too. When `AISDLC_SONAR_MCP_TOKEN` is set in the shell that runs `apm install` or
-  `Update-AiSdlc.ps1`, APM writes the real token into `.mcp.json`. It does the same with
-  `AISDLC_SONAR_ORG`. It does this when it first adds the server, and again when the pack changes the server.
+- apm install fills it in too. When `AISDLC_SONAR_MCP_TOKEN` is set in the shell that runs a plain
+  `apm install`, APM writes the real token into `.mcp.json`. It does the same with `AISDLC_SONAR_ORG`.
+  It does this when it first adds the server, and again when the pack changes the server.
+  `Install-AiSdlc.ps1`, `Update-AiSdlc.ps1` and the setup script of a new consumer run the install
+  without those variables, so they keep the placeholders.
 - The gate `Check-McpToken.ps1` fails the build when the `sonarqube` server sends anything but the
   placeholder, or a written-out organization in `SONARQUBE_ORG`, and never shows the value. It also fails when the value of `AISDLC_SONAR_MCP_TOKEN` or
   `SONAR_TOKEN` stands anywhere in `.mcp.json`, `.github/mcp.json` or `.vscode/mcp.json`. That second
   check needs the variable to be set in the shell that runs the gate. A file that git ignores is skipped.
 - `pwsh .claude/skills/sonarcloud-mcp/scripts/Check-McpToken.ps1 -Fix` writes the placeholders back.
   Run it before you commit an update.
+
+## The tool groups the server offers
+
+The pack sends the header `SONARQUBE_TOOLSETS: projects,issues,quality-gates,rules,measures,coverage,duplications`.
+The server then offers only those groups, so each session loads fewer tools. `change_sonar_issue_status`,
+which `fix-pr-feedback` uses, is in the `issues` group. The groups for security hotspots, dependency
+risks and code analysis are left out. A skill that needs one of them adds its name to the header in the
+`apm.yml` of the pack. A repository with its own `sonarqube` entry adds the header by hand. The groups
+and their tools are listed in the SonarQube MCP server docs:
+https://docs.sonarsource.com/sonarqube-mcp-server/build-and-configure/environment-variables
 
 ## Read the analysis
 
@@ -61,11 +84,11 @@ the analysis of a pull request or of main, never of a feature branch.
 
 ## The mistakes that really happen
 
-- **A token committed with an update.** `Update-AiSdlc.ps1` ran with `AISDLC_SONAR_MCP_TOKEN` set, and the diff
-  of the update held `.mcp.json` with the value. Run the gate with `-Fix`. When the token was pushed,
+- **A token committed with an update.** A plain `apm install`, or an `Update-AiSdlc.ps1` older than this
+  release, ran with `AISDLC_SONAR_MCP_TOKEN` set, and the diff of the update held `.mcp.json` with the value. Run the gate with `-Fix`. When the token was pushed,
   revoke it in SonarQube Cloud and make a new one; a commit in history keeps it.
 - **The server does not answer.** Claude Code was started before `AISDLC_SONAR_MCP_TOKEN` was set, or the server
-  was not approved. Set the variable, start Claude Code again and approve the server.
+  was not approved. Run the set script, start the terminal and Claude Code again, and approve the server.
 - **HTTP 401 "SonarQube token required", with a valid token.** The header still names `SONAR_TOKEN`,
   which Claude Code fills in as an empty value. The gate fails on it; run it with `-Fix`.
 - **"Not authorized or project not found".** The token belongs to an account without rights on the

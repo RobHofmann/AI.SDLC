@@ -60,6 +60,7 @@ clear. The `adr-conventions` skill holds the full rules, and the `write-adr` ski
 | [0015](0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md) | The tests of a shared package live outside the installed package | Accepted |
 | [0016](0016-a-spec-review-runs-next-to-the-code-review.md) | A spec review runs next to the code review | Accepted |
 | [0017](0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) | The shared code rules and the review agents live in core | Accepted |
+| [0018](0018-the-sonarcloud-mcp-token-lives-in-a-user-store.md) | The SonarCloud MCP token lives in a user store | Accepted |
 
 ## Related
 

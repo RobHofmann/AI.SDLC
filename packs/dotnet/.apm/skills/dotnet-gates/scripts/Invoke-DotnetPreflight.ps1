@@ -19,7 +19,10 @@
         dotnet-coverage, then the C04 ratchet (Check-Coverage.ps1, blocking). When dotnet-coverage is
         missing, or the test run wrote no coverage file, the row is a FAIL that names the fix, because
         a ratchet that did not run proves nothing.
-      - SonarCloud quality gate: only with -IncludeSonar. It needs SONAR_TOKEN and uploads a real analysis.
+      - SonarCloud quality gate: only with -IncludeSonar. It needs a token and uploads a real analysis.
+        The usual token is AISDLC_SONAR_MCP_TOKEN, set once with
+        pwsh .claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1. SONAR_TOKEN, then
+        SONARCLOUD_TOKEN, still come first when they are set.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script.
@@ -31,7 +34,8 @@
     Skip the tests and coverage step.
 
 .PARAMETER IncludeSonar
-    Run dotnet-sonarscanner against SonarCloud and poll the quality gate. Requires SONAR_TOKEN; uploads.
+    Run dotnet-sonarscanner against SonarCloud and poll the quality gate. Needs SONAR_TOKEN or
+    AISDLC_SONAR_MCP_TOKEN; uploads.
 
 .EXAMPLE
     pwsh .claude/skills/dotnet-gates/scripts/Invoke-DotnetPreflight.ps1 -SkipTests
@@ -111,27 +115,39 @@ else { New-Row 'Tests + coverage (C04)' 'SKIP' '-SkipTests set' }
 # SonarCloud server quality gate: opt-in, uploads, needs a token. The gate itself is server-side.
 if ($IncludeSonar) {
     Write-Host "`nSonarCloud scan + quality gate (upload)..." -ForegroundColor Cyan
-    $sonarToken = $env:SONAR_TOKEN ?? $env:SONARCLOUD_TOKEN
+    # An empty variable counts as not set. AISDLC_SONAR_MCP_TOKEN, which Set-SonarMcpToken.ps1 stores
+    # once, is the last fallback (#84).
+    $sonarToken = @($env:SONAR_TOKEN, $env:SONARCLOUD_TOKEN, $env:AISDLC_SONAR_MCP_TOKEN) | Where-Object { $_ } | Select-Object -First 1
     $sonarKey = $config.sonarcloud.projectKey
     $sonarOrg = $config.sonarcloud.organization
     if (-not $sonarKey -or -not $sonarOrg) { New-Row 'SonarCloud quality gate' 'SKIP' 'aisdlc.json names no sonarcloud.projectKey and sonarcloud.organization' }
-    elseif (-not $sonarToken) { New-Row 'SonarCloud quality gate' 'NEEDS-TOKEN' 'set SONAR_TOKEN; this uploads a real analysis to SonarCloud (server-side gate, not offline)' }
+    elseif (-not $sonarToken) { New-Row 'SonarCloud quality gate' 'NEEDS-TOKEN' 'set AISDLC_SONAR_MCP_TOKEN once: run pwsh .claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1 in your own terminal (SONAR_TOKEN still comes first); this uploads a real analysis to SonarCloud (server-side gate, not offline)' }
     elseif (-not (Get-Command dotnet-sonarscanner -ErrorAction SilentlyContinue)) { New-Row 'SonarCloud quality gate' 'SKIP' 'dotnet-sonarscanner not installed (dotnet tool install --global dotnet-sonarscanner)' }
     else {
         # The scanner reads SONAR_TOKEN from the environment; never pass it as a command-line argument
         # (process args are visible to other processes). Check each step before continuing so a failed
         # begin or build is not hidden behind the end step's exit code.
+        # SONAR_TOKEN goes back to what it was after the scan, so a fallback token does not stay set
+        # for the later steps of the pre-flight.
+        $hadSonarToken = Test-Path -LiteralPath Env:SONAR_TOKEN
+        $previousSonarToken = $env:SONAR_TOKEN
         $env:SONAR_TOKEN = $sonarToken
-        & dotnet-sonarscanner begin /k:"$sonarKey" /o:"$sonarOrg" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.qualitygate.wait=true 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { New-Row 'SonarCloud quality gate' 'FAIL' "sonarscanner begin failed (exit $LASTEXITCODE)" }
-        else {
-            & dotnet build $sln -c Release --nologo 2>&1 | Out-Null
-            if ($LASTEXITCODE -ne 0) { New-Row 'SonarCloud quality gate' 'FAIL' "build under the scanner failed (exit $LASTEXITCODE)" }
+        try {
+            & dotnet-sonarscanner begin /k:"$sonarKey" /o:"$sonarOrg" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.qualitygate.wait=true 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) { New-Row 'SonarCloud quality gate' 'FAIL' "sonarscanner begin failed (exit $LASTEXITCODE)" }
             else {
-                & dotnet-sonarscanner end 2>&1 | Out-Null
-                New-Row 'SonarCloud quality gate' ($(if ($LASTEXITCODE -eq 0) { 'PASS' } else { 'REVIEW' })) "scanner uploaded; sonar.qualitygate.wait returns the server verdict (exit $LASTEXITCODE)"
+                & dotnet build $sln -c Release --nologo 2>&1 | Out-Null
+                if ($LASTEXITCODE -ne 0) { New-Row 'SonarCloud quality gate' 'FAIL' "build under the scanner failed (exit $LASTEXITCODE)" }
+                else {
+                    & dotnet-sonarscanner end 2>&1 | Out-Null
+                    New-Row 'SonarCloud quality gate' ($(if ($LASTEXITCODE -eq 0) { 'PASS' } else { 'REVIEW' })) "scanner uploaded; sonar.qualitygate.wait returns the server verdict (exit $LASTEXITCODE)"
+                }
             }
+        }
+        finally {
+            if ($hadSonarToken) { $env:SONAR_TOKEN = $previousSonarToken }
+            else { Remove-Item -LiteralPath Env:SONAR_TOKEN -ErrorAction SilentlyContinue }
         }
     }
 }
-else { New-Row 'SonarCloud quality gate' 'OPT-IN' 'run with -IncludeSonar (needs SONAR_TOKEN; uploads to SonarCloud; the gate is server-side, not offline)' }
+else { New-Row 'SonarCloud quality gate' 'OPT-IN' 'run with -IncludeSonar (needs SONAR_TOKEN or AISDLC_SONAR_MCP_TOKEN; uploads to SonarCloud; the gate is server-side, not offline)' }

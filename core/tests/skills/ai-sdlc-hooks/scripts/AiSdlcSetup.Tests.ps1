@@ -68,6 +68,75 @@ Describe 'AiSdlcSetup' {
         }
     }
 
+    Context 'Invoke-WithoutSonarToken' {
+        BeforeEach {
+            $script:SavedSecrets = @{ Mcp = $env:AISDLC_SONAR_MCP_TOKEN; Org = $env:AISDLC_SONAR_ORG; Sonar = $env:SONAR_TOKEN }
+            $env:AISDLC_SONAR_MCP_TOKEN = 'fake-sonar-token-84'
+            $env:AISDLC_SONAR_ORG = 'fake-org-84'
+            $env:SONAR_TOKEN = 'fake-sonar-token-84'
+        }
+
+        AfterEach {
+            $env:AISDLC_SONAR_MCP_TOKEN = $script:SavedSecrets.Mcp
+            $env:AISDLC_SONAR_ORG = $script:SavedSecrets.Org
+            $env:SONAR_TOKEN = $script:SavedSecrets.Sonar
+        }
+
+        It 'removes the three variables inside the block and restores them after it' -Tag '84' {
+            $inside = Invoke-WithoutSonarToken { @((Test-Path Env:AISDLC_SONAR_MCP_TOKEN), (Test-Path Env:AISDLC_SONAR_ORG), (Test-Path Env:SONAR_TOKEN)) }
+
+            $inside | Should -Be @($false, $false, $false)
+            $env:AISDLC_SONAR_MCP_TOKEN | Should -Be 'fake-sonar-token-84'
+            $env:AISDLC_SONAR_ORG | Should -Be 'fake-org-84'
+            $env:SONAR_TOKEN | Should -Be 'fake-sonar-token-84'
+        }
+
+        It 'restores the variables when the block throws' -Tag '84' {
+            { Invoke-WithoutSonarToken { throw 'boom' } } | Should -Throw 'boom'
+
+            $env:AISDLC_SONAR_MCP_TOKEN | Should -Be 'fake-sonar-token-84'
+            $env:AISDLC_SONAR_ORG | Should -Be 'fake-org-84'
+            $env:SONAR_TOKEN | Should -Be 'fake-sonar-token-84'
+        }
+
+        It 'leaves a variable unset when it was not set before' -Tag '84' {
+            Remove-Item Env:SONAR_TOKEN
+
+            Invoke-WithoutSonarToken { }
+
+            Test-Path Env:SONAR_TOKEN | Should -BeFalse
+            $env:AISDLC_SONAR_MCP_TOKEN | Should -Be 'fake-sonar-token-84'
+        }
+
+        It 'prints no value of a variable' -Tag '84' {
+            $out = Invoke-WithoutSonarToken { 'inside'; Write-Verbose 'inside' -Verbose } *>&1 | Out-String
+
+            $out | Should -Match 'inside'
+            $out | Should -Not -Match 'fake-sonar-token-84'
+            $out | Should -Not -Match 'fake-org-84'
+        }
+
+        It 'returns only the variables that were set, from Remove-ApmSecretVariable' -Tag '84' {
+            Remove-Item Env:SONAR_TOKEN
+            Remove-Item Env:AISDLC_SONAR_ORG
+
+            $saved = Remove-ApmSecretVariable
+
+            $saved.Keys | Should -Be @('AISDLC_SONAR_MCP_TOKEN')
+            Test-Path Env:AISDLC_SONAR_MCP_TOKEN | Should -BeFalse
+            Restore-ApmSecretVariable -Saved $saved
+            $env:AISDLC_SONAR_MCP_TOKEN | Should -Be 'fake-sonar-token-84'
+        }
+
+        It 'keeps the LASTEXITCODE that the block set' -Tag '84' {
+            $global:LASTEXITCODE = 0
+
+            Invoke-WithoutSonarToken { $global:LASTEXITCODE = 7 }
+
+            $LASTEXITCODE | Should -Be 7
+        }
+    }
+
     Context 'Set-GitHookExecutable' {
         BeforeEach {
             $script:Repo = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
@@ -199,6 +268,33 @@ Describe 'AiSdlcSetup' {
             Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 0
 
             $script:RanIn | Should -Be (Resolve-Path -LiteralPath $script:Repo).Path
+        }
+
+        It 'runs apm without the Sonar variables and brings them back, in the repository itself and in a local worktree' -Tag '84' -ForEach @('0', '1') {
+            $env:AISDLC_APM_LOCAL_INSTALL = $_
+            $saved = @{ Mcp = $env:AISDLC_SONAR_MCP_TOKEN; Org = $env:AISDLC_SONAR_ORG; Sonar = $env:SONAR_TOKEN }
+            try {
+                $env:AISDLC_SONAR_MCP_TOKEN = 'fake-sonar-token-84'
+                $env:AISDLC_SONAR_ORG = 'fake-org-84'
+                $env:SONAR_TOKEN = 'fake-sonar-token-84'
+                $script:Seen = $null
+                Mock apm {
+                    $script:Seen = @((Test-Path Env:AISDLC_SONAR_MCP_TOKEN), (Test-Path Env:AISDLC_SONAR_ORG), (Test-Path Env:SONAR_TOKEN))
+                    $global:LASTEXITCODE = 0
+                }
+
+                Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 0
+
+                $script:Seen | Should -Be @($false, $false, $false)
+                $env:AISDLC_SONAR_MCP_TOKEN | Should -Be 'fake-sonar-token-84'
+                $env:AISDLC_SONAR_ORG | Should -Be 'fake-org-84'
+                $env:SONAR_TOKEN | Should -Be 'fake-sonar-token-84'
+            }
+            finally {
+                $env:AISDLC_SONAR_MCP_TOKEN = $saved.Mcp
+                $env:AISDLC_SONAR_ORG = $saved.Org
+                $env:SONAR_TOKEN = $saved.Sonar
+            }
         }
 
         It 'returns the exit code of apm' {

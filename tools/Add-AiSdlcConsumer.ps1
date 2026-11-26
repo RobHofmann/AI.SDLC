@@ -504,8 +504,8 @@ if ('github-issues' -in $Packs) {
 if (-not $SkipInstall) {
     Push-Location $TargetRepo
     try {
-        apm install
-        if ($LASTEXITCODE -ne 0) { throw "$(Get-ApmInstallFailureHint -ExitCode $LASTEXITCODE) Then run this again with -Force." }
+        $installCode = Invoke-WithoutSonarToken { apm install | Out-Host; $LASTEXITCODE }
+        if ($installCode -ne 0) { throw "$(Get-ApmInstallFailureHint -ExitCode $installCode) Then run this again with -Force." }
         if ($newDocs -or $newFunctional) {
             pwsh -NoProfile -File (Join-Path $TargetRepo '.claude' 'skills' 'ai-sdlc-gates' 'scripts' 'Build-DocsIndex.ps1') -RepoRoot $TargetRepo
             if ($LASTEXITCODE -ne 0) { throw "Build-DocsIndex.ps1 failed with exit code $LASTEXITCODE." }

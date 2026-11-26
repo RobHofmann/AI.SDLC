@@ -46,8 +46,9 @@ The technical page of each pack lists its skills, agents and gates by name: [dot
 
 - A repository joins the AI-SDLC: the setup script picks the packs from what the repository holds, and
   always adds `github` and `github-issues` ([joining](joining.md)). It adds `discovery`, `knowledge`
-  and `sonarcloud` only when you ask for them, for example with `-AddPacks sonarcloud`. With `sonarcloud`, each person sets their own SonarCloud token in the
-  variable `AISDLC_SONAR_MCP_TOKEN`; it never goes in a file.
+  and `sonarcloud` only when you ask for them, for example with `-AddPacks sonarcloud`. With `sonarcloud`, each person sets their own SonarCloud token once,
+  with `pwsh .claude/skills/sonarcloud-mcp/scripts/Set-SonarMcpToken.ps1` in their own terminal. It
+  never goes in a file of the repository.
 - A repository gains a technology, for example its first Bicep template: add the pack to `apm.yml`,
   and take it with the next install. `apm.yml` is the one list of the packs a repository uses.
 - The team needs a rule for a technology nobody covers yet: a new pack in AI.SDLC, through a pull request there.

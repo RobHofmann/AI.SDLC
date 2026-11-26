@@ -204,6 +204,8 @@ GitHub Copilot ignores the `if` field of a hook and runs every hook entry in tur
 
 `New-AiSdlcUpdatePullRequest.ps1` takes the newest AI.SDLC release on the branch `ai-sdlc-<tag>`, with `Update-AiSdlc.ps1 -NoGates`, and opens one pull request. It reads the story key from the tag message and the consumer steps from `CHANGELOG.md` of that tag, in a temporary bare clone of one commit. The description lists the old skill names in the repository's own files and the steps of each release since the pinned one. It stops when the working tree has changes, and does nothing when the branch is already on origin. It closes an open update pull request of an older release. The `update-ai-sdlc` skill and the workflow `ai-sdlc-update.yml` run it. `AiSdlcSetup.ps1` holds the reading of `apm.yml` (`Get-AiSdlcPin`) and the newest tag (`Get-AiSdlcReleaseTag`) that it shares with `Update-AiSdlc.ps1`.
 
+`AiSdlcSetup.ps1` also runs every `apm install` of the shared scripts without `AISDLC_SONAR_MCP_TOKEN`, `AISDLC_SONAR_ORG` and `SONAR_TOKEN` (`Invoke-WithoutSonarToken`). APM writes the value of such a variable into `.mcp.json`, and the update pull request must keep the placeholders.
+
 `Find-RetiredSkillNames.ps1` lists the lines in the repository's own files that still use a retired skill name. `Update-AiSdlc.ps1` runs it after an update. It leaves out the ADR folder (`paths.adrFolder`), because an ADR is history. It also leaves out the files that `paths.historyPaths` marks as history, and prints one line with how many places it left out. A pattern that matches no file gives a warning, and the script still never fails.
 
 ## Changing it safely

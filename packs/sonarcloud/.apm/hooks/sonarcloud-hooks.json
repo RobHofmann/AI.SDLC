@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/sonarcloud-mcp/scripts/Invoke-SonarTokenHook.ps1')\"",
+            "timeout": 30,
+            "statusMessage": "Checking the SonarCloud MCP token..."
+          }
+        ]
+      }
+    ]
+  }
+}

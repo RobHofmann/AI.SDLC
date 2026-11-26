@@ -94,6 +94,44 @@ dependencies:
         $staged | Should -Contain 'AGENTS.md'
     }
 
+    It 'leaves .mcp.json with the placeholders when AISDLC_SONAR_MCP_TOKEN and AISDLC_SONAR_ORG are set, and brings the variables back' -Tag '84' {
+        $saved = @{ Mcp = $env:AISDLC_SONAR_MCP_TOKEN; Org = $env:AISDLC_SONAR_ORG; Sonar = $env:SONAR_TOKEN }
+        try {
+            $env:AISDLC_SONAR_MCP_TOKEN = 'fake-sonar-token-84'
+            $env:AISDLC_SONAR_ORG = 'fake-org-84'
+            $env:SONAR_TOKEN = 'fake-sonar-token-84'
+            $root = New-ConsumerRepo
+            $global:UpdateAiSdlcTest.McpRoot = $root
+            # Like apm: a variable that is set goes into the file as its value, a variable that is not set stays a placeholder.
+            Mock apm {
+                $global:UpdateAiSdlcTest.ApmCalls.Add(($args -join ' '))
+                if ($args[0] -eq 'install') {
+                    $token = if ($env:AISDLC_SONAR_MCP_TOKEN) { $env:AISDLC_SONAR_MCP_TOKEN } else { '${AISDLC_SONAR_MCP_TOKEN}' }
+                    $org = if ($env:AISDLC_SONAR_ORG) { $env:AISDLC_SONAR_ORG } else { '${AISDLC_SONAR_ORG}' }
+                    Set-Content -LiteralPath (Join-Path $global:UpdateAiSdlcTest.McpRoot '.mcp.json') -Value "{ `"mcpServers`": { `"sonarqube`": { `"headers`": { `"Authorization`": `"Bearer $token`", `"SONARQUBE_ORG`": `"$org`" } } } }"
+                }
+                $global:LASTEXITCODE = 0
+            }
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $mcp = Get-Content -LiteralPath (Join-Path $root '.mcp.json') -Raw
+            $mcp | Should -Match ([regex]::Escape('Bearer ${AISDLC_SONAR_MCP_TOKEN}')) -Because $out
+            $mcp | Should -Match ([regex]::Escape('${AISDLC_SONAR_ORG}'))
+            $mcp | Should -Not -Match 'fake-sonar-token-84'
+            $mcp | Should -Not -Match 'fake-org-84'
+            $env:AISDLC_SONAR_MCP_TOKEN | Should -Be 'fake-sonar-token-84'
+            $env:AISDLC_SONAR_ORG | Should -Be 'fake-org-84'
+            $env:SONAR_TOKEN | Should -Be 'fake-sonar-token-84'
+            $out | Should -Not -Match 'fake-sonar-token-84'
+        }
+        finally {
+            $env:AISDLC_SONAR_MCP_TOKEN = $saved.Mcp
+            $env:AISDLC_SONAR_ORG = $saved.Org
+            $env:SONAR_TOKEN = $saved.Sonar
+        }
+    }
+
     It 'writes the allow rules of the installed packages and stages .claude/settings.json' {
         $root = New-ConsumerRepo
         $gates = Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
