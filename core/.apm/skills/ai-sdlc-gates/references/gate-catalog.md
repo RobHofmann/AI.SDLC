@@ -20,6 +20,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: C02
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.ps1`
 - Checks: It scans the docs for a line number such as `file.ext:42` or the words line 42. It does not check that a cited path or symbol exists. Exit 2 means a path passed with `-Path` is missing, and exit 3 means there is no markdown file to scan.
 - Fix: Replace each line number with the file path and the name of the symbol.
@@ -38,6 +39,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: C05
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocsWiki.ps1`
 - Checks: It reads every page of the doc layers and fails on a broken relative link, an orphan page or an isolated page. It does not check external links or whether an index is current. Exit 2 means none of the doc layers exists, and it never exits 3.
 - Fix: Link the page from a related page, or correct the broken link so that it points at a file that exists.
@@ -47,6 +49,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: C05
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1`
 - Checks: It builds each doc index again in memory and compares it with the committed file. It does not check the content or the links of a page. Exit 2 means none of the doc layers exists, and it never exits 3.
 - Fix: Run `Build-DocsIndex.ps1` without `-Check` and commit the index files it writes.
@@ -56,6 +59,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: C06
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.ps1`
 - Checks: It scans `AGENTS.md` and the doc layers for the em-dash character (U+2014). It does not check source files. Exit 2 means a path passed with `-Path` or the doc layers do not exist, and it never exits 3.
 - Fix: Replace each em-dash with a comma, a colon or a hyphen with a space on each side.
@@ -65,6 +69,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: AI-SDLC
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-AgentsFileSize.ps1`
 - Checks: It counts the lines and the words of the file that `paths.agentsFile` names, and fails over either limit. It does not check what the file says. Exit 2 means the file is missing, and it never exits 3.
 - Fix: Move detail from the agents file into a docs page and link it, until both counts are under the limit.
@@ -92,6 +97,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: AI-SDLC
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.md`, `.claude/**`, `.gitignore`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Sync-AgentsFile.ps1`
 - Checks: It builds the shared parts of the agents file from the installed packages and compares them with the marked parts in the file. It does not check the text outside the markers. Exit 2 means the file, a package part or a marker is missing, and it never exits 3.
 - Fix: Run `Sync-AgentsFile.ps1` without `-Check` and commit the agents file.
@@ -101,6 +107,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: C11
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.md`, `**/.reading-level-allowlist`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocReadingLevel.ps1`
 - Checks: It reads every markdown file and fails on a sentence over 25 words or on a word above level B1. It does not read code, links or the words on the allow list. Exit 2 means a path passed with `-Path` is missing, and exit 3 means there is no markdown file.
 - Fix: Split each long sentence into shorter ones, and replace each hard word with a plain word.
@@ -110,6 +117,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: AI-SDLC
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `.claude/**`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-SkillHygiene.ps1`
 - Checks: It reads each skill under `.claude/skills` and checks its name, description, links, standing rules and failure-mode sections. It does not judge whether the text is useful. Exit 3 means there is no skills folder, and it never exits 2.
 - Fix: Add the missing front matter field or section to the skill, as the finding names it.
@@ -119,6 +127,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: AI-SDLC
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `.claude/**`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-AgentHygiene.ps1`
 - Checks: It reads each file under `.claude/agents` and checks its name, tools, persona and standing rules. Only the listed writer agent may edit files. Exit 2 means the persona list is missing, and exit 3 means there is no agents folder.
 - Fix: Give the agent an explicit tool list without edit tools, a `Persona:` line from `personas.md` and a standing rules section.
@@ -137,6 +146,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: C05
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocRowContent.ps1`
 - Checks: It scans the docs for an empty claim, an empty table row, a template fragment, an empty table and a path from one machine. It does not judge whether a fact is true. Exit 2 means none of the doc roots exists, and it never exits 3.
 - Fix: Delete the empty row or line, or write the fact that it should hold.
@@ -147,8 +157,8 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Advisory
 - Runs in: pull request action (as a warning), local run
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-ChangeCompleteness.ps1`
-- Checks: It reads the changed files and reports a source change with no changed test file. It also reports a source area whose docs and ADRs did not change. It does not judge the quality of the tests. Exit 3 means no behaviour file changed, and it never exits 2.
-- Fix: Add or update a test for the changed behaviour, and update the doc page of the area or add an ADR.
+- Checks: It reads the changed files and reports a source change with no changed test file. It also reports a source area whose docs and ADRs did not change. A commit trailer `No-Test` or `No-Docs` with a listed reason clears the files of its own commit, and the output names each waiver. Exit 3 means no behaviour file changed, and it never exits 2.
+- Fix: Add the test and the doc page of the area, or run wrap-up, which writes a `No-Test` or `No-Docs` trailer after the reviewer agrees.
 
 ### The pull request names a story, and its description is not empty or cut off
 
@@ -253,13 +263,13 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Checks: It reads the lines that the change adds to `.cs` files and names each public or protected declaration with no `///` line above it. It skips tests, generated files and overrides. Exit 2 means the change could not be worked out, and it never exits 3.
 - Fix: Add a `/// <summary>` doc comment above the declaration that the finding names.
 
-### Every test class carries a Story trait with a well-formed story key
+### Test classes and methods that the change adds carry a Story trait with a real key
 
 - Clause: C04
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/dotnet-gates/scripts/Check-StoryTraits.ps1`
-- Checks: It scans the test classes under `paths.testRoot` and fails on a class with no Story trait and on a malformed story key. It does not run the tests. Exit 2 means `paths.testRoot` is not set, and it never exits 3.
+- Checks: It reads only the lines that the change adds, in the test files under `paths.testRoot`. It fails on a test class or method that the change adds with no Story trait, and on a malformed key on an added line. LEGACY-0 stays allowed on older code, but never covers code that the change adds. Exit 2 means `paths.testRoot` is not set or there is no merge base, and it never exits 3.
 - Fix: Add a Story trait with the story key, such as `#42`, to the test class, or correct the malformed key.
 
 ### JSON wire names in C# and in specs are PascalCase
@@ -277,7 +287,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Advisory
 - Runs in: pull request action (as a warning), local run
 - Script: `.claude/skills/dotnet-gates/scripts/Check-SpecDrift.ps1`
-- Checks: It finds changed controllers and route files, and checks that the spec that covers the same resource changed too. It does nothing for an endpoint with no spec. Exit 3 means there is no spec or no changed file, and it never exits 2.
+- Checks: It reads only the routes and DTO types on the lines that the change adds or removes. It checks that the spec for the same resource changed too, and does nothing for an endpoint with no spec. Exit 2 means CHANGED_FILES is set but there is no merge base. Exit 3 means there is no spec or no changed file.
 - Fix: Update the spec under `specs/` for the changed endpoint, or confirm that the wire shape did not change.
 
 ### Docs match the code they cite
@@ -286,7 +296,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/dotnet-gates/scripts/Check-DocDrift.ps1`
-- Checks: It compares each page with the source files it cites. It fails on a stale path, a name that exists nowhere, a missing constant or a missing route. It does not need the code graph. Exit 2 means `paths.sourceRoot` is not set, and it never exits 3.
+- Checks: It judges only the lines that the change adds, changes or removes, and lists older drift as not blocking. It fails on a constant or service that the change adds and the page lacks, or on a cited name that the change removed. It also fails on a bad name on a page line that the change adds. Exit 2 means `paths.sourceRoot` is not set or there is no merge base, and it never exits 3.
 - Fix: Update the page to name the code as it is now, or remove the reference to a file or a name that is gone.
 
 ### Line coverage stays at the baseline, and a gain of a point is written to the baseline file
@@ -306,8 +316,8 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/check-pr-contract/scripts/Check-PrStoryContract.ps1`
-- Checks: It finds the story key in the branch, title, body or closing issues, and reads the issue with `gh`. It checks that the issue has the refined label, and that a data-model change has an ADR for the story. Exit 2 means `gh` or its token is missing, and exit 3 means there is no pull request context.
-- Fix: Name an issue with the refined label in the branch, the title or the body, and add an ADR for a data-model change.
+- Checks: It finds the story key in the branch, title, body or closing issues, and reads the issue with `gh`. It checks that the issue has the refined label. A data-model change needs an ADR for the story, or a commit with a `No-ADR` trailer that gives a why. Exit 2 means `gh` or its token is missing, and exit 3 means there is no pull request context.
+- Fix: Name a refined issue in the branch, the title or the body, and add an ADR for a data-model change, or a `No-ADR` trailer.
 
 ### Each issue that an ADR names points back at that ADR
 
@@ -315,7 +325,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Advisory
 - Runs in: pull request action (as a warning), local run
 - Script: `.claude/skills/check-pr-contract/scripts/Check-StoryBackEdges.ps1`
-- Checks: It reads the `story:` key of each ADR, reads the issue body with `gh`, and warns when the body does not mention the ADR. It runs only in GitHub Actions with a token. Exit 2 means no issue body could be read, and exit 3 means no ADR names a story or the run is not GitHub Actions.
+- Checks: It reads an ADR only when the change adds or changes its `story:` line. It reads the issue body with `gh`, and warns when the body does not mention the ADR. Exit 2 means no issue body could be read or there is no merge base. Exit 3 means no ADR story line changed or the run is not GitHub Actions.
 - Fix: Add the ADR to the Decisions and ADRs section of the issue body, and quote the story key in the ADR front matter.
 
 ## sonarcloud

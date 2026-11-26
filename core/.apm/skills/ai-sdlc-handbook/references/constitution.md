@@ -42,13 +42,17 @@ clause in each session.
 
 - **Statement:** A change that makes a decision the architecture rests on must add or update an ADR in
   the same change. The ADRs live in the ADR folder (`paths.adrFolder` in `aisdlc.json`), with the README
-  of that folder as the index.
+  of that folder as the index. A decision rests on the architecture only when it passes the three tests
+  of the `adr-conventions` skill. The tests are: hard to undo, surprising without context, and a real
+  trade-off.
 - **Rationale:** It stops the team and the agents from reopening a settled decision, or undoing it
   without noticing. The ADR is the lasting "why".
 - **Enforcement:** code review - active; the `write-adr` skill flags a decision that needs a record -
   active. Where the github-issues pack is installed, `Check-PrStoryContract.ps1` blocks in the pull request
   workflow. It fails a change to a data-model file (`tracker.dataModelPatterns`) with no ADR whose `story:`
-  is the story key - active. `Check-StoryBackEdges.ps1` reports a story that does not link back to its ADR
+  is the story key - active. A `No-ADR: <why>` trailer on a commit of the pull request waives it. Only
+  `wrap-up` writes that trailer, after the `architect` agent agrees that the decision misses a test. The
+  person who reviews the pull request reads it. `Check-StoryBackEdges.ps1` reports a story that does not link back to its ADR
   (advisory) - active. Deferred: a CI check for a decision outside the data model.
 - **Short form:** A decision the architecture rests on needs an ADR before merge.
 

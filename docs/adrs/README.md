@@ -62,6 +62,8 @@ clear. The `adr-conventions` skill holds the full rules, and the `write-adr` ski
 | [0017](0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) | The shared code rules and the review agents live in core | Accepted |
 | [0018](0018-the-sonarcloud-mcp-token-lives-in-a-user-store.md) | The SonarCloud MCP token lives in a user store | Accepted |
 | [0019](0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md) | A gate reports pass, finding, could not check or not applicable | Accepted |
+| [0020](0020-a-local-run-checks-what-the-change-touches.md) | A local run checks what the change touches | Accepted |
+| [0021](0021-a-stated-waiver-clears-a-test-doc-or-adr-finding.md) | A stated waiver clears a test, doc or ADR finding | Accepted |
 | [0022](0022-a-published-pull-request-puts-its-stories-in-review-with-a-label.md) | A published pull request puts its stories in review with a label | Accepted |
 | [0023](0023-a-story-has-six-sections-with-budgets-at-most-5-criteria-and-ste100.md) | A story has six sections with budgets, at most 5 plain criteria, and follows ASD-STE100 | Accepted |
 | [0024](0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md) | The agent opens a draft pull request, and the person publishes it | Accepted |
