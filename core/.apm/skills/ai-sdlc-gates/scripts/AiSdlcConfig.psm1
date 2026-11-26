@@ -40,6 +40,11 @@
     if (Test-AiSdlcPack -Name dotnet) { dotnet build (Get-AiSdlcPath -Name solution) }
 
 .EXAMPLE
+    Get-AiSdlcKnowledgeRoot -RepoRoot C:/src/repo/.claude/worktrees/fix
+    Returns the full path of paths.knowledgeRoot. In a linked git worktree it falls back to the folder
+    next to the main checkout, so ../Knowledge is found from .claude/worktrees/<name> too.
+
+.EXAMPLE
     'Fixes #42' -match (Get-AiSdlcStoryPattern)
     The story key pattern comes from tracker.keyPattern. Without one, a GitHub issue key matches:
     #42, or owner/repo#42 for an issue in another repository.
@@ -263,6 +268,40 @@ function Get-AiSdlcPath {
     return $values | ForEach-Object { Join-Path $config.repoRoot $_ }
 }
 
+function Get-AiSdlcKnowledgeRoot {
+    # Returns the full path of paths.knowledgeRoot, or $null when it is empty. An absolute value is used
+    # as it is. A relative value is resolved against the repository root first. In a linked git worktree,
+    # such as .claude/worktrees/<name>, the default ../Knowledge points inside the main clone, where no
+    # knowledge clone is (#31). So when the folder is not there and the repository is a linked worktree,
+    # the value is resolved against the main checkout as well, and that folder is used when it exists.
+    # When neither folder exists, the path next to the repository root comes back, so a message can name it.
+    [CmdletBinding()]
+    param([string]$RepoRoot)
+
+    $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
+    $root = [string]$config.paths.knowledgeRoot
+    if (-not $root) { return $null }
+    if ([IO.Path]::IsPathRooted($root)) { return $root }
+
+    $local = [IO.Path]::GetFullPath((Join-Path $config.repoRoot $root))
+    if (Test-Path -LiteralPath $local -PathType Container) { return $local }
+
+    $git = @(git -C $config.repoRoot rev-parse --path-format=absolute --git-dir --git-common-dir --show-toplevel 2>$null)
+    if ($LASTEXITCODE -ne 0 -or $git.Count -ne 3) { return $local }
+    $gitDir = [IO.Path]::GetFullPath($git[0])
+    $commonDir = [IO.Path]::GetFullPath($git[1])
+    $top = [IO.Path]::GetFullPath($git[2])
+    # Only a linked worktree has a git dir apart from the common dir. A bare repository or a submodule
+    # keeps its common dir in no folder named .git, so it has no main checkout to fall back to.
+    if ($gitDir -eq $commonDir -or (Split-Path $commonDir -Leaf) -ne '.git') { return $local }
+
+    $mainTop = Split-Path $commonDir -Parent
+    $offset = [IO.Path]::GetRelativePath($top, $config.repoRoot)
+    $main = [IO.Path]::GetFullPath((Join-Path $mainTop $offset $root))
+    if (Test-Path -LiteralPath $main -PathType Container) { return $main }
+    return $local
+}
+
 function Test-AiSdlcPack {
     [CmdletBinding()]
     param(
@@ -413,4 +452,4 @@ function Get-AiSdlcPackage {
     }
 }
 
-Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage
+Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage

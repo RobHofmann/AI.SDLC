@@ -8,6 +8,15 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.4.5 - 2026-11-26
+
+- A relative `paths.knowledgeRoot` is found from a linked git worktree too. In a worktree under
+  `.claude/worktrees/<name>`, `../Knowledge` pointed inside the main clone, so the private-terms gate
+  found no list and blocked the pre-flight. The new `Get-AiSdlcKnowledgeRoot` in `AiSdlcConfig.psm1`
+  falls back to the folder next to the main checkout, found through `git rev-parse --git-common-dir`.
+  A folder next to the worktree still wins. `Check-PrivateTerms.ps1`, `Sync-AllowRules.ps1` and the
+  knowledge folder hint of the setup use it (#31).
+
 ## v1.4.4 - 2026-11-26
 
 - On a network share, the repository path is a UNC path, and PowerShell wrote it with a `FileSystem::`

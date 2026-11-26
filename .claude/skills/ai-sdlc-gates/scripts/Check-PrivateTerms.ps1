@@ -22,7 +22,8 @@
       1. -TermsFile;
       2. the content of the environment variable AISDLC_PRIVATE_TERMS (in CI, from a secret);
       3. paths.privateTermsFile in aisdlc.json;
-      4. <paths.knowledgeRoot>/ai-sdlc/private-terms.txt.
+      4. <paths.knowledgeRoot>/ai-sdlc/private-terms.txt. In a linked git worktree, a relative
+         knowledgeRoot that is not there is resolved against the main checkout as well.
 
     The output never holds the matched text or the rule text. A finding reads "<file>:<line>  rule <n>",
     where n is the line number of the rule in the list. The owner of the list looks the rule up.
@@ -135,7 +136,8 @@ if ($null -eq $listText -and $env:AISDLC_PRIVATE_TERMS -and $env:AISDLC_PRIVATE_
 if ($null -eq $listText) {
     $candidates = @()
     if ($config.paths.privateTermsFile) { $candidates += Resolve-RepoPath $config.paths.privateTermsFile }
-    if ($config.paths.knowledgeRoot) { $candidates += Resolve-RepoPath (Join-Path $config.paths.knowledgeRoot 'ai-sdlc' 'private-terms.txt') }
+    $knowledgeRoot = Get-AiSdlcKnowledgeRoot -RepoRoot $RepoRoot
+    if ($knowledgeRoot) { $candidates += Join-Path $knowledgeRoot 'ai-sdlc' 'private-terms.txt' }
     foreach ($candidate in $candidates) {
         if (Test-Path -LiteralPath $candidate -PathType Leaf) {
             $listText = Get-Content -LiteralPath $candidate -Raw

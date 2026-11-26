@@ -28,7 +28,7 @@ A shared skill names no repository, server or address. Each skill reads where th
 | Field | What it holds | Read by |
 |---|---|---|
 | `knowledge.repository` | The `owner/name` of the knowledge repository | `write-platform-note`, to open its pull request there |
-| `paths.knowledgeRoot` | The local clone of the knowledge repository, `../Knowledge` by default | both skills |
+| `paths.knowledgeRoot` | The local clone of the knowledge repository, `../Knowledge` by default. In a linked git worktree, a relative path that is not there is resolved against the main checkout | both skills |
 | `paths.platformKnowledge` | The folder of the platform notes in the repository itself, when a repository keeps its own | `write-platform-note`, `platform-knowledge-conventions` |
 
 A skill says so plainly when the knowledge folder is missing, and asks the person when a field it

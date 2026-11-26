@@ -15,8 +15,9 @@
         what to run. The check is advisory: a missing login never stops apm install.
 
     Get-KnowledgeFolderHint -RepoRoot <path>
-        Returns $null when the folder in paths.knowledgeRoot of aisdlc.json exists. Otherwise it returns
-        one advisory line, with the gh repo clone command when knowledge.repository is set.
+        Returns $null when the folder in paths.knowledgeRoot of aisdlc.json exists; in a linked git
+        worktree, the folder next to the main checkout counts too. Otherwise it returns one advisory
+        line, with the gh repo clone command when knowledge.repository is set.
 
     Get-ApmInstallFailureHint -ExitCode <n>
         Returns the message for a failed apm install: its exit code and the two usual causes, a private
@@ -87,7 +88,7 @@ function Get-KnowledgeFolderHint {
     $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
     $root = [string]$config.paths.knowledgeRoot
     if (-not $root) { return $null }
-    $full = if ([IO.Path]::IsPathRooted($root)) { $root } else { Join-Path $RepoRoot $root }
+    $full = Get-AiSdlcKnowledgeRoot -RepoRoot $RepoRoot
     if (Test-Path -LiteralPath $full -PathType Container) { return $null }
     $hint = "The knowledge folder $root is not there, so the skills search only the docs of this repository."
     if ($config.knowledge.repository) { return "$hint Clone it with: gh repo clone $($config.knowledge.repository) $root" }
