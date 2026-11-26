@@ -309,7 +309,7 @@
       "files": {
         ".claude/skills/fix-pr-feedback/SKILL.md": "559047f827853374d1823832de326fd0dfd79e15",
         ".claude/skills/github-actions-conventions/SKILL.md": "16c3d369277163bc029a48bea8aeddabc38f2dba",
-        ".claude/skills/github-pull-requests/gates.json": "22e4cd0a50784be13a858ec7d662204e1700bd96",
+        ".claude/skills/github-pull-requests/gates.json": "67e282a56340d84adcdbc9bd1bcba0671970acef",
         ".claude/skills/github-pull-requests/references/delivery-metrics.md": "355038d329f6dc4e895912ecfc7c5698140a2851",
         ".claude/skills/github-pull-requests/references/pr-path-and-copilot.md": "2f7330644b3b2236282e746de0bb03b4431edad2",
         ".claude/skills/github-pull-requests/scripts/Get-PrMetrics.ps1": "7e0fedd5456977dea0ab7da1a2c0ceff45fdb94d",
