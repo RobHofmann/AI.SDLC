@@ -390,4 +390,33 @@ Describe 'AiSdlcConfig' {
         }
     }
 
+    Context 'Test-AiSdlcPathExcluded' {
+        It 'is true for a file below a folder with an excluded name, whatever its depth' -Tag '88' {
+            $root = Join-Path ([IO.Path]::GetTempPath()) 'repo-root'
+
+            Test-AiSdlcPathExcluded -RepoRoot $root -FullName (Join-Path $root '.claude' 'skills' 'a.bicep') -Folder '.claude' | Should -BeTrue
+            Test-AiSdlcPathExcluded -RepoRoot $root -FullName (Join-Path $root 'infra' 'node_modules' 'pkg' 'a.bicep') -Folder 'node_modules' | Should -BeTrue
+        }
+
+        It 'is false for a file that only has the name in its own name, outside the folder or without a list' -Tag '88' {
+            $root = Join-Path ([IO.Path]::GetTempPath()) 'repo-root'
+
+            Test-AiSdlcPathExcluded -RepoRoot $root -FullName (Join-Path $root 'infra' '.claude') -Folder '.claude' | Should -BeFalse
+            Test-AiSdlcPathExcluded -RepoRoot $root -FullName (Join-Path $root 'infra' 'a.bicep') -Folder '.claude' | Should -BeFalse
+            Test-AiSdlcPathExcluded -RepoRoot $root -FullName (Join-Path $root '.claude' 'a.bicep') | Should -BeFalse
+        }
+
+        It 'ignores a folder above the repository root, such as a worktree under .claude/worktrees' -Tag '88' {
+            $root = Join-Path ([IO.Path]::GetTempPath()) '.claude' 'worktrees' 'repo-root'
+
+            Test-AiSdlcPathExcluded -RepoRoot $root -FullName (Join-Path $root 'infra' 'a.bicep') -Folder '.claude' | Should -BeFalse
+        }
+
+        It 'ignores case in the folder name' -Tag '88' {
+            $root = Join-Path ([IO.Path]::GetTempPath()) 'repo-root'
+
+            Test-AiSdlcPathExcluded -RepoRoot $root -FullName (Join-Path $root 'Node_Modules' 'a.bicep') -Folder 'node_modules' | Should -BeTrue
+        }
+    }
+
 }

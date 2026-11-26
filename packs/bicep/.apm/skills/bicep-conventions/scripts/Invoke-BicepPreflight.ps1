@@ -6,9 +6,11 @@
 
 .DESCRIPTION
     Invoke-Preflight.ps1 runs this script for a repository whose apm.yml lists the bicep pack. It
-    finds every .bicep file outside .claude/, .git/ and apm_modules/ and builds it into a temporary
-    folder, never to stdout: the Azure CLI crashes on Windows when a compiled template holds a character
-    the console encoding cannot print. It returns one pre-flight row: PASS when every template builds,
+    finds every .bicep file outside the .claude, .git, apm_modules and node_modules folders of the
+    repository. Only folders inside the repository count, so a worktree under .claude/worktrees/ still
+    builds its templates. It builds each template into a temporary folder, never to stdout: the Azure
+    CLI crashes on Windows when a compiled template holds a character the console encoding cannot
+    print. It returns one pre-flight row: PASS when every template builds,
     FAIL with the templates that do not, and NOT-AVAIL when no Bicep tool is installed.
 
     It picks the Bicep CLI the way az bicep does by default, so a laptop and a hosted agent build with
@@ -106,8 +108,8 @@ if (-not $Builder) {
     }
 }
 
-$skip = '[\\/](\.claude|\.git|apm_modules|node_modules)[\\/]'
-$templates = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -File -Filter '*.bicep' | Where-Object { $_.FullName -notmatch $skip })
+$skipped = @('.claude', '.git', 'apm_modules', 'node_modules')
+$templates = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -File -Filter '*.bicep' | Where-Object { -not (Test-AiSdlcPathExcluded -RepoRoot $RepoRoot -FullName $_.FullName -Folder $skipped) })
 if ($templates.Count -eq 0) {
     Show-PreflightResult ([pscustomobject]@{ Check = $check; Status = 'PASS'; Detail = 'no .bicep file in the repository' })
     return
