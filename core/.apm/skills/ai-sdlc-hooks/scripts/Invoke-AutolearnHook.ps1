@@ -1,13 +1,13 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    UserPromptSubmit and Stop hook: notice that the user corrected the agent, and make sure the
-    lesson is captured before the turn ends.
+    UserPromptSubmit and Stop hook: notice that the user corrected the agent, make sure the lesson is
+    captured before the turn ends, and remind the agent of lesson proposals that are still open.
 
 .DESCRIPTION
     The autolearn loop (.claude/skills/ai-sdlc-handbook/references/autolearn.md) only pays off when it runs on the day the
     correction happens. Waiting for someone to remember a skill at the end of the week is what it
-    replaces, so two of its moments are made deterministic here.
+    replaces, so three of its moments are made deterministic here.
 
       - UserPromptSubmit: when the prompt matches a short list of correction phrases, in English and
         Dutch, the hook writes a flag for this session and returns additionalContext that tells the
@@ -15,6 +15,22 @@
       - Stop: when that flag is there, the hook deletes it and then blocks the stop once, with the
         same instruction. Deleting before blocking is what stops a loop: one correction can be
         redeemed one time, so the agent can always finish its turn.
+
+      - UserPromptSubmit, second kind: when the prompt asks the agent to update or revise its advice or
+        recommendation, in English or Dutch, and is not a correction, the hook returns a softer
+        additionalContext that asks two questions about a lesson. It writes no flag, so Stop does nothing.
+        Correction phrases are tested first and win.
+
+      - UserPromptSubmit, first prompt of a session: the capture-learning skill keeps a lesson proposal
+        that still waits for an answer as one line in temp/autolearn/pending.md of the checkout. On the
+        first prompt of a session the hook writes a .seen marker next to the flag, finds the checkout
+        from the cwd of the payload and counts the non-empty lines of that file. When the count is above
+        zero it adds a sentence to the context that names the file and the count, and asks the agent to
+        bring the proposals up through the capture-learning skill when the work allows. It only reads and
+        counts: it never writes the file and never prints a line of it. A payload without a cwd, a
+        missing, empty or unreadable file, or a folder that is no git checkout, adds nothing. The hook
+        does not use SessionStart: the sonarcloud pack already has an entry there, and APM 0.31.0 reports
+        drift in apm audit when two packages add an entry to one event.
 
     The script never judges whether a lesson is real. It says a correction just happened and names the
     page that holds the rules; the judgement stays with the skill and the human.
@@ -27,7 +43,8 @@
 
     The Stop payload is written in both shapes in one object: the top-level decision/reason pair and
     the nested hookSpecificOutput, so the hook keeps working whichever shape the running agent reads.
-    The flag holds a timestamp and nothing else. No prompt text is ever written to disk. The flag name
+    The flag holds a timestamp and nothing else. No prompt text is ever written to disk; the hook only
+    reads and counts the file that the agent writes. The flag name
     never starts with a dot, because such a file is hidden on Linux and the agents run on both.
 
 .PARAMETER Payload
@@ -37,13 +54,18 @@
     The folder that holds the per-session flags. Defaults to a ai-sdlc-autolearn folder in the
     temporary folder, so nothing lands in the repository.
 
+.PARAMETER StateRetentionDays
+    Days before a session marker (.seen) is swept from the flag folder, so the folder does not grow
+    without end.
+
 .EXAMPLE
     '{"hook_event_name":"UserPromptSubmit","session_id":"abc","user_input":"no, that is wrong"}' | pwsh .claude/skills/ai-sdlc-hooks/scripts/Invoke-AutolearnHook.ps1
 #>
 [CmdletBinding()]
 param(
     [string]$Payload,
-    [string]$FlagRoot = (Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath 'ai-sdlc-autolearn')
+    [string]$FlagRoot = (Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath 'ai-sdlc-autolearn'),
+    [int]$StateRetentionDays = 14
 )
 
 $ErrorActionPreference = 'Stop'
@@ -75,6 +97,28 @@ $correctionPatterns = @(
     '\bdraai\s+(?:dat|het|dit)\s+terug\b'
 )
 
+$adviceUpdatePatterns = @(
+    '\b(?:update|revise|reconsider)\s+your\s+(?:advice|recommendations?)\b'
+    '\b(?:update|updaten|herzie)\s+(?:je|jouw)\s+(?:advies|aanbeveling(?:en)?)\b'
+    '\b(?:pas|werk)\s+(?:je|jouw)\s+(?:advies|aanbeveling(?:en)?)\s+(?:\w+\s+)?(?:aan|bij)\b'
+    '\b(?:je|jouw)\s+(?:advies|aanbeveling(?:en)?)\s+(?:\w+\s+){0,2}(?:updaten|herzien|bijwerken|aanpassen)\b'
+)
+
+$adviceUpdateNegations = @(
+    "\b(?:(?:not|don'?t|never)\s+(?:need\s+to\s+)?|no\s+need\s+to\s+|(?:don'?t|do\s+not)\s+think\s+you\s+should\s+)(?:update|revise|reconsider)\s+your\s+(?:advice|recommendations?)\b"
+    '\b(?:advies|aanbeveling(?:en)?)\s+(?:\w+\s+){0,2}?niet\s+(?:\w+\s+)?(?:aan|bij|updaten|herzien|bijwerken|aanpassen)\b'
+    '\b(?:update|updaten|herzie)\s+(?:je|jouw)\s+(?:advies|aanbeveling(?:en)?)\s+(?:\w+\s+)?niet\b'
+)
+
+$adviceUpdateInstruction = @(
+    'The user asked you to update your advice, often with new input. First update the advice.'
+    'Then ask yourself two questions: could you have found or asked for this input before you advised,'
+    'and does it hold beyond this work item? When both answers are no, say nothing about a lesson.'
+    'When one answer is yes, propose a capture through the capture-learning skill, and never write it'
+    'without asking. While the proposal waits for an answer, keep it in temp/autolearn/pending.md as'
+    'that skill says. The filter and the route table are in .claude/skills/ai-sdlc-handbook/references/autolearn.md.'
+) -join ' '
+
 $instruction = @(
     'A correction just happened in this session. Run the capture-learning skill on it before this'
     'turn ends: decide whether the lesson is general, and when it is, name its home and propose the'
@@ -100,14 +144,27 @@ function Get-PayloadField {
     return $null
 }
 
-function Test-IsCorrection {
-    param([string]$Text)
+function Test-MatchesAny {
+    param([string]$Text, [string[]]$Patterns)
 
     if ([string]::IsNullOrWhiteSpace($Text)) { return $false }
-    foreach ($pattern in $correctionPatterns) {
+    foreach ($pattern in $Patterns) {
         if ($Text -match "(?im)$pattern") { return $true }
     }
     return $false
+}
+
+function Test-IsCorrection {
+    param([string]$Text)
+
+    return (Test-MatchesAny -Text $Text -Patterns $correctionPatterns)
+}
+
+function Test-IsAdviceUpdate {
+    param([string]$Text)
+
+    if (Test-MatchesAny -Text $Text -Patterns $adviceUpdateNegations) { return $false }
+    return (Test-MatchesAny -Text $Text -Patterns $adviceUpdatePatterns)
 }
 
 function Get-FlagPath {
@@ -119,8 +176,44 @@ function Get-FlagPath {
 }
 
 function Write-PromptContext {
+    param([string]$Text)
+
     Import-Module (Join-Path $PSScriptRoot 'HookPayload.psm1') -Force
-    New-HookContextOutput -EventName 'UserPromptSubmit' -Text $instruction | Write-Output
+    New-HookContextOutput -EventName 'UserPromptSubmit' -Text $Text | Write-Output
+}
+
+function Get-OpenProposalCount {
+    param([object]$Hook)
+
+    $cwd = Get-PayloadField -Hook $Hook -Names @('cwd')
+    if (-not $cwd) { return 0 }
+    $root = [string](git -C $cwd rev-parse --show-toplevel 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $root.Trim()) { return 0 }
+
+    $file = Join-Path -Path $root.Trim() -ChildPath 'temp' 'autolearn' 'pending.md'
+    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { return 0 }
+    return @(Get-Content -LiteralPath $file | Where-Object { $_.Trim() }).Count
+}
+
+function Get-OpenProposalReminder {
+    param([object]$Hook, [string]$SeenPath)
+
+    if (-not (Get-PayloadField -Hook $Hook -Names @('cwd'))) { return $null }
+    $folder = Split-Path -Path $SeenPath -Parent
+    if (-not (Test-Path -LiteralPath $folder)) { New-Item -ItemType Directory -Path $folder -Force | Out-Null }
+    $cutoff = (Get-Date).AddDays(-$StateRetentionDays)
+    foreach ($file in Get-ChildItem -LiteralPath $folder -Filter '*.seen' -File -Force -ErrorAction SilentlyContinue) {
+        if ($file.Attributes.HasFlag([IO.FileAttributes]::ReparsePoint)) { continue }
+        if ($file.LastWriteTime -lt $cutoff) { Remove-Item -LiteralPath $file.FullName -Force -ErrorAction SilentlyContinue }
+    }
+    try { [IO.File]::Open($SeenPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write).Dispose() }
+    catch { return $null }
+
+    $open = Get-OpenProposalCount -Hook $Hook
+    if ($open -le 0) { return $null }
+    return ("temp/autolearn/pending.md holds $open open lesson proposal(s) that still wait for an answer. " +
+        'When the current work allows, bring them up to the user through the capture-learning skill. ' +
+        'Never edit the file without the skill.')
 }
 
 function Write-StopBlock {
@@ -150,11 +243,18 @@ $flagPath = Get-FlagPath -SessionId (Get-PayloadField -Hook $hook -Names @('sess
 switch ($hookEvent) {
     'UserPromptSubmit' {
         $prompt = Get-PayloadField -Hook $hook -Names @('user_input', 'prompt', 'userInput')
-        if (-not (Test-IsCorrection -Text $prompt)) { exit 0 }
-
-        if (-not (Test-Path -LiteralPath $FlagRoot)) { New-Item -ItemType Directory -Path $FlagRoot -Force | Out-Null }
-        Set-Content -LiteralPath $flagPath -Value (Get-Date -Format 'o') -Encoding utf8
-        Write-PromptContext
+        $parts = [Collections.Generic.List[string]]::new()
+        if (Test-IsCorrection -Text $prompt) {
+            if (-not (Test-Path -LiteralPath $FlagRoot)) { New-Item -ItemType Directory -Path $FlagRoot -Force | Out-Null }
+            Set-Content -LiteralPath $flagPath -Value (Get-Date -Format 'o') -Encoding utf8
+            $parts.Add($instruction)
+        }
+        elseif (Test-IsAdviceUpdate -Text $prompt) {
+            $parts.Add($adviceUpdateInstruction)
+        }
+        $reminder = Get-OpenProposalReminder -Hook $hook -SeenPath ([IO.Path]::ChangeExtension($flagPath, '.seen'))
+        if ($reminder) { $parts.Add($reminder) }
+        if ($parts.Count -gt 0) { Write-PromptContext -Text ($parts -join ' ') }
         exit 0
     }
     'Stop' {

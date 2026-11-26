@@ -27,7 +27,7 @@ sit in this skill's `scripts/` folder. Each hook command finds its script in the
 | Before an edit or write | `Deny-SharedFileEdit.ps1` | Refuses an edit to a file listed in `apm.lock.yaml`, and names its source in AI.SDLC |
 | Before an edit or write | `Invoke-CompactSuggestionHook.ps1` | Suggests a compact at a logical boundary when the context window is full |
 | After an edit or write | `Invoke-PostEditCheck.ps1` | Runs the reading-level and em-dash gates on a markdown file, and hands any other file to the `postEdit` script of the pack that claims its extension, for example the dotnet build of a C# file |
-| When a prompt arrives, and at stop | `Invoke-AutolearnHook.ps1` | Reminds the agent to capture a correction as a lesson |
+| When a prompt arrives, and at stop | `Invoke-AutolearnHook.ps1` | Reminds the agent to capture a correction as a lesson, asks two lesson questions after a request to update its advice, and names the open lesson proposals on the first prompt of a session |
 
 The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph` refuses a raw
 `graphify` query in Bash or PowerShell on a stale code graph.

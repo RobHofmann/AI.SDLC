@@ -196,6 +196,8 @@ The agent never merges, because the owner's merge is the approval (Checkpoint Br
 
 GitHub Copilot ignores the `if` field of a hook and runs every hook entry in turn before each tool call. So each hook script checks the command or file before it loads a slow module. Only `HookPayload.psm1`, which reads the payload, may load first. The push check has one entry per tool. Each hook command finds its script through `CLAUDE_PROJECT_DIR`, or the current folder when that is not set, so a `cd` in the session does not break it.
 
+`Invoke-AutolearnHook.ps1` flags a correction and asks for `capture-learning`. When the user only asks the agent to update its advice, it adds a softer note with two lesson questions and no flag. Its phrase lists are tested with their "no" forms too. On the first prompt of a session it counts the open lesson proposals in `temp/autolearn/pending.md`, and never shows their text.
+
 `Sync-AllowRules.ps1` writes the commands that each installed package lists under `allow` in its `gates.json` into `.claude/settings.json`. It also writes the full path of the knowledge folder into `permissions.additionalDirectories` of `.claude/settings.local.json`, which stays on one machine. It does so only for a folder below the parent folder of the repository that no link leads to. Any other knowledge folder is skipped with a FIX line. `Initialize-AiSdlc.ps1` and `Update-AiSdlc.ps1` run it, and an advisory gate runs it with `-Check`.
 
 `Sync-AgentsFile.ps1`, which `Update-AiSdlc.ps1` runs, moves a root `CLAUDE.md` that only imports `AGENTS.md` to `.claude/CLAUDE.md`. Copilot reads a root `CLAUDE.md` and its import, so it loaded `AGENTS.md` twice.
