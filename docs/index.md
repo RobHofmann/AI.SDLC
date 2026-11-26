@@ -21,6 +21,8 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0013: Docs that span projects live in a knowledge repository](./adrs/0013-docs-that-span-projects-live-in-a-knowledge-repository.md) - Each repository documents itself in two layers of markdown (ADR 0008).
 - [ADR 0014: Every rule has one source of truth](./adrs/0014-every-rule-has-one-source-of-truth.md) - The core clauses lived in two places.
 - [ADR 0015: The tests of a shared package live outside the installed package](./adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md) - A shared script kept its Pester test next to it, in `<package>/.apm/skills/<skill>/scripts/`.
+- [ADR 0016: A spec review runs next to the code review](./adrs/0016-a-spec-review-runs-next-to-the-code-review.md) - The review step of `implement` asks whether a change is built right.
+- [ADR 0017: The shared code rules and the review agents live in core](./adrs/0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) - The code rules that hold in every language lived inside `csharp-generation-smells` of the dotnet pack.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General
