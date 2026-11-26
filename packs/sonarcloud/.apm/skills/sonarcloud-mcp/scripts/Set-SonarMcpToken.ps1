@@ -67,10 +67,15 @@ function Write-TokenFile {
 
     $folder = Split-Path -Parent $Path
     $onUnix = -not [OperatingSystem]::IsWindows()
+    # A link at the folder or the file could send the token to a place someone else chose.
+    foreach ($item in $folder, $Path) {
+        if ((Test-Path -LiteralPath $item) -and (Get-Item -LiteralPath $item -Force).LinkTarget) { throw "$item is a link; remove it, then run this again. Nothing stored." }
+    }
     if (-not (Test-Path -LiteralPath $folder)) {
         if ($onUnix) { [IO.Directory]::CreateDirectory($folder, [IO.UnixFileMode]'UserRead, UserWrite, UserExecute') | Out-Null }
         else { New-Item -ItemType Directory -Path $folder -Force | Out-Null }
     }
+    elseif ($onUnix) { [IO.File]::SetUnixFileMode($folder, [IO.UnixFileMode]'UserRead, UserWrite, UserExecute') }
     $options = [IO.FileStreamOptions]::new()
     $options.Mode = [IO.FileMode]::Create
     $options.Access = [IO.FileAccess]::Write

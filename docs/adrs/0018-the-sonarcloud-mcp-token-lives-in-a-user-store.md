@@ -83,7 +83,9 @@ when the session did not read it. It says nothing when the token is set.
 - On macOS, an app that is not started from a terminal does not read the shell profile. The person starts Claude
   Code or VS Code from a terminal.
 - Any process of the person can read the variable. That is the same for every tool that reads an
-  environment variable.
+  environment variable. It includes the shell of an agent session, so a command that prints the
+  environment would show the token. Only the rule in the `sonarcloud-mcp` skill guards that today.
+  A hook that refuses such a command, or a header that a helper reads when it is needed, would close it.
 
 **Neutral:**
 

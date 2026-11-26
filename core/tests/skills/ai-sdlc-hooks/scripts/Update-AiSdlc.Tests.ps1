@@ -163,8 +163,22 @@ dependencies:
             }
         }
 
+        It 'stages a new .mcp.json only after the token check, and a tracked one without it' -Tag '85' {
+            $root = New-ConsumerRepo
+            Set-McpOnInstall -Root $root
+
+            $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
+
+            $LASTEXITCODE | Should -Be 0 -Because $out
+            @(git -C $root diff --cached --name-only) | Should -Not -Contain '.mcp.json'
+            $out | Should -Match 'not staged'
+        }
+
         It 'stages .mcp.json after an update that adds an MCP server' -Tag '85' {
             $root = New-ConsumerRepo
+            Set-Content -LiteralPath (Join-Path $root '.mcp.json') -Value '{ "mcpServers": {} }'
+            git -C $root add .mcp.json
+            git -C $root commit --quiet -m mcp --no-verify
             Set-McpOnInstall -Root $root
 
             $out = Invoke-Update -Root $root -Extra @{ Ref = 'v1.2.0'; NoGates = $true }
