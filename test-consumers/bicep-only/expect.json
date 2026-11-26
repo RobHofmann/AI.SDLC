@@ -8,6 +8,7 @@
     ".claude/agents/code-reviewer.md",
     ".claude/agents/test-analyzer.md",
     ".claude/agents/security-reviewer.md",
+    ".claude/agents/spec-reviewer.md",
     ".claude/skills/bicep-conventions/references/bicep.md",
     ".claude/skills/bicep-conventions/scripts/Get-BicepFacts.ps1"
   ],

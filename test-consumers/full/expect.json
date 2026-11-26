@@ -9,6 +9,7 @@
     ".claude/skills/code-conventions/references/skills-by-file-type.md",
     ".claude/agents/test-analyzer.md",
     ".claude/agents/security-reviewer.md",
+    ".claude/agents/spec-reviewer.md",
     ".claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1",
     ".claude/skills/test-first-dotnet/SKILL.md",
     ".claude/skills/blazor-conventions/SKILL.md",

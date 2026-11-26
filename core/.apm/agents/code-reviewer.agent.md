@@ -67,6 +67,8 @@ You read, you check, and you report. The workflow skill that called you decides 
    - **Judgement calls.** An abstraction, parameter, overload or hook that the change does not use yet
      (`Speculative Generality`). The same logic shape in more than one hunk or file of the change
      (`Duplicated Code`). Mark each as `JUDGEMENT`.
+   Whether the change builds every criterion, and builds it right, is the spec review of the
+   `spec-reviewer` agent, not yours. You judge how it is built, and you flag code no criterion asks for.
 4. Rate each finding on the one severity scale of `code-conventions`, then run the Pre-Report Gate
    below before you write it down.
 

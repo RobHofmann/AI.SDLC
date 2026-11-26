@@ -86,7 +86,8 @@ From the start to the open pull request the work runs on its own, as
    `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC, secrets, network access, outbound
    calls, JS interop or request logging. If you cannot run agents, load
    [code-conventions](/.claude/skills/code-conventions/SKILL.md), the convention skills of the changed
-   files and each topic skill that fits, such as `blazor-authorization`, and review the diff yourself. Fix each finding or decline it with a reason, and run the checks again. A finding tagged
+   files and each topic skill that fits, such as `blazor-authorization`, and review the diff yourself.
+   A refactor keeps the behaviour, so it runs no `spec-reviewer`. Fix each finding or decline it with a reason, and run the checks again. A finding tagged
    `[HIGH][DESIGN]` needs a design change: stop and ask, do not loop on it.
 7. **Wrap up, push, PR.** Write the evidence record in `temp/`. It holds the tests green before and
    after, every check result and every finding fixed or declined. It also says whether each review ran

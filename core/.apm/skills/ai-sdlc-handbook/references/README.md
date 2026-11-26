@@ -220,6 +220,7 @@ the model of the session is. Claude Code, Copilot CLI and Copilot in VS Code all
 | `blind-judge` | core | Lead | `opus` | `test-skills` Layer 2 |
 | `builder` | core | Developer | `sonnet` | the test-first build step of `implement` |
 | `draft-reviewer` | github-issues | Product Manager, QA, Analyst | `opus` | `grilling` and `/convene-personas` panels; blind review of every Checkpoint Alpha draft |
+| `spec-reviewer` | core | Product Manager, QA | `opus` | the review step of `implement`, next to the code review; not `refactor` |
 | `code-reviewer` | core | Lead, Developer | `sonnet` | the review step; `refactor`; `update-constitution` check mode |
 | `test-analyzer` | core | QA | `sonnet` | the review step of `implement` and `refactor` (a bug fix from `fix-bug` reaches it inside `implement`) |
 | `security-reviewer` | core | Lead | `opus` | the review step when auth, RBAC, outbound calls, JS interop or request logging move; `grilling` and `/convene-personas` panels |

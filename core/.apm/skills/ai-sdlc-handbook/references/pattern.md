@@ -218,6 +218,7 @@ one-word answer cost 1.51 AI credits on claude-sonnet-5 and 43.51 on claude-opus
 |---|---|---|
 | `architect` | `opus` | judges fit with the architecture and the ADRs |
 | `security-reviewer` | `opus` | a missed security defect costs the most |
+| `spec-reviewer` | `opus` | judges whether the change is the right thing, against the issue |
 | `blind-judge` | `opus` | scores two outputs on judgement alone |
 | `draft-reviewer` (github-issues) | `opus` | judges whether a draft is ready for Checkpoint Alpha |
 | `substrate-walker` | `sonnet` | collects and sums up context |

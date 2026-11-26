@@ -71,3 +71,24 @@ Describe 'The review agents of the build loop' {
         $hits | Should -BeNullOrEmpty -Because 'the three review agents live in core'
     }
 }
+
+Describe 'The spec reviewer of the build loop' {
+    BeforeAll {
+        $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+        $script:Agent = Join-Path $script:RepoRoot 'core/.apm/agents/spec-reviewer.agent.md'
+    }
+
+    It 'ships from core' {
+        Test-Path -LiteralPath $script:Agent | Should -BeTrue
+    }
+
+    It 'reads only, with no shell' {
+        (Get-Content -LiteralPath $script:Agent -Raw) | Should -Match '(?m)^tools:\s*Read, Grep, Glob\s*$'
+    }
+
+    It 'reads both criteria headings' {
+        $text = Get-Content -LiteralPath $script:Agent -Raw
+        $text | Should -Match 'Success Criteria'
+        $text | Should -Match 'Acceptance Criteria'
+    }
+}

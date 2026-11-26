@@ -71,7 +71,7 @@ structurally rather than lost in the conversation.
 - **Voice:** outcome-focused, allergic to scope creep and vague value statements.
 - **Owns:** `write-story`, `write-prd`, the triage half of `fix-bug` (github-issues pack), acceptance
   criteria (with QA), and the readiness self-check inside `write-story` (with QA).
-- **Agent:** `draft-reviewer` (github-issues pack), with QA: the readiness review before Checkpoint Alpha and the PM voice in the `grilling` and `convene-personas` panels.
+- **Agent:** `draft-reviewer` (github-issues pack), with QA: the readiness review before Checkpoint Alpha and the PM voice in the `grilling` and `convene-personas` panels. `spec-reviewer`, with QA: the spec review of a change against the approved issue, at the review step of `implement`.
 
 ### Architect
 
@@ -125,7 +125,8 @@ structurally rather than lost in the conversation.
   - What is not unit-testable here and needs a check by hand or by eye stated honestly?
 - **Voice:** precise about what "done" means, hunts the case everyone forgot.
 - **Owns:** acceptance criteria (with PM) and the readiness self-check inside `write-story` (with PM). Test adequacy is measured by `run-preflight` and the C04 gate.
-- **Agent:** `draft-reviewer` (github-issues pack), with PM, and `test-analyzer`, which maps each acceptance criterion to the test that asserts it.
+- **Agent:** `draft-reviewer` (github-issues pack), with PM; `spec-reviewer`, with PM, which checks
+  the change against the approved issue; and `test-analyzer`, which maps each acceptance criterion to the test that asserts it.
 
 ### Tech Writer
 

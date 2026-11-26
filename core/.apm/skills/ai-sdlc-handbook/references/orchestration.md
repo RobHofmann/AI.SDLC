@@ -62,9 +62,13 @@ for this. That script can change only the title and the description, never a sta
 3. The branch is created. Then the `builder` agent builds test-first on Sonnet, from the plan and the
    context block. Where it cannot run or cannot write files, the main session builds.
 4. The tests and the local gates run until green.
-5. The review agents of core review side by side: `code-reviewer` and `test-analyzer`. Each one reads
-   the convention skills of the changed files from the table in `code-conventions`.
-   `security-reviewer` joins when the diff touches auth, RBAC, secrets, network access, outbound calls,
+5. Two reviews run side by side, each in its own agent, so neither sees the other's reasoning. The
+   spec review of the `spec-reviewer` agent asks whether the change is the right thing. It compares
+   the diff with the approved issue and the governing ADRs. The session reads the issue with `gh` and
+   passes it in, because the agent has no shell. The review agents `code-reviewer` and `test-analyzer`
+   ask whether it is built right. Each one reads the convention skills of the changed files from the
+   table in `code-conventions`. The spec review belongs to `implement`; `refactor` keeps the
+   behaviour, so it runs only the code review. `security-reviewer` joins when the diff touches auth, RBAC, secrets, network access, outbound calls,
    JS interop or request logging. Where the agents cannot run, the skill reviews the diff itself. Nothing is committed before `wrap-up`, so the diff comes from the working
    tree: `git add --intent-to-add .`, then `git diff $(git merge-base origin/main HEAD)`.
 6. The findings are fixed and checked again.
@@ -122,7 +126,8 @@ and holds:
 
 - each acceptance criterion with the test that asserts it;
 - every check result;
-- every review finding, marked fixed or declined with the reason;
+- the spec review and the code review as two separate reports, never merged into one list, each
+  finding marked fixed or declined with the reason;
 - the ADRs written;
 - what was not checked, for example "not deployed to dev";
 - whether each review ran in an agent or inline;
@@ -224,7 +229,8 @@ file says `opus` or `sonnet` when the call passes no model, so the agent does no
 
 One agent comes from a pack: `draft-reviewer` from the github-issues pack. In a repository without
 that pack the agent is not there, so the skill takes the fallback in the same way. The review agents
-`code-reviewer`, `test-analyzer` and `security-reviewer` are in core, so every repository has them.
+`spec-reviewer`, `code-reviewer`, `test-analyzer` and `security-reviewer` are in core, so every
+repository has them.
 
 Every agent is read-only except `builder`, which writes code and tests and nothing else. A reviewer
 that can write is no longer independent. The builder exists so the build step runs on a chosen model,

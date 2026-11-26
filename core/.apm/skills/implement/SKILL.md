@@ -103,19 +103,28 @@ grows, switch to the full path.
 7. **Review.** Nothing is committed yet, so build the diff from the working tree. Run
    `git add --intent-to-add .`, so new files show, then write
    `git diff $(git merge-base origin/main HEAD)` to `temp/review.diff`, since the reviewers have no
-   shell. Hand it, with the story key and its acceptance criteria, to the review agents of core side by
-   side: `code-reviewer` and `test-analyzer`. Both run on Sonnet 5.5 (model `sonnet` in Claude Code,
-   `claude-sonnet-5.5` in Copilot), and each reads the convention skills of the changed files from the
-   table in `code-conventions`. Add `security-reviewer` on Opus 5.5 (model `opus` in Claude Code,
-   `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC, secrets, network access, outbound
-   calls, JS interop or request logging. If you cannot run agents, load `code-conventions`, the
-   convention skills of the changed files and each topic skill that fits, such as
-   `blazor-authorization`, and review the diff yourself. Then say in the evidence record that the review ran inline. Fix each
+   shell. Read the issue with `gh issue view <n> --json title,body,comments`, since the reviewers cannot.
+   Then run two reviews side by side, each in its own agent:
+   - **Spec.** Hand the `spec-reviewer` agent the diff, the title, body and comments of the issue, and
+     the governing ADRs from the context block. It runs on Opus 5.5 (model `opus` in Claude Code,
+     `claude-opus-5.5` in Copilot). It reports missing, unasked and wrong behaviour.
+   - **Standards.** Hand the diff, with the story key and its acceptance criteria, to `code-reviewer`
+     and `test-analyzer`. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in
+     Copilot), and each reads the convention skills of the changed files from the table in
+     `code-conventions`. Add `security-reviewer` on Opus 5.5 (model `opus` in Claude Code,
+     `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC, secrets, network access, outbound
+     calls, JS interop or request logging.
+
+   Keep the reports apart: never merge or rerank them into one list. If you cannot run agents, do both
+   reviews yourself. Answer the three questions of the `spec-reviewer` agent as one report. Then load
+   `code-conventions`, the convention skills of the changed files and each topic skill that fits, such
+   as `blazor-authorization`, and review the diff as another. Say in the evidence record that the
+   review ran inline. Fix each
    finding or decline it with a reason, then check again. Run `update-constitution` in check mode.
 8. **Wrap up and record.** Check that each acceptance criterion maps to a test or a check. When none
    does, stop and say so: nothing shows the change does what the story asks, so no pull request opens.
    Write the pull request description in `temp/` in the evidence record shape
-   from orchestration.md. Then run `wrap-up`, the single owner of the rest of the change. It searches
+   from orchestration.md. It keeps the spec review and the code review as two reports. Then run `wrap-up`, the single owner of the rest of the change. It searches
    the repository for what the change renamed or removed. It runs `write-docs` for both doc layers,
    with the `docs-reviewer` agent, and the ADR check through `write-adr`. It brings the story and the
    pull request contract in line, and runs the lessons step. It ends by committing and running
