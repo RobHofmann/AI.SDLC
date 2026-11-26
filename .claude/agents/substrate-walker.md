@@ -49,6 +49,11 @@ You report what the code and the work items say. You never guess what they mean.
    - **Reuse:** services, clients and builders that already do part of the job (the project pages
      that `paths.sourceDocMap` in aisdlc.json names).
    - **Avoid:** patterns the ADRs or conventions forbid in this area.
+   - **Nearest examples:** only when the change touches C# or Razor, for each type it touches, run
+     `pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1 -Type <Type>, <Type>`. Add
+     `-Dependency <Type>` for a dependency the story adds. Copy its lines into the block, "none found"
+     included. For another stack, write "not run: no C# or Razor in this change". They do not count
+     against the read budget.
    - **Callers:** when the dotnet pack is installed and the graph exists, run
      `pwsh .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1 affected "<Symbol>" --depth 2`.
      The graph holds no Bicep, no workflow YAML and no Service Bus links, so grep for those. Without
@@ -63,6 +68,7 @@ Your shell is for reading only. Run only the commands below. Never run a command
 commits, pushes, restores, deletes or installs. Never call an outside system that changes state.
 
 - `pwsh .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1 affected|explain|path ...`, only when the dotnet pack is installed
+- `pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1 ...`
 - `git log`, `git show` and `git diff` with any read-only options
 - `gh issue view`, `gh issue list`, `gh pr list`, `gh pr view` and `gh api` with GET requests only
 

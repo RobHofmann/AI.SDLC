@@ -17,9 +17,9 @@ description: >
 
 This is a fast check for the mistakes generated C# really makes here. Most are judgement calls that no
 analyzer enforces, so the build stays green while the code drifts. Each item points at the page that
-holds the full rule; the page wins when the two differ. The rules that hold in every language, such as
-reuse before you build, build only what the story needs, a twin follows its sibling and fix the class,
-live once in [code-conventions](/.claude/skills/code-conventions/SKILL.md). This skill adds the C# and
+holds the full rule; the page wins when the two differ. The rules that hold in every language live once in
+[code-conventions](/.claude/skills/code-conventions/SKILL.md). Examples are reuse before you build,
+build only what the story needs, a twin follows its sibling, and fix the class. This skill adds the C# and
 Razor rules only. `implement`, `refactor` and `fix-pr-feedback`
 load this at the build and review steps. The `builder`, `code-reviewer` and `security-reviewer` agents
 read it through the table of file types in `code-conventions`.

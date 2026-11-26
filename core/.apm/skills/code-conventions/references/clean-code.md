@@ -29,7 +29,8 @@ leave it out until a real need comes.
 - **A function does one thing**, at one level of abstraction.
 - **Command-query separation.** A method either does something or answers something, not both. A
   function that gets data returns it and writes nothing to the console; it leaves the report of a
-  failure to its caller.
+  failure to its caller. In PowerShell, SonarCloud checks this for a `Get-*` function as
+  `powershelldre:S8677`: keep the reason in a script-scoped variable, or rename the function.
 - **Behaviour on the types, not a type switch.** Map a closed set to a value with a switch, but put
   behaviour on the types instead of branching on a type code.
 - **Wrap conditions in a name.** Put a boolean expression that is not obvious behind a member with a

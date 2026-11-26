@@ -28,7 +28,8 @@
 
     When it finds nothing, it says "none found" and what it searched, so the builder searches again and
     knows when it writes new code on purpose. It reads C# and Razor text only, so it can miss a double
-    that a generator or a mocking library makes. It reads files only, and always exits 0.
+    that a generator or a mocking library makes. It reads files only. After a search it exits 0, also when it finds nothing. Without
+    aisdlc.json or a git root it stops with an error.
 .PARAMETER Type
     One or more type names the change touches, such as OrderService.
 .PARAMETER Dependency

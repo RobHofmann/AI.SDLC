@@ -59,6 +59,7 @@ clear. The `adr-conventions` skill holds the full rules, and the `write-adr` ski
 | [0014](0014-every-rule-has-one-source-of-truth.md) | Every rule has one source of truth | Accepted |
 | [0015](0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md) | The tests of a shared package live outside the installed package | Accepted |
 | [0016](0016-a-spec-review-runs-next-to-the-code-review.md) | A spec review runs next to the code review | Accepted |
+| [0017](0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) | The shared code rules and the review agents live in core | Accepted |
 
 ## Related
 

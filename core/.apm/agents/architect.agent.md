@@ -71,7 +71,7 @@ question it brings, with a source for each claim.
      block, and a new test class only when they say "none found".
    - A test seam adds no product code. A seam is the public boundary the tests go through. When a test
      needs a new constructor parameter, interface or hook that no acceptance criterion asks for, the
-     plan is wrong: test through the boundary that exists, or report the seam as an open question.
+     plan is wrong. Test through the boundary that exists, or report the seam as an open question.
    - Each claim the plan rests on meets [C07](/.claude/skills/ai-sdlc-handbook/references/constitution.md).
    - Each step traces to an acceptance criterion or a governing ADR. A step that traces to neither is
      HIGH; an abstraction that may be needed later is MEDIUM (the severity scale of `code-conventions`).

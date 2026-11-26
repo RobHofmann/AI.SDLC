@@ -34,7 +34,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [blazor](./packages/blazor.md) - The `blazor` package provides checks and guidance for portal authorization and Blazor component conventions.
 - [core](./packages/core.md) - The `core` package provides shared AI-SDLC agents, skills, gates, hooks, workflow guidance, and documentation tools.
 - [discovery](./packages/discovery.md) - The `discovery` pack provides skills for research synthesis, customer journey mapping, and evidence-based hypothesis framing during discovery.
-- [dotnet](./packages/dotnet.md) - The `dotnet` pack adds review agents, development rules, code graph tools, and gates for .NET repositories.
+- [dotnet](./packages/dotnet.md) - The `dotnet` pack adds development rules, code graph tools, and gates for .NET repositories.
 - [github-issues](./packages/github-issues.md) - The `github-issues` package supports GitHub issue creating, updates, triage, review, conventions, and PR contract checks.
 - [github](./packages/github.md) - The `github` package supports opening, updating, checking, and reviewing pull requests on GitHub, and the GitHub Actions workflows of a repository.
 - [knowledge](./packages/knowledge.md) - The `packs/knowledge` unit holds the skills for the notes on how a platform behaves.

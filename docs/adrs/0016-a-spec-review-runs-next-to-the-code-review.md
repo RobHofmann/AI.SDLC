@@ -40,8 +40,8 @@ GitHub issue with `gh`.
 
 **A spec review runs next to the code review, in its own agent.** At step 7 of `implement`, the
 `spec-reviewer` agent compares the diff with the approved issue and the governing ADRs. It reports
-three kinds of finding: a criterion that is missing or partly built, behaviour no criterion asks for,
-and a criterion that is built but wrong. Each finding quotes the criterion. The agent reads criteria
+three kinds of finding. A criterion can be missing or partly built, or built but wrong. Or the diff
+holds behaviour that no criterion asks for. Each finding quotes the criterion. The agent reads criteria
 under `✅ Success Criteria` and under `✅ Acceptance Criteria`. An issue with neither heading gives
 "no spec available", and the agent invents no criteria.
 
@@ -78,13 +78,13 @@ stop. So is a change where no acceptance criterion maps to a test or a check.
 
 ## Alternatives considered
 
-1. **Add the spec questions to `code-reviewer`.** Rejected because one agent then mixes two questions,
-   and the reasoning about how the code is built colours the question whether it is the right thing.
+1. **Add the spec questions to `code-reviewer`.** Rejected because one agent then mixes two questions.
+   Its view of how the code is built then colours the question whether it is the right thing.
 2. **Give the spec reviewer a shell so it reads the issue itself.** Rejected because a reviewer stays
    read-only. A shell is a write path, and the caller already has the issue.
 3. **Read the issue as it was when the `refined` label was set.** Rejected for now. It needs the edit
-   history of the body and the time of the label event from the GitHub GraphQL API, which the walk does
-   not read today. The person's go on each change to a refined issue already guards the scope.
+   history of the body and the time of the label event from the GitHub GraphQL API. The walk does not
+   read those today. The person's go on each change to a refined issue already guards the scope.
 
 ## Verification
 

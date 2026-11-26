@@ -8,7 +8,7 @@ description: >
   It runs on its own between the two human checkpoints: walk, plan (architect agent), branch, API contract
   when an endpoint moves, test-first build (builder agent), review by agents, wrap-up, push and open
   the PR. Then it loops on the PR checks and the bot review threads until no bot finding is open, and
-  waits at Checkpoint Bravo. Use whenever a request means writing or changing code, however it is phrased:
+  waits at Checkpoint Bravo. With "manual" it stops for a person at each main step. Use whenever a request means writing or changing code, however it is phrased:
   "implement #42", "add a field to the order", "fix this bug", "make the portal show X", "build
   this", or when guide-me reports that the next step is the build. Do NOT use for a question, or for
   a change that touches no code such as documentation. Do NOT use for a pure refactor (refactor), for
@@ -18,7 +18,8 @@ description: >
 
 # Implement (the build loop)
 
-Owned by the **Developer** persona. Called as `/implement`.
+Owned by the **Developer** persona. Called as `/implement <n>`, or `/implement <n> manual` to stop
+for the person at each main step. `<n>` is the issue number.
 
 This skill is a lead, not a performer. It runs the build loop and hands each step to the skill or
 agent that owns it. The main session walks, plans through the `architect` agent, builds through the
@@ -54,10 +55,15 @@ Without both, stop and say what is missing: a story nobody refined has no agreed
 With no user story at all, run `write-story` first; it ends at Checkpoint Alpha. The same condition holds
 for a bug that `fix-bug` hands over: a person refines the issue.
 
-**Light path:** a change you can state in one sentence, inside one component, with no HTTP surface, no
-data-model change and no new dependency. Skip the story file and the written plan; every other step
-applies. **Full path:** everything else, and the default when you are not sure. When a light change
-grows, switch to the full path.
+**Step-by-step mode:** with `manual`, the loop stops for the person at four points. It stops after
+the walk, after the plan to confirm the seams, before the code of each test, and before the review
+fixes. In step 5 the main session builds itself, one test at a time, instead of the `builder` agent.
+The stops are in [orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md#step-by-step-mode).
+Without `manual` the loop runs on its own as below, and stops only on the stop list.
+
+**Every change gets a plan.** No size of change skips a step or a stop. The plan step is where the
+seams, the reuse and the test class are decided, so it runs for a one-line fix too. For a small change
+the plan may be a few lines in this thread. Only the story file depends on size (step 1).
 
 ## The loop
 
@@ -68,8 +74,10 @@ grows, switch to the full path.
    points or more, or one that touches more than one component, write `docs/stories/<KEY>.md` (the issue number without `#`, such as `docs/stories/42.md`) from
    `references/story-context-template.md`. Link it from the area page it changes, and run `Build-DocsIndex.ps1`.
 2. **Plan.** Hand the context block to the `architect` agent on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot)
-   to write the plan. The plan names the files to change, and every member of any closed set the change
-   branches on. It also names the seams the tests go through, and the reuse the walk found. The agent returns the plan as text. Save it where the
+   to write the plan. The plan opens with the approach: in a few sentences, what the change does
+   technically, where, the main design choice and why. Then it names the files to change, and every member of any closed set the change
+   branches on. It also names the seams the tests go through, the test class each touched type's tests
+   go in, and the reuse the walk found. A seam adds no product code (stop list). The agent returns the plan as text. Save it where the
    plan lives: the `## Tasks` section of `docs/stories/<KEY>.md` when the story has that file,
    otherwise this thread. If you cannot run agents, load `adr-conventions`, write the plan yourself
    and check it against the ADRs. A conflict with an ADR or clause is a stop.
@@ -86,9 +94,11 @@ grows, switch to the full path.
    on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in Copilot). It writes the failing test, sees it fail and makes it
    pass, then reports what it changed and the test result. Read its report and the diff before the
    next step. If you cannot run agents, or the agent cannot write files (as in Copilot CLI with
-   `copilot -p`), do the build in this session. In that case, load the stack skills of the installed packs, for
-   example `test-first-dotnet` and `csharp-generation-smells` from the dotnet pack. Either way, tag
-   each new test with the story key. Document the code as [C10](/.claude/skills/ai-sdlc-handbook/references/constitution.md) asks. Keep the build green with no new analyzer warnings on changed
+   `copilot -p`), do the build in this session. In that case, load
+   [code-conventions](/.claude/skills/code-conventions/SKILL.md) and the convention skills of the files
+   you touch, from its table of skills by file type. Then follow the builder's steps yourself. A "New
+   story" draft in the report goes to the run's list of issue updates for `write-story`. Either way, tag
+   each new test with the story key. Keep the build green with no new analyzer warnings on changed
    projects.
 6. **Check.** Run the tests that map to the changed files, and
    `pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -SkipTests`, until green. A changed test
@@ -100,16 +110,30 @@ grows, switch to the full path.
 7. **Review.** Nothing is committed yet, so build the diff from the working tree. Run
    `git add --intent-to-add .`, so new files show, then write
    `git diff $(git merge-base origin/main HEAD)` to `temp/review.diff`, since the reviewers have no
-   shell. Hand it to the review agents of the installed packs side by side, for example `code-reviewer`
-   and `test-analyzer` from the dotnet pack. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in Copilot). Add
-   `security-reviewer` on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC,
-   outbound calls, JS interop or request logging. If you cannot run agents, or no pack ships a
-   reviewer, load the stack skills and review the diff yourself. For a diff that touches auth, RBAC,
-   outbound calls, JS interop or request logging, also load `blazor-authorization` (blazor pack) when it
-   is installed. Then say in the evidence record that the review ran inline. Fix each
+   shell. Read the issue with `gh issue view <n> --json title,body,comments`, since the reviewers cannot.
+   Then run two reviews side by side, each in its own agent:
+   - **Spec.** Hand the `spec-reviewer` agent the diff, the title, body and comments of the issue, and
+     the governing ADRs from the context block. It runs on Opus 5.5 (model `opus` in Claude Code,
+     `claude-opus-5.5` in Copilot). It reports missing, unasked and wrong behaviour.
+   - **Standards.** Hand the diff, with the story key, its acceptance criteria and the governing ADRs
+     from the context block, to `code-reviewer`
+     and `test-analyzer`. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in
+     Copilot), and each reads the convention skills of the changed files from the table in
+     `code-conventions`. Add `security-reviewer` on Opus 5.5 (model `opus` in Claude Code,
+     `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC, secrets, network access, outbound
+     calls, JS interop or request logging.
+
+   Keep the reports apart: never merge or rerank them into one list. If you cannot run agents, do both
+   reviews yourself. Answer the three questions of the `spec-reviewer` agent as one report. Then load
+   `code-conventions`, the convention skills of the changed files and each topic skill that fits, such
+   as `blazor-authorization`, and review the diff as another. Say in the evidence record that the
+   review ran inline. Fix each
    finding or decline it with a reason, then check again. Run `update-constitution` in check mode.
-8. **Wrap up and record.** Write the pull request description in `temp/` in the evidence record shape
-   from orchestration.md. Then run `wrap-up`, the single owner of the rest of the change. It searches
+8. **Wrap up and record.** Check that each acceptance criterion maps to a test or a check. When none
+   does, stop and say so: nothing shows the change does what the story asks, so no pull request opens.
+   Write the pull request description in `temp/` in the evidence record shape
+   from orchestration.md. It names the model of the session and of each agent step, and keeps the
+   spec review and the code review as two reports. Then run `wrap-up`, the single owner of the rest of the change. It searches
    the repository for what the change renamed or removed. It runs `write-docs` for both doc layers,
    with the `docs-reviewer` agent, and the ADR check through `write-adr`. It brings the story and the
    pull request contract in line, and runs the lessons step. It ends by committing and running
@@ -135,9 +159,11 @@ Stop, say why, and wait on any condition on the stop list in orchestration.md:
 
 - an unclear story, or a clause or ADR conflict;
 - no convergence: 3 fix attempts on one check, 2 review rounds without progress, or a fourth round;
-- scope growth;
+- the story needs more than the plan names (a finding outside the story becomes a story draft instead);
 - a secret, permission, production, deploy or destructive git need;
-- a finding tagged `[HIGH][DESIGN]`.
+- a finding tagged `[HIGH][DESIGN]`;
+- a plan that adds product code only to make a test seam;
+- no acceptance criterion that maps to a test or a check.
 
 A new ADR that follows an existing pattern is not a stop.
 

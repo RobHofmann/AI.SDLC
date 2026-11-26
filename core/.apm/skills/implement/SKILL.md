@@ -96,7 +96,7 @@ the plan may be a few lines in this thread. Only the story file depends on size 
    next step. If you cannot run agents, or the agent cannot write files (as in Copilot CLI with
    `copilot -p`), do the build in this session. In that case, load
    [code-conventions](/.claude/skills/code-conventions/SKILL.md) and the convention skills of the files
-   you touch, from its table of skills by file type, and follow the builder's steps yourself. A "New
+   you touch, from its table of skills by file type. Then follow the builder's steps yourself. A "New
    story" draft in the report goes to the run's list of issue updates for `write-story`. Either way, tag
    each new test with the story key. Keep the build green with no new analyzer warnings on changed
    projects.
@@ -115,7 +115,8 @@ the plan may be a few lines in this thread. Only the story file depends on size 
    - **Spec.** Hand the `spec-reviewer` agent the diff, the title, body and comments of the issue, and
      the governing ADRs from the context block. It runs on Opus 5.5 (model `opus` in Claude Code,
      `claude-opus-5.5` in Copilot). It reports missing, unasked and wrong behaviour.
-   - **Standards.** Hand the diff, with the story key and its acceptance criteria, to `code-reviewer`
+   - **Standards.** Hand the diff, with the story key, its acceptance criteria and the governing ADRs
+     from the context block, to `code-reviewer`
      and `test-analyzer`. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in
      Copilot), and each reads the convention skills of the changed files from the table in
      `code-conventions`. Add `security-reviewer` on Opus 5.5 (model `opus` in Claude Code,

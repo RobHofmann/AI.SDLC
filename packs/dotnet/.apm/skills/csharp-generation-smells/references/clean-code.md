@@ -44,8 +44,8 @@ list as the standing backlog, and do not add to it.
 ## Bucket 2 - advisory (checked in review and code generation, not gated)
 
 No analyzer checks these rules well, so the plan, the build and the review check them. They hold in
-every language, so they live once on the [clean code page of code-conventions](/.claude/skills/code-conventions/references/clean-code.md):
-reuse before you build, build only what the story needs, and the rules for the shape of the code.
+every language, so they live once on the [clean code page of code-conventions](/.claude/skills/code-conventions/references/clean-code.md).
+They are reuse before you build, build only what the story needs, and the rules for the shape of the code.
 
 ## Bucket 3 - judgement only
 

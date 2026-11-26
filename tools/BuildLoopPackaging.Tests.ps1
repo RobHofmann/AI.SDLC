@@ -88,7 +88,7 @@ Describe 'The spec reviewer of the build loop' {
 
     It 'reads both criteria headings' {
         $text = Get-Content -LiteralPath $script:Agent -Raw
-        $text | Should -Match 'Success Criteria'
-        $text | Should -Match 'Acceptance Criteria'
+        $text | Should -Match ([regex]::Escape([char]::ConvertFromUtf32(0x2705) + ' Success Criteria'))
+        $text | Should -Match ([regex]::Escape([char]::ConvertFromUtf32(0x2705) + ' Acceptance Criteria'))
     }
 }

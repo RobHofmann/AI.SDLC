@@ -70,8 +70,10 @@ Rate on the one severity scale of `code-conventions`.
 - **HIGH:** a new test that no acceptance criterion and no changed behaviour needs (`NOT ASKED`). Also
   a gap with proof: it names the criterion or the behaviour, and the file and symbol of the code. It
   also names the change to that code that no test would catch.
-- **MEDIUM:** a duplicate test, a second test class or a second double (`SURPLUS`). Also a gap without
-  the proof above.
+- **HIGH:** a second test class or a second test double next to one that does the job (`SURPLUS`).
+  It breaks "Reuse before you build" of `code-conventions`, and a broken convention is HIGH.
+- **MEDIUM:** a new test that repeats what another test already asserts (`SURPLUS`). Also a gap
+  without the proof above.
 - A broken test rule of a language skill takes the severity that "One severity scale" of
   `code-conventions` gives.
 
@@ -97,7 +99,7 @@ Criteria: <n covered> of <n>
 Findings: <n>
 - [HIGH|MEDIUM] <test or code file> :: <symbol> - <gap>. Why: <what could break unseen>. Fix: <the test to add or change>.
 - [HIGH][NOT ASKED] <test file> :: <test> - <the test no criterion needs>. Criterion: "<AC-n: quoted text>", the nearest one. Fix: <remove it | ask the person>.
-- [MEDIUM][SURPLUS] <test file> :: <symbol> - <the duplicate test, class or double>. Why: <it exists as <file> :: <symbol>>. Fix: <remove it | move the test into the existing file | use the existing double>.
+- [HIGH|MEDIUM][SURPLUS] <test file> :: <symbol> - <the duplicate test, class or double>. Why: <it exists as <file> :: <symbol>>. Fix: <remove it | move the test into the existing file | use the existing double>.
 Not checked: <what you could not read>
 ```
 

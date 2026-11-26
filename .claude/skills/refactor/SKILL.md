@@ -22,7 +22,7 @@ the same. The proof is the tests, run green before you start and green again aft
 You may want to change a return value, a status code, a JSON shape, or any externally visible
 behaviour. That is a feature or a fix, not a refactor: stop and use `implement` instead.
 
-A code rot finding is a trigger for a refactor story. The `code-reviewer` agent (dotnet pack) marks it
+A code rot finding is a trigger for a refactor story. The `code-reviewer` agent marks it
 `ROT`. It is a fix on top of an earlier fix in the same area. Or it is a second implementation next to
 one that does the same job. Do not fold it into the change under review. Raise it as its own story, and refactor
 it here.
@@ -79,15 +79,15 @@ From the start to the open pull request the work runs on its own, as
 6. **Review.** Nothing is committed yet, so build the diff from the working tree. Run
    `git add --intent-to-add .`, so new files show, then write
    `git diff $(git merge-base origin/main HEAD)` to `temp/review.diff`, since the reviewers have no
-   shell. Hand it to the review agents of the installed packs side by side, for example
-   `code-reviewer` and `test-analyzer` from the dotnet pack. Both run on Sonnet 5.5 (model `sonnet` in
-   Claude Code, `claude-sonnet-5.5` in Copilot).
-   If you cannot run agents, load the stack
-   skills of the installed packs, such as `csharp-generation-smells` and `test-first-dotnet`, and
-   review the diff yourself. Add `security-reviewer` (dotnet pack) on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot)
-   when the diff touches auth, RBAC,
-   outbound calls, JS interop or request logging. If you cannot run agents, load
-   `blazor-authorization` (blazor pack) and review that part yourself. Fix each finding or decline it with a reason, and run the checks again. A finding tagged
+   shell. Hand it, with the story key and the governing ADRs, to the review agents of core side by side: `code-reviewer` and
+   `test-analyzer`. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in
+   Copilot), and each reads the convention skills of the changed files from the table in
+   `code-conventions`. Add `security-reviewer` on Opus 5.5 (model `opus` in Claude Code,
+   `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC, secrets, network access, outbound
+   calls, JS interop or request logging. If you cannot run agents, review the diff yourself. Load
+   [code-conventions](/.claude/skills/code-conventions/SKILL.md), the convention skills of the changed
+   files and each topic skill that fits, such as `blazor-authorization`.
+   A refactor keeps the behaviour, so it runs no `spec-reviewer`. Fix each finding or decline it with a reason, and run the checks again. A finding tagged
    `[HIGH][DESIGN]` needs a design change: stop and ask, do not loop on it.
 7. **Wrap up, push, PR.** Write the evidence record in `temp/`. It holds the tests green before and
    after, every check result and every finding fixed or declined. It also says whether each review ran
