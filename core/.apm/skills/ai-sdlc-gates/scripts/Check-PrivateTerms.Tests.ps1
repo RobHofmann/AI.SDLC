@@ -147,6 +147,31 @@ Describe 'Check-PrivateTerms' {
         $r.Output | Should -Match 'docs/page\.md:1  rule 1'
     }
 
+    It 'finds the list next to the main checkout when it runs in a linked git worktree' {
+        $parent = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+        $main = Join-Path $parent 'main'
+        New-Item -ItemType Directory -Path $main -Force | Out-Null
+        git -C $main init --quiet --initial-branch main
+        git -C $main config user.email probe@example.invalid
+        git -C $main config user.name probe
+        Set-Content -LiteralPath (Join-Path $main 'aisdlc.json') -Value '{ "visibility": "public", "paths": { "knowledgeRoot": "../Knowledge" } }'
+        New-Item -ItemType Directory -Path (Join-Path $main 'docs') -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $main 'docs' 'page.md') -Value 'A Woodgrove note.'
+        git -C $main add -A
+        git -C $main commit --quiet -m 'init' --no-verify
+        $list = Join-Path $parent 'Knowledge' 'ai-sdlc' 'private-terms.txt'
+        New-Item -ItemType Directory -Path (Split-Path $list -Parent) -Force | Out-Null
+        Set-Content -LiteralPath $list -Value 'Woodgrove'
+        $worktree = Join-Path $main '.claude' 'worktrees' 'fix'
+        git -C $main worktree add --quiet -b fix $worktree 2>$null
+
+        $r = Invoke-Check -Root $worktree -Options @{ Required = $true }
+
+        $r.Code | Should -Be 1
+        $r.Output | Should -Match 'docs/page\.md:1  rule 1'
+        $r.Output | Should -Not -Match 'no private term list was found'
+    }
+
     It 'does not report the list file itself when it is tracked in the repository' {
         $root = New-TermsRepo -Config '{ "visibility": "public", "paths": { "privateTermsFile": "config/terms.txt" } }' -Files @{ 'config/terms.txt' = 'Woodgrove' }
 

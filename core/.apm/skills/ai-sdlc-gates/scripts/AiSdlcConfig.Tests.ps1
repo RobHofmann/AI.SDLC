@@ -306,4 +306,77 @@ Describe 'AiSdlcConfig' {
         $bicep.DocFacts | Should -Be (Join-Path $folder 'scripts/Get-Facts.ps1')
     }
 
+    Context 'Get-AiSdlcKnowledgeRoot' {
+        BeforeAll {
+            # A main clone at <parent>/main with a linked worktree at main/.claude/worktrees/fix,
+            # the layout a Claude Code session uses. knowledgeRoot is ../Knowledge.
+            function New-WorktreeLayout {
+                param([string]$KnowledgeRoot = '../Knowledge')
+                $parent = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+                $main = Join-Path $parent 'main'
+                New-Item -ItemType Directory -Path $main -Force | Out-Null
+                git -C $main init --quiet --initial-branch main
+                git -C $main config user.email probe@example.invalid
+                git -C $main config user.name probe
+                Set-Content -LiteralPath (Join-Path $main 'aisdlc.json') -Value "{ `"paths`": { `"knowledgeRoot`": `"$KnowledgeRoot`" } }"
+                git -C $main add -A
+                git -C $main commit --quiet -m 'init' --no-verify
+                $worktree = Join-Path $main '.claude' 'worktrees' 'fix'
+                git -C $main worktree add --quiet -b fix $worktree 2>$null
+                return [pscustomobject]@{
+                    Parent   = (Resolve-Path $parent).Path
+                    Main     = (Resolve-Path $main).Path
+                    Worktree = (Resolve-Path $worktree).Path
+                }
+            }
+        }
+
+        It 'resolves a relative knowledgeRoot against the repository root' {
+            $layout = New-WorktreeLayout
+            $knowledge = New-Item -ItemType Directory -Path (Join-Path $layout.Parent 'Knowledge') -Force
+
+            Get-AiSdlcKnowledgeRoot -RepoRoot $layout.Main | Should -Be $knowledge.FullName
+        }
+
+        It 'falls back to the folder next to the main checkout in a linked worktree' {
+            $layout = New-WorktreeLayout
+            $knowledge = New-Item -ItemType Directory -Path (Join-Path $layout.Parent 'Knowledge') -Force
+
+            Get-AiSdlcKnowledgeRoot -RepoRoot $layout.Worktree | Should -Be $knowledge.FullName
+        }
+
+        It 'keeps the folder next to the worktree when that one exists' {
+            $layout = New-WorktreeLayout
+            New-Item -ItemType Directory -Path (Join-Path $layout.Parent 'Knowledge') -Force | Out-Null
+            $near = New-Item -ItemType Directory -Path (Join-Path $layout.Main '.claude' 'worktrees' 'Knowledge') -Force
+
+            Get-AiSdlcKnowledgeRoot -RepoRoot $layout.Worktree | Should -Be $near.FullName
+        }
+
+        It 'returns the path next to the worktree when no folder exists, so a message can name it' {
+            $layout = New-WorktreeLayout
+
+            Get-AiSdlcKnowledgeRoot -RepoRoot $layout.Worktree | Should -Be ([IO.Path]::GetFullPath((Join-Path $layout.Worktree '../Knowledge')))
+        }
+
+        It 'uses an absolute knowledgeRoot as it is' {
+            $absolute = Join-Path $TestDrive 'elsewhere' 'Knowledge'
+            $layout = New-WorktreeLayout -KnowledgeRoot ($absolute.Replace([char]92, [char]47))
+
+            Get-AiSdlcKnowledgeRoot -RepoRoot $layout.Worktree | Should -Be ($absolute.Replace([char]92, [char]47))
+        }
+
+        It 'returns nothing when knowledgeRoot is empty' {
+            $root = New-ConfigRepo -Json '{ "paths": { "knowledgeRoot": "" } }'
+
+            Get-AiSdlcKnowledgeRoot -RepoRoot $root | Should -BeNullOrEmpty
+        }
+
+        It 'resolves against the repository root when it is no git repository' {
+            $root = New-ConfigRepo -Json '{ "paths": { "knowledgeRoot": "Knowledge" } }'
+
+            Get-AiSdlcKnowledgeRoot -RepoRoot $root | Should -Be ([IO.Path]::GetFullPath((Join-Path $root 'Knowledge')))
+        }
+    }
+
 }

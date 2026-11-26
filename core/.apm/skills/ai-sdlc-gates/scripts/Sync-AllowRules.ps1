@@ -21,9 +21,10 @@
 
     Without -Check it also lets the agent read the knowledge repository. When the folder in
     paths.knowledgeRoot exists, its absolute path goes into permissions.additionalDirectories of
-    .claude/settings.local.json. That file is per machine and untracked, because the path differs per
-    machine; the script never writes it into .claude/settings.json. The rest of settings.local.json
-    stays as it is.
+    .claude/settings.local.json. In a linked git worktree, a relative knowledgeRoot that is not there
+    is resolved against the main checkout as well. That file is per machine and untracked, because the
+    path differs per machine; the script never writes it into .claude/settings.json. The rest of
+    settings.local.json stays as it is.
 
     With -Check it writes nothing. It exits 1 when a rule of an installed package is missing. The
     knowledge folder is not checked, because CI never has it.
@@ -82,7 +83,7 @@ function Protect-LocalSetting {
 function Sync-KnowledgeDirectory {
     $root = $config.paths.knowledgeRoot
     if (-not $root) { return }
-    $full = if ([IO.Path]::IsPathRooted($root)) { $root } else { Join-Path $RepoRoot $root }
+    $full = Get-AiSdlcKnowledgeRoot -RepoRoot $RepoRoot
     if (-not (Test-Path -LiteralPath $full -PathType Container)) {
         Write-Host "Knowledge folder: $root is not there, so the agent gets no read access to it. Clone the knowledge repository there to add it."
         return
