@@ -165,12 +165,13 @@ if ($LASTEXITCODE -ne 0) {
 if (-not $PSBoundParameters.ContainsKey('LogOpts')) {
     if ($inPipeline -and $env:PR_BASE_SHA) { $LogOpts = "$($env:PR_BASE_SHA)..HEAD" }
     elseif (-not $inPipeline) {
-        # The trunk of the remote: main, or master, or whatever origin/HEAD names. A repository whose trunk is
-        # master had no origin/main, so the scan read the whole history; on a share that took very long.
-        foreach ($trunk in 'origin/main', 'origin/master', 'origin/HEAD') {
-            $null = git -C $currentDirectory rev-parse --verify --quiet $trunk 2>$null
-            if ($LASTEXITCODE -eq 0) { $LogOpts = "$trunk..HEAD"; break }
-        }
+        # The trunk of the remote: github.trunk in aisdlc.json, else main, master or whatever origin/HEAD
+        # names (Get-AiSdlcMainBranch). A repository whose trunk is master had no origin/main, so the
+        # scan read the whole history; on a share that took very long.
+        Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
+        $trunk = Get-AiSdlcMainBranch -RepoRoot $currentDirectory
+        $null = git -C $currentDirectory rev-parse --verify --quiet $trunk 2>$null
+        if ($LASTEXITCODE -eq 0) { $LogOpts = "$trunk..HEAD" }
     }
 }
 

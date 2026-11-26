@@ -35,7 +35,7 @@
     paths.sourceRoot, paths.testRoot, paths.sourceExtensions and paths.sourceDocMap in aisdlc.json.
     With no source root configured, nothing counts as behaviour and the check is not applicable (exit 3).
 .PARAMETER BaseRef
-    The ref the change is measured against. Defaults to origin/main.
+    The ref the change is measured against. Defaults to origin/<github.trunk> from aisdlc.json (Get-AiSdlcMainBranch), origin/main unless the repository names another trunk.
 .PARAMETER ChangedFiles
     Explicit repo-relative paths, bypassing git. Used by the tests. Falls back to the newline-separated
     CHANGED_FILES environment variable, which the pipeline sets from the pull request diff, because a
@@ -53,7 +53,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot,
-    [string]$BaseRef = 'origin/main',
+    [string]$BaseRef,
     [string[]]$ChangedFiles,
     [switch]$Strict
 )
@@ -62,6 +62,7 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
+if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
 
 $script:Config = Get-AiSdlcConfig -RepoRoot $RepoRoot
 $script:SourcePrefix = if ($script:Config.paths.sourceRoot) { $script:Config.paths.sourceRoot.TrimEnd('/') + '/' } else { $null }

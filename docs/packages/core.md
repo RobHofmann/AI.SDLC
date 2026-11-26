@@ -125,6 +125,12 @@ blocks. A crashed Advisory gate is a warning. `GateContract.Tests.ps1` runs ever
 repository and checks its code. [ADR 0019](../adrs/0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md)
 records the contract.
 
+`Invoke-LocalGates.ps1 -SkipScript <file name>` leaves out the gates of that script and lists them as `SKIP`.
+The gates, the pre-flight and `tools/Invoke-PesterParallel.ps1` compare a change with `origin/<github.trunk>`
+through `Get-AiSdlcMainBranch` in `AiSdlcConfig.psm1`. It falls back to `origin/main`, `origin/master` or
+`origin/HEAD` when that ref is not in the clone. `ChangedFiles.psm1` lists the files a change touched, for
+every gate that judges the change.
+
 `Invoke-Gate.ps1` runs one gate script in GitHub Actions or locally and produces a clear result.
 
 `Invoke-PesterGate.ps1` runs Pester tests under the supplied paths.

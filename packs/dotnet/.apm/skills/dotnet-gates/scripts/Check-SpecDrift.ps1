@@ -35,7 +35,7 @@
     the folder that holds aisdlc.json, found from this script.
 
 .PARAMETER BaseRef
-    The ref the change is measured against when no explicit file list is given. Defaults to origin/main.
+    The ref the change is measured against when no explicit file list is given. Defaults to origin/<github.trunk> from aisdlc.json (Get-AiSdlcMainBranch), origin/main unless the repository names another trunk.
 
 .PARAMETER ChangedFiles
     Explicit repository-relative paths, bypassing git. Falls back to the newline-separated
@@ -53,7 +53,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot,
-    [string]$BaseRef = 'origin/main',
+    [string]$BaseRef,
     [string[]]$ChangedFiles,
     [string]$SpecsDir
 )
@@ -62,6 +62,7 @@ $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
 if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
 Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
+if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
 $aiSdlc = Get-AiSdlcConfig -RepoRoot $RepoRoot
 if (-not $SpecsDir) { $SpecsDir = $aiSdlc.paths.specsRoot }
 $script:SourcePrefix = if ($aiSdlc.paths.sourceRoot) { ([string]$aiSdlc.paths.sourceRoot).TrimEnd('/') + '/' } else { $null }

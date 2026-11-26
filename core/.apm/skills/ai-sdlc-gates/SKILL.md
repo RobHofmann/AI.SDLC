@@ -23,6 +23,7 @@ push, in a local run and in the pull request workflow. The core gates, the runne
 pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1             # every gate, side by side, one summary
 pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -BlockingOnly # or -SkipTests: no Pester test gates
 pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -List       # what would run, its clause and mode, and where it runs
+pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -SkipScript Check-LocalPackages.ps1 # leave one gate out, shown as SKIP
 pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # the whole pull request workflow, locally
 ```
 

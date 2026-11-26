@@ -283,6 +283,60 @@ Describe 'Check-Coverage' {
             $result.Output | Should -Match 'C04 coverage gate FAILED'
         }
 
+        It 'fails when coverage is a point or more above the baseline file and the change did not raise it' -Tag '#90' {
+            New-DotnetCoverageReport -Path $script:CoverageFile -LinesCovered 45 -LinesPartiallyCovered 0 -LinesNotCovered 55
+            New-BaselineFile -Path $script:BaselineFile -Body '{ "lineCoveragePercent": 42 }'
+            $result = Invoke-Gate -GateArgs @{ CoverageFile = $script:CoverageFile; BaselineFile = $script:BaselineFile; RepoRoot = $script:Root; ChangedFiles = @('src/App.cs') }
+            $result.ExitCode | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match 'did not raise the baseline file'
+            $result.Output | Should -Match 'FIX: Set lineCoveragePercent to 45\.00 in coverage-baseline\.json'
+        }
+
+        It 'passes a gain of a point or more when the change touches the baseline file' -Tag '#90' {
+            New-DotnetCoverageReport -Path $script:CoverageFile -LinesCovered 45 -LinesPartiallyCovered 0 -LinesNotCovered 55
+            New-BaselineFile -Path $script:BaselineFile -Body '{ "lineCoveragePercent": 44.5 }'
+            $result = Invoke-Gate -GateArgs @{ CoverageFile = $script:CoverageFile; BaselineFile = $script:BaselineFile; RepoRoot = $script:Root; ChangedFiles = @('coverage-baseline.json', 'src/App.cs') }
+            $result.ExitCode | Should -Be 0 -Because $result.Output
+        }
+
+        It 'passes a gain of less than a point and prints the new figure' -Tag '#90' {
+            New-DotnetCoverageReport -Path $script:CoverageFile -LinesCovered 425 -LinesPartiallyCovered 0 -LinesNotCovered 575
+            New-BaselineFile -Path $script:BaselineFile -Body '{ "lineCoveragePercent": 42 }'
+            $result = Invoke-Gate -GateArgs @{ CoverageFile = $script:CoverageFile; BaselineFile = $script:BaselineFile; RepoRoot = $script:Root; ChangedFiles = @('src/App.cs') }
+            $result.ExitCode | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Match 'set lineCoveragePercent to 42\.50'
+        }
+
+        It 'does not count a baseline file the change touched but did not raise' -Tag '#90' {
+            git -C $script:Root init --quiet -b main
+            git -C $script:Root config user.email probe@example.invalid
+            git -C $script:Root config user.name probe
+            New-BaselineFile -Path $script:BaselineFile -Body '{ "lineCoveragePercent": 42 }'
+            git -C $script:Root add -A
+            git -C $script:Root commit --quiet -m base --no-verify
+            git -C $script:Root update-ref refs/remotes/origin/main HEAD
+            New-BaselineFile -Path $script:BaselineFile -Body '{ "lineCoveragePercent": 42, "recordedOn": "2026-11-26" }'
+            git -C $script:Root commit --quiet -am touch --no-verify
+            New-DotnetCoverageReport -Path $script:CoverageFile -LinesCovered 45 -LinesPartiallyCovered 0 -LinesNotCovered 55
+
+            $saved = $env:CHANGED_FILES; $env:CHANGED_FILES = $null
+            try { $result = Invoke-Gate -GateArgs @{ CoverageFile = $script:CoverageFile; BaselineFile = $script:BaselineFile; RepoRoot = $script:Root } }
+            finally { $env:CHANGED_FILES = $saved }
+
+            $result.ExitCode | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match 'did not raise the baseline file'
+        }
+
+        It 'could not check a gain of a point or more when the change cannot be listed' -Tag '#90' {
+            New-DotnetCoverageReport -Path $script:CoverageFile -LinesCovered 45 -LinesPartiallyCovered 0 -LinesNotCovered 55
+            New-BaselineFile -Path $script:BaselineFile -Body '{ "lineCoveragePercent": 42 }'
+            $saved = $env:CHANGED_FILES; $env:CHANGED_FILES = $null
+            try { $result = Invoke-Gate -GateArgs @{ CoverageFile = $script:CoverageFile; BaselineFile = $script:BaselineFile; RepoRoot = $script:Root } }
+            finally { $env:CHANGED_FILES = $saved }
+            $result.ExitCode | Should -Be 2 -Because $result.Output
+            $result.Output | Should -Match '(?m)^FIX: '
+        }
+
         It 'fails closed when the baseline file is missing' {
             New-DotnetCoverageReport -Path $script:CoverageFile -LinesCovered 95 -LinesPartiallyCovered 0 -LinesNotCovered 5
             $absent = Join-Path $script:Root 'no-baseline-here.json'

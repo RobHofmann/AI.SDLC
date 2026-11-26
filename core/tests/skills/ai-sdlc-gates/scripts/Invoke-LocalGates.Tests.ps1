@@ -123,6 +123,17 @@ Describe 'Invoke-LocalGates' {
         $result.Output | Should -Match 'repo tests\s+Blocking\s+SKIP'
     }
 
+    It 'leaves out a gate by its script file name with -SkipScript, in any case, and lists it as SKIP' -Tag '#90' {
+        $root = New-StandardRepo -RepoGates '[ { "name": "repo gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking" } ]'
+
+        $result = Invoke-Runner -Root $root -Extra @('-SkipScript', 'check-core.ps1')
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Not -Match 'ran Check-Core'
+        $result.Output | Should -Match 'ran Check-Repo\.ps1'
+        $result.Output | Should -Match 'core gate\s+Blocking\s+SKIP'
+    }
+
     It 'leaves out the advisory gates with -BlockingOnly' {
         $root = New-StandardRepo -CoreMode 'Advisory'
 

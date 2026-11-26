@@ -34,7 +34,9 @@
         so the pre-flight is the one place they run.
 
 .PARAMETER TargetBranch
-    Branch the PR targets; scopes the changed-file set and the gitleaks commit range. Defaults to origin/main.
+    Branch the PR targets; scopes the changed-file set and the gitleaks commit range. Defaults to
+    origin/<github.trunk> from aisdlc.json (Get-AiSdlcMainBranch), which is origin/main unless the
+    repository names another trunk.
 
 .PARAMETER SkipTests
     Skip the tests: commands.test and the test step of each pack (they are on by default).
@@ -56,7 +58,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$TargetBranch = 'origin/main',
+    [string]$TargetBranch,
     [switch]$SkipTests,
     [switch]$IncludeSonar,
     [switch]$SkipScanners,
@@ -68,6 +70,7 @@ Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'PreflightReceipt.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 if (-not $ReceiptRoot) { $ReceiptRoot = Join-Path $RepoRoot (Get-AiSdlcConfig -RepoRoot $RepoRoot).paths.preflightReceipts }
+if (-not $TargetBranch) { $TargetBranch = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
 
 $ErrorActionPreference = 'Continue'
 $results = [System.Collections.Generic.List[object]]::new()

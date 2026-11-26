@@ -353,6 +353,28 @@ function Test-AiSdlcPathExcluded {
         foreach ($name in $names) { if ($parent -ieq $name) { return $true } }
     }
     return $false
+
+function Get-AiSdlcMainBranch {
+    # Returns the remote-tracking ref of the main branch, such as origin/main, for the scripts that
+    # compare a change with it. github.trunk in aisdlc.json names the branch, main by default; it is the
+    # one setting for the trunk (C12). When origin/<trunk> does not exist in the clone, the first of
+    # origin/main, origin/master and origin/HEAD that does exist wins, so a repository whose trunk is
+    # master still gets a base. With none of them, it returns origin/<trunk>, and the caller reports that
+    # git has no merge base with it.
+    [CmdletBinding()]
+    param([string]$RepoRoot)
+
+    $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
+    $trunk = [string]$config.github['trunk']
+    if ([string]::IsNullOrWhiteSpace($trunk)) { $trunk = 'main' }
+    $trunk = $trunk.Trim() -replace '^origin/', ''
+    $candidates = @("origin/$trunk") + @('origin/main', 'origin/master', 'origin/HEAD' | Where-Object { $_ -ne "origin/$trunk" })
+    foreach ($candidate in $candidates) {
+        $null = git -C $config.repoRoot rev-parse --verify --quiet $candidate 2>$null
+        if ($LASTEXITCODE -eq 0) { return $candidate }
+    }
+    $global:LASTEXITCODE = 0
+    return "origin/$trunk"
 }
 
 function Test-AiSdlcPack {
@@ -505,4 +527,4 @@ function Get-AiSdlcPackage {
     }
 }
 
-Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPathExcluded, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed,Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage
+Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPathExcluded, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed, Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage, Get-AiSdlcMainBranch

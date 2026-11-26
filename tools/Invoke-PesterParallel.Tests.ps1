@@ -258,6 +258,21 @@ Describe 'Invoke-PesterParallel' {
             $r.Files | Should -HaveCount 2
         }
 
+        It 'compares with origin/<github.trunk> from aisdlc.json when -Base is not given' -Tag '#90' {
+            $root = New-ChangedTree
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "github": { "trunk": "develop" } }'
+            git -C $root add -A
+            git -C $root commit --quiet -m config --no-verify
+            git -C $root update-ref refs/remotes/origin/develop HEAD
+            Add-Content -LiteralPath (Join-Path $root 'a' 'Get-Two.ps1') -Value "'more'"
+
+            $run = Invoke-ScriptInProcess -Path $script:Tool -Arguments @('-RepoRoot', $root, '-Path', 'a', '-Changed', '-ListOnly')
+
+            $run.ExitCode | Should -Be 0 -Because $run.Output
+            $run.Output | Should -Match 'against origin/develop'
+            $run.Output | Should -Match 'Would run: a/Get-Two\.Tests\.ps1'
+        }
+
         It 'runs no test and passes when only files that are not scripts changed' {
             $root = New-ChangedTree
             Add-Content -LiteralPath (Join-Path $root 'a' 'notes.md') -Value 'more'

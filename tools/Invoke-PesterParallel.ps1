@@ -67,7 +67,9 @@
     maps to no test. When nothing maps, no test runs and the run passes.
 
 .PARAMETER Base
-    The ref that -Changed compares with, through the merge base. Defaults to origin/main.
+    The ref that -Changed compares with, through the merge base. Defaults to origin/<github.trunk> from
+    aisdlc.json (Get-AiSdlcMainBranch in AiSdlcConfig.psm1), which is origin/main unless the repository
+    names another trunk.
 
 .PARAMETER ListOnly
     Print the test files the run would start, in the order it would start them, one "Would run:" line
@@ -102,7 +104,7 @@ param(
     [string]$CoverageFile,
     [string]$TimingFile,
     [switch]$Changed,
-    [string]$Base = 'origin/main',
+    [string]$Base,
     [switch]$ListOnly,
     [switch]$Ci
 )
@@ -118,6 +120,10 @@ if ($missing) { Write-Host "No such folder: $($missing -join ', ')" -ForegroundC
 if ($Shard -gt $Shards) { Write-Host "-Shard $Shard is above -Shards $Shards." -ForegroundColor Red; exit 1 }
 $all = @($folders | ForEach-Object { Get-ChildItem -LiteralPath $_ -Recurse -Force -File -Filter '*.Tests.ps1' } | ForEach-Object FullName | Sort-Object -Unique)
 if ($Changed) {
+    if (-not $Base) {
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Force
+        $Base = Get-AiSdlcMainBranch -RepoRoot $RepoRoot
+    }
     $runAll = $null
     $picked = [System.Collections.Generic.List[string]]::new()
     $mergeBase = [string](git -C $RepoRoot merge-base $Base HEAD 2>$null)

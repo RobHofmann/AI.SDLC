@@ -80,6 +80,12 @@
     Invoke-PesterParallel.ps1. The summary lists them as SKIP. wrap-up uses it for its quick check,
     because the pre-flight runs those tests on the commit.
 
+.PARAMETER SkipScript
+    Leave out the gates whose script file has one of these names, such as Check-LocalPackages.ps1. The
+    name is the file name only, with no folder, and the match ignores case. A comma-separated value
+    counts as several names. The summary lists each as SKIP. A caller uses it when a gate cannot hold in
+    its setup, and says why.
+
 .PARAMETER BlockingOnly
     Run only the blocking gates, as the pre-push hook does.
 
@@ -101,6 +107,7 @@ param(
     [switch]$IncludeToolTests,
     [switch]$BlockingOnly,
     [switch]$SkipTests,
+    [string[]]$SkipScript,
     [switch]$List
 )
 
@@ -183,6 +190,13 @@ $skipped = @()
 if ($SkipTests) {
     $skipped = @($gates | Where-Object { (Split-Path -Leaf $_.Script) -in $testGates })
     $kept = @($gates | Where-Object { (Split-Path -Leaf $_.Script) -notin $testGates })
+    $gates.Clear()
+    foreach ($g in $kept) { $gates.Add($g) }
+}
+if ($SkipScript) {
+    $names = @($SkipScript | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $skipped += @($gates | Where-Object { (Split-Path -Leaf $_.Script) -in $names })
+    $kept = @($gates | Where-Object { (Split-Path -Leaf $_.Script) -notin $names })
     $gates.Clear()
     foreach ($g in $kept) { $gates.Add($g) }
 }

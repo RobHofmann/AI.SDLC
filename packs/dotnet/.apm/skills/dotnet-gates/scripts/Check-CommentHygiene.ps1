@@ -32,7 +32,7 @@
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script.
 .PARAMETER BaseRef
-    The ref the change is measured against. Defaults to origin/main. The pull request build passes
+    The ref the change is measured against. Defaults to origin/<github.trunk> from aisdlc.json (Get-AiSdlcMainBranch), origin/main unless the repository names another trunk. The pull request build passes
     HEAD^1, the target branch side of the merge commit.
 .PARAMETER DiffText
     A unified diff to read instead of asking git. Used by the tests.
@@ -44,7 +44,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot,
-    [string]$BaseRef = 'origin/main',
+    [string]$BaseRef,
     [string]$DiffText
 )
 
@@ -53,6 +53,7 @@ if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSSc
 Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'CodeDiff.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
+if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
 
 $ErrorActionPreference = 'Stop'
 

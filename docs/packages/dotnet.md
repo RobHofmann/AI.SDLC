@@ -58,7 +58,7 @@ The gate scripts live under `packs/dotnet/.apm/skills/dotnet-gates/scripts`.
 
 - `Check-ApiPascalCase.ps1` enforces `DOTNET-01`.
 - `Check-CommentHygiene.ps1` enforces `C10` on added C# and Razor comments: no commented-out code, no `TODO` without an issue key, no AI tool name.
-- `Check-Coverage.ps1` enforces the `C04` coverage baseline, in the pre-flight and in the shared pull request step when the workflow passes `coverage-file`.
+- `Check-Coverage.ps1` enforces the `C04` coverage baseline, in the pre-flight and in the shared pull request step when the workflow passes `coverage-file`. It also fails when coverage is a point or more above the baseline and the change did not raise the baseline file, so a gain is kept. A gain of less than a point passes and prints the new figure.
 - `Check-DocDrift.ps1` compares documentation claims with cited code.
 - `Check-SpecDrift.ps1` checks whether an existing spec moves with its endpoint.
 - `Check-StoryTraits.ps1` checks xUnit test classes for valid AI-SDLC Story traits.

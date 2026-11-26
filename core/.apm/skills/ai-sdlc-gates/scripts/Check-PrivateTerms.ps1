@@ -50,8 +50,8 @@
     The private term list to use instead of the other sources.
 
 .PARAMETER BaseRef
-    The commits after this ref are checked. Defaults to origin/main when it exists; without it, no
-    commit message is checked.
+    The commits after this ref are checked. Defaults to origin/<github.trunk> from aisdlc.json
+    (Get-AiSdlcMainBranch) when it exists; without it, no commit message is checked.
 
 .PARAMETER Force
     Check a repository whose visibility is private too.
@@ -243,8 +243,9 @@ foreach ($rel in $tracked) {
 }
 
 if (-not $BaseRef) {
-    git -C $RepoRoot rev-parse --verify --quiet origin/main *> $null
-    if ($LASTEXITCODE -eq 0) { $BaseRef = 'origin/main' }
+    $trunk = Get-AiSdlcMainBranch -RepoRoot $RepoRoot
+    git -C $RepoRoot rev-parse --verify --quiet $trunk *> $null
+    if ($LASTEXITCODE -eq 0) { $BaseRef = $trunk }
 }
 $commits = 0
 if ($BaseRef) {

@@ -317,6 +317,44 @@ Describe 'AiSdlcConfig' {
         $bicep.DocFacts | Should -Be (Join-Path $folder 'scripts/Get-Facts.ps1')
     }
 
+    Context 'Get-AiSdlcMainBranch' {
+        BeforeAll {
+            function New-TrunkRepo {
+                param([string]$Json, [string[]]$RemoteBranches)
+                $root = New-ConfigRepo -Json $Json -Git
+                git -C $root config user.email probe@example.invalid
+                git -C $root config user.name probe
+                git -C $root commit --quiet --allow-empty -m 'init' --no-verify
+                foreach ($branch in $RemoteBranches) { git -C $root update-ref "refs/remotes/origin/$branch" HEAD }
+                return $root
+            }
+        }
+
+        It 'returns origin/<github.trunk> when that ref exists' -Tag '#90' {
+            $root = New-TrunkRepo -Json '{ "github": { "trunk": "develop" } }' -RemoteBranches 'develop', 'main'
+
+            Get-AiSdlcMainBranch -RepoRoot $root | Should -Be 'origin/develop'
+        }
+
+        It 'returns origin/main by default' -Tag '#90' {
+            $root = New-TrunkRepo -Json '{}' -RemoteBranches 'main'
+
+            Get-AiSdlcMainBranch -RepoRoot $root | Should -Be 'origin/main'
+        }
+
+        It 'falls back to origin/master when the named trunk is not in the clone' -Tag '#90' {
+            $root = New-TrunkRepo -Json '{}' -RemoteBranches 'master'
+
+            Get-AiSdlcMainBranch -RepoRoot $root | Should -Be 'origin/master'
+        }
+
+        It 'returns origin/<trunk> when no candidate exists, so the caller can say there is no merge base' -Tag '#90' {
+            $root = New-TrunkRepo -Json '{ "github": { "trunk": "develop" } }' -RemoteBranches @()
+
+            Get-AiSdlcMainBranch -RepoRoot $root | Should -Be 'origin/develop'
+        }
+    }
+
     Context 'Get-AiSdlcKnowledgeRoot' {
         BeforeAll {
             # A main clone at <parent>/main with a linked worktree at main/.claude/worktrees/fix,
