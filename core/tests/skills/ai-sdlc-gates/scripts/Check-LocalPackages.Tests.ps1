@@ -140,12 +140,14 @@ dependencies:
         $r.Output | Should -Match '2 path\(s\) outside the repository are not checked'
     }
 
-    It 'says it could not check when apm.yml is missing' {
+    It 'says it could not check when apm.yml is missing' -Tag '#46' {
         Remove-Item -LiteralPath (Join-Path $script:Root 'apm.yml') -ErrorAction SilentlyContinue
 
         $r = Invoke-Gate -RepoRoot $script:Root
 
         $r.ExitCode | Should -Be 2
         $r.Output | Should -Match 'could not be checked'
+        $r.Output | Should -Match '(?m)^FIX: \S'
+        $r.Output | Should -Not -Match '::warning::'
     }
 }

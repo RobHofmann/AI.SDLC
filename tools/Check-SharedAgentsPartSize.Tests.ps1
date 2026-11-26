@@ -48,10 +48,12 @@ Describe 'Check-SharedAgentsPartSize' {
         $r.Code | Should -Be 1
     }
 
-    It 'cannot check without any part (exit 2)' {
+    It 'cannot check without any part, and says how to fix it (exit 2)' -Tag '#46' {
         $root = Join-Path ([System.IO.Path]::GetTempPath()) ('shared-agents-' + [guid]::NewGuid().ToString('n'))
         New-Item -ItemType Directory -Path (Join-Path $root 'core') -Force | Out-Null
-        (Invoke-Gate $root).Code | Should -Be 2
+        $r = Invoke-Gate $root
+        $r.Code | Should -Be 2
+        $r.Output | Should -Match '(?m)^FIX: \S'
     }
 
     It 'passes on this repository today' {

@@ -9,6 +9,11 @@
     of waiting for CI. Blocking gates (structure, docs, house-style) fail this run on a violation;
     advisory gates are reported but never fail the local run, matching CI behaviour.
 
+    A gate reports through its exit code: 0 passed, 1 found a violation, 2 could not check, 3 not
+    applicable. Any other code counts as 1. The summary shows PASS, FAIL, ADVISORY, UNVERIFIED (exit 2),
+    N/A (exit 3), SKIP (not run) and CRASHED (the script stopped with an error). A gate that exits 3 is
+    counted apart, writes no annotation and never blocks.
+
     The gates run side by side, one thread per processor core, because no gate depends on another.
     The output of each gate is printed after the run, in the order of the list, so two gates never mix
     their lines.
@@ -49,11 +54,14 @@
     repository gate that runs Pester tests can use Invoke-PesterGate.ps1 from this folder as its script.
 
     In GitHub Actions (GITHUB_ACTIONS is true) the runner reports each gate the way Invoke-Gate.ps1
-    does, through GateAnnotation.psm1: an error for a Blocking gate that failed or stopped, and a
-    warning for an Advisory gate that found issues and for a gate that could not check (exit 2). It
-    also adds the summary table to the job summary ($GITHUB_STEP_SUMMARY). The result is the exit code:
-    1 when a Blocking gate failed, else 0. A gate script that stops with an error fails the run as a
-    fault in the gate, in a local run too, instead of stopping the runner.
+    does, through GateAnnotation.psm1: an error for a Blocking gate that failed, stopped or could not
+    check (exit 2), and a warning for an Advisory gate that found issues, stopped or could not check.
+    A blocking gate that could not check fails the job, because it proved nothing. In a local run the
+    same gate is a warning (UNVERIFIED) and the run exits 0, because a missing token on a laptop is not
+    a fault in the change. The runner also adds the summary table to the job summary
+    ($GITHUB_STEP_SUMMARY). The result is the exit code: 1 when a Blocking gate failed, else 0. A
+    Blocking gate script that stops with an error fails the run as a fault in the gate, in a local run
+    too, instead of stopping the runner. An Advisory gate script that stops with an error is a warning.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from the current location.
@@ -212,12 +220,12 @@ foreach ($g in $gates) {
     $lines | ForEach-Object { Write-Host $_ }
     if ($run.Error) {
         Write-Host ("The gate script stopped before it could report, so nothing was checked: {0}" -f $run.Error.Exception.Message) -ForegroundColor Red
-        if ($inPipeline) { Write-GateCrashAnnotation -Clause $g.Clause -Script $g.Script -ErrorRecord $run.Error -HowToRepeat $howToRepeat | Out-Null }
+        if ($inPipeline) { Write-GateCrashAnnotation -Clause $g.Clause -Script $g.Script -ErrorRecord $run.Error -HowToRepeat $howToRepeat -Mode $g.Mode | Out-Null }
         $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'CRASHED' })
         continue
     }
     $code = $run.Code
-    $status = if ($code -eq 0) { 'PASS' } elseif ($code -eq 2) { 'UNVERIFIED' } elseif ($g.Mode -eq 'Advisory') { 'ADVISORY' } else { 'FAIL' }
+    $status = if ($code -eq 0) { 'PASS' } elseif ($code -eq 2) { 'UNVERIFIED' } elseif ($code -eq 3) { 'N/A' } elseif ($g.Mode -eq 'Advisory') { 'ADVISORY' } else { 'FAIL' }
     if ($inPipeline) { Write-GateAnnotation -Lines $lines -ExitCode $code -Clause $g.Clause -What $g.Name -Mode $g.Mode -HowToRepeat $howToRepeat | Out-Null }
     $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = $status })
 }
@@ -243,24 +251,43 @@ if ($inPipeline -and $env:GITHUB_STEP_SUMMARY) {
     Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value (($table + '') -join "`n") -Encoding utf8
 }
 
-$blockingFailures = @($results | Where-Object { $_.Status -in 'FAIL', 'CRASHED' })
+$blockingFailures = @($results | Where-Object {
+        $_.Status -eq 'FAIL' -or
+        ($_.Status -eq 'CRASHED' -and $_.Mode -eq 'Blocking') -or
+        ($_.Status -eq 'UNVERIFIED' -and $_.Mode -eq 'Blocking' -and $inPipeline)
+    })
+$unverified = @($results | Where-Object { $_.Status -eq 'UNVERIFIED' })
+$notApplicable = @($results | Where-Object { $_.Status -eq 'N/A' })
+$advisoryCrashes = @($results | Where-Object { $_.Status -eq 'CRASHED' -and $_.Mode -ne 'Blocking' })
+
+if ($notApplicable.Count -gt 0) {
+    Write-Host ("{0} gate(s) not applicable here (exit 3). They checked nothing and never block." -f $notApplicable.Count)
+}
+
 if ($blockingFailures.Count -gt 0) {
     $crashed = @($blockingFailures | Where-Object { $_.Status -eq 'CRASHED' }).Count
+    $couldNotCheck = @($blockingFailures | Where-Object { $_.Status -eq 'UNVERIFIED' }).Count
     $detail = if ($crashed) { " ($crashed of them stopped before they could report)" } else { '' }
     Write-Host ("{0} blocking gate(s) failed{1}." -f $blockingFailures.Count, $detail) -ForegroundColor Red
+    if ($couldNotCheck) {
+        Write-Host ("{0} of them could not check (exit 2). In a pull request build a blocking gate that could not check fails the job." -f $couldNotCheck) -ForegroundColor Red
+    }
     exit 1
 }
 
-$unverified = @($results | Where-Object { $_.Status -eq 'UNVERIFIED' })
 if ($unverified.Count -gt 0) {
-    Write-Host ("{0} gate(s) could not check at all (exit 2). That is neither a pass nor a violation; read the reason each one printed." -f $unverified.Count) -ForegroundColor Yellow
+    $where = if ($inPipeline) { 'They are warnings because they are advisory.' } else { 'Run locally they are warnings; in a pull request build a blocking gate that could not check fails the job.' }
+    Write-Host ("{0} gate(s) could not check at all (exit 2). That is neither a pass nor a violation; read the reason each one printed. {1}" -f $unverified.Count, $where) -ForegroundColor Yellow
 }
 
 $advisories = @($results | Where-Object { $_.Status -eq 'ADVISORY' })
 if ($advisories.Count -gt 0) {
     Write-Host ("All blocking gates pass. {0} advisory gate(s) reported issues (not blocking)." -f $advisories.Count) -ForegroundColor Yellow
 }
-elseif ($unverified.Count -eq 0) {
+elseif ($unverified.Count -eq 0 -and $advisoryCrashes.Count -eq 0) {
     Write-Host "All gates pass." -ForegroundColor Green
+}
+if ($advisoryCrashes.Count -gt 0) {
+    Write-Host ("{0} advisory gate(s) stopped before they could report. They are warnings; nothing was checked." -f $advisoryCrashes.Count) -ForegroundColor Yellow
 }
 exit 0

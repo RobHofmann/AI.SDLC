@@ -11,7 +11,9 @@ approves a story or another document, before it is written to an issue or a page
   repository, so a developer who knows one repository knows them all. The core is the way of
   working; a pack adds what one technology needs ([what a pack adds](packs.md)).
 - **Gates that give the same answer on your machine and in the workflow.** A push runs the blocking
-  gates first, so a broken change stops before the pull request.
+  gates first, so a broken change stops before the pull request. A green pull request build means
+  every blocking gate really checked: a blocking gate that could not check fails the build, and a
+  gate with nothing to check shows as `N/A`.
 - **Docs that stay complete and true.** Every repository has a technical and a functional layer, and
   every part of the code has a page ([complete documentation](documentation.md)).
 - **One place to fix a rule.** A fix to a shared rule is made here once. Each repository takes it with

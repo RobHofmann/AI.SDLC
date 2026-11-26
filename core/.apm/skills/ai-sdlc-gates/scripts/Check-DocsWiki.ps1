@@ -47,6 +47,7 @@ $ErrorActionPreference = 'Stop'
 $layers = @(Get-AiSdlcPath -Name docsRoots -RepoRoot $RepoRoot -Relative)
 if (-not @($layers | Where-Object { Test-Path (Join-Path $RepoRoot $_) })) {
     Write-Host ("Could not check: none of the doc layers in aisdlc.json exists ({0})." -f ($layers -join ', ')) -ForegroundColor Yellow
+    Write-Host 'FIX: Create the doc layer folders that aisdlc.json names (paths.technicalDocs and paths.functionalDocs), or run the adopt-docs skill, or correct those settings.' -ForegroundColor Yellow
     exit 2
 }$linkPattern = '\[[^\]]*\]\(\s*([^)\s]+)\s*\)'
 

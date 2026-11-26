@@ -28,7 +28,7 @@
     shape does not see, for example a log line or an injected service, and this gate cannot tell that
     apart. Turn it blocking once the team has seen how often that happens.
 
-    Exit 0 clean or nothing to check, 1 a finding.
+    Exit 0 clean, 1 a finding, 3 (not applicable) when there is no spec or no changed file to check.
 
 .PARAMETER RepoRoot
     Repository root that holds the source root and, when there are specs, the specs folder. Defaults to
@@ -156,13 +156,13 @@ $changed = @(Get-ChangedFileList -Root $RepoRoot -Base $BaseRef -Explicit $Chang
 $specFiles = Get-SpecFile -Root $RepoRoot -Dir $SpecsDir
 
 if ($specFiles.Count -eq 0) {
-    Write-Host "Spec drift: no specs yet ($SpecsDir/ is absent or holds no YAML), so no endpoint is covered by one and nothing can drift. A spec is written when an endpoint moves, never backwards."
-    exit 0
+    Write-Host "Spec drift: not applicable, no specs yet ($SpecsDir/ is absent or holds no YAML), so no endpoint is covered by one and nothing can drift. A spec is written when an endpoint moves, never backwards."
+    exit 3
 }
 
 if ($changed.Count -eq 0) {
-    Write-Host "Spec drift: no changed files to check."
-    exit 0
+    Write-Host "Spec drift: not applicable, no changed files to check."
+    exit 3
 }
 
 $specPrefix = "$($SpecsDir.TrimEnd('/'))/"
@@ -203,7 +203,6 @@ if ($unique.Count -gt 0) {
         Write-Host ("  {0} carries the resource '{1}', which {2} describes, and no spec file changed." -f $finding.File, $finding.Token, $finding.Spec)
     }
     Write-Host "FIX: Run /write-api-spec to bring the spec up to the wire shape, or say in the pull request why the contract is unchanged."
-    Write-Output "::warning::Spec drift: $($unique.Count) changed file(s) with an HTTP surface a spec already describes, while no spec changed. Update the spec in the same change."
     exit 1
 }
 

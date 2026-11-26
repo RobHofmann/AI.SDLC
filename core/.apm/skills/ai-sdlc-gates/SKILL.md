@@ -5,7 +5,7 @@ user-invocable: false
 description: >
   The deterministic gates of the AI-SDLC and how to run them. It covers the core gates every
   repository runs, the gates each pack adds, and the repository's own gates from aisdlc.json. It also covers the exit
-  codes 0, 1 and 2, and the runner that runs only the gates of the installed packs. Use when a gate failed and needs
+  codes 0, 1, 2 and 3, and the runner that runs only the gates of the installed packs. Use when a gate failed and needs
   explaining, when checking a change before a push, when adding a gate, or when reading aisdlc.json.
   Do NOT use to run the full pull request workflow locally (run-preflight), to write a new gate
   (add-gate) or to explain a hook (ai-sdlc-hooks).
@@ -66,11 +66,16 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
 
 ## Exit codes
 
-| Code | Meaning | What CI does |
-|---|---|---|
-| 0 | Checked, nothing found | Pass |
-| 1 | Checked, and found a violation | Blocking: fail the build. Advisory: warn |
-| 2 | Could not check, for example a configured path is missing | Warn, never pass |
+| Code | Meaning | What the pull request build does | What a local run does |
+|---|---|---|---|
+| 0 | Checked, nothing found | Pass | Pass |
+| 1 | Checked, and found a violation | Blocking: fail. Advisory: warn | The same |
+| 2 | Could not check, for example a configured path is missing | Blocking: fail. Advisory: warn | Warn (UNVERIFIED), never pass |
+| 3 | Not applicable: nothing here to check | `N/A`, no annotation, never blocks | The same |
+
+Any other code counts as 1. A crashed gate fails the run when it is Blocking and warns when it is
+Advisory. The agent push hook denies only on 1; after 2 it shows a note. ADR 0019 in the AI.SDLC
+repository records the contract.
 
 A gate prints each finding with two spaces in front, as `path:line  what`, and one line that starts
 with `FIX: `. `Invoke-Gate.ps1` lifts both into a GitHub Actions annotation (`::error` or `::warning`), and names the command to

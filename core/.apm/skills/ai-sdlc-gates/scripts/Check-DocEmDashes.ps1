@@ -46,6 +46,7 @@ if ($paths) {
     $missing = @($paths | Where-Object { -not (Test-Path -LiteralPath (Join-Path $RepoRoot $_)) })
     if ($missing) {
         Write-Host ("Could not check: the path(s) {0} do not exist under {1}." -f ($missing -join ', '), $RepoRoot) -ForegroundColor Yellow
+        Write-Host 'FIX: Pass -Path with files or folders that exist under the repository root, or leave -Path out to check the doc layers.' -ForegroundColor Yellow
         exit 2
     }
     foreach ($p in $paths) {
@@ -63,6 +64,7 @@ else {
     $layers = @(Get-AiSdlcPath -Name docsRoots -RepoRoot $RepoRoot -Relative)
     if (-not @($layers | Where-Object { Test-Path (Join-Path $RepoRoot $_) })) {
         Write-Host ("Could not check: none of the doc layers in aisdlc.json exists ({0})." -f ($layers -join ', ')) -ForegroundColor Yellow
+        Write-Host 'FIX: Create the doc layer folders that aisdlc.json names (paths.technicalDocs and paths.functionalDocs), or run the adopt-docs skill, or correct those settings.' -ForegroundColor Yellow
         exit 2
     }
     $agents = Join-Path $RepoRoot $config.paths.agentsFile

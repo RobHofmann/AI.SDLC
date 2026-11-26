@@ -29,9 +29,9 @@ Describe 'Check-DocLastChecked' {
         $script:OldPage = @{ 'old.md' = @('# Old', '', 'The list. Last checked: 2026-09-01.') }
     }
 
-    It 'is off by default, also with an old date' {
+    It 'is not applicable by default, also with an old date' -Tag '#46' {
         $r = Invoke-Gate (New-Repo -Pages $script:OldPage)
-        $r.Code | Should -Be 0
+        $r.Code | Should -Be 3
         $r.Output | Should -Match 'off'
     }
 
@@ -42,7 +42,7 @@ Describe 'Check-DocLastChecked' {
         @{ Name = 'true'; Json = '{ "docs": { "lastCheckedMaxAgeDays": true } }' }
     ) {
         $r = Invoke-Gate (New-Repo -Json $Json -Pages $script:OldPage)
-        $r.Code | Should -Be 0
+        $r.Code | Should -Be 3
         $r.Output | Should -Match 'off'
     }
 

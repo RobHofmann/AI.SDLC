@@ -68,6 +68,16 @@ Describe 'Update-SyncManifest' {
         (Get-Manifest -Root $script:Root).retired.Count | Should -Be 0
     }
 
+    It 'could not check a folder with no core or packs, and says how to fix it (exit 2)' -Tag '#46' {
+        $empty = Join-Path $TestDrive 'no-packages'
+        New-Item -ItemType Directory -Path $empty -Force | Out-Null
+
+        $result = Invoke-Tool -Root $empty -Check
+
+        $result.Code | Should -Be 2
+        $result.Output | Should -Match '(?m)^FIX: \S'
+    }
+
     It 'passes -Check when the manifest is current, and fails it after a file changes' {
         Invoke-Tool -Root $script:Root | Out-Null
         (Invoke-Tool -Root $script:Root -Check).Code | Should -Be 0

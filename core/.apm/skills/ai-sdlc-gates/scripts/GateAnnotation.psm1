@@ -5,9 +5,13 @@
     Invoke-LocalGates.ps1 report a gate in a workflow the same way.
 
 .DESCRIPTION
-    A gate reports through its exit code: 0 passed, 1 found a violation, 2 could not check. This module
-    reads the output of the gate and writes workflow commands that say what is wrong, where it is, why
-    it is wrong and how to fix it:
+    A gate reports through its exit code: 0 passed, 1 found a violation, 2 could not check, 3 not
+    applicable. Any other code counts as 1. Exit 2 of a Blocking gate is an error and Failed, because a
+    blocking gate that could not check proved nothing and must not let a change through; exit 2 of an
+    Advisory gate is a warning. Exit 3 writes no annotation and never blocks. A crash keeps the mode of
+    the gate: an error for a Blocking gate, a warning for an Advisory one. This module reads the output
+    of the gate and writes workflow commands that say what is wrong, where it is, why it is wrong and
+    how to fix it:
 
         ::error file=<path>,line=<n>,title=<gate>::<message>
 
@@ -176,12 +180,17 @@ function Write-GateAnnotation {
 
     if ($ExitCode -eq 0) { return [pscustomobject]@{ Result = 'Succeeded'; Summary = "${Clause}: $What passed" } }
 
+    if ($ExitCode -eq 3) { return [pscustomobject]@{ Result = 'Succeeded'; Summary = "${Clause}: $What is not applicable" } }
+
     if ($ExitCode -eq 2) {
         $why = Get-GateRuleLine -Lines $text
         $fix = Get-GateFixLine -Lines $text
         $howToFix = if ($fix) { " Fix: $fix" } else { ' Nobody on this pull request can fix it by changing the code; it needs whatever the reason names.' }
-        Write-GateCommand -Type warning -Title $What -Message ("{0}: {1} COULD NOT BE CHECKED, so this is neither a pass nor a violation. Why: {2}{3} Repeat it locally with: {4}" -f $Clause, $What, $why, $howToFix, $HowToRepeat)
-        return [pscustomobject]@{ Result = 'SucceededWithIssues'; Summary = "${Clause}: $What could not be checked" }
+        $blocking = $Mode -eq 'Blocking'
+        $type = if ($blocking) { 'error' } else { 'warning' }
+        $effect = if ($blocking) { ' This gate is blocking, and a blocking gate that could not check blocks the build.' } else { ' This gate is advisory, so it does not block the build.' }
+        Write-GateCommand -Type $type -Title $What -Message ("{0}: {1} COULD NOT BE CHECKED, so this is neither a pass nor a violation. Why: {2}{3}{4} Repeat it locally with: {5}" -f $Clause, $What, $why, $howToFix, $effect, $HowToRepeat)
+        return [pscustomobject]@{ Result = $(if ($blocking) { 'Failed' } else { 'SucceededWithIssues' }); Summary = "${Clause}: $What could not be checked" }
     }
 
     $nonEmpty = @(Remove-GateFixLine -Lines $text | Where-Object { $_.Trim() })
@@ -214,13 +223,17 @@ function Write-GateCrashAnnotation {
         [Parameter(Mandatory)][string]$Clause,
         [Parameter(Mandatory)][string]$Script,
         [Parameter(Mandatory)][System.Management.Automation.ErrorRecord]$ErrorRecord,
-        [Parameter(Mandatory)][string]$HowToRepeat
+        [Parameter(Mandatory)][string]$HowToRepeat,
+        [ValidateSet('Advisory', 'Blocking')][string]$Mode = 'Blocking'
     )
 
     $leaf = Split-Path -Leaf $Script
     $where = if ($ErrorRecord.InvocationInfo -and $ErrorRecord.InvocationInfo.ScriptName) { " at $($ErrorRecord.InvocationInfo.ScriptName):$($ErrorRecord.InvocationInfo.ScriptLineNumber)" } else { '' }
-    Write-GateCommand -Type error -Title $leaf -Message ("{0}: the gate script stopped before it could report. NOTHING WAS CHECKED, so this is a fault in the gate itself, not a finding in the code or docs it reads. Script: {1}{2}. Reason: {3}. Repeat it locally with: {4}" -f $Clause, $leaf, $where, $ErrorRecord.Exception.Message, $HowToRepeat)
-    return [pscustomobject]@{ Result = 'Failed'; Summary = "${Clause}: $leaf could not run" }
+    $blocking = $Mode -eq 'Blocking'
+    $type = if ($blocking) { 'error' } else { 'warning' }
+    $effect = if ($blocking) { '' } else { ' This gate is advisory, so it does not block the build.' }
+    Write-GateCommand -Type $type -Title $leaf -Message ("{0}: the gate script stopped before it could report. NOTHING WAS CHECKED, so this is a fault in the gate itself, not a finding in the code or docs it reads. Script: {1}{2}. Reason: {3}.{4} Repeat it locally with: {5}" -f $Clause, $leaf, $where, $ErrorRecord.Exception.Message, $effect, $HowToRepeat)
+    return [pscustomobject]@{ Result = $(if ($blocking) { 'Failed' } else { 'SucceededWithIssues' }); Summary = "${Clause}: $leaf could not run" }
 }
 
 Export-ModuleMember -Function Get-GateRepeatCommand, Write-GateAnnotation, Write-GateCrashAnnotation, Write-GateCommand

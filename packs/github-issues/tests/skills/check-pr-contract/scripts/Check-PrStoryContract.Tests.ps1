@@ -57,10 +57,10 @@ Describe 'Check-PrStoryContract' {
         }
     }
 
-    It 'is a no-op when there is no PR context (exit 0)' {
+    It 'is not applicable when there is no PR context (exit 3)' -Tag '#46' {
         $r = Invoke-Gate @{ StoryKey = ''; SourceBranch = '' }
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'no-op'
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
     }
 
     It 'passes an open issue with the refined label' {
@@ -221,10 +221,10 @@ Describe 'Check-PrStoryContract' {
         $r.Output | Should -Match 'No story key'
     }
 
-    It 'stays a no-op when there is no PR context at all, title and body included' {
+    It 'stays not applicable when there is no PR context at all, title and body included' {
         $r = Invoke-Gate @{ StoryKey = ''; SourceBranch = ''; PrTitle = ''; PrDescription = ''; PrNumber = '' }
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'no-op'
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
     }
 
     It 'blocks (exit 1) when GitHub says no issue has that number' {
@@ -257,6 +257,8 @@ Describe 'Check-PrStoryContract' {
         $r = Invoke-Gate @{ StoryKey = '#1234'; GhCommand = 'pwsh'; InCi = $true; GhToken = '' }
         $r.ExitCode | Should -Be 2
         $r.Output | Should -Match 'GH_TOKEN is not set'
+        $r.Output | Should -Match '(?m)^FIX: \S'
+        $r.Output | Should -Not -Match '::warning::'
     }
 
     It 'fails a domain-model change with no governing ADR' {

@@ -50,6 +50,7 @@ $ErrorActionPreference = 'Stop'
 if (-not $RetiredListPath) { $RetiredListPath = Join-Path $RepoRoot 'config' 'retired-skill-names.txt' }
 if (-not (Test-Path -LiteralPath $RetiredListPath -PathType Leaf)) {
     Write-Host "Could not check: the retired list $RetiredListPath does not exist." -ForegroundColor Yellow
+    Write-Host 'FIX: Add config/retired-skill-names.txt (one pair per line), or pass -RetiredListPath with the list.' -ForegroundColor Yellow
     exit 2
 }
 
@@ -60,6 +61,7 @@ foreach ($line in Get-Content -LiteralPath $RetiredListPath) {
     $parts = @($text -split '\s+')
     if ($parts.Count -ne 2 -or $parts[0] -notmatch '^[a-z0-9][a-z0-9-]*$' -or $parts[1] -notmatch '^[a-z0-9][a-z0-9-]*$') {
         Write-Host "Could not check: '$text' in $RetiredListPath is not an old name and a new name." -ForegroundColor Yellow
+        Write-Host 'FIX: Write each line of the retired list as "old-name new-name", one pair per line.' -ForegroundColor Yellow
         exit 2
     }
     $retired[$parts[0]] = $parts[1]

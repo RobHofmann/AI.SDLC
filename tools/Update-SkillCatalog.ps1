@@ -10,7 +10,8 @@
     gate can tell "belongs to a pack this repository did not install" from "does not exist anywhere".
 
     The catalog is written to core/.apm/skills/ai-sdlc-gates/skill-catalog.json, so every repository gets
-    it with the core. With -Check the script writes nothing and exits 1 when the catalog is out of date.
+    it with the core. With -Check the script writes nothing and exits 1 when the catalog is out of date. It exits 2 when the
+    folder has no core or packs folder, so there is nothing to catalog.
 
 .PARAMETER RepoRoot
     The AI.SDLC repository root. Defaults to the folder above this script.
@@ -31,6 +32,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot 'core') -PathType Container) -or -not (Test-Path -LiteralPath (Join-Path $RepoRoot 'packs') -PathType Container)) {
+    Write-Host "Could not check: there is no core or packs folder under $RepoRoot, so there is no package to catalog." -ForegroundColor Yellow
+    Write-Host 'FIX: Run the script in the AI.SDLC repository, or pass -RepoRoot with the folder that holds core and packs.' -ForegroundColor Yellow
+    exit 2
+}
 
 $packages = [ordered]@{ core = Join-Path $RepoRoot 'core' }
 foreach ($pack in Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'packs') -Directory | Sort-Object Name) {

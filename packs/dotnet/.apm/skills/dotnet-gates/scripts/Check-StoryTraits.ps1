@@ -60,6 +60,7 @@ $ErrorActionPreference = 'Stop'
 $testsRel = ([string](Get-AiSdlcConfig -RepoRoot $RepoRoot).paths.testRoot).TrimEnd('/')
 if (-not $testsRel) {
     Write-Host 'Could not check: aisdlc.json names no paths.testRoot.' -ForegroundColor Yellow
+    Write-Host 'FIX: Set paths.testRoot in aisdlc.json to the folder that holds the tests.' -ForegroundColor Yellow
     exit 2
 }
 $testsDir = Join-Path $RepoRoot $testsRel

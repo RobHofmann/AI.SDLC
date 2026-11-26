@@ -390,6 +390,44 @@ exit 0
         }
     }
 
+    Context 'the exit code of the completeness check' {
+        BeforeAll {
+            $script:CouldNotCheck = Join-Path -Path $TestDrive -ChildPath 'could-not-check.ps1'
+            Set-Content -Path $script:CouldNotCheck -Value "param([switch]`$Strict, [string]`$RepoRoot)`nWrite-Output 'Change completeness: no merge base with origin/main.'`nexit 2"
+            $script:NotApplicable = Join-Path -Path $TestDrive -ChildPath 'not-applicable.ps1'
+            Set-Content -Path $script:NotApplicable -Value "param([switch]`$Strict, [string]`$RepoRoot)`nWrite-Output 'Change completeness: no behaviour change to check.'`nexit 3"
+            $script:OddCode = Join-Path -Path $TestDrive -ChildPath 'odd-code.ps1'
+            Set-Content -Path $script:OddCode -Value "param([switch]`$Strict, [string]`$RepoRoot)`nWrite-Output 'TESTS: something went wrong'`nexit 5"
+        }
+
+        It 'allows a push after exit 2 when the receipt is there, with a note and no allow decision' -Tag '#46' {
+            $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $script:CouldNotCheck -Tree $script:GreenTree
+            $r.ExitCode | Should -Be 0
+            $r.Output | Should -Match '"systemMessage":"The completeness check could not check \(exit 2\)'
+            $r.Output | Should -Match 'no merge base with origin/main'
+            $r.Output | Should -Not -Match 'permissionDecision'
+        }
+
+        It 'stays silent after exit 3 when the receipt is there' -Tag '#46' {
+            $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $script:NotApplicable -Tree $script:GreenTree
+            $r.ExitCode | Should -Be 0
+            $r.Output.Trim() | Should -BeNullOrEmpty
+        }
+
+        It 'still asks for the receipt after exit 2 or 3' -Tag '#46' {
+            foreach ($check in $script:CouldNotCheck, $script:NotApplicable) {
+                $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $check -Tree $script:UncheckedTree
+                $r.Output | Should -Match 'no green pre-flight'
+            }
+        }
+
+        It 'denies on an exit code other than 0, 2 or 3, as on exit 1' -Tag '#46' {
+            $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $script:OddCode -Tree $script:GreenTree
+            $r.Output | Should -Match '"permissionDecision":"deny"'
+            $r.Output | Should -Match 'something went wrong'
+        }
+    }
+
     Context 'a push that sends nothing new, which needs no receipt' {
         BeforeAll {
             $script:Sent = Join-Path -Path $TestDrive -ChildPath 'sent'

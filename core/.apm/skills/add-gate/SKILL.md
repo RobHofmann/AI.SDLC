@@ -72,10 +72,12 @@ or `Check-ArtifactGraph.ps1` as the model, and do not invent a new shape:
   it fails closed.
 - `param([string]$RepoRoot)` that defaults through `Find-AiSdlcRepoRoot` in `AiSdlcConfig.psm1`. Add a
   `[switch]$Strict` if the rule has an advisory and a stricter mode.
-- Use the three-value exit contract. Exit 0 when the gate checked and found nothing, and 1 when it
+- Use the four-value exit contract. Exit 0 when the gate checked and found nothing, and 1 when it
   checked and found a violation. Exit 2 when it COULD NOT check (a missing credential, an unreachable
-  service). Exit 2 is never a pass and never blocks, because nobody on the pull request can fix it by
-  editing code.
+  service, a missing setting). Exit 2 is never a pass: a Blocking gate that exits 2 fails the pull
+  request build, and a local run shows it as a warning. Exit 3 when there is nothing to check here,
+  such as a pull request rule on a push; it shows as `N/A` and never blocks. Never exit 0 when the
+  gate checked nothing. Add the gate to the Expected table of `GateContract.Tests.ps1` in AI.SDLC.
 - Collect violations, and print each with the file and the rule. **Exit non-zero on any violation,
   zero on none** (loud on failure, silent on success). For a substrate gate, an unreachable substrate
   exits 2: a warning, never a pass.

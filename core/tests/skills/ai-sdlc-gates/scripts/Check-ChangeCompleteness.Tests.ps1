@@ -30,9 +30,9 @@ Describe 'Check-ChangeCompleteness' {
         }
     }
 
-    It 'says nothing when no behaviour changed' {
+    It 'is not applicable when no behaviour changed' -Tag '#46' {
         $r = Invoke-Gate -Changed @('docs/portal/architecture.md', 'README.md')
-        $r.ExitCode | Should -Be 0
+        $r.ExitCode | Should -Be 3
         $r.Output | Should -Match 'no behaviour change'
     }
 

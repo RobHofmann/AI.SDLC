@@ -35,11 +35,13 @@ if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $PSScriptRoot }
 $changelog = Join-Path $RepoRoot 'CHANGELOG.md'
 if (-not (Test-Path -LiteralPath $changelog -PathType Leaf)) {
     Write-Host "Could not check: $changelog does not exist." -ForegroundColor Yellow
+    Write-Host 'FIX: Add CHANGELOG.md with a heading such as "## v2.0.0 - <date>", or pass -RepoRoot with the AI.SDLC repository.' -ForegroundColor Yellow
     exit 2
 }
 $heading = Select-String -LiteralPath $changelog -Pattern '^## v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)\b' | Select-Object -First 1
 if (-not $heading) {
     Write-Host 'Could not check: CHANGELOG.md has no heading such as "## v2.0.0 - <date>".' -ForegroundColor Yellow
+    Write-Host 'FIX: Add a heading such as "## v2.0.0 - <date>" for the release to CHANGELOG.md.' -ForegroundColor Yellow
     exit 2
 }
 $release = $heading.Matches[0].Groups[1].Value
@@ -48,6 +50,7 @@ $manifests = @(@(Join-Path $RepoRoot 'core' 'apm.yml') + @(Get-ChildItem -Litera
         ForEach-Object { Join-Path $_.FullName 'apm.yml' }) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })
 if ($manifests.Count -eq 0) {
     Write-Host 'Could not check: there is no apm.yml under core/ or packs/<name>/.' -ForegroundColor Yellow
+    Write-Host 'FIX: Run the gate in the AI.SDLC repository, or pass -RepoRoot with the folder that holds core and packs.' -ForegroundColor Yellow
     exit 2
 }
 

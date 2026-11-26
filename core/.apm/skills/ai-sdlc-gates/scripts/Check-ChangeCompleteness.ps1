@@ -27,13 +27,13 @@
     ADVISORY by default: it reports and returns 0. Pass -Strict to make it fail, which is what the
     pre-push hook and CI use once the team has seen the false-positive rate.
 
-    NO-OP when nothing under the source root changed, so a documentation-only or pipeline-only change is
-    never blocked by it.
+    Exit 3 (not applicable) when nothing under the source root changed, so a documentation-only or
+    pipeline-only change is never blocked by it.
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script. The source
     root, the test root, the source file types and the map from source areas to doc areas come from
     paths.sourceRoot, paths.testRoot, paths.sourceExtensions and paths.sourceDocMap in aisdlc.json.
-    With no source root configured, nothing counts as behaviour and the check is a no-op.
+    With no source root configured, nothing counts as behaviour and the check is not applicable (exit 3).
 .PARAMETER BaseRef
     The ref the change is measured against. Defaults to origin/main.
 .PARAMETER ChangedFiles
@@ -182,8 +182,8 @@ $changed = Get-ChangedFile -Root $RepoRoot -Base $BaseRef -Explicit $ChangedFile
 $result = Invoke-ChangeCompletenessCheck -Changed $changed
 
 if ($result.NoOp) {
-    Write-Host "Change completeness: no behaviour change to check."
-    exit 0
+    Write-Host "Change completeness: not applicable, no behaviour change to check."
+    exit 3
 }
 
 if ($result.Findings.Count -eq 0) {

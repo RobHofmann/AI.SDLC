@@ -61,6 +61,7 @@ try {
 }
 catch {
     Write-Host "Could not check: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host 'FIX: Run the gate in a repository with a valid aisdlc.json, and run apm install first.' -ForegroundColor Yellow
     exit 2
 }
 $RepoRoot = $config.repoRoot
@@ -69,6 +70,7 @@ if (-not $SkillsRoot) { $SkillsRoot = Join-Path $RepoRoot '.claude' 'skills' }
 $agentsPath = Join-Path $RepoRoot $config.paths.agentsFile
 if (-not (Test-Path -LiteralPath $agentsPath -PathType Leaf)) {
     Write-Host "Could not check: $($config.paths.agentsFile) does not exist in $RepoRoot." -ForegroundColor Yellow
+    Write-Host 'FIX: Add the AGENTS.md file the repository names in paths.agentsFile of aisdlc.json, or correct that setting.' -ForegroundColor Yellow
     exit 2
 }
 
@@ -90,6 +92,7 @@ foreach ($package in $packages) {
 }
 if (-not $parts.Contains('core')) {
     Write-Host "Could not check: no installed skill ships assets/agents-core.md under $SkillsRoot. Run apm install first." -ForegroundColor Yellow
+    Write-Host 'FIX: Run apm install, which installs the core package that ships agents-core.md.' -ForegroundColor Yellow
     exit 2
 }
 
@@ -105,18 +108,18 @@ $open = $null
 for ($i = 0; $i -lt $lines.Count; $i++) {
     if ($lines[$i] -match $markerPattern) {
         if ($Matches.edge -eq 'start') {
-            if ($open) { Write-Host "Could not check: the ai-sdlc:$($open.Package) part has no end marker before line $($i + 1)." -ForegroundColor Yellow; exit 2 }
+            if ($open) { Write-Host "Could not check: the ai-sdlc:$($open.Package) part has no end marker before line $($i + 1)." -ForegroundColor Yellow; Write-Host 'FIX: Add the missing end marker, or remove the part and run Sync-AgentsFile.ps1.' -ForegroundColor Yellow; exit 2 }
             $open = [pscustomobject]@{ Package = $Matches.package; Start = $i; End = -1 }
         }
         else {
-            if (-not $open -or $open.Package -ne $Matches.package) { Write-Host "Could not check: an end marker for ai-sdlc:$($Matches.package) on line $($i + 1) has no matching start." -ForegroundColor Yellow; exit 2 }
+            if (-not $open -or $open.Package -ne $Matches.package) { Write-Host "Could not check: an end marker for ai-sdlc:$($Matches.package) on line $($i + 1) has no matching start." -ForegroundColor Yellow; Write-Host 'FIX: Remove the stray end marker, or add its start marker.' -ForegroundColor Yellow; exit 2 }
             $open.End = $i
             $blocks.Add($open)
             $open = $null
         }
     }
 }
-if ($open) { Write-Host "Could not check: the ai-sdlc:$($open.Package) part has no end marker." -ForegroundColor Yellow; exit 2 }
+if ($open) { Write-Host "Could not check: the ai-sdlc:$($open.Package) part has no end marker." -ForegroundColor Yellow; Write-Host 'FIX: Add the missing end marker, or remove the part and run Sync-AgentsFile.ps1.' -ForegroundColor Yellow; exit 2 }
 
 for ($b = $blocks.Count - 1; $b -ge 0; $b--) {
     $block = $blocks[$b]

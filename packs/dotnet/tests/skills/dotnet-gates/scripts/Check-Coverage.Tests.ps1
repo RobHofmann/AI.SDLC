@@ -336,10 +336,11 @@ Describe 'Check-Coverage' {
     }
 
     Context 'format-agnostic' {
-        It 'fails when the coverage file is missing (exit 1)' {
+        It 'could not check when the coverage file is missing, and says how to fix it (exit 2)' -Tag '#46' {
             $result = Invoke-Gate -GateArgs @{ CoverageFile = (Join-Path $script:Root 'absent.xml'); Baseline = 80 }
-            $result.ExitCode | Should -Be 1
+            $result.ExitCode | Should -Be 2
             $result.Output | Should -Match 'coverage file not found'
+            $result.Output | Should -Match '(?m)^FIX: \S'
         }
 
         It 'fails when the report has an unrecognized root element (exit 1)' {

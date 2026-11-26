@@ -87,18 +87,26 @@ Describe 'Check-StoryBackEdges' {
         $r.ExitCode | Should -Be 2
         $r.Output | Should -Match 'could not be checked'
         $r.Output | Should -Match 'GH_TOKEN'
+        $r.Output | Should -Match '(?m)^FIX: \S'
         $r.Output | Should -Not -Match 'advisory finding'
     }
 
-    It 'is a safe no-op outside CI and with no test seam (exit 0)' {
+    It 'is not applicable outside CI and with no test seam (exit 3)' -Tag '#46' {
         $r = Invoke-Gate @{ InCi = $false; GhToken = '' }
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'skipping'
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
     }
 
-    It 'is a safe no-op in CI when gh is missing (exit 0)' {
+    It 'is not applicable in CI when gh is missing (exit 3)' -Tag '#46' {
         $r = Invoke-Gate @{}
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'skipping'
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
+    }
+
+    It 'is not applicable when no ADR is anchored to a story (exit 3)' -Tag '#46' {
+        $repo = New-TestRepo @{ '0101-a.md' = "# ADR 0101" }
+        $r = Invoke-Gate @{ RepoRoot = $repo; BodiesForTest = @{ '#9999' = 'unrelated' } }
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
     }
 }

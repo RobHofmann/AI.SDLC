@@ -259,11 +259,6 @@ Describe 'Check-DocReadingLevel' {
         $r.Output | Should -Match 'skills/demo/SKILL\.md'
     }
 
-    It 'throws on a -Path that does not exist, so a typo cannot pass silently' {
-        { Invoke-Gate -RepoRoot $script:Root -Extra @{ Path = 'docs/not-here' } } |
-            Should -Throw -ExpectedMessage '*Path not found*'
-    }
-
     It 'checks only the given -Path when one is passed' {
         Set-Content -LiteralPath (Join-Path $script:Root 'docs/page.md') -Value "# Page`nA comprehensive page.`n" -NoNewline
         New-Item -ItemType Directory -Path (Join-Path $script:Root 'docs/clean') -Force | Out-Null
@@ -278,5 +273,20 @@ Describe 'Check-DocReadingLevel' {
         $r.ExitCode | Should -Be 1
         $r.Output | Should -Match 'docs/page.md'
         $r.Output | Should -Match '2\s+comprehensive'
+    }
+
+    It 'is not applicable when there is no markdown file to read (exit 3)' -Tag '#46' {
+        Remove-Item -LiteralPath (Join-Path $script:Root 'docs') -Recurse
+        Remove-Item -LiteralPath (Join-Path $script:Root 'AGENTS.md')
+        $r = Invoke-Gate -RepoRoot $script:Root
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
+    }
+
+    It 'could not check when a named path does not exist, and says how to fix it (exit 2)' -Tag '#46' {
+        $r = Invoke-Gate -RepoRoot $script:Root -Extra @{ Path = 'docs/not-here' }
+        $r.ExitCode | Should -Be 2
+        $r.Output | Should -Match 'does not exist'
+        $r.Output | Should -Match '(?m)^FIX: \S'
     }
 }

@@ -144,12 +144,12 @@ Describe 'Check-DocPersonNames' {
         $r.ExitCode | Should -Be 0
     }
 
-    It 'suppresses an allow-listed name (exit 0)' {
+    It 'suppresses an allow-listed name, which leaves nothing to check (exit 3)' {
         $allow = Join-Path $script:Root 'allow.txt'
         Set-Content -LiteralPath $allow -Value "# intentional`nDana Fictus`n" -NoNewline
         Set-Doc 'docs/page.md' "# Page`nAuthored by Dana Fictus with consent.`n"
         $r = Invoke-Gate -RepoRoot $script:Root -Authors @('Dana Fictus') -AllowListPath $allow
-        $r.ExitCode | Should -Be 0
+        $r.ExitCode | Should -Be 3
     }
 
     It 'reports the count when more than one name reference is found (exit 1)' {
@@ -159,10 +159,10 @@ Describe 'Check-DocPersonNames' {
         $r.Output | Should -Match 'Found 2'
     }
 
-    It 'passes with an empty roster (exit 0)' {
+    It 'is not applicable with an empty roster (exit 3)' -Tag '#46' {
         Set-Doc 'docs/page.md' "# Page`nDana Fictus is here but there is no roster.`n"
         $r = Invoke-Gate -RepoRoot $script:Root -Authors @()
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'Person-name OK'
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
     }
 }

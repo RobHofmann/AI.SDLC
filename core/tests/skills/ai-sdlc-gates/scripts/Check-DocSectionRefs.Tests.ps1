@@ -29,6 +29,14 @@ Describe 'Check-DocSectionRefs' {
         Set-Page -Relative 'docs/target.md' -Text "# Target`n`n## Test Style`n`nHow tests are written.`n`n## The updater's credentials`n`nHow it signs in.`n"
     }
 
+    It 'is not applicable when there is nothing to scan (exit 3)' -Tag '#46' {
+        Remove-Item -LiteralPath (Join-Path $script:Root 'docs') -Recurse
+        $r = Invoke-Gate
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
+        $r.Output | Should -Not -Match '::(error|warning)::'
+    }
+
     It 'reads .claude/CLAUDE.md, where a repository keeps its Claude-only notes' {
         Set-Page -Relative '.claude/CLAUDE.md' -Text 'See the `## Testing Style` section of `docs/target.md`.'
 

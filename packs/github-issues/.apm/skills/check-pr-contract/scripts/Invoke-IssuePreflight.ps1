@@ -65,7 +65,7 @@ elseif ($branch -and -not ($env:PR_STORY_KEY -or (Get-AiSdlcBranchStoryKey -Bran
 }
 elseif (Test-GhReady) {
     & (Join-Path $PSScriptRoot 'Check-PrStoryContract.ps1') -SourceBranch $branch -ChangedFiles ($ChangedFiles -join "`n") -RepoRoot $RepoRoot -GhCommand $GhCommand | Out-Host
-    $status = switch ($LASTEXITCODE) { 0 { 'PASS' } 1 { 'FAIL' } default { 'REVIEW' } }
+    $status = switch ($LASTEXITCODE) { 0 { 'PASS' } 1 { 'FAIL' } 3 { 'SKIP' } default { 'REVIEW' } }
     [pscustomobject]@{ Check = 'IssueContract (story + ADR)'; Status = $status; Detail = 'gh form (gh issue view)' }
 }
 else {

@@ -108,6 +108,7 @@ $script:SourceRel = ([string]$script:AiSdlc.paths.sourceRoot).TrimEnd('/')
 $script:TestRel = ([string]$script:AiSdlc.paths.testRoot).TrimEnd('/')
 if (-not $script:SourceRel) {
     Write-Host 'Could not check: aisdlc.json names no paths.sourceRoot, so there is no code to hold the pages against.' -ForegroundColor Yellow
+    Write-Host 'FIX: Set paths.sourceRoot in aisdlc.json to the folder that holds the source code.' -ForegroundColor Yellow
     exit 2
 }
 

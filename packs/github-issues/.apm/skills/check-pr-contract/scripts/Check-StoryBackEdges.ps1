@@ -18,8 +18,8 @@
 
     ADVISORY by design: it never writes the "::error::" annotation and is wrapped by Invoke-Gate.ps1 in
     Advisory mode, so a missing backlink is a warning, not a failed build. It reads issues only in GitHub
-    Actions with a GH_TOKEN, so a local run is a safe NO-OP for the issue reads and never false-alarms off
-    the workflow.
+    Actions with a GH_TOKEN, so a local run is not applicable (exit 3) for the issue reads and never false-alarms
+    off the workflow. It is also not applicable when no ADR is anchored to a story.
 
 .PARAMETER RepoRoot
     Repository root containing the ADR folder. Defaults to the folder that holds aisdlc.json, found from this script.
@@ -193,12 +193,12 @@ function Show-StoryBackEdgeResult {
 
     switch ($Result.State) {
         'NoAnchors' {
-            Write-Host 'Story back-edges: no graph-anchored ADRs found; nothing to check.'
-            return 0
+            Write-Host 'Story back-edges: not applicable, no graph-anchored ADRs found; nothing to check.'
+            return 3
         }
         'NoCredentials' {
-            Write-Host 'Story back-edges: not in GitHub Actions with a GH_TOKEN, or gh is missing; skipping (advisory, runs in CI with the token).'
-            return 0
+            Write-Host 'Story back-edges: not applicable, this is not GitHub Actions with a GH_TOKEN, or gh is missing (advisory, runs in CI with the token).'
+            return 3
         }
         'Findings' {
             Write-Host "Story back-edge advisories (repo-to-issue backlinks; see the artifact-graph page of the ai-sdlc-handbook skill):"
@@ -214,10 +214,12 @@ function Show-StoryBackEdgeResult {
             Write-Host ("Story back-edges could not be checked: not one of the {0} anchored issue body(ies) could be read from GitHub." -f $Result.Unreadable.Count)
             Write-Host "  Every one failing the same way points at the GH_TOKEN of the workflow or its read access to issues rather than at the issues, and nothing was verified."
             Write-Host ("  issues: {0}" -f (($Result.Unreadable | Select-Object -First 10) -join ', '))
+            Write-Host 'FIX: Give the workflow a GH_TOKEN with read access to the issues of the tracker repository, then run the gate again.'
             return 2
         }
         'PartlyReadable' {
             Write-Host ("Story back-edges partly checked: {0} issue body(ies) reference their anchoring ADR(s), and {1} could not be read from GitHub ({2})." -f $Result.Checked, $Result.Unreadable.Count, (($Result.Unreadable | Select-Object -First 5) -join ', '))
+            Write-Host 'FIX: Give the workflow a GH_TOKEN with read access to the issues of the tracker repository, then run the gate again.'
             return 2
         }
         default {

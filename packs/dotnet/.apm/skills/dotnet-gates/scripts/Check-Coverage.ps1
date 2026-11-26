@@ -37,6 +37,9 @@
     Sibling of Check-DocLineCitations.ps1 (C02) and Check-DocEmDashes.ps1 (C06): same house style, one
     rule per script, run locally and in CI.
 
+    Exit codes: 0 at or above the baseline, 1 below it, 2 when the coverage file is missing (could not
+    check, with a FIX line).
+
 .PARAMETER CoverageFile
     Path to a coverage XML in OpenCover format (<CoverageSession> root) or dotnet-coverage XML format
     (<results> root). In the pull request workflow this is the file that the coverage-file input of
@@ -162,10 +165,10 @@ function Resolve-Baseline {
 }
 
 if (-not (Test-Path -LiteralPath $CoverageFile)) {
-    Write-Host "C04 coverage gate: coverage file not found at '$CoverageFile'." -ForegroundColor Red
-    Write-Host "A missing coverage report means tests or coverage collection did not run; treating as a failure." -ForegroundColor Red
-    Write-Host "Expected the merged coverage XML of the test run: from the dotnet pre-flight, or from the coverage-file input of the ai-sdlc-pr action in the pull request workflow." -ForegroundColor Red
-    exit 1
+    Write-Host "C04 coverage gate: coverage file not found at '$CoverageFile', so nothing was checked." -ForegroundColor Yellow
+    Write-Host "A missing coverage report means tests or coverage collection did not run." -ForegroundColor Yellow
+    Write-Host "FIX: Run the tests with coverage collection first (the dotnet pre-flight does this), or pass -CoverageFile with the merged coverage XML of the test run (the coverage-file input of the ai-sdlc-pr action in the pull request workflow)." -ForegroundColor Yellow
+    exit 2
 }
 
 $aiSdlc = Get-AiSdlcConfig -RepoRoot $RepoRoot

@@ -134,6 +134,7 @@ $notChecked = if ($inPipeline) { 1 } else { 2 }
 # folder, so a pass would speak for another repository than the one named (#32).
 if ($PSBoundParameters.ContainsKey('RepoRoot') -and (-not $RepoRoot -or -not (Test-Path -LiteralPath $RepoRoot -PathType Container))) {
     Write-Host "The repository root '$RepoRoot' is not an existing folder, so no secret scan ran. Pass -RepoRoot with the folder of the repository."
+    Write-Host 'FIX: Pass -RepoRoot with the folder of the repository, or run the gate from inside it.'
     exit $notChecked
 }
 # ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, and git cannot read that (#29).
@@ -141,11 +142,13 @@ $currentDirectory = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Provi
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "Git is not installed or not available in the system PATH. Please install Git and try again."
+    Write-Host 'FIX: Install git and put it on the PATH.'
     exit $notChecked
 }
 
 if (-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
     Write-Host "Gitleaks is not installed or not available in the system PATH, so no secret scan ran. Install the pinned release with Install-Gitleaks.ps1 and put its folder on the PATH."
+    Write-Host 'FIX: Run Install-Gitleaks.ps1 (in this skill folder) and put the gitleaks folder on the PATH.'
     exit $notChecked
 }
 
@@ -155,6 +158,7 @@ if (-not (Get-Command gitleaks -ErrorAction SilentlyContinue)) {
 $null = git -C $currentDirectory rev-parse --verify --quiet HEAD 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "git cannot read the repository in $currentDirectory (for example 'dubious ownership'), so gitleaks would scan 0 commits. No secret scan ran."
+    Write-Host 'FIX: Run the gate in a repository that has a commit and that git can read. For dubious ownership, add the folder to safe.directory in the git config.'
     exit $notChecked
 }
 
@@ -186,6 +190,7 @@ catch { Write-Host "The download failed: $($_.Exception.Message)"; Remove-Item -
 
 if (-not (Test-Path -LiteralPath $gitleakconfigurationFile)) {
     Write-Host "Failed to download gitleaks configuration file from $($pin.Url)"
+    Write-Host 'FIX: Check the network access to the pinned rules URL, then run the gate again.'
     exit $notChecked
 }
 if (-not (Test-GitleaksRulesFile -Path $gitleakconfigurationFile -Pin $pin)) {

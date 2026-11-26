@@ -30,8 +30,9 @@
     macOS, so every read of it passes -Force. Without that the gate cannot even open its own roots
     there, and it fails with a path error instead of a finding.
 
-    Exits non-zero when any finding remains. A missing -Path, or a run that finds no markdown file at
-    all, throws instead, because an empty run must not read as a pass. Registered as a Blocking gate
+    Exits non-zero when any finding remains. A missing -Path exits 2 (could not check), and a run that
+    finds no markdown file at all exits 3 (not applicable), because an empty run must not read as a
+    pass. Registered as a Blocking gate
     in gates.json; the rule itself is the handbook page language.md and constitution clause C11.
 
 .PARAMETER RepoRoot
@@ -199,7 +200,11 @@ function Test-HardWord([string]$word) {
 $targets = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
 function Add-Targets([string]$p, [switch]$Required) {
     if (-not (Test-Path -LiteralPath $p)) {
-        if ($Required) { throw "Path not found: '$p'. Pass a path that exists under '$RepoRoot'." }
+        if ($Required) {
+            Write-Host "Could not check: the path '$p' does not exist."
+            Write-Host "FIX: Pass a path that exists under '$RepoRoot'."
+            exit 2
+        }
         return
     }
     $item = Get-Item -LiteralPath $p -Force
@@ -217,7 +222,10 @@ else {
     foreach ($f in @($config.paths.agentsFile, 'README.md', 'ONBOARDING.md', 'CLAUDE.md', '.claude/CLAUDE.md') | Select-Object -Unique) { Add-Targets (Join-Path $RepoRoot $f) }
     foreach ($d in @(Get-AiSdlcPath -Name readingLevelRoots -RepoRoot $RepoRoot -Relative)) { Add-Targets (Join-Path $RepoRoot $d) }
 }
-if ($targets.Count -eq 0) { throw "No markdown file found under '$RepoRoot'. An empty set cannot be reported on, so this is a fault in the gate or its arguments, not a finding in the docs." }
+if ($targets.Count -eq 0) {
+    Write-Host "Reading level: not applicable, there is no markdown file to read under '$RepoRoot'."
+    exit 3
+}
 
 $findings = [System.Collections.Generic.List[object]]::new()
 $wordCounts = @{}

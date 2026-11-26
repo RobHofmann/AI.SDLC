@@ -173,6 +173,7 @@ if (-not $PSBoundParameters.ContainsKey('DiffText')) {
     $read = Get-CodeDiffText -RepoRoot $RepoRoot -BaseRef $BaseRef -ContextLines 30
     if ($read.Problem) {
         Write-Host "Comment hygiene: $($read.Problem), so NOTHING WAS CHECKED." -ForegroundColor Yellow
+        Write-Host 'FIX: Make the base branch available (git fetch origin main), or pass -BaseRef with a ref the clone has.' -ForegroundColor Yellow
         exit 2
     }
     $DiffText = $read.Text

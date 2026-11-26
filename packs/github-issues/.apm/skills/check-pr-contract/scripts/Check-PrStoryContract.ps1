@@ -24,7 +24,7 @@
 
     NEVER PASSES BLIND. If a story key is present but the issue cannot be read (gh is missing, the token is
     missing, or the repository cannot be reached), the gate exits 2: it could not check. The workflow shows
-    that as a warning, never as a pass. An issue that does not exist is exit 1. It is a NO-OP only when there
+    that as a warning, never as a pass. An issue that does not exist is exit 1. It is not applicable (exit 3) only when there
     is no PR context at all (no story key, source branch, title, body or PR number), so a normal local
     `Invoke-LocalGates` run does not trip it; the live local check is the check-pr-contract skill.
 
@@ -106,11 +106,16 @@ $refinedLabel = if ($tracker -and $tracker.refinedLabel) { [string]$tracker.refi
 $modelPatterns = @($tracker.dataModelPatterns | Where-Object { $_ })
 
 function Fail([string]$msg) {
-    Write-Output "::error::$msg"
+    Write-Output $msg
     Write-Output "FIX: Put the issue key (#NNN) in the branch name (42-short-name), the pull request title, or its body (Fixes #42), and make sure that issue is labelled '$refinedLabel'. A key of another repository (owner/repo#NNN) needs that repository in tracker.acceptedRepositories. A data-model change also needs an ADR whose story matches."
     exit 1
 }
-function Unknown([string]$msg) { Write-Output "::warning::$msg"; exit 2 }
+function Unknown([string]$msg) {
+    Write-Output $msg
+    Write-Output "FIX: Give the gate a way to read the issue: install gh and set GH_TOKEN with read access to the tracker repository (the composite action sets it to github.token), then run the gate again."
+    exit 2
+}
+function NotApplicable([string]$msg) { Write-Output $msg; exit 3 }
 function Ok([string]$msg) { Write-Output $msg; exit 0 }
 
 function Get-TrackerRepository {
@@ -271,7 +276,7 @@ function Invoke-PrStoryContractGate {
 
     if (-not $found) {
         if (-not $StoryKey -and -not $SourceBranch -and -not $PrTitle -and -not $PrDescription -and -not $PrNumber) {
-            Ok "PR-story contract gate: no PR context (no story key, source branch, title, body or PR number); no-op."
+            NotApplicable "PR-story contract gate: not applicable, no PR context (no story key, source branch, title, body or PR number)."
         }
         Fail "No story key (#NNN) found. Looked in the story key passed in, the PR source branch '$SourceBranch', the PR title, the PR body and the issues the PR closes, in that order. Name the branch for its issue (e.g. 1234-short-name), or write the key in the PR title or body (Fixes #1234)."
     }
@@ -304,11 +309,11 @@ function Invoke-PrStoryContractGate {
         $governance = Find-AdrGovernance $key
         if (-not $governance.Governed) {
             if ($governance.Traps.Count -gt 0) {
-                Write-Output ("::error::ADR front matter with an empty 'story:' value: {0}. An unquoted # starts a YAML comment, so the key is lost." -f ($governance.Traps -join ', '))
+                Write-Output ("ADR front matter with an empty 'story:' value: {0}. An unquoted # starts a YAML comment, so the key is lost." -f ($governance.Traps -join ', '))
                 Write-Output "FIX: Quote the key in the ADR front matter: story: `"$key`"."
             }
             if ($governance.Invalid.Count -gt 0) {
-                Write-Output ("::error::ADR front matter with a 'story:' value that is not a story key: {0}." -f ($governance.Invalid -join ', '))
+                Write-Output ("ADR front matter with a 'story:' value that is not a story key: {0}." -f ($governance.Invalid -join ', '))
                 Write-Output "FIX: Write the key as #<number> or owner/repo#<number>, in quotes: story: `"$key`"."
             }
             Fail "This PR changes domain-model files (tracker.dataModelPatterns in aisdlc.json) but no governing ADR was found: no ADR under $($aiSdlc.paths.adrFolder)/ has front-matter 'story: `"$key`"' (a new ADR added in this PR counts only when its story matches). A data-model change requires an ADR (constitution C01)."

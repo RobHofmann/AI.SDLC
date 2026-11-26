@@ -170,11 +170,13 @@ Describe 'Check-SyncManifest' {
         $r.Output | Should -Not -Match 'dotnet'
     }
 
-    It 'says it could not check when the manifest is missing' {
+    It 'says it could not check when the manifest is missing' -Tag '#46' {
         Remove-Item -LiteralPath (Join-Path $script:Root 'manifest.json')
         $r = Invoke-Gate -RepoRoot $script:Root
         $r.ExitCode | Should -Be 2
         $r.Output | Should -Match 'could not be checked'
+        $r.Output | Should -Match '(?m)^FIX: \S'
+        $r.Output | Should -Not -Match '::warning::'
     }
 
     Context 'a repository that installs the core from its own tree' {

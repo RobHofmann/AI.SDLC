@@ -39,12 +39,12 @@ Describe 'Check-SpecDrift' {
     }
 
     Context 'the rule that keeps it safe for code written before specs existed' {
-        It 'passes and says so when there is no specs folder at all' {
+        It 'is not applicable and says so when there is no specs folder at all' -Tag '#46' {
             New-Controller -Relative 'Demo/src/Api.Demo/Controllers/OrderLinesController.cs'
 
             $r = Invoke-Gate -Changed @('Demo/src/Api.Demo/Controllers/OrderLinesController.cs')
 
-            $r.ExitCode | Should -Be 0
+            $r.ExitCode | Should -Be 3
             $r.Output | Should -Match 'no specs yet'
         }
 
@@ -153,12 +153,12 @@ Describe 'Check-SpecDrift' {
             finally { $env:CHANGED_FILES = $null }
         }
 
-        It 'passes when nothing changed' {
+        It 'is not applicable when nothing changed' -Tag '#46' {
             New-Spec
 
             $r = Invoke-Gate -Changed @()
 
-            $r.ExitCode | Should -Be 0
+            $r.ExitCode | Should -Be 3
             $r.Output | Should -Match 'no changed files'
         }
     }

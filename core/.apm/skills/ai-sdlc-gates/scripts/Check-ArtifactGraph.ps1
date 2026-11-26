@@ -47,6 +47,7 @@ $rootNames = @(Get-AiSdlcPath -Name docsRoots -RepoRoot $RepoRoot -Relative) + @
 $roots = $rootNames | ForEach-Object { Join-Path $RepoRoot $_ } | Where-Object { Test-Path $_ }
 if (-not $roots) {
     Write-Host ("Could not check: none of the artifact roots in aisdlc.json exists ({0})." -f ($rootNames -join ', ')) -ForegroundColor Yellow
+    Write-Host 'FIX: Create an artifact root that aisdlc.json names (for example docs or specs), or correct the doc and spec paths in aisdlc.json.' -ForegroundColor Yellow
     exit 2
 }
 $files = @()

@@ -15,6 +15,8 @@
 # when the dotnet pack is installed, because its gates.json registers it as Blocking. Advisory scans
 # are left to the full local run (`pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1`) and
 # to the pull request pipeline; coverage (C09) is left to the pre-flight.
+# The runner reads the exit code of each gate: 1 fails the push, 2 (could not check) is a warning here,
+# because the pull request build is where it blocks, and 3 (not applicable) is shown as N/A.
 
 # A push to main or master is refused before any gate runs. The agent hook Deny-IncompletePush.ps1
 # refuses it in Claude Code; this is the same rule for every other tool and for a push from a terminal.

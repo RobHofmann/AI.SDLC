@@ -132,7 +132,7 @@ try {
     $allow = Join-Path $gatesScripts 'Sync-AllowRules.ps1'
     if (Test-Path -LiteralPath $allow) {
         pwsh -NoProfile -File $allow -RepoRoot $RepoRoot
-        if ($LASTEXITCODE -ne 0) { throw "Sync-AllowRules.ps1 failed with exit code $LASTEXITCODE." }
+        if ($LASTEXITCODE -notin 0, 3) { throw "Sync-AllowRules.ps1 failed with exit code $LASTEXITCODE." }
         git add -- .claude/settings.json
     }
 

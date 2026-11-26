@@ -189,7 +189,7 @@ Describe 'Check-McpToken' {
 
         $r = Invoke-Gate
 
-        $r.ExitCode | Should -Be 0
+        $r.ExitCode | Should -Be 3
         $r.Output | Should -Match 'no MCP file in the repository to check'
     }
 
@@ -209,10 +209,10 @@ Describe 'Check-McpToken' {
         (Invoke-Gate).ExitCode | Should -Be 0
     }
 
-    It 'passes a repository with no MCP file' {
+    It 'is not applicable to a repository with no MCP file' -Tag '#46' {
         $r = Invoke-Gate
 
-        $r.ExitCode | Should -Be 0
+        $r.ExitCode | Should -Be 3
         $r.Output | Should -Match 'no MCP file in the repository to check'
     }
 
@@ -223,6 +223,8 @@ Describe 'Check-McpToken' {
 
         $r.ExitCode | Should -Be 2
         $r.Output | Should -Match '\.mcp\.json could not be checked: it is not valid JSON'
+        $r.Output | Should -Match '(?m)^FIX: \S'
+        $r.Output | Should -Not -Match '::warning::'
     }
 
     It 'reports that it could not check a file it cannot read (exit 2) instead of crashing' {

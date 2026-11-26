@@ -32,6 +32,7 @@
 
 .PARAMETER FailOnFinding
     Exit 1 when a page carries an [unused] or an [impl] finding, the two that assert something is wrong.
+    Exit 3 (not applicable) when there is no code graph.
     An [unlisted] finding never decides the exit code, because a page may link selectively. Off by default.
 
 .EXAMPLE
@@ -65,7 +66,7 @@ if (Test-Path -LiteralPath $RepoRoot) { $RepoRoot = (Resolve-Path -LiteralPath $
 if (-not $GraphPath) { $GraphPath = Join-Path $RepoRoot 'graphify-out' 'graph.json' }
 
 if (-not (Test-Path -LiteralPath $GraphPath)) {
-    Write-Host "No code graph at '$GraphPath'." -ForegroundColor Yellow
+    Write-Host "Doc graph claims: not applicable, there is no code graph at '$GraphPath'." -ForegroundColor Yellow
     Write-Host 'This is the optional check: build the graph with Invoke-GraphifyIndex.ps1, or skip it.' -ForegroundColor Yellow
     Write-Host 'Check-DocDrift.ps1 needs no graph and covers everything except stated relationships.' -ForegroundColor Yellow
     $outDir = Split-Path -Parent $GraphPath
@@ -74,7 +75,7 @@ if (-not (Test-Path -LiteralPath $GraphPath)) {
         Write-Host 'git hooks empty it and rebuild after every commit, merge and checkout, and a build takes about' -ForegroundColor Yellow
         Write-Host '30 seconds. Wait for it, or run Invoke-GraphifyIndex.ps1 yourself.' -ForegroundColor Yellow
     }
-    exit 0
+    exit 3
 }
 
 $srcRoot = Join-Path $RepoRoot (Get-SourceRoot -RepoRoot $RepoRoot)

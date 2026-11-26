@@ -118,6 +118,13 @@ are not committed yet. It also reads the new files git does not ignore, because 
 
 `Invoke-LocalGates.ps1` runs gates from installed AI-SDLC packages and the repository.
 
+A gate reports through its exit code: 0 pass, 1 finding, 2 could not check, 3 not applicable. Any other
+code counts as 1. In the pull request action a Blocking gate that exits 2 fails the job; in a local run
+and in the pre-push hook it is a warning (`UNVERIFIED`). A gate that exits 3 shows as `N/A` and never
+blocks. A crashed Advisory gate is a warning. `GateContract.Tests.ps1` runs every gate in an empty
+repository and checks its code. [ADR 0019](../adrs/0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md)
+records the contract.
+
 `Invoke-Gate.ps1` runs one gate script in GitHub Actions or locally and produces a clear result.
 
 `Invoke-PesterGate.ps1` runs Pester tests under the supplied paths.

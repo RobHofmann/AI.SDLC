@@ -9,6 +9,15 @@
     agent to run the wrap-up skill, which then runs on whatever model the developer is already
     using. No model is spent deciding whether the work is needed, only doing it.
 
+    The check reports through its exit code: 0 nothing found, 1 a gap, 2 could not check, 3 not
+    applicable. Any other code counts as 1. Only a gap denies. On 2 or 3 the hook goes on to the
+    pre-flight receipt check exactly as on 0. When that allows the push after exit 2, the hook writes
+    one JSON object with only a systemMessage, which Claude Code shows to the user. It says the check
+    could not check, and gives the first line of its output as the reason. After exit 3 it stays
+    silent, like exit 0, because nothing was left to check, and a note on every push would hide the
+    real ones. The note is never a permissionDecision of allow, because that would skip the permission
+    prompt of the user.
+
     Wired from .claude/settings.json, which Claude Code and GitHub Copilot CLI both read, so one entry
     covers both tools. The payload arrives as JSON on stdin in the Claude shape (tool_name,
     tool_input.command); the camelCase toolArgs shape of the Copilot-native config is accepted too.
@@ -330,6 +339,12 @@ function Write-Deny {
     } | ConvertTo-Json -Depth 5 -Compress | Write-Output
 }
 
+function Write-Note {
+    param([string]$Message)
+
+    @{ systemMessage = $Message } | ConvertTo-Json -Depth 3 -Compress | Write-Output
+}
+
 if (-not $PSBoundParameters.ContainsKey('Payload')) {
     $Payload = if ([Console]::IsInputRedirected) { [Console]::In.ReadToEnd() } else { '' }
 }
@@ -399,17 +414,26 @@ if (-not (Test-Path -Path $CheckScript)) { exit 0 }
 try {
     $ErrorActionPreference = 'Continue'
     $report = & pwsh -NoProfile -File $CheckScript -Strict -RepoRoot $targetRoot 2>&1 | Out-String
-    $failed = $LASTEXITCODE -ne 0
+    $checkCode = $LASTEXITCODE
 }
 catch {
     exit 0
 }
 
+$failed = $checkCode -notin 0, 2, 3
+
 if (-not $failed) {
     if (-not $PSBoundParameters.ContainsKey('HeadTree')) {
         $HeadTree = Get-HeadTree -RepoRoot $targetRoot
     }
-    if (Test-PreflightReceipt -ReceiptRoot $ReceiptRoot -Tree $HeadTree) { exit 0 }
+    if (Test-PreflightReceipt -ReceiptRoot $ReceiptRoot -Tree $HeadTree) {
+        if ($checkCode -eq 2) {
+            $firstLine = @($report -split '\r?\n' | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() })[0]
+            if (-not $firstLine) { $firstLine = 'the check printed no reason' }
+            Write-Note ("The completeness check could not check (exit 2), so this push was not judged on tests and documentation moving with the code: {0}" -f $firstLine)
+        }
+        exit 0
+    }
     Write-Deny ('This commit has no green pre-flight. Run the wrap-up skill, which ends with the pre-flight ' +
         '(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1) on the committed tree: when no check fails it writes ' +
         'a receipt for the tree in the receipt folder (paths.preflightReceipts in aisdlc.json, temp/preflight by default), and this hook accepts the push. A run with -SkipTests or on ' +

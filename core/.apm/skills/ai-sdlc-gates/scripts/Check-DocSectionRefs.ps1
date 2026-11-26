@@ -50,7 +50,7 @@
     escapes an apostrophe inside a single-quoted string. Without that, a pointer at a heading with an
     apostrophe in it could never be written in a PowerShell message.
 
-    Exit 0 clean, 1 a finding. Blocking: it was green on the whole repository the day it was written,
+    Exit 0 clean, 1 a finding, 3 (not applicable) when there is nothing to scan. Blocking: it was green on the whole repository the day it was written,
     so it carries no old debt, and every finding is a one-line fix in the text that points.
 
 .PARAMETER RepoRoot
@@ -221,7 +221,10 @@ function Resolve-Target {
 }
 
 $targets = Get-ScanTarget -Root $RepoRoot -Only $Path
-if ($targets.Count -eq 0) { throw "Check-DocSectionRefs: nothing to scan under $RepoRoot." }
+if ($targets.Count -eq 0) {
+    Write-Host "Section references: not applicable, there is nothing to scan under $RepoRoot."
+    exit 3
+}
 
 $index = Get-MarkdownIndex -Root $RepoRoot
 $headingCache = @{}
@@ -311,7 +314,6 @@ if ($findings.Count -gt 0) {
         }
     }
     Write-Host "FIX: Point at the heading or the decision record as it now reads, or put it back. A pointer that leads nowhere is worse than none, because the reader trusts it."
-    Write-Output "::error::Section references: $($findings.Count) pointer(s) name a section or a decision record that is not there. Each one is listed above as file:line."
     exit 1
 }
 

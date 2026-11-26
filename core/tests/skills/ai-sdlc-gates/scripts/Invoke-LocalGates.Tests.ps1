@@ -190,6 +190,45 @@ Describe 'Invoke-LocalGates' {
         $result.Output | Should -Match 'CRASHED'
     }
 
+    It 'keeps exit 2 of a Blocking gate a warning in a local run, and the run exits 0' -Tag '#46' {
+        $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "No token, so NOTHING WAS CHECKED."; exit 2'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Match 'core gate\s+Blocking\s+UNVERIFIED'
+        $result.Output | Should -Match 'Run locally they are warnings'
+    }
+
+    It 'shows a gate that exits 3 as N/A, and never fails the run on it' -Tag '#46' {
+        $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "No pull request here, so there is nothing to check."; exit 3'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Match 'core gate\s+Blocking\s+N/A'
+        $result.Output | Should -Match '1 gate\(s\) not applicable here \(exit 3\)'
+    }
+
+    It 'counts an exit code other than 0, 1, 2 or 3 as a finding' -Tag '#46' {
+        $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) exit 5'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 1
+        $result.Output | Should -Match 'core gate\s+Blocking\s+FAIL'
+    }
+
+    It 'reports a crashed Advisory gate as a warning, and the run exits 0' -Tag '#46' {
+        $root = New-StandardRepo -CoreMode 'Advisory' -CoreScript 'param([string]$RepoRoot, [switch]$Strict) throw "gate bug"'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Match 'CRASHED'
+        $result.Output | Should -Match '1 advisory gate\(s\) stopped before they could report'
+    }
+
     Context 'in GitHub Actions' {
         BeforeEach {
             $script:SavedActions = $env:GITHUB_ACTIONS
@@ -223,13 +262,43 @@ Describe 'Invoke-LocalGates' {
             $result.Output | Should -Not -Match '::error'
         }
 
-        It 'raises a warning, never an error, for a Blocking gate that could not check' {
+        It 'raises an error and fails the job for a Blocking gate that could not check' -Tag '#46' {
             $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "No token, so NOTHING WAS CHECKED."; exit 2'
 
             $result = Invoke-Runner -Root $root
 
-            $result.Code | Should -Be 0
+            $result.Code | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match '::error title=core gate::.*COULD NOT BE CHECKED'
+            $result.Output | Should -Match '1 of them could not check \(exit 2\)'
+        }
+
+        It 'raises a warning and passes the job for an Advisory gate that could not check' -Tag '#46' {
+            $root = New-StandardRepo -CoreMode 'Advisory' -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "No token."; exit 2'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
             $result.Output | Should -Match '::warning title=core gate::.*COULD NOT BE CHECKED'
+        }
+
+        It 'writes no annotation for a gate that exits 3, and lists it as N/A in the job summary' -Tag '#46' {
+            $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "nothing to check"; exit 3'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Not -Match '::(error|warning)'
+            Get-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Raw | Should -Match '\| core gate \| Blocking \| N/A \|'
+        }
+
+        It 'fails the job for a Blocking gate whose script is missing' -Tag '#46' {
+            $root = New-StandardRepo
+            Remove-Item -LiteralPath (Join-Path $root '.claude/skills/ai-sdlc-gates/scripts/Check-Core.ps1')
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match '::error title=core gate::.*COULD NOT BE CHECKED'
         }
 
         It 'writes no annotation when every gate passes, and adds the summary table to the job summary' {
