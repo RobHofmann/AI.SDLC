@@ -238,6 +238,25 @@ function Request-CopilotReview {
         return (& $fail $_.Exception.Message)
     }
 
+    # gh exits 0 even when GitHub drops the request, for example when Copilot code review is off for
+    # the repository. So the request only counts when the pull request lists Copilot as a reviewer.
+    try {
+        $viewArgs = @('pr', 'view', [string]$Id, '--repo', $Repository, '--json', 'reviewRequests')
+        $view = (Invoke-GitHubCli -Arguments $viewArgs -Invoker $GhInvoker) | ConvertFrom-Json
+        $copilot = @($view.reviewRequests | Where-Object {
+                ([string]$_.PSObject.Properties['login']?.Value + ' ' + [string]$_.PSObject.Properties['name']?.Value) -match '(?i)copilot'
+            })
+        if ($copilot.Count -eq 0) {
+            $result.Requested = $false
+            $result.Reason = "request not registered: gh exited 0, but the pull request lists no Copilot reviewer. Copilot code review may be off for this repository or account, or not take a draft"
+            Write-Warning "Copilot review not requested on PR ${Id}: $($result.Reason). Go on without it and say so in the evidence record."
+            return $result
+        }
+    }
+    catch {
+        $result.Reason = "$($result.Reason), not read back: $($_.Exception.Message)"
+    }
+
     Write-Information "Copilot review requested on PR ${Id} ($($result.Reason))." -InformationAction Continue
     return $result
 }

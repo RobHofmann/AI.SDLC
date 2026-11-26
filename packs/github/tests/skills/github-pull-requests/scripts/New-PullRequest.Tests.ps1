@@ -38,6 +38,9 @@ Describe 'New-PullRequest' {
                     if ($FailReviewer) { throw 'reviewer refused' }
                     return ''
                 }
+                if ($ghArgs[1] -eq 'view' -and $ghArgs -contains 'reviewRequests') {
+                    return '{"reviewRequests":[{"__typename":"Bot","login":"copilot-pull-request-reviewer"}]}'
+                }
                 if ($ghArgs[1] -eq 'edit') {
                     $State.Edits++
                     $State.EditArgs = [string[]]$ghArgs

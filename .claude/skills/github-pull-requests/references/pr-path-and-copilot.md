@@ -23,6 +23,9 @@ with `git diff --numstat`. It asks when 20 or more lines changed (`-MinChangedLi
 Copilot review yet, when it cannot count, or with `-Force`. Binary files do not count. A failed request
 is a warning, and the script exits 0. Run it only after your own push, so small fixes start no new round.
 
+gh exits 0 even when GitHub drops the request, for example when Copilot code review is off for the
+repository. So the script reads `reviewRequests` back, and reports a request that did not land as a warning.
+
 The GitHub docs document the `@copilot` reviewer for `gh pr edit` and `gh pr create`
 ([Using GitHub Copilot code review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review),
 [gh pr edit](https://cli.github.com/manual/gh_pr_edit)), read on 2026-11-26. They do not say whether a

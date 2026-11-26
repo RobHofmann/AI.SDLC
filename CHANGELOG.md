@@ -80,7 +80,9 @@ Each entry names its issue, as `#42`.
 - The new `Request-CopilotReview.ps1` asks Copilot for a review with `gh pr edit --add-reviewer @copilot`.
   `New-PullRequest.ps1` asks for the first review right after the create, unless `-SkipCopilotReview` is
   passed. `fix-pr-feedback` asks again only after its own push, and only when 20 or more lines changed
-  since the commit Copilot last reviewed; binary files do not count. A failed request is a warning (#68).
+  since the commit Copilot last reviewed; binary files do not count. A failed request is a warning. The
+  script reads the request back, because gh exits 0 even when GitHub drops it, for example when Copilot
+  code review is off for the repository (#68).
 
 - The Bicep pre-flight builds the templates of a repository that sits in a git worktree under
   `.claude/worktrees/`. It left out every file whose full path held `.claude`, so it found no template

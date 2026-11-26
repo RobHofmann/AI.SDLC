@@ -24,7 +24,7 @@ Describe 'Request-CopilotReview' {
 
         # A fake gh. -Reviews is the list the api call returns; -FailList and -FailRequest make a call throw.
         function New-Invoker {
-            param([hashtable]$State, [object[]]$Reviews = @(), [string]$RawList, [switch]$FailList, [switch]$FailRequest)
+            param([hashtable]$State, [object[]]$Reviews = @(), [string]$RawList, [switch]$FailList, [switch]$FailRequest, [switch]$NotRegistered, [switch]$FailView)
             $State.Calls = [System.Collections.Generic.List[string]]::new()
             $State.RequestArgs = $null
             return {
@@ -39,6 +39,11 @@ Describe 'Request-CopilotReview' {
                     $State.RequestArgs = [string[]]$ghArgs
                     if ($FailRequest) { throw 'request refused' }
                     return ''
+                }
+                if ($ghArgs[0] -eq 'pr' -and $ghArgs[1] -eq 'view') {
+                    if ($FailView) { throw 'view refused' }
+                    if ($NotRegistered) { return '{"reviewRequests":[]}' }
+                    return '{"reviewRequests":[{"__typename":"Bot","login":"copilot-pull-request-reviewer"}]}'
                 }
                 throw "unexpected gh call: $($ghArgs -join ' ')"
             }.GetNewClosure()
@@ -71,6 +76,33 @@ Describe 'Request-CopilotReview' {
         Invoke-Helper -Parameters @{ GhInvoker = (New-Invoker -State $state) } | Out-Null
 
         $state.Calls[0] | Should -Be 'api repos/contoso/portal/pulls/42/reviews --paginate'
+    }
+
+    It 'reads the request back and says requested when Copilot is in the review requests' {
+        $state = @{}
+        $result = Invoke-Helper -Parameters @{ Force = $true; GhInvoker = (New-Invoker -State $state) }
+
+        $result.Requested | Should -BeTrue
+        @($state.Calls | Where-Object { $_ -like 'pr view 42*reviewRequests*' }).Count | Should -Be 1
+    }
+
+    It 'warns and returns Requested false when gh exits 0 but the request is not registered' {
+        $state = @{}
+        $result = Invoke-Helper -Parameters @{ Force = $true; GhInvoker = (New-Invoker -State $state -NotRegistered) } 3>&1
+        $warning = @($result | Where-Object { $_ -is [System.Management.Automation.WarningRecord] })
+        $row = @($result | Where-Object { $_ -isnot [System.Management.Automation.WarningRecord] })[0]
+
+        $row.Requested | Should -BeFalse
+        $row.Reason | Should -Match 'not registered'
+        $warning.Count | Should -Be 1
+    }
+
+    It 'keeps Requested true and says so when the read-back fails' {
+        $state = @{}
+        $result = Invoke-Helper -Parameters @{ Force = $true; GhInvoker = (New-Invoker -State $state -FailView) }
+
+        $result.Requested | Should -BeTrue
+        $result.Reason | Should -Match 'not read back'
     }
 
     It 'asks with -Force and does not count' {

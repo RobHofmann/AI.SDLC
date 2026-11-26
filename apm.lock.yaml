@@ -245,7 +245,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:00847bce392c1efc3e7deeaf0d755a19ca46c6e661a74a7be9da2d7a0b2745ac
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:c6dda3d4fe5f7bc852c9a79bc2e4a055760674d2991b311b98b44235c6f4d897
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:0fb24c4cdfed26ea2bbfdd0874557197a6363bb75c09c5ae2f5c8ac019e99360
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:4eaed699b27185967de377c6bb728a6afe5aa6b77a0f73d307697c79de1eb1ce
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -391,7 +391,7 @@ dependencies:
     .claude/skills/github-pull-requests/SKILL.md: sha256:c2ee698dcad112cc13001fd426a758674e5913f591b28bb4d9614c559fb6e508
     .claude/skills/github-pull-requests/gates.json: sha256:e58f1bea2e470b0ba5f7b3c58d760026a8dbe96a2eef068dabdc006007424864
     .claude/skills/github-pull-requests/references/delivery-metrics.md: sha256:e68cda7b7772b71f456a3c48f316ae80ae8fbd7c63275a1f9780234376c68ca4
-    .claude/skills/github-pull-requests/references/pr-path-and-copilot.md: sha256:ee88bc7b9a3ffd94f664ce64bc0b6e5624cac243c96b1be31286d9056395fc6e
+    .claude/skills/github-pull-requests/references/pr-path-and-copilot.md: sha256:d36ce9db22bf3baab1ee40ebbf2afc36bf9b305d348d38e91319b6be71c8e812
     .claude/skills/github-pull-requests/scripts/Get-PrMetrics.ps1: sha256:2c17b4df426f6389108232ed86b379a6df8a91d71ec4cf1c60779eea56f3d35a
     .claude/skills/github-pull-requests/scripts/Get-PullRequestFeedback.ps1: sha256:499f8323e6cd47e5d88c0fb478934b4fb2a2075f4defe99765c382a85fa3b128
     .claude/skills/github-pull-requests/scripts/Initialize-GitHub.ps1: sha256:bd9977cddc46999c1f038a69c1940ea3c4d1da6eab8053e00e363001da697ab2
@@ -399,7 +399,7 @@ dependencies:
     .claude/skills/github-pull-requests/scripts/PullRequestDescription.psm1: sha256:7b31a78a745b506a9649e78386c6bdc9945cbfe5ab48ba14fccbe37e1f4c751f
     .claude/skills/github-pull-requests/scripts/PullRequestFeedback.psm1: sha256:c577a976c767140254cb82e515ab43c4d7954adb877bf9999cafa94451d3e572
     .claude/skills/github-pull-requests/scripts/Reply-PullRequestThread.ps1: sha256:51e2a50369be9dc26c324bdee3da25fe513c6b337ea1aa54db7c00c283e4b146
-    .claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1: sha256:c1146b4bc3770ac5a78695ebf901471069c0e2f1d4e939b32aa2ba93448a5388
+    .claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1: sha256:b7e90f1a7c80afd0c2d3032db72ec6d331aeeb129326d9180efe805b328818c1
     .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1: sha256:ae6f402fbf159aa55c75b21c3831697fb05c19b2840a481582f3a18674c2cbbd
     .claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1: sha256:aadf2e7151a5dfe682fe9bb33b1532801c59fb2deafafd2ff5d9f0d2f2f29498
     .claude/skills/github-pull-requests/scripts/Wait-WorkflowRun.ps1: sha256:be8849509d6b30772f428c0b3d73a340fa61a68bd88025e0b533ee4f4b9aced1
@@ -1103,7 +1103,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:c6dda3d4fe5f7bc852c9a79bc2e4a055760674d2991b311b98b44235c6f4d897
+  content_hash: sha256:0fb24c4cdfed26ea2bbfdd0874557197a6363bb75c09c5ae2f5c8ac019e99360
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
@@ -1796,7 +1796,7 @@ deployments:
   owners:
   - ./packs/github
   active_owner: ./packs/github
-  content_hash: sha256:ee88bc7b9a3ffd94f664ce64bc0b6e5624cac243c96b1be31286d9056395fc6e
+  content_hash: sha256:d36ce9db22bf3baab1ee40ebbf2afc36bf9b305d348d38e91319b6be71c8e812
 - kind: project-relative
   target: claude
   value: .claude/skills/github-pull-requests/scripts/Get-PrMetrics.ps1
@@ -1868,7 +1868,7 @@ deployments:
   owners:
   - ./packs/github
   active_owner: ./packs/github
-  content_hash: sha256:c1146b4bc3770ac5a78695ebf901471069c0e2f1d4e939b32aa2ba93448a5388
+  content_hash: sha256:b7e90f1a7c80afd0c2d3032db72ec6d331aeeb129326d9180efe805b328818c1
 - kind: project-relative
   target: claude
   value: .claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1

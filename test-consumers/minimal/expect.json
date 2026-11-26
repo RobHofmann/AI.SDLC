@@ -11,6 +11,8 @@
     ".claude/agents/spec-reviewer.md",
     ".claude/skills/github-pull-requests/scripts/New-PullRequest.ps1",
     ".claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1",
+    ".claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1",
+    ".claude/skills/move-story/scripts/Invoke-StoryMove.ps1",
     ".claude/skills/github-pull-requests/scripts/Set-BranchRuleset.ps1",
     ".claude/skills/github-pull-requests/scripts/Initialize-GitHub.ps1",
     ".claude/skills/github-actions-conventions/SKILL.md",
@@ -21,7 +23,6 @@
     ".claude/settings.json"
   ],
   "absent": [
-    ".claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1",
     ".claude/skills/github-pull-requests/scripts/Register-Pipelines.ps1",
     ".claude/skills/ai-sdlc-gates/assets/pipelines",
     ".claude/skills/test-first-dotnet",
