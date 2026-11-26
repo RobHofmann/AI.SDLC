@@ -36,6 +36,8 @@ Most scripts have a matching test file:
 
 The unit also contains `tools/PrPipeline.Tests.ps1`. It checks the pull request workflow `.github/workflows/pr.yml`: its triggers, its read rights, the SHA pins of its actions, and its jobs and matrices. It also checks that every script and action it names exists. It checks that the workflow runs no gate by hand, because the composite action runs every core, pack and repo gate once.
 
+The unit also contains `tools/BuildLoopPackaging.Tests.ps1`. It checks that every row of the table of convention skills in `code-conventions` names a skill a package holds. It also checks that core ships the review agents and `spec-reviewer`, and that the dotnet pack ships no agent. No page may name the review agents as agents of the dotnet pack.
+
 When changing a script, keep its matching test file in step with the change.
 
 ### Workflow templates

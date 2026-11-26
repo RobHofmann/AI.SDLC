@@ -62,6 +62,10 @@ Documentation and decision skills include:
 - `docs-wiki-conventions` defines rules for documentation layers, links, style, and checks.
 - `write-adr` creates MADR-style records in `docs/adrs/`. Started by a person, it ends like `write-prd`.
 - `adr-conventions` defines the repository format and rules for architecture decisions.
+
+Code skills include:
+
+- `code-conventions` holds the code rules for every language once. Examples are reuse before you build, build only what the story needs, two scope cases, the comment rule of C10 and no new warning. It also holds one severity scale for every reviewer and the plan: HIGH and MEDIUM, with no LOW. Its page `references/skills-by-file-type.md` is a table that names the convention skill of each file type and its pack. A new language adds one row there. The `builder`, `architect`, `code-reviewer`, `test-analyzer`, `security-reviewer` and `spec-reviewer` agents preload it. See [ADR 0016](../adrs/0016-the-shared-code-rules-and-the-review-agents-live-in-core.md).
 - `update-constitution` creates, changes, or checks the project constitution. Started by a person, a create or a change ends like `write-prd`.
 
 Framework support skills include:
@@ -248,5 +252,6 @@ The PowerShell tests use Pester.
 - [tools](../tools.md) - the scripts that check this repository and set up a consumer.
 - [github](github.md) - the pack that opens the pull requests the gates check.
 - [dotnet](dotnet.md) - the largest pack, which builds on the core gates.
+- [ADR 0016](../adrs/0016-the-shared-code-rules-and-the-review-agents-live-in-core.md) - why the shared code rules and the review agents live in core.
 - [Own skills, agents and hooks](../../core/.apm/skills/ai-sdlc-handbook/references/consumer-own.md) - the handbook page on what a consumer adds itself.
 - [Index](../index.md) - every page of this layer.
