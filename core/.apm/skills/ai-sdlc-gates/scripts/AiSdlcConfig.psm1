@@ -528,4 +528,294 @@ function Get-AiSdlcPackage {
     }
 }
 
-Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPathExcluded, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed, Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage, Get-AiSdlcMainBranch
+# The gates a repository may not set weaker than Blocking in gateModes. Each one guards a rule whose
+# break cannot be taken back once it is pushed: a secret (C03), or a private term in a public
+# repository (ADR 0011). The package mode still decides; only gateModes is refused.
+$script:ProtectedGateScripts = @('Test-GitleaksBaseline.ps1', 'Check-PrivateTerms.ps1')
+
+function Get-AiSdlcGateMode {
+    <#
+    .SYNOPSIS
+        The mode of a gate entry: Blocking, Advisory or Off, or nothing when the entry holds another value.
+    .DESCRIPTION
+        A missing mode, a null mode and an empty text mean Blocking. A text that equals Blocking,
+        Advisory or Off, in any case, gives that name in its canonical case. Any other value gives
+        nothing, so the caller can refuse the entry.
+    .PARAMETER Entry
+        A gate entry from a gates.json or from repoGates, as a hashtable or an object.
+    .EXAMPLE
+        Get-AiSdlcGateMode -Entry @{ mode = 'off' }
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter(Mandatory)]$Entry)
+
+    $hasMode = if ($Entry -is [System.Collections.IDictionary]) { $Entry.Contains('mode') } else { [bool]$Entry.PSObject.Properties['mode'] }
+    if (-not $hasMode) { return 'Blocking' }
+    $value = $Entry.mode
+    if ($null -eq $value -or ($value -is [string] -and $value -eq '')) { return 'Blocking' }
+    if ($value -isnot [string]) { return $null }
+    $canonical = @('Blocking', 'Advisory', 'Off') | Where-Object { $_ -eq $value }
+    if ($canonical) { return $canonical }
+    return $null
+}
+
+function Format-AiSdlcGateModeValue {
+    param($Value)
+
+    if ($Value -is [string]) { return $Value }
+    return (ConvertTo-Json -InputObject $Value -Compress -Depth 4)
+}
+
+function Get-AiSdlcGateModeSetting {
+    <#
+    .SYNOPSIS
+        Reads and checks the gateModes object of aisdlc.json, once, against the gates that run.
+    .DESCRIPTION
+        A repository can set the mode of a shared gate in gateModes in its own aisdlc.json: an object
+        whose keys are gate names and whose values are Blocking, Advisory or Off, in any case. A gate
+        name matches without regard to case.
+
+        Override holds one item for each shared gate of a package that runs which gateModes names, with
+        Key, Value, Mode (or nothing when the value is not allowed) and Problem. A value weaker than
+        Blocking for the secret scan or the private-terms gate is a problem too, because those gates
+        guard a break that cannot be taken back after a push.
+
+        Problem holds one item for each thing in gateModes that cannot attach to a shared gate that runs:
+        a gateModes that is not an object, a name that no gate has, the name of a repository gate (it
+        sets its mode in repoGates), the name of a gate of a pack that apm.yml does not list, and two
+        keys that differ only in case. A missing or null gateModes leaves both parts empty.
+    .PARAMETER Config
+        The result of Get-AiSdlcConfig.
+    .PARAMETER Package
+        The result of Get-AiSdlcPackage -All, so that a gate of a pack that does not run is known by name.
+    .EXAMPLE
+        Get-AiSdlcGateModeSetting -Config (Get-AiSdlcConfig) -Package @(Get-AiSdlcPackage -All)
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]$Config,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Package
+    )
+
+    $override = [hashtable]::new([StringComparer]::OrdinalIgnoreCase)
+    $problems = [System.Collections.Generic.List[object]]::new()
+    $setting = [pscustomobject]@{ Override = $override; Problem = $problems }
+
+    $property = $Config.PSObject.Properties['gateModes']
+    $modes = $null
+    if ($property) { $modes = $property.Value }
+    if ($null -eq $modes) { return $setting }
+    if ($modes -isnot [System.Collections.IDictionary]) {
+        $json = ConvertTo-Json -InputObject $modes -Compress -Depth 4
+        $problems.Add([pscustomobject]@{ Key = $null; Value = $modes; Text = ("gateModes is '{0}', and it must be an object of gate names and modes" -f $json) })
+        return $setting
+    }
+
+    $running = [hashtable]::new([StringComparer]::OrdinalIgnoreCase)
+    $runningScript = [hashtable]::new([StringComparer]::OrdinalIgnoreCase)
+    $unlisted = [hashtable]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($item in @($Package | Where-Object { $_ })) {
+        foreach ($entry in @($item.Gates | Where-Object { $_ -and $_.name -is [string] })) {
+            if ($item.Runs) {
+                $running[$entry.name] = $item.Package
+                $runningScript[$entry.name] = if ($entry.script -is [string]) { Split-Path -Leaf $entry.script } else { '' }
+            }
+            else { $unlisted[$entry.name] = $item.Package }
+        }
+    }
+    $repository = [hashtable]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($entry in @($Config.repoGates | Where-Object { $_ -and $_.name -is [string] })) { $repository[$entry.name] = $true }
+
+    $groups = @($modes.Keys | Group-Object { ([string]$_).ToLowerInvariant() })
+    foreach ($group in $groups) {
+        $keys = @($group.Group | ForEach-Object { [string]$_ } | Sort-Object -CaseSensitive)
+        $first = $keys[0]
+        $values = @($keys | ForEach-Object { Format-AiSdlcGateModeValue -Value $modes[$_] })
+        $valueText = ($values | ForEach-Object { "'$_'" }) -join ' and '
+        $keyText = ($keys | ForEach-Object { "'$_'" }) -join ' and '
+        $twice = $keys.Count -gt 1
+
+        if ($running.ContainsKey($first)) {
+            $found = [pscustomobject]@{ Key = $first; Value = $modes[$first]; Mode = $null; Problem = $null }
+            if ($twice) {
+                $found.Problem = ("gateModes sets this gate twice, as {0}, to {1}" -f $keyText, $valueText)
+            }
+            else {
+                $value = $modes[$first]
+                if ($value -is [string] -and $value -ne '') { $found.Mode = Get-AiSdlcGateMode -Entry @{ mode = $value } }
+                if (-not $found.Mode) { $found.Problem = ("gateModes sets '{0}' to '{1}', and the allowed values are Blocking, Advisory and Off" -f $first, (Format-AiSdlcGateModeValue -Value $value)) }
+                elseif ($found.Mode -ne 'Blocking' -and $runningScript[$first] -in $script:ProtectedGateScripts) {
+                    $found.Problem = ("gateModes sets '{0}' to '{1}', but this gate guards a secret or a private term, which cannot be taken back once pushed, so it stays Blocking" -f $first, $found.Mode)
+                    $found.Mode = $null
+                }
+            }
+            $override[$first] = $found
+            continue
+        }
+
+        $subject = if ($twice) { ("gateModes sets this name twice, as {0}, to {1}" -f $keyText, $valueText) } else { ("gateModes sets '{0}' to '{1}'" -f $first, $values[0]) }
+        if ($repository.ContainsKey($first)) { $reason = 'the name is a repository gate, so set its mode in repoGates' }
+        elseif ($unlisted.ContainsKey($first)) { $reason = ("the name is a gate of the pack {0}, which apm.yml does not list" -f $unlisted[$first]) }
+        else { $reason = 'no shared gate that runs has this name' }
+        $problems.Add([pscustomobject]@{ Key = $first; Value = $modes[$first]; Text = ("{0}, but {1}" -f $subject, $reason) })
+    }
+    return $setting
+}
+
+function Resolve-AiSdlcGateMode {
+    <#
+    .SYNOPSIS
+        The mode in force for one gate entry, where it comes from, and what is wrong with it.
+    .DESCRIPTION
+        A shared gate has the mode of its gates.json entry, unless gateModes of aisdlc.json names it. A
+        repository gate always has the mode of its own entry in repoGates. The result has Mode (Blocking,
+        Advisory or Off), Source (package, or aisdlc.json) and Problem (a text, or nothing). Any problem
+        makes the mode Blocking, so a gate with a problem never passes by being skipped.
+    .PARAMETER Entry
+        A gate entry from a gates.json or from repoGates, as a hashtable or an object.
+    .PARAMETER Package
+        The package of the entry, or repo for an entry of repoGates.
+    .PARAMETER Setting
+        The result of Get-AiSdlcGateModeSetting. Without it, no gateModes applies.
+    .EXAMPLE
+        Resolve-AiSdlcGateMode -Entry @{ name = 'docs'; mode = 'Blocking' } -Package core -Setting $setting
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]$Entry,
+        [Parameter(Mandatory)][string]$Package,
+        $Setting
+    )
+
+    $problems = [System.Collections.Generic.List[string]]::new()
+    $mode = Get-AiSdlcGateMode -Entry $Entry
+    if (-not $mode) {
+        $problems.Add(("the mode is '{0}', and the allowed values are Blocking, Advisory and Off" -f $Entry.mode))
+        $mode = 'Blocking'
+    }
+
+    $source = if ($Package -eq 'repo') { 'aisdlc.json' } else { 'package' }
+    $named = if ($Package -ne 'repo' -and $Setting) { $Setting.Override[[string]$Entry.name] } else { $null }
+    if ($named) {
+        $source = 'aisdlc.json'
+        if ($named.Problem) { $problems.Add([string]$named.Problem) }
+        elseif ($problems.Count -eq 0) { $mode = $named.Mode }
+    }
+
+    if ($problems.Count -gt 0) { $mode = 'Blocking' }
+    return [pscustomobject]@{
+        Mode    = $mode
+        Source  = $source
+        Problem = if ($problems.Count -gt 0) { $problems -join '; ' } else { $null }
+    }
+}
+
+function Get-AiSdlcGateScriptMode {
+    <#
+    .SYNOPSIS
+        The mode in force for the gates that a script backs: Off, Advisory or Blocking.
+    .DESCRIPTION
+        For every caller that starts a gate script outside the gate runner: the pre-flights, the
+        post-edit hook and the push hooks. It looks at the gates.json of the packages that run, then at
+        repoGates, and takes the mode of each entry from Resolve-AiSdlcGateMode, so gateModes counts. An
+        entry matches when its script has the given file name, in any case.
+
+        It returns Off when every matching entry is Off, Advisory when every matching entry is Advisory
+        or Off and at least one is Advisory, and Blocking in every other case. It returns Blocking when
+        anything cannot be read: a problem in gateModes, a mode that is not allowed, or a script that no
+        entry names. It also returns Blocking while git shows an uncommitted change to a gates.json under
+        .claude/skills or to aisdlc.json, because the pre-flight receipt covers the committed tree only.
+        So an edit to Off counts only once it is committed. A failed git call counts as a change.
+    .PARAMETER RepoRoot
+        The repository root.
+    .PARAMETER SkillsRoot
+        Where the packages are installed. Defaults to <RepoRoot>/.claude/skills.
+    .PARAMETER Script
+        The file name of the gate script, such as Check-ChangeCompleteness.ps1.
+    .PARAMETER Commit
+        The commits a push sends. When given, the mode is weaker than Blocking only when each of these
+        commits holds the same aisdlc.json and the same gates.json files under .claude/skills as the
+        working tree. An all-zero commit, a delete, is skipped. A commit git cannot compare counts as
+        different.
+    .EXAMPLE
+        Get-AiSdlcGateScriptMode -RepoRoot C:/src/repo -Script Check-Coverage.ps1
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$SkillsRoot,
+        [Parameter(Mandatory)][string]$Script,
+        [string[]]$Commit
+    )
+
+    try {
+        $status = @(git -C $RepoRoot status --porcelain 2>$null)
+        if ($LASTEXITCODE -ne 0) { return 'Blocking' }
+        if (@($status | Where-Object { $_ -match '(?:^|[\s"/>])(?:\.claude/skills/.*gates\.json|aisdlc\.json)' }).Count -gt 0) { return 'Blocking' }
+        foreach ($sha in @($Commit | Where-Object { $_ -and $_ -notmatch '^0+$' })) {
+            git -C $RepoRoot diff --quiet $sha -- aisdlc.json ':(glob).claude/skills/**/gates.json' 2>$null
+            if ($LASTEXITCODE -ne 0) { return 'Blocking' }
+        }
+
+        $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
+        $packages = @(Get-AiSdlcPackage -RepoRoot $RepoRoot -SkillsRoot $SkillsRoot -All)
+        $setting = Get-AiSdlcGateModeSetting -Config $config -Package $packages
+        if ($setting.Problem.Count -gt 0) { return 'Blocking' }
+
+        $candidates = [System.Collections.Generic.List[object]]::new()
+        foreach ($item in @($packages | Where-Object { $_.Runs })) {
+            foreach ($entry in $item.Gates) { $candidates.Add([pscustomobject]@{ Entry = $entry; Package = $item.Package }) }
+        }
+        foreach ($entry in @($config.repoGates)) { $candidates.Add([pscustomobject]@{ Entry = $entry; Package = 'repo' }) }
+        $matching = @($candidates | Where-Object { $_.Entry -and $_.Entry.script -is [string] -and (Split-Path -Leaf $_.Entry.script) -ieq $Script })
+        if ($matching.Count -eq 0) { return 'Blocking' }
+        $advisory = $false
+        foreach ($candidate in $matching) {
+            $resolved = Resolve-AiSdlcGateMode -Entry $candidate.Entry -Package $candidate.Package -Setting $setting
+            if ($resolved.Problem) { return 'Blocking' }
+            if ($resolved.Mode -ceq 'Advisory') { $advisory = $true }
+            elseif ($resolved.Mode -cne 'Off') { return 'Blocking' }
+        }
+        if ($advisory) { return 'Advisory' }
+        return 'Off'
+    }
+    catch {
+        return 'Blocking'
+    }
+}
+
+function Test-AiSdlcGateOff {
+    <#
+    .SYNOPSIS
+        True when the gate that runs a script is Off.
+    .DESCRIPTION
+        True only when Get-AiSdlcGateScriptMode gives Off for the script. False when anything cannot be
+        read, because a mode that cannot be read is not Off.
+    .PARAMETER RepoRoot
+        The repository root.
+    .PARAMETER SkillsRoot
+        Where the packages are installed. Defaults to <RepoRoot>/.claude/skills.
+    .PARAMETER Script
+        The file name of the gate script, such as Check-ChangeCompleteness.ps1.
+    .PARAMETER Commit
+        The commits a push sends; see Get-AiSdlcGateScriptMode.
+    .EXAMPLE
+        Test-AiSdlcGateOff -RepoRoot C:/src/repo -Script Check-Coverage.ps1
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$SkillsRoot,
+        [Parameter(Mandatory)][string]$Script,
+        [string[]]$Commit
+    )
+
+    return (Get-AiSdlcGateScriptMode @PSBoundParameters) -ceq 'Off'
+}
+
+Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPathExcluded, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed, Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage, Get-AiSdlcMainBranch, Get-AiSdlcGateMode, Get-AiSdlcGateModeSetting, Resolve-AiSdlcGateMode, Get-AiSdlcGateScriptMode, Test-AiSdlcGateOff

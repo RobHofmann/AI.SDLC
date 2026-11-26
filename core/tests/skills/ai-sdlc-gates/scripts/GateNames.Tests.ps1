@@ -155,6 +155,26 @@ Describe 'Every gate is named for what passes, carries one clause, and says what
         }
     }
 
+    Context 'the gates that are Off, and the gateModes of this repository' {
+        BeforeAll {
+            # Each gate of this repository that is Off needs a pin here, with the reason (#49).
+            $script:OffPin = @()
+        }
+
+        It 'is exactly the pinned list, so a gate that is Off needs a pin with a reason' -Tag '#49' -Skip:$skip {
+            $actual = @($script:Entries | Where-Object { $_.Mode -eq 'Off' } | ForEach-Object { "$([IO.Path]::GetFileName($_.File)) :: $(Split-Path -Leaf $_.Script)" } | Sort-Object)
+            $pinned = @($script:OffPin | ForEach-Object { $_.Gate } | Sort-Object)
+
+            @($actual | Where-Object { $_ -notin $pinned }) | Should -BeNullOrEmpty -Because 'add a pin with a reason to OffPin'
+            @($pinned | Where-Object { $_ -notin $actual }) | Should -BeNullOrEmpty -Because 'remove the pin of a gate that is no longer Off'
+        }
+
+        It 'does not let the aisdlc.json of this repository set a gate mode through gateModes' -Tag '#49' -Skip:$skip {
+            $config = Get-Content -LiteralPath (Join-Path $script:SourceRoot 'aisdlc.json') -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+            $config.Contains('gateModes') | Should -BeFalse -Because 'AI.SDLC runs every shared gate in its package mode, so a test consumer sees the same'
+        }
+    }
+
     Context 'every gate in every gates.json and in repoGates' {
         It 'finds the gates of the core, the packs and the repository' -Tag '#47' -Skip:$skip {
             $script:Entries.Count | Should -BeGreaterThan 30

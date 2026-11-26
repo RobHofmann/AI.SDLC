@@ -48,6 +48,29 @@
     A "repoGates" entry has the same fields, with the script relative to the repository root. An entry
     with "requires": "CoverageFile" runs only when -CoverageFile is passed, and gets it as an argument.
 
+    "mode" is Blocking, Advisory or Off, in any case, and a missing mode means Blocking. An Off gate is
+    checked like any entry, then not run: the summary shows it as OFF, it never fails the run, also when
+    its script is missing, and -List says it runs nowhere. Any other mode is not run and fails the run
+    as a blocking failure that names the value, so a typo never passes by being skipped.
+
+    A repository can set the mode of a shared gate in "gateModes" in its own aisdlc.json, an object of
+    gate names and modes: { "gateModes": { "Docs hold no em-dash characters": "Advisory" } }. The name
+    matches in any case. A repository gate sets its mode in its own repoGates entry. The summary has a
+    Source column that says where the mode comes from: package, or aisdlc.json; -List prints it on a
+    "mode from:" line. A gateModes that sets a gate weaker than its package mode (Blocking, then
+    Advisory, then Off) raises one warning for each such gate. The secret scan (Test-GitleaksBaseline.ps1)
+    and the private-terms gate (Check-PrivateTerms.ps1) cannot be set weaker than Blocking in gateModes.
+
+    A gateModes that cannot be used fails the run with one row, aisdlc.json gateModes, also with
+    -BlockingOnly, and then no key of gateModes is used: a name that no shared gate that runs has, the
+    name of a repository gate, a gate of a pack that apm.yml does not list, or a gateModes that is not
+    an object. A value that is not allowed fails that gate, and the gate is not run.
+
+    When AISDLC_PUSHED_COMMITS names commits, as the pre-push hook sets it, a gate counts as Off only
+    when each of those commits holds the same aisdlc.json and gates.json files as the working tree, and
+    git shows no uncommitted change to them. Otherwise an Off gate runs in its package mode, so an edit
+    to Off counts only once it is committed and pushed.
+
     A gates.json can also name three hooks for the core scripts, each relative to its skill folder.
     The gate list may then be empty, for a package that only needs a hook:
 
@@ -146,6 +169,18 @@ function Add-Gate {
     $needsCoverage = $Entry.requires -eq 'CoverageFile'
     if ($needsCoverage -and -not $CoverageFile -and -not $List) { return }
     $problems = [System.Collections.Generic.List[string]]::new()
+    $usable = if ($gateModeSetting.Problem.Count -eq 0) { $gateModeSetting } else { $null }
+    $resolved = Resolve-AiSdlcGateMode -Entry $Entry -Package $Package -Setting $usable
+    $mode = $resolved.Mode
+    if ($resolved.Problem) { $problems.Add($resolved.Problem) }
+    $packageMode = if ($Package -eq 'repo') { $null } else { Get-AiSdlcGateMode -Entry $Entry }
+    if ($mode -eq 'Off' -and -not $offCounts) {
+        $mode = if ($packageMode -and $packageMode -ne 'Off') { $packageMode } else { 'Blocking' }
+        $offNote = $true
+    }
+    else { $offNote = $false }
+    $viaModes = if ($packageMode) { "aisdlc.json (gateModes), package mode $packageMode" } else { 'aisdlc.json (gateModes)' }
+    $modeFrom = if ($Package -eq 'repo') { 'aisdlc.json (repoGates)' } elseif ($resolved.Source -eq 'aisdlc.json') { $viaModes } else { 'package' }
     foreach ($field in @('checks', 'fix')) {
         $value = $Entry.$field
         if (-not ($value -is [string]) -or [string]::IsNullOrWhiteSpace($value)) { $problems.Add(("{0} is missing or empty, and every gate needs a {0} text" -f $field)) }
@@ -158,7 +193,11 @@ function Add-Gate {
             Package       = $Package
             Script        = Join-Path $Base $Entry.script
             Args          = $gateArgs
-            Mode          = if ($Entry.mode) { $Entry.mode } else { 'Blocking' }
+            Mode          = $mode
+            PackageMode   = $packageMode
+            Source        = $resolved.Source
+            ModeFrom      = $modeFrom
+            OffNotCounted = $offNote
             Clause        = if ($Entry.clause) { [string]$Entry.clause } else { $Package }
             Checks        = if ($Entry.checks -is [string]) { $Entry.checks.Trim() } else { '' }
             NeedsCoverage = $needsCoverage
@@ -169,12 +208,24 @@ function Add-Gate {
 function Get-GateStage {
     param($Gate)
 
+    if ($Gate.Mode -eq 'Off') { return 'OFF: the gate runs nowhere; no hook, pull request action or local run starts it' }
     if ($Gate.NeedsCoverage) { return 'only with -CoverageFile: the dotnet pre-flight, and the pull request action with coverage-file' }
     if ($Gate.Mode -eq 'Blocking') { return 'pre-push, pull request, local run' }
     return 'pull request (as a warning), local run'
 }
 
 $manifests = @(Get-AiSdlcPackage -RepoRoot $RepoRoot -SkillsRoot $SkillsRoot -All)
+$gateModeSetting = Get-AiSdlcGateModeSetting -Config $config -Package $manifests
+$offCounts = $true
+if ($env:AISDLC_PUSHED_COMMITS) {
+    $status = @(git -C $RepoRoot status --porcelain 2>$null)
+    if ($LASTEXITCODE -ne 0 -or @($status | Where-Object { $_ -match '(?:^|[\s"/>])(?:\.claude/skills/.*gates\.json|aisdlc\.json)' }).Count -gt 0) { $offCounts = $false }
+    foreach ($sha in @($env:AISDLC_PUSHED_COMMITS -split '[,\s]+' | Where-Object { $_ -and $_ -notmatch '^0+$' })) {
+        git -C $RepoRoot diff --quiet $sha -- aisdlc.json ':(glob).claude/skills/**/gates.json' 2>$null
+        if ($LASTEXITCODE -ne 0) { $offCounts = $false }
+    }
+    $global:LASTEXITCODE = 0
+}
 
 foreach ($manifest in @($manifests | Where-Object { $_.Runs })) {
     foreach ($entry in $manifest.Gates) { Add-Gate -Entry $entry -Package $manifest.Package -Base $manifest.SkillFolder }
@@ -187,6 +238,24 @@ foreach ($entry in @($config.repoGates)) {
     Add-Gate -Entry $entry -Package 'repo' -Base $RepoRoot
     $folder = [IO.Path]::GetFullPath((Split-Path (Join-Path $RepoRoot $entry.script) -Parent))
     if ((Test-Path -LiteralPath $folder) -and -not $testFolders.Contains($folder)) { $testFolders.Add($folder) }
+}
+
+if ($gateModeSetting.Problem.Count -gt 0) {
+    $gates.Add([pscustomobject]@{
+            Name          = 'aisdlc.json gateModes'
+            Package       = 'repo'
+            Script        = Join-Path $RepoRoot 'aisdlc.json'
+            Args          = @{}
+            Mode          = 'Blocking'
+            PackageMode   = $null
+            Source        = 'aisdlc.json'
+            ModeFrom      = 'aisdlc.json (gateModes)'
+            OffNotCounted = $false
+            Clause        = 'AI-SDLC'
+            Checks        = ''
+            NeedsCoverage = $false
+            Invalid       = ("Invalid gateModes in aisdlc.json: {0}. No key of gateModes was used." -f (@($gateModeSetting.Problem | ForEach-Object { $_.Text }) -join '; '))
+        })
 }
 
 $byName = $gates | Group-Object Name | Where-Object Count -GT 1
@@ -210,6 +279,7 @@ if ($List) {
     foreach ($g in $gates) {
         Write-Host ("{0,-13} {1,-9} {2,-12} {3}" -f $g.Package, $g.Mode, $g.Clause, $g.Name)
         Write-Host ("{0,-13} runs in: {1}" -f '', (Get-GateStage -Gate $g))
+        Write-Host ("{0,-13} mode from: {1}" -f '', $g.ModeFrom)
         if ($g.Checks) { Write-Host ("{0,-13} checks: {1}" -f '', $g.Checks) }
         if ($g.Invalid) { Write-Host ("{0,-13} {1}" -f '', $g.Invalid) }
     }
@@ -218,7 +288,21 @@ if ($List) {
     exit 0
 }
 
+$modeRank = @{ Blocking = 2; Advisory = 1; Off = 0 }
+foreach ($g in @($gates | Where-Object { -not $_.Invalid -and $_.Source -eq 'aisdlc.json' -and $_.PackageMode -and $modeRank[$_.Mode] -lt $modeRank[$_.PackageMode] })) {
+    $text = ("the gate '{0}' has the package mode {1}, but gateModes in aisdlc.json sets it to {2}, so it checks less than the package intends." -f $g.Name, $g.PackageMode, $g.Mode)
+    if ($inPipeline) { Write-GateCommand -Type warning -Title $g.Name -Message ("AI-SDLC: {0}" -f $text) }
+    else { Write-Host ("AI-SDLC: {0}" -f $text) -ForegroundColor Yellow }
+}
+foreach ($g in @($gates | Where-Object { $_.OffNotCounted })) {
+    Write-Host ("AI-SDLC: the gate '{0}' is Off in the working tree, but not in every pushed commit, so it runs as {1}." -f $g.Name, $g.Mode) -ForegroundColor Yellow
+}
+
 $results = [System.Collections.Generic.List[object]]::new()
+$off = @($gates | Where-Object { -not $_.Invalid -and $_.Mode -eq 'Off' })
+$kept = @($gates | Where-Object { $_.Invalid -or $_.Mode -ne 'Off' })
+$gates.Clear()
+foreach ($g in $kept) { $gates.Add($g) }
 $testGates = @('Invoke-PesterGate.ps1', 'Invoke-PesterParallel.ps1')
 $skipped = @()
 if ($SkipTests) {
@@ -257,7 +341,7 @@ foreach ($g in $gates) {
     if ($g.Invalid) {
         Write-Host $g.Invalid -ForegroundColor Red
         if ($inPipeline) { Write-GateCommand -Type error -Title $g.Name -Message ("AI-SDLC: {0}" -f $g.Invalid) }
-        $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = 'Blocking'; Status = 'FAIL' })
+        $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = 'Blocking'; Status = 'FAIL'; Source = $g.Source })
         continue
     }
     $howToRepeat = Get-GateRepeatCommand -Script $g.Script -RepoRoot $RepoRoot
@@ -269,7 +353,7 @@ foreach ($g in $gates) {
         if ($inPipeline) {
             Write-GateAnnotation -Lines @("The gate script $($g.Script) does not exist; install the package that ships it.") -ExitCode 2 -Clause $g.Clause -What $g.Name -Mode $g.Mode -HowToRepeat $howToRepeat | Out-Null
         }
-        $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'UNVERIFIED' })
+        $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'UNVERIFIED'; Source = $g.Source })
         continue
     }
     $lines = @($run.Lines)
@@ -278,16 +362,17 @@ foreach ($g in $gates) {
     if ($run.Error) {
         Write-Host ("The gate script stopped before it could report, so nothing was checked: {0}" -f $run.Error.Exception.Message) -ForegroundColor Red
         if ($inPipeline) { Write-GateCrashAnnotation -Clause $g.Clause -Script $g.Script -ErrorRecord $run.Error -HowToRepeat $howToRepeat -Mode $g.Mode | Out-Null }
-        $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'CRASHED' })
+        $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'CRASHED'; Source = $g.Source })
         continue
     }
     $code = $run.Code
     $status = if ($code -eq 0) { 'PASS' } elseif ($code -eq 2) { 'UNVERIFIED' } elseif ($code -eq 3) { 'N/A' } elseif ($g.Mode -eq 'Advisory') { 'ADVISORY' } else { 'FAIL' }
     if ($inPipeline) { Write-GateAnnotation -Lines $lines -ExitCode $code -Clause $g.Clause -What $g.Name -Mode $g.Mode -HowToRepeat $howToRepeat | Out-Null }
-    $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = $status })
+    $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = $status; Source = $g.Source })
 }
 
-foreach ($g in $skipped) { $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'SKIP' }) }
+foreach ($g in $skipped) { $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = $g.Mode; Status = 'SKIP'; Source = $g.Source }) }
+foreach ($g in $off) { $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = 'Off'; Status = 'OFF'; Source = $g.Source }) }
 
 $toolTestsFailed = $false
 if ($IncludeToolTests -and $testFolders.Count -gt 0) {
@@ -295,16 +380,16 @@ if ($IncludeToolTests -and $testFolders.Count -gt 0) {
     Write-Host "===== Gate-script Pester tests =====" -ForegroundColor Cyan
     $pester = Invoke-Pester -Path $testFolders.ToArray() -PassThru -Output Detailed
     if ($pester.FailedCount -gt 0) { $toolTestsFailed = $true }
-    $results.Add([pscustomobject]@{ Gate = "Gate-script tests ($($pester.PassedCount)/$($pester.TotalCount))"; Mode = 'Blocking'; Status = $(if ($toolTestsFailed) { 'FAIL' } else { 'PASS' }) })
+    $results.Add([pscustomobject]@{ Gate = "Gate-script tests ($($pester.PassedCount)/$($pester.TotalCount))"; Mode = 'Blocking'; Status = $(if ($toolTestsFailed) { 'FAIL' } else { 'PASS' }); Source = 'package' })
     if ($toolTestsFailed -and $inPipeline) { Write-GateCommand -Type error -Title 'Gate-script tests' -Message ("AI-SDLC: {0} of the {1} gate-script tests failed." -f $pester.FailedCount, $pester.TotalCount) }
 }
 
 Write-Host ""
 Write-Host "===== Summary =====" -ForegroundColor Cyan
-$results | Format-Table -AutoSize | Out-String | Write-Host
+$results | Format-Table -AutoSize | Out-String -Width 4096 | Write-Host
 if ($inPipeline -and $env:GITHUB_STEP_SUMMARY) {
-    $table = @('### AI-SDLC gates', '', '| Gate | Mode | Status |', '| --- | --- | --- |') +
-        @($results | ForEach-Object { '| {0} | {1} | {2} |' -f ($_.Gate -replace '\|', '/'), $_.Mode, $_.Status })
+    $table = @('### AI-SDLC gates', '', '| Gate | Mode | Status | Source |', '| --- | --- | --- | --- |') +
+        @($results | ForEach-Object { '| {0} | {1} | {2} | {3} |' -f ($_.Gate -replace '\|', '/'), $_.Mode, $_.Status, $_.Source })
     Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value (($table + '') -join "`n") -Encoding utf8
 }
 
@@ -319,6 +404,9 @@ $advisoryCrashes = @($results | Where-Object { $_.Status -eq 'CRASHED' -and $_.M
 
 if ($notApplicable.Count -gt 0) {
     Write-Host ("{0} gate(s) not applicable here (exit 3). They checked nothing and never block." -f $notApplicable.Count)
+}
+if ($off.Count -gt 0) {
+    Write-Host ("{0} gate(s) are Off (OFF). They did not run and checked nothing." -f $off.Count)
 }
 
 if ($blockingFailures.Count -gt 0) {

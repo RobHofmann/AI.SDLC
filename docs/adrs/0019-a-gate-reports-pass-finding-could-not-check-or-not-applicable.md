@@ -72,6 +72,17 @@ That contract had three faults (#46):
 The rest of ADR 0005 stays: the `FIX:` line, the located findings, the change rules, the pointer
 gate and the advisory-first path.
 
+2026-11-26 (#49): `mode` has a third value, `Off`, and a repository sets the mode of a shared gate in
+`gateModes` of its own `aisdlc.json`. An Off gate does not run in a local run, the pre-push hook, the
+pull request action, the pre-flights, the post-edit hook or the agent push hook, so it has no exit code
+and never fails a run. The runner still checks the entry, refuses any other mode, and shows the gate as
+`OFF`. A gateModes key that names no shared gate that runs fails the run, and then no key is used. A
+push hook counts a gate as Off only when every pushed commit holds the same gate settings, so an edit
+to Off counts only once it is committed. The secret scan (C03) and the private-terms gate
+([ADR 0011](0011-the-public-repository-holds-no-private-information.md)) refuse a weaker mode in
+gateModes, because what they guard cannot be taken back after a push. The exit codes and what each mode
+does with them stay the same.
+
 ## Consequences
 
 **Positive:**
@@ -87,6 +98,9 @@ gate and the advisory-first path.
   steps.
 - An outage of an outside service that a blocking gate reads, such as the gitleaks download, now
   blocks every pull request until it is back. A person can rerun the job when the service returns.
+
+- A repository can switch a shared gate Off. Every run shows the choice in the Source column and with a
+  warning, so a reviewer sees it, but the gate no longer guards that repository.
 
 **Neutral:**
 

@@ -207,6 +207,80 @@ Describe 'Invoke-LocalGates' {
         $result.Output | Should -Match 'checks: It checks the fixture\.'
     }
 
+    Context 'gate modes and gateModes (#49)' {
+        It 'does not run an Off gate, shows it as OFF, and does not fail on its missing script' -Tag '#49' {
+            $root = New-StandardRepo -CoreMode 'off'
+            Remove-Item -LiteralPath (Join-Path $root '.claude/skills/ai-sdlc-gates/scripts/Check-Core.ps1')
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Match 'core gate\s+Off\s+OFF\s+package'
+            $result.Output | Should -Match '1 gate\(s\) are Off'
+        }
+
+        It 'lets gateModes in aisdlc.json set the mode of a shared gate, in any case, with aisdlc.json as the source' -Tag '#49' {
+            $root = New-StandardRepo -CoreScript $script:FailGate
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "CORE GATE": "advisory" } }'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Match 'core gate\s+Advisory\s+ADVISORY\s+aisdlc\.json'
+            $result.Output | Should -Match "AI-SDLC: the gate 'core gate' has the package mode Blocking, but gateModes in aisdlc\.json sets it to Advisory"
+        }
+
+        It 'prints the mode source on a mode from: line with -List' -Tag '#49' {
+            $root = New-StandardRepo
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "core gate": "Off" } }'
+
+            $result = Invoke-Runner -Root $root -Extra @('-List')
+
+            $result.Output | Should -Match 'mode from: aisdlc\.json \(gateModes\), package mode Blocking'
+            $result.Output | Should -Match 'runs in: OFF'
+        }
+
+        It 'fails the run on a gateModes name that no shared gate has, and uses no key of gateModes, also with -BlockingOnly' -Tag '#49' {
+            $root = New-StandardRepo
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "core gate": "Off", "no such gate": "Off" } }'
+
+            $result = Invoke-Runner -Root $root -Extra @('-BlockingOnly')
+
+            $result.Code | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match "Invalid gateModes in aisdlc\.json: gateModes sets 'no such gate' to 'Off', but no shared gate that runs has this name"
+            $result.Output | Should -Match 'ran Check-Core\.ps1'
+        }
+
+        It 'fails a gate whose mode is not allowed, and does not run it' -Tag '#49' {
+            $root = New-StandardRepo -CoreMode 'Silent'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match "the mode is 'Silent', and the allowed values are Blocking, Advisory and Off"
+            $result.Output | Should -Not -Match 'ran Check-Core'
+        }
+
+        It 'runs an Off gate in a push whose commits do not hold the Off setting' -Tag '#49' {
+            $root = New-StandardRepo
+            git -C $root init --quiet -b main
+            git -C $root config user.email probe@example.invalid
+            git -C $root config user.name probe
+            git -C $root add -A
+            git -C $root commit --quiet -m base --no-verify
+            $pushed = (git -C $root rev-parse HEAD).Trim()
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "core gate": "Off" } }'
+
+            $saved = $env:AISDLC_PUSHED_COMMITS
+            $env:AISDLC_PUSHED_COMMITS = $pushed
+            try { $result = Invoke-Runner -Root $root -Extra @('-BlockingOnly') }
+            finally { $env:AISDLC_PUSHED_COMMITS = $saved }
+
+            $result.Output | Should -Match 'ran Check-Core\.ps1'
+            $result.Output | Should -Match 'is Off in the working tree, but not in every pushed commit'
+        }
+    }
+
     It 'leaves out the advisory gates with -BlockingOnly' {
         $root = New-StandardRepo -CoreMode 'Advisory'
 

@@ -130,6 +130,12 @@ runner fails an entry without a text, or with a name used twice, and prints `che
 output of a gate that failed. `references/gate-catalog.md` in the `ai-sdlc-gates` skill lists every
 gate; `tools/Build-GateCatalog.ps1` writes it from the `gates.json` files.
 
+A gate has the mode Blocking, Advisory or Off. A repository sets the mode of a shared gate in
+`gateModes` of its own `aisdlc.json`, read by `Get-AiSdlcGateModeSetting` in `AiSdlcConfig.psm1`. An
+Off gate runs in no hook, pre-flight or run, and shows as `OFF`. The secret scan and the private-terms
+gate cannot be set weaker than Blocking there. A push hook counts a gate as Off only when every
+pushed commit holds the same gate settings.
+
 `Invoke-LocalGates.ps1 -SkipScript <file name>` leaves out the gates of that script and lists them as `SKIP`.
 The gates, the pre-flight and `tools/Invoke-PesterParallel.ps1` compare a change with `origin/<github.trunk>`
 through `Get-AiSdlcMainBranch` in `AiSdlcConfig.psm1`. It falls back to `origin/main`, `origin/master` or

@@ -147,7 +147,8 @@ installs. `AiSdlcConfig.psm1` takes each dependency whose path ends in `packs/<n
 | `sonarcloud` | The SonarCloud organization and project key, for the `sonarcloud` pack | none |
 | `knowledge` | The knowledge repository (`knowledge.repository`, `owner/name`). The setup offers `gh repo clone` into `paths.knowledgeRoot` when the folder is missing | none |
 | `dotnet` | The code graph benchmark, the external contract paths, the wire name allow list, the portal app component and the API page folders, for the `dotnet` pack | none |
-| `repoGates` | The repository's own gates, each with a name, a script and a mode, and a clause or a rule family when one covers it; without one, the runner shows `repo` | none |
+| `repoGates` | The repository's own gates, each with a name that says what passes, a script, a mode (Blocking, Advisory or Off), a clause (a core clause, a pack clause or `AI-SDLC`), a `checks` text and a `fix` text | none |
+| `gateModes` | An object of shared gate names and modes (Blocking, Advisory or Off), which sets the mode of a shared gate in this repository. A name that no shared gate that runs has fails the run. The secret scan and the private-terms gate cannot be set weaker than Blocking. A weaker mode shows as a warning in every run | none |
 
 ## Pinning a version
 

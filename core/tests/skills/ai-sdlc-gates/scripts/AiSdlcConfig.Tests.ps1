@@ -317,6 +317,90 @@ Describe 'AiSdlcConfig' {
         $bicep.DocFacts | Should -Be (Join-Path $folder 'scripts/Get-Facts.ps1')
     }
 
+    Context 'gate modes and gateModes (#49)' {
+        BeforeAll {
+            function New-ModeRepo {
+                param([string]$Json, [string]$CoreGates)
+                $root = New-ConfigRepo -Json $Json -Git
+                $folder = Join-Path $root '.claude' 'skills' 'ai-sdlc-gates'
+                New-Item -ItemType Directory -Path $folder -Force | Out-Null
+                Set-Content -LiteralPath (Join-Path $folder 'gates.json') -Value $CoreGates
+                git -C $root config user.email probe@example.invalid
+                git -C $root config user.name probe
+                git -C $root add -A
+                git -C $root commit --quiet -m init --no-verify
+                return $root
+            }
+            $script:CoreGates = '{ "package": "core", "gates": [ { "name": "Docs hold no em-dash characters", "script": "scripts/Check-DocEmDashes.ps1", "mode": "Blocking" }, { "name": "The change adds no secret", "script": "scripts/Test-GitleaksBaseline.ps1", "mode": "Blocking" }, { "name": "A change moves its tests", "script": "scripts/Check-ChangeCompleteness.ps1", "mode": "Advisory" } ] }'
+        }
+
+        It 'reads <Value> as the mode <Expected>' -Tag '#49' -ForEach @(
+            @{ Value = 'off'; Expected = 'Off' }
+            @{ Value = 'ADVISORY'; Expected = 'Advisory' }
+            @{ Value = ''; Expected = 'Blocking' }
+        ) {
+            Get-AiSdlcGateMode -Entry @{ mode = $Value } | Should -Be $Expected
+        }
+
+        It 'gives nothing for a mode that is not allowed, so the caller can refuse it' -Tag '#49' {
+            Get-AiSdlcGateMode -Entry @{ mode = 'Silent' } | Should -BeNullOrEmpty
+            Get-AiSdlcGateMode -Entry @{ mode = $false } | Should -BeNullOrEmpty
+        }
+
+        It 'lets gateModes override the package mode, with the name in any case' -Tag '#49' {
+            $root = New-ModeRepo -Json '{ "gateModes": { "docs HOLD no em-dash characters": "off" } }' -CoreGates $script:CoreGates
+            $config = Get-AiSdlcConfig -RepoRoot $root
+            $setting = Get-AiSdlcGateModeSetting -Config $config -Package @(Get-AiSdlcPackage -RepoRoot $root -All)
+
+            $resolved = Resolve-AiSdlcGateMode -Entry @{ name = 'Docs hold no em-dash characters'; mode = 'Blocking' } -Package core -Setting $setting
+
+            $setting.Problem | Should -BeNullOrEmpty
+            $resolved.Mode | Should -Be 'Off'
+            $resolved.Source | Should -Be 'aisdlc.json'
+        }
+
+        It 'reports a name that no shared gate has, a repository gate, and a wrong value' -Tag '#49' {
+            $root = New-ModeRepo -Json '{ "gateModes": { "No such gate": "Off", "Repo gate": "Off", "Docs hold no em-dash characters": "Silent" }, "repoGates": [ { "name": "Repo gate", "script": "tools/x.ps1" } ] }' -CoreGates $script:CoreGates
+            $config = Get-AiSdlcConfig -RepoRoot $root
+            $setting = Get-AiSdlcGateModeSetting -Config $config -Package @(Get-AiSdlcPackage -RepoRoot $root -All)
+
+            ($setting.Problem.Text -join ' | ') | Should -Match 'no shared gate that runs has this name'
+            ($setting.Problem.Text -join ' | ') | Should -Match 'repository gate, so set its mode in repoGates'
+            $setting.Override['Docs hold no em-dash characters'].Problem | Should -Match "allowed values are Blocking, Advisory and Off"
+        }
+
+        It 'refuses a mode weaker than Blocking for the secret scan, and keeps it Blocking' -Tag '#49' {
+            $root = New-ModeRepo -Json '{ "gateModes": { "The change adds no secret": "Off" } }' -CoreGates $script:CoreGates
+            $config = Get-AiSdlcConfig -RepoRoot $root
+            $setting = Get-AiSdlcGateModeSetting -Config $config -Package @(Get-AiSdlcPackage -RepoRoot $root -All)
+
+            $resolved = Resolve-AiSdlcGateMode -Entry @{ name = 'The change adds no secret'; mode = 'Blocking' } -Package core -Setting $setting
+
+            $resolved.Mode | Should -Be 'Blocking'
+            $resolved.Problem | Should -Match 'stays Blocking'
+        }
+
+        It 'says a committed Off gate is Off, and an uncommitted edit to Off is not' -Tag '#49' {
+            $root = New-ModeRepo -Json '{ "gateModes": { "A change moves its tests": "Off" } }' -CoreGates $script:CoreGates
+
+            Test-AiSdlcGateOff -RepoRoot $root -Script 'Check-ChangeCompleteness.ps1' | Should -BeTrue
+            Get-AiSdlcGateScriptMode -RepoRoot $root -Script 'Check-DocEmDashes.ps1' | Should -Be 'Blocking'
+
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "Docs hold no em-dash characters": "Off" } }'
+            Test-AiSdlcGateOff -RepoRoot $root -Script 'Check-DocEmDashes.ps1' | Should -BeFalse
+        }
+
+        It 'does not count a gate as Off for a pushed commit that holds other gate settings' -Tag '#49' {
+            $root = New-ModeRepo -Json '{}' -CoreGates $script:CoreGates
+            $before = (git -C $root rev-parse HEAD).Trim()
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "A change moves its tests": "Off" } }'
+            git -C $root commit --quiet -am off --no-verify
+
+            Test-AiSdlcGateOff -RepoRoot $root -Script 'Check-ChangeCompleteness.ps1' -Commit @($before) | Should -BeFalse
+            Test-AiSdlcGateOff -RepoRoot $root -Script 'Check-ChangeCompleteness.ps1' -Commit @((git -C $root rev-parse HEAD).Trim()) | Should -BeTrue
+        }
+    }
+
     Context 'Get-AiSdlcMainBranch' {
         BeforeAll {
             function New-TrunkRepo {

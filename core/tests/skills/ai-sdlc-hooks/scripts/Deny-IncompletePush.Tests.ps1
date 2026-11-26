@@ -421,6 +421,25 @@ exit 0
             }
         }
 
+        It 'does not start an Off completeness gate, and still asks for the receipt' -Tag '#49' {
+            $root = Join-Path -Path $TestDrive -ChildPath 'off-repo'
+            New-Item -ItemType Directory -Path (Join-Path $root '.claude' 'skills' 'ai-sdlc-gates') -Force | Out-Null
+            git -C $root init --quiet -b main
+            git -C $root config user.email probe@example.invalid
+            git -C $root config user.name probe
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "A change moves its tests": "Off" } }'
+            Set-Content -LiteralPath (Join-Path $root '.claude' 'skills' 'ai-sdlc-gates' 'gates.json') -Value '{ "package": "core", "gates": [ { "name": "A change moves its tests", "script": "scripts/gap.ps1", "mode": "Advisory" } ] }'
+            git -C $root add -A
+            git -C $root commit --quiet -m init --no-verify
+            $payload = New-Payload -Command 'git push'
+
+            $green = & $script:ScriptUnderTest -Payload $payload -CheckScript $script:GapCheck -CurrentBranch 'feature/1-x' -ReceiptRoot $script:Receipts -HeadTree $script:GreenTree -RepoRoot $root *>&1 | Out-String
+            $unchecked = & $script:ScriptUnderTest -Payload $payload -CheckScript $script:GapCheck -CurrentBranch 'feature/1-x' -ReceiptRoot $script:Receipts -HeadTree $script:UncheckedTree -RepoRoot $root *>&1 | Out-String
+
+            $green.Trim() | Should -BeNullOrEmpty -Because 'the gap check would deny, but its gate is Off'
+            $unchecked | Should -Match 'no green pre-flight'
+        }
+
         It 'denies on an exit code other than 0, 2 or 3, as on exit 1' -Tag '#46' {
             $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $script:OddCode -Tree $script:GreenTree
             $r.Output | Should -Match '"permissionDecision":"deny"'

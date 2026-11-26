@@ -16,7 +16,8 @@
     could not check, and gives the first line of its output as the reason. After exit 3 it stays
     silent, like exit 0, because nothing was left to check, and a note on every push would hide the
     real ones. The note is never a permissionDecision of allow, because that would skip the permission
-    prompt of the user.
+    prompt of the user. When the completeness gate is Off (its mode, or gateModes in aisdlc.json), the
+    hook does not start it and goes on to the receipt check, as after exit 3. The receipt check stays.
 
     Wired from .claude/settings.json, which Claude Code and GitHub Copilot CLI both read, so one entry
     covers both tools. The payload arrives as JSON on stdin in the Claude shape (tool_name,
@@ -410,6 +411,18 @@ $pushed = Get-PushedCommits -CommandLine $command -Root $targetRoot
 if ($pushed -and (Test-PushSendsNothingNew -RepoRoot $targetRoot -Remote $pushed.Remote -Commit $pushed.Commits)) { exit 0 }
 
 if (-not (Test-Path -Path $CheckScript)) { exit 0 }
+
+# An Off completeness gate does not run, and the push goes on to the receipt check as after exit 3. It
+# counts as Off only when every pushed commit holds the gate settings of the working tree (#49).
+$offCommits = if ($pushed) { @($pushed.Commits) } else { @(git -C $targetRoot rev-parse HEAD 2>$null) }
+if (Test-AiSdlcGateOff -RepoRoot $targetRoot -Script (Split-Path -Leaf $CheckScript) -Commit $offCommits) {
+    if (-not $PSBoundParameters.ContainsKey('HeadTree')) { $HeadTree = Get-HeadTree -RepoRoot $targetRoot }
+    if (Test-PreflightReceipt -ReceiptRoot $ReceiptRoot -Tree $HeadTree) { exit 0 }
+    Write-Deny ('This commit has no green pre-flight. Run the wrap-up skill, which ends with the pre-flight ' +
+        '(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1) on the committed tree, then push ' +
+        '(.claude/skills/ai-sdlc-handbook/references/orchestration.md).')
+    exit 0
+}
 
 try {
     $ErrorActionPreference = 'Continue'
