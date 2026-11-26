@@ -183,7 +183,7 @@ The agent never merges, because the owner's merge is the approval (Checkpoint Br
 
 GitHub Copilot ignores the `if` field of a hook and runs every hook entry in turn before each tool call. So each hook script checks the command or file before it loads a slow module. Only `HookPayload.psm1`, which reads the payload, may load first. The push check has one entry per tool. A Copilot session that starts in a subfolder of the repository runs no hook, so start it in the root folder.
 
-`Sync-AllowRules.ps1` writes the commands that each installed package lists under `allow` in its `gates.json` into `.claude/settings.json`. When the knowledge folder exists, it writes its full path into `permissions.additionalDirectories` of `.claude/settings.local.json`, which stays on one machine. `Initialize-AiSdlc.ps1` and `Update-AiSdlc.ps1` run it, and an advisory gate runs it with `-Check`.
+`Sync-AllowRules.ps1` writes the commands that each installed package lists under `allow` in its `gates.json` into `.claude/settings.json`. It also writes the full path of the knowledge folder into `permissions.additionalDirectories` of `.claude/settings.local.json`, which stays on one machine. It does so only for a folder below the parent folder of the repository that no link leads to. Any other knowledge folder is skipped with a FIX line. `Initialize-AiSdlc.ps1` and `Update-AiSdlc.ps1` run it, and an advisory gate runs it with `-Check`.
 
 `Sync-AgentsFile.ps1`, which `Update-AiSdlc.ps1` runs, moves a root `CLAUDE.md` that only imports `AGENTS.md` to `.claude/CLAUDE.md`. Copilot reads a root `CLAUDE.md` and its import, so it loaded `AGENTS.md` twice.
 

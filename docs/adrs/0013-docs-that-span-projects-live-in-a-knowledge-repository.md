@@ -60,7 +60,9 @@ consumer sets nothing; a different layout overrides it in `aisdlc.json`.
   prints an advisory row when the folder is missing, with `gh repo clone <repository> <knowledgeRoot>`.
 - `Sync-AllowRules.ps1` writes the absolute path of the folder into `permissions.additionalDirectories`
   of `.claude/settings.local.json`. That file is per machine and not tracked. It never writes into
-  `.claude/settings.json`.
+  `.claude/settings.json`. It only adds a folder below the parent folder of the repository, reached
+  without a link. That is because `aisdlc.json` is repository content, and it must not open any folder
+  or network share to the agent (#32).
 - `walk-substrate` and `guide-me` grep the folder next to the repository docs when it exists, and say so
   plainly when it does not.
 - `capture-learning` and `write-platform-note` write a fact about how a system behaves to the knowledge

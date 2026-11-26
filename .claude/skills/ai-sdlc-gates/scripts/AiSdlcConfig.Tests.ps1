@@ -377,6 +377,15 @@ Describe 'AiSdlcConfig' {
 
             Get-AiSdlcKnowledgeRoot -RepoRoot $root | Should -Be ([IO.Path]::GetFullPath((Join-Path $root 'Knowledge')))
         }
+
+        It 'names the main checkout of a linked worktree, and nothing for the main checkout or a plain folder' {
+            $layout = New-WorktreeLayout
+            $plain = New-ConfigRepo -Json '{}'
+
+            Get-AiSdlcMainCheckoutRoot -RepoRoot $layout.Worktree | Should -Be $layout.Main
+            Get-AiSdlcMainCheckoutRoot -RepoRoot $layout.Main | Should -BeNullOrEmpty
+            Get-AiSdlcMainCheckoutRoot -RepoRoot $plain | Should -BeNullOrEmpty
+        }
     }
 
 }

@@ -204,6 +204,23 @@ Describe 'Test-GitleaksBaseline' {
         Should -Invoke gitleaks -Times 0 -Exactly
     }
 
+    It 'exits <Code> and scans nothing when -RepoRoot <Case>, <Where>' -ForEach @(
+        @{ Case = 'is missing'; Where = 'in GitHub Actions'; Pipeline = $true; Code = 1; Kind = 'missing' }
+        @{ Case = 'is missing'; Where = 'in a local run'; Pipeline = $false; Code = 2; Kind = 'missing' }
+        @{ Case = 'is a file'; Where = 'in a local run'; Pipeline = $false; Code = 2; Kind = 'file' }
+    ) {
+        if ($Pipeline) { $env:GITHUB_ACTIONS = 'true' }
+        $root = Join-Path $TestDrive ('no-such-' + [guid]::NewGuid().ToString('n'))
+        if ($Kind -eq 'file') { Set-Content -LiteralPath $root -Value 'x' }
+
+        # Invoke-Scan stands in a readable git repository: without the stop, gitleaks would scan that one.
+        $r = Invoke-Scan -Options @{ RepoRoot = $root }
+
+        $r.Code | Should -Be $Code -Because $r.Output
+        $r.Output | Should -Match 'is not an existing folder, so no secret scan ran'
+        Should -Invoke gitleaks -Times 0 -Exactly
+    }
+
     It 'exits <Code> and scans nothing when git cannot read the folder, so a refused checkout never passes, <Where>' -ForEach @(
         @{ Where = 'in GitHub Actions, so the build fails'; Pipeline = $true; Code = 1 }
         @{ Where = 'in a local run, as a check that could not run'; Pipeline = $false; Code = 2 }

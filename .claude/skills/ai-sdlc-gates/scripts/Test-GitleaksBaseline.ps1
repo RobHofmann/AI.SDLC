@@ -22,8 +22,8 @@
 
     In GitHub Actions (GITHUB_ACTIONS is true), a missing git or gitleaks, or a failed download, exits
     1, so the build fails and never passes without a scan. In a local run they exit 2 (could not
-    check), so a machine without gitleaks can still push. A download whose SHA-256 does not match the
-    pin exits 1 everywhere.
+    check), so a machine without gitleaks can still push. A -RepoRoot that is not an existing folder
+    follows the same rule. A download whose SHA-256 does not match the pin exits 1 everywhere.
 
 .PARAMETER BaselineFileName
     Specifies the name of the baseline file to use in the current directory.
@@ -130,6 +130,12 @@ param (
 
 $inPipeline = $env:GITHUB_ACTIONS -eq 'true'
 $notChecked = if ($inPipeline) { 1 } else { 2 }
+# Without this stop, Resolve-Path fails without ending the script, and gitleaks then scans the current
+# folder, so a pass would speak for another repository than the one named (#32).
+if ($PSBoundParameters.ContainsKey('RepoRoot') -and (-not $RepoRoot -or -not (Test-Path -LiteralPath $RepoRoot -PathType Container))) {
+    Write-Host "The repository root '$RepoRoot' is not an existing folder, so no secret scan ran. Pass -RepoRoot with the folder of the repository."
+    exit $notChecked
+}
 # ProviderPath: .Path keeps the FileSystem:: prefix on a UNC path, and git cannot read that (#29).
 $currentDirectory = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).ProviderPath } else { (Get-Location).ProviderPath }
 

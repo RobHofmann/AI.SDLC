@@ -10,9 +10,10 @@ Describe 'Sync-AllowRules' {
                 [string[]]$Packs = @(),
                 [hashtable]$Manifests = @{ 'ai-sdlc-gates' = @{ package = 'core'; gates = @(); allow = @('git status *') } },
                 [string]$Settings,
-                [string]$Config = '{ "paths": { "knowledgeRoot": "knowledge-missing" } }'
+                [string]$Config = '{ "paths": { "knowledgeRoot": "knowledge-missing" } }',
+                [string]$Parent = [System.IO.Path]::GetTempPath()
             )
-            $root = Join-Path ([System.IO.Path]::GetTempPath()) ('sar-' + [guid]::NewGuid().ToString('n'))
+            $root = Join-Path $Parent ('sar-' + [guid]::NewGuid().ToString('n'))
             New-Item -ItemType Directory -Path $root -Force | Out-Null
             Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $Config -Encoding utf8
             Set-Content -LiteralPath (Join-Path $root 'apm.yml') -Value ((@('dependencies:', '  apm:') + @($Packs | ForEach-Object { "    - ../AI.SDLC/packs/$_" })) -join "`n")
@@ -110,18 +111,88 @@ Describe 'Sync-AllowRules' {
     }
 
     It 'writes a knowledge folder on a network share (UNC path) without the FileSystem:: prefix' -Skip:(-not $IsWindows) {
-        $knowledge = Join-Path $TestDrive 'Knowledge'
-        New-Item -ItemType Directory -Path $knowledge -Force | Out-Null
-        $unc = '//localhost/' + $knowledge.Substring(0, 1) + '$' + $knowledge.Substring(2).Replace('\', '/')
-        if (-not (Test-Path -LiteralPath $unc)) { Set-ItResult -Skipped -Because 'the admin share is not available'; return }
-        $root = New-AllowRepo -Config ('{ "paths": { "knowledgeRoot": "' + $unc + '" } }') -Settings '{}'
+        # The repository and its knowledge sibling both sit on the share, as on a mapped network drive.
+        $local = Join-Path $TestDrive ('share-' + [guid]::NewGuid().ToString('n'))
+        New-Item -ItemType Directory -Path (Join-Path $local 'Knowledge') -Force | Out-Null
+        $parent = '//localhost/' + $local.Substring(0, 1) + '$' + $local.Substring(2).Replace('\', '/')
+        if (-not (Test-Path -LiteralPath $parent)) { Set-ItResult -Skipped -Because 'the admin share is not available'; return }
+        $root = New-AllowRepo -Parent $parent -Config '{ "paths": { "knowledgeRoot": "../Knowledge" } }' -Settings '{}'
+
+        $result = Invoke-Sync -Root $root
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $settings = Get-Content -LiteralPath (Join-Path $root '.claude' 'settings.local.json') -Raw | ConvertFrom-Json -AsHashtable
+        $written = @($settings.permissions.additionalDirectories)
+        $written | Should -Be @((Resolve-Path -LiteralPath ($parent + '/Knowledge')).ProviderPath.Replace('\', '/'))
+        $written[0] | Should -BeLike '//localhost/*'
+        $written[0] | Should -Not -Match 'FileSystem::'
+    }
+
+    It 'adds a knowledge folder next to the repository, inside its parent folder' {
+        $parent = Join-Path ([System.IO.Path]::GetTempPath()) ('sar-parent-' + [guid]::NewGuid().ToString('n'))
+        New-Item -ItemType Directory -Path (Join-Path $parent 'Knowledge') -Force | Out-Null
+        $root = New-AllowRepo -Parent $parent -Config '{ "paths": { "knowledgeRoot": "../Knowledge" } }' -Settings '{}'
 
         $result = Invoke-Sync -Root $root
 
         $result.Code | Should -Be 0
         $local = Get-Content -LiteralPath (Join-Path $root '.claude' 'settings.local.json') -Raw | ConvertFrom-Json -AsHashtable
-        @($local.permissions.additionalDirectories) | Should -Be @($unc)
-        @($local.permissions.additionalDirectories)[0] | Should -Not -Match 'FileSystem::'
+        @($local.permissions.additionalDirectories) | Should -Be @((Resolve-Path -LiteralPath (Join-Path $parent 'Knowledge')).ProviderPath.Replace('\', '/'))
+    }
+
+    It 'adds the knowledge folder next to the main checkout when the repository is a linked worktree' {
+        $parent = Join-Path ([System.IO.Path]::GetTempPath()) ('sar-wt-' + [guid]::NewGuid().ToString('n'))
+        New-Item -ItemType Directory -Path (Join-Path $parent 'Knowledge') -Force | Out-Null
+        $main = New-AllowRepo -Parent $parent -Config '{ "paths": { "knowledgeRoot": "../Knowledge" } }' -Settings '{}'
+        git -C $main init -q
+        git -C $main add -A
+        git -C $main -c user.name=probe -c user.email=probe@example.invalid commit -q -m init --no-verify
+        $worktree = Join-Path $main '.claude' 'worktrees' 'fix'
+        git -C $main worktree add -q -b fix $worktree 2>$null
+
+        $result = Invoke-Sync -Root $worktree
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $settings = Get-Content -LiteralPath (Join-Path $worktree '.claude' 'settings.local.json') -Raw | ConvertFrom-Json -AsHashtable
+        @($settings.permissions.additionalDirectories) | Should -Be @((Resolve-Path -LiteralPath (Join-Path $parent 'Knowledge')).ProviderPath.Replace('\', '/'))
+    }
+
+    It 'skips a knowledge folder outside the parent folder (<Case>), with a FIX line and exit 0' -ForEach @(
+        @{ Case = 'an absolute path elsewhere'; Relative = $false }
+        @{ Case = 'a relative path that climbs out'; Relative = $true }
+        @{ Case = 'the parent folder itself'; Relative = $true; Value = '..' }
+    ) {
+        $base = Join-Path ([System.IO.Path]::GetTempPath()) ('sar-base-' + [guid]::NewGuid().ToString('n'))
+        $parent = Join-Path $base 'repos'
+        # The name starts like the parent folder, so a plain prefix match without a separator would let it in.
+        $outside = Join-Path $base 'repos-other' 'Knowledge'
+        New-Item -ItemType Directory -Path $parent, $outside -Force | Out-Null
+        $value = if ($Value) { $Value } elseif ($Relative) { '../../repos-other/Knowledge' } else { $outside.Replace('\', '/') }
+        $root = New-AllowRepo -Parent $parent -Config (@{ paths = @{ knowledgeRoot = $value } } | ConvertTo-Json) -Settings '{}'
+
+        $result = Invoke-Sync -Root $root
+
+        $result.Code | Should -Be 0
+        $result.Output | Should -Match 'outside the parent folder of this repository'
+        $result.Output | Should -Match 'FIX:'
+        Test-Path -LiteralPath (Join-Path $root '.claude' 'settings.local.json') | Should -BeFalse
+    }
+
+    It 'skips a knowledge folder that a link inside the repository points elsewhere' {
+        $base = Join-Path ([System.IO.Path]::GetTempPath()) ('sar-link-' + [guid]::NewGuid().ToString('n'))
+        $parent = Join-Path $base 'repos'
+        $outside = Join-Path $base 'elsewhere'
+        New-Item -ItemType Directory -Path $parent, $outside -Force | Out-Null
+        $root = New-AllowRepo -Parent $parent -Config '{ "paths": { "knowledgeRoot": "kb" } }' -Settings '{}'
+        # A junction needs no admin rights on Windows; elsewhere a symlink stands in for the committed link.
+        $type = if ($IsWindows) { 'Junction' } else { 'SymbolicLink' }
+        New-Item -ItemType $type -Path (Join-Path $root 'kb') -Target $outside | Out-Null
+
+        $result = Invoke-Sync -Root $root
+
+        $result.Code | Should -Be 0
+        $result.Output | Should -Match 'reached through a link'
+        Test-Path -LiteralPath (Join-Path $root '.claude' 'settings.local.json') | Should -BeFalse
     }
 
     It 'keeps settings.local.json out of git through .git/info/exclude, once' {

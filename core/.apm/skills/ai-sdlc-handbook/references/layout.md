@@ -223,7 +223,10 @@ repository, through a branch and a pull request there. The [autolearn page](auto
 The knowledge repository holds the facts about the systems you work on, and the private term list.
 Clone it next to the repository, at `paths.knowledgeRoot` (`../Knowledge` by default).
 `Sync-AllowRules.ps1` then adds its full path to `permissions.additionalDirectories` in
-`.claude/settings.local.json`, which stays on your machine. CI never reads the knowledge folder.
+`.claude/settings.local.json`, which stays on your machine. It only adds a folder below the parent
+folder of the repository that it reaches without a link. In a linked worktree, the parent folder of
+the main checkout counts too. The parent folder itself and any other folder are skipped with a FIX
+line, so a repository cannot open a folder elsewhere to the agent. CI never reads the knowledge folder.
 
 The core gate `Check-PrivateTerms.ps1` blocks a term of the private list in a public repository
 (`visibility` is `public`). It reads the list from `AISDLC_PRIVATE_TERMS`, `paths.privateTermsFile`
