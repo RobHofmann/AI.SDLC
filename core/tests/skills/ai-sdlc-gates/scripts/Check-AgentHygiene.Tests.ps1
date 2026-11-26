@@ -146,6 +146,22 @@ Describe 'Check-AgentHygiene' {
         $r.ExitCode | Should -Be 0
     }
 
+    It 'fails an MCP tool of a connector whose name differs per person: <Tool>' -Tag '89' -ForEach @(
+        @{ Tool = 'mcp__claude_ai_Contoso__get_issue' }
+        @{ Tool = 'mcp__1a59c906-04da-521d-bda7-7f71b9f9e01c__read' }
+    ) {
+        New-Agent -Ws $script:Ws -Tools "tools: Read, $Tool"
+        $r = Invoke-AgentHygiene -Ws $script:Ws
+        $r.ExitCode | Should -Be 1
+        $r.Output | Should -Match 'mcp-name'
+    }
+
+    It 'passes an MCP read tool of a server that a pack installs' -Tag '89' {
+        New-Agent -Ws $script:Ws -Tools 'tools: Read, mcp__sonarqube__search_sonar_issues_in_projects'
+        $r = Invoke-AgentHygiene -Ws $script:Ws
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+    }
+
     It 'passes an MCP read tool in the GitHub Copilot form server/action' {
         New-Agent -Ws $script:Ws -Tools 'tools: Read, mcp__github__get_issue, github/get_issue, github/search_code'
         $r = Invoke-AgentHygiene -Ws $script:Ws

@@ -112,7 +112,9 @@ page.md", so that pointer survives the section being renamed or removed. This on
 - a quoted section name after a file name;
 - a link anchor.
 
-Each must match a heading in the target, or, for the quoted shape, text that is there. It reads
+Each must match a heading in the target, or, for the quoted shape, text that is there. A link anchor
+is the one GitHub makes: lower case, the text of a link, no emphasis marks, each space one hyphen,
+and `-1` or `-2` after a repeated heading. It reads
 PowerShell help blocks too, because the first real case was found there. One script sent a reader
 to "The documentation updater credentials" where the heading read "The documentation updater's
 credentials". It blocks.

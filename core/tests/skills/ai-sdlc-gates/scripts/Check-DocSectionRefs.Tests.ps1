@@ -148,6 +148,69 @@ Describe 'Check-DocSectionRefs' {
         }
     }
 
+    Context 'how a heading becomes an anchor, the way GitHub makes it' {
+        It 'adds -1 to a second heading with the same text, -2 to a third (<Anchor>)' -Tag '89' -ForEach @(
+            @{ Anchor = 'usage'; Code = 0 }
+            @{ Anchor = 'usage-1'; Code = 0 }
+            @{ Anchor = 'usage-2'; Code = 0 }
+            @{ Anchor = 'usage-3'; Code = 1 }
+        ) {
+            Set-Page -Relative 'docs/twice.md' -Text "# Twice`n`n## Usage`n`nOne.`n`n## Usage`n`nTwo.`n`n## Usage`n`nThree.`n"
+            Set-Page -Relative 'docs/source.md' -Text "[x](twice.md#$Anchor) explains it."
+
+            $r = Invoke-Gate
+
+            $r.ExitCode | Should -Be $Code -Because $r.Output
+        }
+
+        It 'keeps an underscore and one hyphen for each space around a dash' -Tag '89' {
+            Set-Page -Relative 'docs/marks.md' -Text "# Marks`n`n## snake_case name`n`n## A - B`n"
+            Set-Page -Relative 'docs/source.md' -Text "[x](marks.md#snake_case-name) and [y](marks.md#a---b)."
+
+            $r = Invoke-Gate
+
+            $r.ExitCode | Should -Be 0 -Because $r.Output
+        }
+
+        It 'removes the markup of a heading and keeps an underscore inside a word (<Heading>)' -Tag '89' -ForEach @(
+            @{ Heading = 'A *strong* idea'; Anchor = 'a-strong-idea' }
+            @{ Heading = 'A **bold** idea'; Anchor = 'a-bold-idea' }
+            @{ Heading = 'The `Get-Heading` function'; Anchor = 'the-get-heading-function' }
+            @{ Heading = 'A _thin_ idea'; Anchor = 'a-thin-idea' }
+            @{ Heading = 'An __underlined__ idea'; Anchor = 'an-underlined-idea' }
+            @{ Heading = 'The my_file_name page'; Anchor = 'the-my_file_name-page' }
+        ) {
+            Set-Page -Relative 'docs/markup.md' -Text "# Markup`n`n## $Heading`n"
+            Set-Page -Relative 'docs/source.md' -Text "[x](markup.md#$Anchor) explains it."
+
+            $r = Invoke-Gate
+
+            $r.ExitCode | Should -Be 0 -Because $r.Output
+        }
+
+        It 'reads the text of a link in a heading, not its target' -Tag '89' {
+            Set-Page -Relative 'docs/linked.md' -Text "# Linked`n`n## See [the guide](guide.md) first`n"
+            Set-Page -Relative 'docs/source.md' -Text "[x](linked.md#see-the-guide-first) explains it."
+
+            $r = Invoke-Gate
+
+            $r.ExitCode | Should -Be 0 -Because $r.Output
+        }
+
+        It 'keeps a letter that is not ASCII, written plain or percent-encoded (<Anchor>)' -Tag '89' -ForEach @(
+            @{ Anchor = '#%C3%BCberblick-und-caf%C3%A9'; Code = 0 }
+            @{ Anchor = '#überblick-und-café'; Code = 0 }
+            @{ Anchor = '#uberblick-und-cafe'; Code = 1 }
+        ) {
+            Set-Page -Relative 'docs/intl.md' -Text "# Intl`n`n## Überblick und Café`n"
+            Set-Page -Relative 'docs/source.md' -Text "[x](intl.md$Anchor) explains it."
+
+            $r = Invoke-Gate
+
+            $r.ExitCode | Should -Be $Code -Because $r.Output
+        }
+    }
+
     Context 'what it leaves alone' {
         It 'says nothing about a file it cannot resolve to exactly one page' {
             Set-Page -Relative 'docs/source.md' -Text 'See the Test Style section of `nowhere.md`.'

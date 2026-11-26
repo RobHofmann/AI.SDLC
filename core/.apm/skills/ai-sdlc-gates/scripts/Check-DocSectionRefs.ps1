@@ -101,13 +101,35 @@ function ConvertTo-ReadableLine {
 }
 
 function ConvertTo-Slug {
+    # The anchor GitHub makes from a heading (#89): lower case, the text of a link, no _ or __
+    # emphasis, then only letters, digits, _, spaces and hyphens. Each space becomes one hyphen, so
+    # "A - B" gives a---b.
     param([string]$Heading)
 
     $text = $Heading.ToLowerInvariant()
-    $text = $text -replace '`', ''
-    $text = $text -replace '[^a-z0-9 \-]', ''
-    $text = $text.Trim() -replace '\s+', '-'
-    return $text
+    $text = [regex]::Replace($text, '\[([^\]]*)\]\([^)]*\)', '$1')
+    $text = [regex]::Replace($text, '(?<![\p{L}\p{N}_])(_{1,2})(?=\S)(.+?)(?<=\S)\1(?![\p{L}\p{N}_])', '$2')
+    $text = $text -replace '[^\p{L}\p{M}\p{N}\p{Pc} \-]', ''
+    return $text.Trim() -replace ' ', '-'
+}
+
+function Get-HeadingAnchor {
+    # The anchors of a page in heading order. GitHub adds -1, -2 and so on to a repeated anchor.
+    param([string[]]$Heading)
+
+    $count = @{}
+    $anchors = [System.Collections.Generic.List[string]]::new()
+    foreach ($text in $Heading) {
+        $base = ConvertTo-Slug $text
+        $slug = $base
+        while ($count.ContainsKey($slug)) {
+            $count[$base] = 1 + [int]$count[$base]
+            $slug = "$base-$($count[$base])"
+        }
+        $count[$slug] = 0
+        $anchors.Add($slug)
+    }
+    return $anchors.ToArray()
 }
 
 function Get-Heading {
@@ -252,7 +274,13 @@ foreach ($file in $targets) {
 
             $found = switch ($reference.Kind) {
                 'heading' { [bool]($headings | Where-Object { $_.Trim('`', ' ') -ieq $reference.Name.Trim('`', ' ') }) }
-                'anchor' { [bool]($headings | Where-Object { (ConvertTo-Slug $_) -eq $reference.Name.ToLowerInvariant() }) }
+                'anchor' {
+                    $wanted = $reference.Name
+                    try { $wanted = [uri]::UnescapeDataString($wanted) } catch { $wanted = $reference.Name }
+                    $wanted = $wanted.ToLowerInvariant()
+                    $reference.Name = $wanted
+                    (Get-HeadingAnchor $headings) -contains $wanted
+                }
                 default { (Get-Content -LiteralPath $resolved -Raw -Encoding utf8) -like "*$($reference.Name)*" }
             }
             if ($found) { continue }

@@ -7,17 +7,17 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 ## adrs
 
 - [ADR 0001: AI.SDLC is shared as APM packages](./adrs/0001-ai-sdlc-is-shared-as-apm-packages.md) - AI.SDLC is a way of working for an agent and a person: skills, agents, hooks, gates and handbook pages.
-- [ADR 0002: Distribution, auth and updates on GitHub](./adrs/0002-distribution-auth-and-updates-on-github.md) - ADR 0001 shares AI.SDLC as APM packages that each consumer
+- [ADR 0002: Distribution, auth and updates on GitHub](./adrs/0002-distribution-auth-and-updates-on-github.md) - ADR 0001 shares AI.SDLC as APM packages that each consumer pins to a tag.
 - [ADR 0003: AI.SDLC installs its own packages from its own source](./adrs/0003-ai-sdlc-installs-its-own-packages-from-its-own-source.md) - AI.SDLC is the source of the `core` package and the packs (ADR 0001).
 - [ADR 0004: The way of working runs between two human checkpoints](./adrs/0004-two-human-checkpoints-and-one-skill-model.md) - An agent that asks for a confirmation at every outward step makes a person approve dozens of steps.
 - [ADR 0005: The gate contract](./adrs/0005-the-gate-contract.md) - A gate is a PowerShell script that checks one rule.
 - [ADR 0006: Hooks enforce what must happen every time](./adrs/0006-hooks-enforce-what-must-happen-every-time.md) - Some steps must happen every time, and an instruction does not make them happen.
-- [ADR 0007: AGENTS.md has a size limit](./adrs/0007-agents-md-has-a-size-limit.md) - that never bend and the pointers to everything else.
-- [ADR 0008: Every repository documents every unit in two layers](./adrs/0008-every-repository-documents-every-unit-in-two-layers.md) - The doc gates read the pages that exist: links, the index, the reading level, and what a page claims
+- [ADR 0007: AGENTS.md has a size limit](./adrs/0007-agents-md-has-a-size-limit.md) - `AGENTS.md` is loaded into every Claude Code and GitHub Copilot session.
+- [ADR 0008: Every repository documents every unit in two layers](./adrs/0008-every-repository-documents-every-unit-in-two-layers.md) - The doc gates read the pages that exist: links, the index, the reading level, and what a page claims about the code.
 - [ADR 0009: Coverage is a ratchet against a baseline](./adrs/0009-coverage-is-a-ratchet-against-a-baseline.md) - A fixed coverage bar on the total of a repository, such as 80%, is a debt figure.
-- [ADR 0010: The story key is a GitHub issue number](./adrs/0010-the-story-key-is-a-github-issue-number.md) - Every artifact in the way of working is anchored on a story key: front matter, the branch, the pull
+- [ADR 0010: The story key is a GitHub issue number](./adrs/0010-the-story-key-is-a-github-issue-number.md) - Every artifact in the way of working is anchored on a story key: front matter, the branch, the pull request, a test marker.
 - [ADR 0011: The public repository holds no private information](./adrs/0011-the-public-repository-holds-no-private-information.md) - AI.SDLC is public (ADR 0002).
-- [ADR 0012: CI is a composite action inside the installed core](./adrs/0012-ci-is-a-composite-action-inside-the-installed-core.md) - Every consumer needs the same pull request checks: the APM integrity checks, the secret scan and the
+- [ADR 0012: CI is a composite action inside the installed core](./adrs/0012-ci-is-a-composite-action-inside-the-installed-core.md) - Every consumer needs the same pull request checks: the APM integrity checks, the secret scan and the gates.
 - [ADR 0013: Docs that span projects live in a knowledge repository](./adrs/0013-docs-that-span-projects-live-in-a-knowledge-repository.md) - Each repository documents itself in two layers of markdown (ADR 0008).
 - [ADR 0014: Every rule has one source of truth](./adrs/0014-every-rule-has-one-source-of-truth.md) - The core clauses lived in two places.
 - [ADR 0015: The tests of a shared package live outside the installed package](./adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md) - A shared script kept its Pester test next to it, in `<package>/.apm/skills/<skill>/scripts/`.
@@ -40,4 +40,4 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [github-issues](./packages/github-issues.md) - The `github-issues` package supports GitHub issue creating, updates, triage, review, conventions, and PR contract checks.
 - [github](./packages/github.md) - The `github` package supports opening, updating, checking, and reviewing pull requests on GitHub, and the GitHub Actions workflows of a repository.
 - [knowledge](./packages/knowledge.md) - The `packs/knowledge` unit holds the skills for the notes on how a platform behaves.
-- [sonarcloud](./packages/sonarcloud.md) - The `packs/sonarcloud` unit gives an agent session in a repository read access to its SonarCloud
+- [sonarcloud](./packages/sonarcloud.md) - The `packs/sonarcloud` unit gives an agent session in a repository read access to its SonarCloud analysis.

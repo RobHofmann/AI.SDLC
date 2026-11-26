@@ -15,7 +15,9 @@
     Because the match set is the repo's own committers, an external author cited legitimately (for
     example a book author in a reference) is not a committer and is therefore not flagged.
 
-    A token is a FULL NAME ("First Last") and nothing else. The gate used to add the bare surname as a
+    A token is a FULL NAME ("First Last") and nothing else. The gate looks for it in two written
+    forms: "First Last" and "Last, First". For a name with a particle, such as "van der", it also
+    looks for "First particle Last", "particle Last, First" and "Last, First particle". The gate used to add the bare surname as a
     token too, whenever it ran to four or more characters and was absent from a hand-kept list of
     twenty common words. That is what made the gate unsafe to block on, because its input is the git
     roster rather than the change being built: the day a committer surnamed Post arrives, the
@@ -72,6 +74,10 @@ function Get-RawAuthor {
     catch { return @() }
 }
 
+# The particles a surname can start with, such as "van der" in "Sam van der Sample". Only a run of
+# these words right before the last name counts; any other middle word is a middle name (#89).
+$script:NameParticles = @('van', 'von', 'der', 'den', 'de', 'het', 'ten', 'ter', 'te', 'du', 'la', 'le', 'di', 'da', 'del', 'della', 'dos', 'bin', 'ibn')
+
 function ConvertTo-NameToken {
     param([string[]]$RawAuthors)
     $tokens = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -87,6 +93,7 @@ function ConvertTo-NameToken {
 
         $first = $null
         $last = $null
+        $particles = $null
         if ($s.Contains(',')) {
             $parts = $s.Split(',', 2)
             $lastWords = @($parts[0].Trim() -split '\s+' | Where-Object { $_ -and $_ -ne '-' })
@@ -96,13 +103,21 @@ function ConvertTo-NameToken {
         }
         else {
             $words = @($s -split '\s+' | Where-Object { $_ -and $_ -ne '-' })
-            if ($words.Count -ge 2) { $first = $words[0]; $last = $words[-1] }
+            if ($words.Count -ge 2) {
+                $first = $words[0]
+                $last = $words[-1]
+                $between = @(if ($words.Count -gt 2) { $words[1..($words.Count - 2)] })
+                $run = [System.Collections.Generic.List[string]]::new()
+                for ($i = $between.Count - 1; $i -ge 0 -and $between[$i] -in $script:NameParticles; $i--) { $run.Insert(0, $between[$i]) }
+                $particles = $run -join ' '
+            }
         }
 
         if (-not $first -or -not $last) { continue }
         if ($first -notmatch "^[\p{L}][\p{L}\-']*$" -or $last -notmatch "^[\p{L}][\p{L}\-']*$") { continue }
 
         [void]$tokens.Add("$first $last")
+        if ($particles) { [void]$tokens.Add("$first $particles $last") }
     }
     return @($tokens)
 }
@@ -126,7 +141,22 @@ if ($matchTokens.Count -eq 0) {
     exit 0
 }
 
-$escaped = $matchTokens | Sort-Object -Property Length -Descending | ForEach-Object { [regex]::Escape($_) }
+# Each name is looked for as "First Last" and as "Last, First". A name with a particle also has
+# "particle Last, First" and "Last, First particle" (#89). Initials are not looked for.
+$forms = [System.Collections.Generic.List[string]]::new()
+foreach ($token in $matchTokens) {
+    $words = @($token -split '\s+')
+    $forms.Add([regex]::Escape($token))
+    $first = [regex]::Escape($words[0])
+    $last = [regex]::Escape($words[-1])
+    $particles = if ($words.Count -gt 2) { [regex]::Escape(($words[1..($words.Count - 2)] -join ' ')) } else { '' }
+    $forms.Add("$last,\s*$first")
+    if ($particles) {
+        $forms.Add("$particles $last,\s*$first")
+        $forms.Add("$last,\s*$first $particles")
+    }
+}
+$escaped = $forms | Sort-Object -Property Length -Descending
 $pattern = '\b(' + ($escaped -join '|') + ')\b'
 $rx = [regex]::new($pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
