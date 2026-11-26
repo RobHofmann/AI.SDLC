@@ -107,6 +107,9 @@ The repository clauses in `AGENTS.md`, outside the markers, carry only the one-l
 as text" anti-pattern. If the gate does not exist yet, record it as `deferred (planned: ...)`
 so it is a tracked debt, not a wish. This is what lets the gate phase attach later.
 
+A departure from a clause comes here as an amendment, not as a new ADR. It gets an ADR as well only
+when it passes the three tests of `adr-conventions`.
+
 Good clauses are concrete: "Total line coverage must not drop below the recorded baseline",
 "Every Bicep module reference pins an explicit version tag (no @latest)", "Key
 architectural decisions need an ADR in the ADR folder before merge". Avoid "write clean

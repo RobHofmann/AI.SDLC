@@ -124,8 +124,8 @@ Two things follow, and the pull request says both out loud:
   the new one reads as if it targets the resource being replaced. Rename the parameter to what it really
   receives. A reviewer cannot tell an intended migration state from a bug when names and values disagree.
 
-The decision for a specific migration still needs an ADR (clause C01). The source of truth and the
-rollback path are choices the architecture rests on. See
+The decision for a specific migration needs an ADR when it passes the three tests of `adr-conventions`
+(clause C01). The source of truth and the rollback path are usually hard to undo. See
 [the constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md).
 
 ### Chronological order (recommended)

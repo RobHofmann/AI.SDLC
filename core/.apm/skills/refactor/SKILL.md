@@ -125,7 +125,7 @@ From the start to the open pull request the work runs on its own, as
 - **The area has no tests to preserve behaviour with** -> write the pinning tests first, against the current behaviour, and only then restructure. Refactoring untested code is rewriting it and hoping.
 - **A "while I am here" fix slips in** -> new validation, a changed response, a corrected off-by-one. Each is behaviour, and each makes the diff unreviewable as a refactor. Note it and raise it separately.
 - **Coverage falls because dead branches were removed** -> say so explicitly rather than adding tests to restore the number. The ratchet (C04) is a floor on the whole line count; a real drop from deleting code needs a human decision, not a workaround.
-- **The restructure changes a boundary or swaps a pattern** -> that is a key decision. Record it as an ADR rather than leaving it to be worked out from the diff.
+- **The restructure changes a boundary or swaps a pattern** -> check it against the three tests of `adr-conventions`. When it passes them, record it as an ADR rather than leaving it to be worked out from the diff.
 - **A constitution clause is broken in passing.** A moved log call drops the required logging helper,
   or a renamed property changes the wire name. The pack and repository clauses and C04 must survive
   the move intact.

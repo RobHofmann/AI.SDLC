@@ -10,8 +10,8 @@ Your first story is about learning the flow, not about the change. So pick one t
 - a small fix with a known cause, such as a wrong message or a missing check;
 - a small task, such as one setting, one log line or one page of documentation.
 
-Leave out a story that changes a contract, a data model or the architecture, because it needs an ADR
-(Architecture Decision Record) and more people. Leave out a story whose acceptance criteria you
+Leave out a story that changes a contract, a data model or the architecture. Such a story may need an
+ADR (Architecture Decision Record) and more people. Leave out a story whose acceptance criteria you
 cannot test yet.
 
 ## Run it
