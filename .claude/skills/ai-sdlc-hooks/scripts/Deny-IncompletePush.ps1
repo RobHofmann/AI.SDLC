@@ -335,6 +335,14 @@ function Test-TargetsProtectedBranch {
             if ($configured.Default -in '', 'simple', 'upstream', 'tracking' -and $configured.Merge -in $protectedBranches) { return $true }
             $refspecs = $configured.Refspecs
         }
+        elseif ($Root -and @($refspecs | Where-Object { -not $_.Contains(':') }).Count -gt 0) {
+            # git maps a refspec without :<dst> through remote.<name>.push, so git push origin feature
+            # reaches main when that setting sends feature there. Any configured refspec that can reach
+            # main or master counts, because the mapping by source is not worth parsing here.
+            $remote = if ($words.Count -gt 0) { $words[0] } else { $repoOption }
+            $configured = Get-ConfiguredPush -Root $Root -Remote $remote -Branch $Branch
+            $refspecs = @($refspecs) + @($configured.Refspecs)
+        }
         foreach ($refspec in $refspecs) {
             if (Test-RefspecReachesProtected -Refspec $refspec -Branch $Branch) { return $true }
         }

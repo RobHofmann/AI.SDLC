@@ -1241,6 +1241,7 @@ exit 0
             @{ Key = 'remote.origin.mirror'; Value = 'true'; Command = 'git push' }
             @{ Key = 'branch.feature/x.merge'; Value = 'refs/heads/main'; Command = 'git push' }
             @{ Key = 'branch.feature/x.merge'; Value = 'refs/heads/master'; Command = 'git push origin' }
+            @{ Key = 'remote.origin.push'; Value = 'refs/heads/feature/x:refs/heads/main'; Command = 'git push origin feature/x' }
         ) {
             $repo = New-ConfiguredRepo -Name ('configured-' + [guid]::NewGuid().ToString('N')) -Key $Key -Value $Value
 
