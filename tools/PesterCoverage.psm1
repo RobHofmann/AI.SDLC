@@ -16,14 +16,37 @@
 
 $ErrorActionPreference = 'Stop'
 
+function Get-ScriptFolderOfTest {
+    <#
+    .SYNOPSIS
+        The folder of the scripts that a test file tests. A test under <package>/tests/skills/<skill>/scripts
+        tests the scripts in <package>/.apm/skills/<skill>/scripts; any other test file tests the scripts
+        in its own folder.
+    #>
+    param([Parameter(Mandatory)][string]$TestFile)
+    (Split-Path -Parent $TestFile) -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm'
+}
+
+function Get-TestFileOfScript {
+    <#
+    .SYNOPSIS
+        The test file of a script: <Name>.Tests.ps1 in the mirrored tests folder for a script under
+        <package>/.apm/skills/<skill>/scripts, and next to the script for any other script.
+    #>
+    param([Parameter(Mandatory)][string]$ScriptFile)
+    $folder = (Split-Path -Parent $ScriptFile) -replace '(?<=[\\/])\.apm(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', 'tests'
+    Join-Path $folder ((Split-Path -Leaf $ScriptFile) -replace '\.ps1$', '.Tests.ps1')
+}
+
 function Get-CoverageTarget {
     <#
     .SYNOPSIS
-        The scripts and modules in the folder of a test file, without the test files and the test
-        harness modules (*TestHarness.psm1), which SonarCloud reads as test code.
+        The scripts and modules that a test file tests (Get-ScriptFolderOfTest), without the test files and
+        the test harness modules (*TestHarness.psm1), which SonarCloud reads as test code.
     #>
     param([Parameter(Mandatory)][string]$TestFile)
-    $folder = Split-Path -Parent $TestFile
+    $folder = Get-ScriptFolderOfTest -TestFile $TestFile
+    if (-not (Test-Path -LiteralPath $folder -PathType Container)) { return @() }
     @(Get-ChildItem -LiteralPath $folder -File -Force |
         Where-Object { $_.Extension -in '.ps1', '.psm1' -and $_.Name -notlike '*.Tests.ps1' -and $_.Name -notlike '*TestHarness.psm1' } |
         Sort-Object Name |
@@ -94,4 +117,4 @@ function ConvertTo-SonarCoverageXml {
     return "$($text.ToString())`n"
 }
 
-Export-ModuleMember -Function Get-CoverageTarget, ConvertTo-CoverageLine, Merge-CoverageLine, ConvertTo-SonarCoverageXml
+Export-ModuleMember -Function Get-ScriptFolderOfTest, Get-TestFileOfScript, Get-CoverageTarget, ConvertTo-CoverageLine, Merge-CoverageLine, ConvertTo-SonarCoverageXml

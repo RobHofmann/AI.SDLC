@@ -1,0 +1,318 @@
+#requires -Version 7.4
+BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
+
+Describe 'AiSdlcSetup' {
+    BeforeAll {
+        . (Join-Path $script:ScriptFolder 'AiSdlcSetup.ps1')
+        function gh { }
+    }
+
+    Context 'Test-GitHubLogin' {
+        It 'returns nothing when gh auth status passes' {
+            Mock Get-Command { [pscustomobject]@{ Name = 'gh' } } -ParameterFilter { $Name -eq 'gh' }
+            Mock gh { $global:LASTEXITCODE = 0 }
+
+            Test-GitHubLogin | Should -BeNullOrEmpty
+
+            Should -Invoke gh -Times 1 -Exactly -ParameterFilter { ($args -join ' ') -eq 'auth status' }
+        }
+
+        It 'returns the login fix when gh has no valid login' {
+            Mock Get-Command { [pscustomobject]@{ Name = 'gh' } } -ParameterFilter { $Name -eq 'gh' }
+            Mock gh { $global:LASTEXITCODE = 1 }
+
+            Test-GitHubLogin | Should -Match 'gh auth login'
+        }
+
+        It 'says gh is missing when the GitHub CLI is not installed' {
+            Mock Get-Command { $null } -ParameterFilter { $Name -eq 'gh' }
+
+            Test-GitHubLogin | Should -Match 'is missing'
+        }
+    }
+
+    Context 'Get-KnowledgeFolderHint' {
+        BeforeEach {
+            $script:Repo = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+            New-Item -ItemType Directory -Path $script:Repo -Force | Out-Null
+        }
+
+        It 'returns nothing when the knowledge folder exists' {
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "paths": { "knowledgeRoot": "Knowledge" } }'
+            New-Item -ItemType Directory -Path (Join-Path $script:Repo 'Knowledge') | Out-Null
+
+            Get-KnowledgeFolderHint -RepoRoot $script:Repo | Should -BeNullOrEmpty
+        }
+
+        It 'names the clone command when the folder is missing and knowledge.repository is set' {
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "paths": { "knowledgeRoot": "../Knowledge" }, "knowledge": { "repository": "contoso/knowledge" } }'
+
+            Get-KnowledgeFolderHint -RepoRoot $script:Repo | Should -Match 'gh repo clone contoso/knowledge \.\./Knowledge'
+        }
+
+        It 'says how to name the repository when knowledge.repository is empty' {
+            Set-Content -LiteralPath (Join-Path $script:Repo 'aisdlc.json') -Value '{ "paths": { "knowledgeRoot": "missing-folder" } }'
+
+            Get-KnowledgeFolderHint -RepoRoot $script:Repo | Should -Match 'knowledge\.repository'
+        }
+    }
+
+    Context 'Get-ApmInstallFailureHint' {
+        It 'names the exit code, the login and the long-path fix' {
+            $hint = Get-ApmInstallFailureHint -ExitCode 5
+
+            $hint | Should -Match 'exit code 5'
+            $hint | Should -Match 'GITHUB_APM_PAT'
+            $hint | Should -Match 'WinError 206'
+            $hint | Should -Match 'LongPathsEnabled'
+        }
+    }
+
+    Context 'Set-GitHookExecutable' {
+        BeforeEach {
+            $script:Repo = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+            $hooks = Join-Path $script:Repo '.claude' 'skills' 'ai-sdlc-hooks' 'githooks'
+            New-Item -ItemType Directory -Path $hooks -Force | Out-Null
+            git -C $script:Repo init --quiet
+            Set-Content -LiteralPath (Join-Path $hooks 'pre-push') -Value '#!/bin/sh'
+            Set-Content -LiteralPath (Join-Path $hooks 'post-merge') -Value '#!/bin/sh'
+        }
+
+        It 'marks every tracked hook executable in the git index' {
+            git -C $script:Repo add -A
+
+            $marked = @(Set-GitHookExecutable -RepoRoot $script:Repo)
+
+            $marked | Should -HaveCount 2
+            $modes = @(git -C $script:Repo ls-files --stage -- '.claude/skills/ai-sdlc-hooks/githooks' | ForEach-Object { ($_ -split '\s+')[0] })
+            $modes | Should -Be @('100755', '100755')
+        }
+
+        It 'leaves out a hook that git does not track yet' {
+            git -C $script:Repo add -- '.claude/skills/ai-sdlc-hooks/githooks/pre-push'
+
+            $marked = @(Set-GitHookExecutable -RepoRoot $script:Repo)
+
+            $marked | Should -Be @('.claude/skills/ai-sdlc-hooks/githooks/pre-push')
+        }
+
+        It 'does nothing when the repository has no hook folder' {
+            $empty = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+            New-Item -ItemType Directory -Path $empty | Out-Null
+            git -C $empty init --quiet
+
+            @(Set-GitHookExecutable -RepoRoot $empty) | Should -HaveCount 0
+        }
+
+        It 'changes nothing with -WhatIf' {
+            git -C $script:Repo add -A
+
+            Set-GitHookExecutable -RepoRoot $script:Repo -WhatIf | Out-Null
+
+            $modes = @(git -C $script:Repo ls-files --stage -- '.claude/skills/ai-sdlc-hooks/githooks' | ForEach-Object { ($_ -split '\s+')[0] })
+            $modes | Should -Be @('100644', '100644')
+        }
+    }
+
+    Context 'Get-AiSdlcPin' {
+        BeforeAll {
+            function New-ApmRepo([string]$Apm) {
+                $root = Join-Path ([IO.Path]::GetTempPath()) ('aisdlc-pin-' + [guid]::NewGuid().ToString('n'))
+                New-Item -ItemType Directory -Path $root -Force | Out-Null
+                [IO.File]::WriteAllText((Join-Path $root 'apm.yml'), $Apm)
+                return $root
+            }
+        }
+
+        It 'reads the source from the core dependency and the refs of every dependency on that source' {
+            $root = New-ApmRepo "dependencies:`n  apm:`n    - git: https://github.com/contoso/AI.SDLC`n      path: core`n      ref: v1.0.0`n    - git: https://github.com/contoso/other`n      path: skills/x`n      ref: v9.9.9`n    - git: https://github.com/contoso/AI.SDLC`n      path: packs/bicep`n      ref: v1.0.0   # note`n"
+            $pin = Get-AiSdlcPin -RepoRoot $root
+
+            $pin.Url | Should -Be 'https://github.com/contoso/AI.SDLC'
+            $pin.Current | Should -Be @('v1.0.0')
+            $pin.AllPinned | Should -BeTrue
+            $pin.Newline | Should -Be "`n"
+        }
+
+        It 'says a dependency of the source without a ref is not pinned' {
+            $root = New-ApmRepo "dependencies:`n  apm:`n    - git: https://github.com/contoso/AI.SDLC`n      path: core`n      ref: v1.0.0`n    - git: https://github.com/contoso/AI.SDLC`n      path: packs/bicep`n"
+            (Get-AiSdlcPin -RepoRoot $root).AllPinned | Should -BeFalse
+        }
+
+        It 'throws when apm.yml has no core dependency, or no apm.yml at all' {
+            { Get-AiSdlcPin -RepoRoot (New-ApmRepo "dependencies:`n  apm: []`n") } | Should -Throw '*path: core*'
+            { Get-AiSdlcPin -RepoRoot (Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString('n'))) } | Should -Throw '*No apm.yml*'
+        }
+    }
+
+    Context 'Get-AiSdlcReleaseTag' {
+        BeforeAll {
+            $script:Source = Join-Path ([IO.Path]::GetTempPath()) ('aisdlc-tags-' + [guid]::NewGuid().ToString('n'))
+            git init --quiet -b main $script:Source
+            git -C $script:Source -c user.email=probe@example.invalid -c user.name=probe commit --quiet --allow-empty -m init
+            foreach ($tag in 'v1.2.0', 'v1.10.0', 'v1.11.0-rc.1', 'not-a-release') { git -C $script:Source tag $tag }
+        }
+
+        It 'returns the newest release by version, not by text, and skips a pre-release' {
+            Get-AiSdlcReleaseTag -Url $script:Source | Should -Be 'v1.10.0'
+        }
+
+        It 'takes a pre-release with -IncludePreRelease' {
+            Get-AiSdlcReleaseTag -Url $script:Source -IncludePreRelease | Should -Be 'v1.11.0-rc.1'
+        }
+
+        It 'throws when the source has no release tag' {
+            $empty = Join-Path ([IO.Path]::GetTempPath()) ('aisdlc-tags-' + [guid]::NewGuid().ToString('n'))
+            git init --quiet $empty
+            { Get-AiSdlcReleaseTag -Url $empty } | Should -Throw '*No release tag*'
+        }
+    }
+
+    Context 'Invoke-ApmInstall' {
+        BeforeAll {
+            function apm { }
+        }
+
+        BeforeEach {
+            $script:Repo = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+            git init --quiet -b main $script:Repo
+            git -C $script:Repo config user.email probe@example.invalid
+            git -C $script:Repo config user.name probe
+            New-Item -ItemType Directory -Path (Join-Path $script:Repo '.claude/skills/x') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.yml') -Value 'ref: v1'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'keep.txt') -Value 'old'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'gone.txt') -Value 'old'
+            Set-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/x/SKILL.md') -Value 'old'
+            git -C $script:Repo add -A
+            git -C $script:Repo commit --quiet -m init
+            # The caller has moved the ref in the working copy, as Update-AiSdlc.ps1 does
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.yml') -Value 'ref: v2'
+        }
+
+        AfterEach {
+            $env:AISDLC_APM_LOCAL_INSTALL = $null
+        }
+
+        It 'runs apm in the repository itself when it is not on a network share' {
+            Mock apm { $script:RanIn = (Get-Location).Path; $global:LASTEXITCODE = 0 }
+
+            Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 0
+
+            $script:RanIn | Should -Be (Resolve-Path -LiteralPath $script:Repo).Path
+        }
+
+        It 'returns the exit code of apm' {
+            Mock apm { $global:LASTEXITCODE = 3 }
+
+            Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 3
+        }
+
+        It 'says a local repository is not on a network share' {
+            Test-AiSdlcNetworkPath -RepoRoot $script:Repo | Should -BeFalse
+        }
+
+        It 'runs apm in a local worktree and makes the share match the new lock, also where the share differs from HEAD' {
+            $env:AISDLC_APM_LOCAL_INSTALL = '1'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.lock.yaml') -Value "deployed_files:`n  - .claude/skills/x`n  - .claude/skills/x/SKILL.md`n  - .claude/skills/old/SKILL.md"
+            New-Item -ItemType Directory -Path (Join-Path $script:Repo '.claude/skills/old') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/old/SKILL.md') -Value 'old'
+            git -C $script:Repo add -A
+            git -C $script:Repo commit --quiet -m lock
+            # The share holds another version than HEAD, as after an earlier install on it
+            Set-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/x/SKILL.md') -Value 'v3'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.yml') -Value 'ref: v2'
+            Mock apm {
+                $here = (Get-Location).Path
+                $script:RanIn = $here
+                $script:SawApmYml = (Get-Content -LiteralPath (Join-Path $here 'apm.yml') -Raw).Trim()
+                Set-Content -LiteralPath (Join-Path $here '.claude/skills/x/SKILL.md') -Value 'old'
+                New-Item -ItemType Directory -Path (Join-Path $here '.claude/skills/x/scripts') -Force | Out-Null
+                Set-Content -LiteralPath (Join-Path $here '.claude/skills/x/scripts/added.py') -Value 'added'
+                Remove-Item -LiteralPath (Join-Path $here '.claude/skills/old/SKILL.md')
+                Set-Content -LiteralPath (Join-Path $here 'apm.lock.yaml') -Value "deployed_files:`n  - .claude/skills/x`n  - .claude/skills/x/SKILL.md`n  - .claude/skills/x/scripts/added.py"
+                $global:LASTEXITCODE = 0
+            }
+
+            Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 0
+
+            $script:RanIn | Should -Not -Be (Resolve-Path -LiteralPath $script:Repo).Path
+            $script:SawApmYml | Should -Be 'ref: v2'
+            (Get-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/x/SKILL.md') -Raw).Trim() | Should -Be 'old'
+            Join-Path $script:Repo '.claude/skills/x/scripts/added.py' | Should -Exist
+            Join-Path $script:Repo '.claude/skills/old/SKILL.md' | Should -Not -Exist
+            Get-Content -LiteralPath (Join-Path $script:Repo 'apm.lock.yaml') | Should -Contain '  - .claude/skills/x/scripts/added.py'
+            Join-Path $script:Repo 'keep.txt' | Should -Exist
+            $script:RanIn | Should -Not -Exist
+            @(git -C $script:Repo worktree list).Count | Should -Be 1
+        }
+
+        It 'reads the deployed files from an APM lock' {
+            $lock = Join-Path $TestDrive 'lock.yaml'
+            Set-Content -LiteralPath $lock -Value "- name: a`n  deployed_files:`n  - .claude/skills/a`n  - '.claude/skills/a/SKILL.md'`n  deployed_file_hashes:`n    .claude/skills/a/SKILL.md: sha256:1"
+
+            Get-ApmDeployedFile -LockPath $lock | Should -Be @('.claude/skills/a', '.claude/skills/a/SKILL.md')
+        }
+
+        It 'runs apm audit --ci in the worktree after the install and hands back its exit code, on a share' {
+            $env:AISDLC_APM_LOCAL_INSTALL = '1'
+            $script:Calls = [Collections.Generic.List[string]]::new()
+            Mock apm {
+                $script:Calls.Add("$($args -join ' ') @ $((Get-Location).Path)")
+                if ($args[0] -eq 'install') { New-Item -ItemType Directory -Path (Join-Path (Get-Location).Path 'apm_modules') -Force | Out-Null }
+                $global:LASTEXITCODE = if ($args[0] -eq 'audit') { if (Test-Path -LiteralPath (Join-Path (Get-Location).Path 'apm_modules')) { 0 } else { 1 } } else { 0 }
+            }
+            $audit = 9
+
+            Invoke-ApmInstall -RepoRoot $script:Repo -AuditCode ([ref]$audit) | Should -Be 0
+
+            $audit | Should -Be 0
+            $script:Calls.Count | Should -Be 2
+            $script:Calls[1] | Should -BeLike 'audit --ci @ *'
+            $script:Calls[1] | Should -Not -BeLike "* @ $((Resolve-Path -LiteralPath $script:Repo).Path)"
+        }
+
+        It 'leaves the share as it was when the audit fails in the worktree' {
+            $env:AISDLC_APM_LOCAL_INSTALL = '1'
+            Set-Content -LiteralPath (Join-Path $script:Repo 'apm.lock.yaml') -Value "deployed_files:`n  - .claude/skills/x/SKILL.md"
+            Mock apm {
+                if ($args[0] -eq 'install') { Set-Content -LiteralPath (Join-Path (Get-Location).Path '.claude/skills/x/SKILL.md') -Value 'new' }
+                $global:LASTEXITCODE = if ($args[0] -eq 'audit') { 4 } else { 0 }
+            }
+            $audit = 0
+
+            Invoke-ApmInstall -RepoRoot $script:Repo -AuditCode ([ref]$audit) | Should -Be 0
+
+            $audit | Should -Be 4
+            (Get-Content -LiteralPath (Join-Path $script:Repo '.claude/skills/x/SKILL.md') -Raw).Trim() | Should -Be 'old'
+            @(git -C $script:Repo worktree list).Count | Should -Be 1
+        }
+
+        It 'runs the audit in the repository itself when it is not on a network share, and only after a good install' {
+            $script:Calls = [Collections.Generic.List[string]]::new()
+            Mock apm { $script:Calls.Add($args[0]); $global:LASTEXITCODE = 0 }
+            $audit = 9
+
+            Invoke-ApmInstall -RepoRoot $script:Repo -AuditCode ([ref]$audit) | Should -Be 0
+            $audit | Should -Be 0
+            $script:Calls | Should -Be @('install', 'audit')
+
+            $script:Calls.Clear()
+            Mock apm { $script:Calls.Add($args[0]); $global:LASTEXITCODE = 3 }
+            Invoke-ApmInstall -RepoRoot $script:Repo -AuditCode ([ref]$audit) | Should -Be 3
+            $script:Calls | Should -Be @('install')
+        }
+
+        It 'leaves the repository as it was when apm fails in the worktree' {
+            $env:AISDLC_APM_LOCAL_INSTALL = '1'
+            Mock apm {
+                Remove-Item -LiteralPath (Join-Path (Get-Location).Path 'keep.txt')
+                $global:LASTEXITCODE = 5
+            }
+
+            Invoke-ApmInstall -RepoRoot $script:Repo | Should -Be 5
+
+            Join-Path $script:Repo 'keep.txt' | Should -Exist
+            @(git -C $script:Repo worktree list).Count | Should -Be 1
+        }
+    }
+}

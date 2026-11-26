@@ -3,7 +3,7 @@
 Describe 'Update-SyncManifest' {
     BeforeAll {
         $script:Source = Join-Path $PSScriptRoot 'Update-SyncManifest.ps1'
-        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
 
         function Write-LfFile {
             param([string]$Path, [string]$Content)
@@ -83,5 +83,73 @@ Describe 'Update-SyncManifest' {
         $r.Code | Should -Be 1
         $r.Output | Should -Match 'packs/github-issues/\.apm/prompts/new\.prompt\.md'
         Test-Path -LiteralPath (Join-Path $script:Root 'core/.apm/skills/ai-sdlc-gates/sync-manifest.json') | Should -BeFalse
+    }
+
+    Context 'a test file under .apm (#45)' {
+        It 'stops on a *.Tests.ps1 under .apm, names it, and names the path under tests where it belongs' {
+            Write-LfFile -Path (Join-Path $script:Root 'packs/github-issues/.apm/skills/issue-skill/scripts/Get-Thing.Tests.ps1') -Content "test`n"
+
+            $r = Invoke-Tool -Root $script:Root
+
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'packs/github-issues/\.apm/skills/issue-skill/scripts/Get-Thing\.Tests\.ps1'
+            $r.Output | Should -Match 'packs/github-issues/tests/skills/issue-skill/scripts/Get-Thing\.Tests\.ps1'
+            Test-Path -LiteralPath (Join-Path $script:Root 'core/.apm/skills/ai-sdlc-gates/sync-manifest.json') | Should -BeFalse
+        }
+
+        It 'stops on a *TestHarness.psm1 under .apm' {
+            Write-LfFile -Path (Join-Path $script:Root 'core/.apm/skills/ai-sdlc-gates/scripts/DocToolTestHarness.psm1') -Content "harness`n"
+
+            $r = Invoke-Tool -Root $script:Root
+
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'core/tests/skills/ai-sdlc-gates/scripts/DocToolTestHarness\.psm1'
+        }
+
+        It 'stops on a test file under .apm also with -Check, so the pre-push run and the pull request job refuse it' {
+            Invoke-Tool -Root $script:Root | Out-Null
+            Write-LfFile -Path (Join-Path $script:Root 'packs/github-issues/.apm/skills/issue-skill/scripts/Get-Thing.Tests.ps1') -Content "test`n"
+
+            $r = Invoke-Tool -Root $script:Root -Check
+
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'packs/github-issues/tests/skills/issue-skill/scripts/Get-Thing\.Tests\.ps1'
+        }
+
+        It 'passes with the test file in the tests folder of the package, and does not list it' {
+            Write-LfFile -Path (Join-Path $script:Root 'packs/github-issues/.apm/skills/issue-skill/scripts/Get-Thing.ps1') -Content "script`n"
+            Write-LfFile -Path (Join-Path $script:Root 'packs/github-issues/tests/skills/issue-skill/scripts/Get-Thing.Tests.ps1') -Content "test`n"
+
+            (Invoke-Tool -Root $script:Root).Code | Should -Be 0
+            $files = @((Get-Manifest -Root $script:Root).packages['github-issues'].files.Keys)
+            $files | Should -Contain '.claude/skills/issue-skill/scripts/Get-Thing.ps1'
+            @($files | Where-Object { $_ -match '\.Tests\.ps1$|TestHarness\.psm1$' }) | Should -HaveCount 0
+        }
+
+        It 'lists the names of the tests that stay in AI.SDLC, so a gate in a consumer knows them' {
+            Write-LfFile -Path (Join-Path $script:Root 'packs/github-issues/.apm/skills/issue-skill/scripts/Get-Thing.ps1') -Content "script`n"
+            Write-LfFile -Path (Join-Path $script:Root 'packs/github-issues/tests/skills/issue-skill/scripts/Get-Thing.Tests.ps1') -Content "test`n"
+            Write-LfFile -Path (Join-Path $script:Root 'core/tests/skills/ai-sdlc-gates/scripts/SharedWiring.Tests.ps1') -Content "test`n"
+            Write-LfFile -Path (Join-Path $script:Root 'core/tests/skills/ai-sdlc-gates/scripts/DocToolTestHarness.psm1') -Content "harness`n"
+
+            (Invoke-Tool -Root $script:Root).Code | Should -Be 0
+            @((Get-Manifest -Root $script:Root).sharedTests) | Should -Be @('DocToolTestHarness.psm1', 'Get-Thing.Tests.ps1', 'SharedWiring.Tests.ps1')
+        }
+
+        It 'lists no test file and no test harness in the manifest of this repository, so apm install puts none under .claude' {
+            $path = Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'sync-manifest.json'
+            $manifest = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable
+
+            $listed = @($manifest.packages.Values | ForEach-Object { $_.files.Keys } | Where-Object { $_ -match '\.Tests\.ps1$|TestHarness\.psm1$' })
+
+            $listed | Should -HaveCount 0
+        }
+
+        It 'finds no test file and no test harness under .claude of this repository after apm install' {
+            $claude = Join-Path $PSScriptRoot '..' '.claude'
+            $installed = @(Get-ChildItem -LiteralPath $claude -Recurse -File -Force | Where-Object { $_.Name -like '*.Tests.ps1' -or $_.Name -like '*TestHarness.psm1' } | ForEach-Object Name)
+
+            $installed | Should -HaveCount 0
+        }
     }
 }

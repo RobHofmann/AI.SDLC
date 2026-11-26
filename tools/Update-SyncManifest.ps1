@@ -14,12 +14,18 @@
     - skills/<path> becomes .claude/skills/<path>, byte for byte;
     - agents/<name>.agent.md becomes .claude/agents/<name>.md, byte for byte;
     - hooks/<file>.json is merged into .claude/settings.json, so the manifest lists each hook.
-    Any other file under .apm/ stops the script, so a new kind of file can never ship unchecked.
+    Any other file under .apm/ stops the script, so a new kind of file can never ship unchecked. So does a
+    *.Tests.ps1 or *TestHarness.psm1 under .apm/skills: the tests of a package sit under tests/ of the
+    package, at the same path, and APM does not install them.
 
     The manifest also lists the retired skill names from config/retired-skill-names.txt, each with its
     new name. Check-SyncManifest.ps1 uses that list to find the folder of a renamed skill that an older
     version left behind in a consumer, and the update script uses it to point at text that still uses
     an old name.
+
+    It lists the names of the test files and test harnesses under tests/ of every package as sharedTests.
+    A consumer does not get them, so a gate there reads this list to know that a page that names one of
+    them names a test that AI.SDLC keeps, not a file that is gone.
 
     The hash is the git blob hash (git hash-object), so CRLF in a Windows working copy does not count as
     a change. The manifest is written to core/.apm/skills/ai-sdlc-gates/sync-manifest.json and leaves
@@ -54,6 +60,7 @@ foreach ($pack in Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'packs') -Dire
 
 $manifest = [ordered]@{ packages = [ordered]@{} }
 $unknown = [System.Collections.Generic.List[string]]::new()
+$misplaced = [System.Collections.Generic.List[string]]::new()
 foreach ($name in $packages.Keys) {
     $apmRelative = "$($packages[$name])/.apm"
     $apm = Join-Path $RepoRoot $apmRelative
@@ -66,7 +73,8 @@ foreach ($name in $packages.Keys) {
     foreach ($relative in $sources) {
         $source = "$apmRelative/$relative"
         if ($source -eq $manifestRelative) { continue }
-        if ($relative -like 'skills/*') { $copied.Add(@($source, ".claude/$relative")) }
+        if ($relative -like 'skills/*' -and ($relative -like '*.Tests.ps1' -or $relative -like '*TestHarness.psm1')) { $misplaced.Add("$source -> $($packages[$name])/tests/$relative") }
+        elseif ($relative -like 'skills/*') { $copied.Add(@($source, ".claude/$relative")) }
         elseif ($relative -match '^agents/(?<name>[^/]+)\.agent\.md$') { $copied.Add(@($source, ".claude/agents/$($Matches.name).md")) }
         elseif ($relative -match '^hooks/[^/]+\.json$') {
             $data = Get-Content -LiteralPath (Join-Path $RepoRoot $source) -Raw | ConvertFrom-Json -AsHashtable
@@ -100,6 +108,19 @@ if (Test-Path -LiteralPath $retiredPath -PathType Leaf) {
     }
 }
 $manifest.retired = $retired
+
+$manifest.sharedTests = @($packages.Values | ForEach-Object {
+        Get-ChildItem -LiteralPath (Join-Path $RepoRoot $_ 'tests') -Recurse -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -like '*.Tests.ps1' -or $_.Name -like '*TestHarness.psm1' } |
+            ForEach-Object Name
+    } | Sort-Object -Unique -CaseSensitive)
+
+if ($misplaced.Count -gt 0) {
+    Write-Host 'Sync manifest: these test files sit under .apm/, so APM would install them in every consumer:' -ForegroundColor Red
+    foreach ($m in $misplaced) { Write-Host "  $m" }
+    Write-Host 'FIX: Move each test file to the path after the arrow, under tests/ of its package, so the tests of a package stay out of the install.' -ForegroundColor Red
+    exit 1
+}
 
 if ($unknown.Count -gt 0) {
     Write-Host 'Sync manifest: these files are of a kind the manifest does not know how APM deploys:' -ForegroundColor Red

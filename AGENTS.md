@@ -77,7 +77,8 @@ an edit of the copy. `tools/Test-Consumers.ps1` still shows a change the way a p
 - **Every file keeps LF line endings** (`.gitattributes`): a CRLF file breaks `apm install --frozen` in a consumer.
 - **The shared parts of AGENTS.md stay within 50 lines and 600 words together**, because each line is
   a line taken from every consumer's AGENTS.md. `tools/Check-SharedAgentsPartSize.ps1` blocks the build.
-- **A shared script ships with a Pester test next to it** (`<Name>.Tests.ps1`), which the workflow runs.
+- **A shared script ships with a Pester test** (`<Name>.Tests.ps1`), which the workflow runs. The test sits
+  under `<package>/tests/`, at the path of its script under `.apm/`, so APM never installs it (ADR 0015).
 - **Every third-party action in a workflow is pinned to a full commit SHA**, with its version in a
   comment. Every job runs on a GitHub-hosted runner.
 

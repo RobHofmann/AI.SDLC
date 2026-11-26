@@ -44,7 +44,14 @@
     4. fails when a skill folder of a retired name is left behind, prints what Find-RetiredSkillNames.ps1
        of the new version finds, then runs the blocking gates and apm audit --ci.
 
-    Both passes run the tests of the installed scripts (-IncludeToolTests), on purpose. Some of those
+    APM installs no test file: the tests of a package sit under <package>/tests/skills/<skill>/scripts
+    in this repository. Both passes fail when a *.Tests.ps1 or *TestHarness.psm1 is installed under
+    .claude/ (after the install in the fresh pass, after the update in the upgrade pass). Then they copy
+    the tests of each installed skill from this repository into the installed skill folder, and list the
+    two file patterns in .git/info/exclude of the work folder, so the sync manifest gate does not see
+    them. A pass fails when no test file was copied.
+
+    Both passes then run the tests of the installed scripts (-IncludeToolTests), on purpose. Some of those
     tests read files of the consumer outside their own fixtures: Check-AgentsFileSize.Tests.ps1 reads
     its AGENTS.md, Check-DocSectionRefs.Tests.ps1 scans the whole repository, and
     PullRequestFeedback.Tests.ps1 reads .claude/settings.json. In the upgrade pass those files come from
@@ -171,6 +178,46 @@ function Save-FixtureCommit {
     git -C $Path commit -m $Message --quiet *> $null
 }
 
+# A consumer gets no test file: APM installs only .apm/, and the tests of a package sit under tests/.
+function Assert-NoInstalledTest {
+    param([string]$Consumer, [string]$Target, [string]$After)
+    $claude = Join-Path $Target '.claude'
+    if (-not (Test-Path -LiteralPath $claude -PathType Container)) { return }
+    foreach ($file in @(Get-ChildItem -LiteralPath $claude -Recurse -File | Where-Object { $_.Name -like '*.Tests.ps1' -or $_.Name -like '*TestHarness.psm1' })) {
+        $relative = [IO.Path]::GetRelativePath($Target, $file.FullName).Replace('\', '/')
+        Add-Failure $Consumer "$After left the test file $relative in the consumer; the tests of a package sit under tests/ of the package, and APM must not install them"
+    }
+}
+
+# Puts the tests of each installed skill next to its scripts, so -IncludeToolTests runs them against the
+# installed copy. .git/info/exclude keeps them out of git, so the sync manifest gate does not see them.
+function Copy-PackageTest {
+    param([string]$Consumer, [string]$Target)
+    $exclude = Join-Path $Target '.git' 'info' 'exclude'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $exclude) -Force | Out-Null
+    $patterns = @('.claude/skills/*/scripts/*.Tests.ps1', '.claude/skills/*/scripts/*TestHarness.psm1')
+    $present = if (Test-Path -LiteralPath $exclude) { @(Get-Content -LiteralPath $exclude) } else { @() }
+    $missing = @($patterns | Where-Object { $_ -notin $present })
+    if ($missing.Count -gt 0) { Add-Content -LiteralPath $exclude -Value $missing }
+    $copied = 0
+    $packages = @(Join-Path $RepoRoot 'core') + @(Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'packs') -Directory -ErrorAction SilentlyContinue | ForEach-Object FullName)
+    foreach ($package in $packages) {
+        $skills = Join-Path $package 'tests' 'skills'
+        if (-not (Test-Path -LiteralPath $skills -PathType Container)) { continue }
+        foreach ($skill in Get-ChildItem -LiteralPath $skills -Directory) {
+            $installed = Join-Path $Target '.claude' 'skills' $skill.Name
+            if (-not (Test-Path -LiteralPath $installed -PathType Container)) { continue }
+            foreach ($file in Get-ChildItem -LiteralPath $skill.FullName -Recurse -File) {
+                $destination = Join-Path $installed ([IO.Path]::GetRelativePath($skill.FullName, $file.FullName))
+                New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+                Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+                $copied++
+            }
+        }
+    }
+    if ($copied -eq 0) { Add-Failure $Consumer 'no test file was copied from the tests/ folders of the packages, so the tests of the installed scripts would run nothing' }
+}
+
 # The newest release tag below the newest version in CHANGELOG.md: the version a consumer has before it takes this one.
 function Get-PreviousRelease {
     $newest = [regex]::Match((Get-Content -LiteralPath (Join-Path $RepoRoot 'CHANGELOG.md') -Raw), '(?m)^## v(\d+\.\d+\.\d+) ').Groups[1].Value
@@ -250,6 +297,8 @@ function Invoke-UpgradeConsumer {
         if ($LASTEXITCODE -ne 0) { Add-Failure $Name "the Update-AiSdlc.ps1 of $From exited $LASTEXITCODE on the update to $To"; return }
         Remove-Item -LiteralPath (Join-Path $target 'apm_modules') -Recurse -Force -ErrorAction SilentlyContinue
         Save-FixtureCommit -Path $target -Message "update to $To"
+        Assert-NoInstalledTest -Consumer $Name -Target $target -After "the update to $To"
+        Copy-PackageTest -Consumer $Name -Target $target
 
         $scripts = Join-Path $target '.claude' 'skills' 'ai-sdlc-gates' 'scripts'
         $manifest = Join-Path $target '.claude' 'skills' 'ai-sdlc-gates' 'sync-manifest.json'
@@ -306,6 +355,7 @@ foreach ($consumer in $consumers) {
         foreach ($path in @($expect.absent)) {
             if (Test-Path -LiteralPath (Join-Path $target $path)) { Add-Failure $consumer.Name "expected $path to be absent, and it is installed" }
         }
+        Assert-NoInstalledTest -Consumer $consumer.Name -Target $target -After 'apm install'
 
         $leaks = @(Get-ChildItem -LiteralPath (Join-Path $target '.claude') -Recurse -File -Include *.md |
             Select-String -Pattern 'apm_modules/' -SimpleMatch)
@@ -326,6 +376,7 @@ foreach ($consumer in $consumers) {
         $githooks = @(git -C $target ls-files '.claude/skills/ai-sdlc-hooks/githooks')
         if ($githooks.Count -gt 0) { git -C $target update-index --chmod=+x -- @githooks }
         Save-FixtureCommit -Path $target -Message install
+        Copy-PackageTest -Consumer $consumer.Name -Target $target
 
         & pwsh -NoProfile -File (Join-Path $scripts 'Invoke-LocalGates.ps1') -RepoRoot $target -BlockingOnly -IncludeToolTests 2>&1 | Write-Host
         if ($LASTEXITCODE -ne 0) { Add-Failure $consumer.Name 'a blocking gate failed in the installed consumer (see the log above)' }

@@ -5,7 +5,7 @@ Describe 'Test-Consumers' {
         $script:Tool = Join-Path $PSScriptRoot 'Test-Consumers.ps1'
         $script:TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('tc-run-' + [guid]::NewGuid().ToString('n'))
         New-Item -ItemType Directory -Path $script:TempRoot -Force | Out-Null
-        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
         $script:Pwsh = Join-Path $PSHOME ($IsWindows ? 'pwsh.exe' : 'pwsh')
 
         function New-FakeApm {
@@ -19,6 +19,8 @@ Describe 'Test-Consumers' {
                 '$scripts = Join-Path $PWD ''.claude'' ''skills'' ''ai-sdlc-gates'' ''scripts'''
                 'New-Item -ItemType Directory -Path $scripts -Force | Out-Null'
                 'foreach ($name in ''Sync-AgentsFile.ps1'', ''Build-DocsIndex.ps1'', ''Invoke-LocalGates.ps1'') { Set-Content -LiteralPath (Join-Path $scripts $name) -Value ''exit 0'' }'
+                'Set-Content -LiteralPath (Join-Path $scripts ''Invoke-LocalGates.ps1'') -Value ''Add-Content -LiteralPath $env:FAKE_APM_LOG -Value ("gates " + ($args -join " ") + " tests=" + ((Get-ChildItem -LiteralPath $PSScriptRoot -Filter *.Tests.ps1 | ForEach-Object Name) -join ","))'''
+                'if ($env:FAKE_INSTALL_TESTS) { Set-Content -LiteralPath (Join-Path $scripts ''Leaked.Tests.ps1'') -Value ''x'' }'
                 'New-Item -ItemType Directory -Path (Join-Path $PWD ''apm_modules'') -Force | Out-Null'
                 'if (Test-Path -LiteralPath (Join-Path $PWD ''leak.txt'')) { Set-Content -LiteralPath (Join-Path $PWD ''.claude'' ''skills'' ''ai-sdlc-gates'' ''SKILL.md'') -Value ''See apm_modules/x/SKILL.md.'' }'
                 'exit 0'
@@ -35,8 +37,17 @@ Describe 'Test-Consumers' {
         }
 
         function New-SourceRoot {
-            param([string[]]$Consumers = @('alpha'), [string[]]$Leaky = @())
+            param([string[]]$Consumers = @('alpha'), [string[]]$Leaky = @(), [switch]$NoTests)
             $root = Join-Path $script:TempRoot ('src-' + [guid]::NewGuid().ToString('n'))
+            New-Item -ItemType Directory -Path $root -Force | Out-Null
+            if (-not $NoTests) {
+                $coreTests = Join-Path $root 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts'
+                New-Item -ItemType Directory -Path $coreTests -Force | Out-Null
+                [IO.File]::WriteAllText((Join-Path $coreTests 'Sample.Tests.ps1'), "Describe 'x' { }`n")
+                $packTests = Join-Path $root 'packs' 'github' 'tests' 'skills' 'github-pull-requests' 'scripts'
+                New-Item -ItemType Directory -Path $packTests -Force | Out-Null
+                [IO.File]::WriteAllText((Join-Path $packTests 'Other.Tests.ps1'), "Describe 'y' { }`n")
+            }
             foreach ($name in $Consumers) {
                 $folder = Join-Path $root 'test-consumers' $name
                 New-Item -ItemType Directory -Path $folder -Force | Out-Null
@@ -58,14 +69,15 @@ Describe 'Test-Consumers' {
         }
 
         function Invoke-Tool {
-            param([hashtable]$Parameters, [string]$PathOverride, [switch]$DefaultWorkRoot, [switch]$ChildProcess)
+            param([hashtable]$Parameters, [string]$PathOverride, [switch]$DefaultWorkRoot, [switch]$ChildProcess, [hashtable]$Env = @{})
             $work = Join-Path $script:TempRoot ('work-' + [guid]::NewGuid().ToString('n'))
             $log = Join-Path $script:TempRoot ('log-' + [guid]::NewGuid().ToString('n') + '.txt')
             $arguments = @(if (-not $DefaultWorkRoot) { '-WorkRoot', $work }) + @(ConvertTo-ToolArgument -Parameters $Parameters)
-            $saved = @{ Path = $env:PATH; Log = $env:FAKE_APM_LOG }
+            $saved = @{ Path = $env:PATH; Log = $env:FAKE_APM_LOG; InstallTests = $env:FAKE_INSTALL_TESTS }
             try {
                 $env:PATH = if ($PathOverride) { $PathOverride } else { $script:FakeApm + [IO.Path]::PathSeparator + $env:PATH }
                 $env:FAKE_APM_LOG = $log
+                $env:FAKE_INSTALL_TESTS = $Env['FAKE_INSTALL_TESTS']
                 $run = if ($PathOverride -or $ChildProcess) { Invoke-ScriptInProcess -Path $script:Tool -Arguments $arguments }
                 else { Invoke-WithInProcessCommand -Script @{ apm = (Join-Path $script:FakeApm 'fake-apm.ps1') } -ScriptBlock { Invoke-ScriptInProcess -Path $script:Tool -Arguments $arguments } }
                 $out = $run.Output
@@ -74,6 +86,7 @@ Describe 'Test-Consumers' {
             finally {
                 $env:PATH = $saved.Path
                 $env:FAKE_APM_LOG = $saved.Log
+                $env:FAKE_INSTALL_TESTS = $saved.InstallTests
             }
             $calls = if (Test-Path -LiteralPath $log) { @(Get-Content -LiteralPath $log) } else { @() }
             [pscustomobject]@{ Code = $code; Output = $out; Work = $work; ApmCalls = $calls; Log = $log }
@@ -135,6 +148,44 @@ Describe 'Test-Consumers' {
         $r.Code | Should -Be 0 -Because $r.Output
         $r.Output | Should -Match 'All 1 test consumer\(s\) install and pass their gates'
         Test-Path -LiteralPath $r.Work | Should -BeFalse
+    }
+
+    It 'fails a consumer when apm installs a test file, and names the file (#45)' {
+        $root = New-SourceRoot
+        $r = Invoke-Tool -Parameters @{ RepoRoot = $root; Name = 'alpha' } -Env @{ FAKE_INSTALL_TESTS = '1' }
+
+        $r.Code | Should -Be 1 -Because $r.Output
+        $r.Output | Should -Match 'alpha: .*\.claude/skills/ai-sdlc-gates/scripts/Leaked\.Tests\.ps1'
+    }
+
+    It 'passes a consumer when apm installs no test file (#45)' {
+        $root = New-SourceRoot
+        $r = Invoke-Tool -Parameters @{ RepoRoot = $root; Name = 'alpha' }
+
+        $r.Code | Should -Be 0 -Because $r.Output
+    }
+
+    It 'copies the tests of the installed skills next to their scripts, keeps them out of git, and runs the gates with the tool tests (#45)' {
+        $root = New-SourceRoot
+        $r = Invoke-Tool -Parameters @{ RepoRoot = $root; Name = 'alpha'; Keep = $true }
+
+        $r.Code | Should -Be 0 -Because $r.Output
+        $gates = @($r.ApmCalls | Where-Object { $_ -like 'gates *' })
+        $gates | Should -HaveCount 1
+        $gates[0] | Should -Match '-IncludeToolTests'
+        $gates[0] | Should -Match 'tests=Sample\.Tests\.ps1$' -Because 'the test of core is copied, and the test of the github pack is not, because that skill is not installed'
+        $exclude = Get-Content -LiteralPath (Join-Path $r.Work 'alpha' '.git' 'info' 'exclude')
+        @($exclude | Where-Object { $_ -eq '.claude/skills/*/scripts/*.Tests.ps1' }) | Should -HaveCount 1
+        @($exclude | Where-Object { $_ -eq '.claude/skills/*/scripts/*TestHarness.psm1' }) | Should -HaveCount 1
+        @(git -C (Join-Path $r.Work 'alpha') ls-files --cached --others --exclude-standard | Where-Object { $_ -like '*.Tests.ps1' }) | Should -HaveCount 0
+    }
+
+    It 'fails a consumer when no test file can be copied, so the installed tests cannot run nothing in silence (#45)' {
+        $root = New-SourceRoot -NoTests
+        $r = Invoke-Tool -Parameters @{ RepoRoot = $root; Name = 'alpha' }
+
+        $r.Code | Should -Be 1 -Because $r.Output
+        $r.Output | Should -Match 'alpha: no test file was copied'
     }
 
     It 'keeps the work folder with -Keep' {
@@ -215,7 +266,7 @@ Describe 'Test-Consumers -Upgrade' {
         $script:Tool = Join-Path $PSScriptRoot 'Test-Consumers.ps1'
         $script:TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('tc-run-' + [guid]::NewGuid().ToString('n'))
         New-Item -ItemType Directory -Path $script:TempRoot -Force | Out-Null
-        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
         $script:Pwsh = Join-Path $PSHOME ($IsWindows ? 'pwsh.exe' : 'pwsh')
 
         # A fake apm. Its install writes the scripts a version delivers, with a fake Update-AiSdlc.ps1 that
@@ -240,7 +291,10 @@ Describe 'Test-Consumers -Upgrade' {
                 '$hooks = Join-Path $skills ''ai-sdlc-hooks'' ''scripts'''
                 'New-Item -ItemType Directory -Path $gates, $hooks -Force | Out-Null'
                 'Set-Content -LiteralPath (Join-Path $gates ''Sync-AgentsFile.ps1'') -Value ''exit 0'''
-                'Set-Content -LiteralPath (Join-Path $gates ''Invoke-LocalGates.ps1'') -Value "exit $(if ($env:FAKE_GATES_EXIT) { $env:FAKE_GATES_EXIT } else { 0 })"'
+                'Set-Content -LiteralPath (Join-Path $gates ''Invoke-LocalGates.ps1'') -Value "Add-Content -LiteralPath `$env:FAKE_APM_LOG -Value (''gates '' + (`$args -join '' '') + '' tests='' + ((Get-ChildItem -LiteralPath `$PSScriptRoot -Filter *.Tests.ps1 | ForEach-Object Name) -join '',''))`nexit $(if ($env:FAKE_GATES_EXIT) { $env:FAKE_GATES_EXIT } else { 0 })"'
+                '$oldTest = Join-Path $gates ''Old.Tests.ps1'''
+                'if ($ref -eq $env:FAKE_OLD_REF) { Set-Content -LiteralPath $oldTest -Value ''x'' }'
+                'elseif (-not $env:FAKE_LEAVE_TESTS) { Remove-Item -LiteralPath $oldTest -Force -ErrorAction SilentlyContinue }'
                 'Set-Content -LiteralPath (Join-Path $hooks ''Find-RetiredSkillNames.ps1'') -Value "Write-Host ''Retired skill names: the fake list''"'
                 'Copy-Item -LiteralPath (Join-Path $PSScriptRoot ''Update-AiSdlc.ps1'') -Destination $hooks'
                 'Set-Content -LiteralPath (Join-Path $skills ''ai-sdlc-gates'' ''sync-manifest.json'') -Value ''{ "retired": { "old-skill": "new-skill" } }'''
@@ -277,6 +331,9 @@ Describe 'Test-Consumers -Upgrade' {
             git -C $root add -A; git -C $root commit --quiet -m 'v1.0.0'; git -C $root tag v1.0.0
             Remove-Item -LiteralPath (Join-Path $alpha 'old.txt')
             [IO.File]::WriteAllText((Join-Path $alpha 'new.txt'), "after v1.0.0`n")
+            $coreTests = Join-Path $root 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts'
+            New-Item -ItemType Directory -Path $coreTests -Force | Out-Null
+            [IO.File]::WriteAllText((Join-Path $coreTests 'Sample.Tests.ps1'), "Describe 'x' { }`n")
             [IO.File]::WriteAllText((Join-Path $root 'CHANGELOG.md'), "# Changelog`n`n## v1.1.0 - 2026-03-01`n`n## v1.0.0 - 2026-02-01`n")
             git -C $root add -A; git -C $root commit --quiet -m 'the change'
             return $root
@@ -286,7 +343,7 @@ Describe 'Test-Consumers -Upgrade' {
             param([string]$Root, [string[]]$Extra = @(), [hashtable]$Env = @{})
             $work = Join-Path $script:TempRoot ('work-' + [guid]::NewGuid().ToString('n'))
             $log = Join-Path $script:TempRoot ('log-' + [guid]::NewGuid().ToString('n') + '.txt')
-            $names = @('PATH', 'FAKE_APM_LOG', 'FAKE_OLD_REF', 'FAKE_GATES_EXIT', 'FAKE_LEAVE_BEHIND')
+            $names = @('PATH', 'FAKE_APM_LOG', 'FAKE_OLD_REF', 'FAKE_GATES_EXIT', 'FAKE_LEAVE_BEHIND', 'FAKE_LEAVE_TESTS')
             $saved = @{}; foreach ($n in $names) { $saved[$n] = [Environment]::GetEnvironmentVariable($n) }
             try {
                 $env:PATH = $script:UpgradeApm + [IO.Path]::PathSeparator + $env:PATH
@@ -343,6 +400,24 @@ Describe 'Test-Consumers -Upgrade' {
 
         $r.Code | Should -Be 1
         $r.Output | Should -Match 'alpha: the update left \.claude/skills/old-skill behind'
+    }
+
+    It 'removes the test files that the old release installed, and runs the gates with the tests of this repository (#45)' {
+        $r = Invoke-Upgrade -Root (New-SourceRepo)
+
+        $r.Code | Should -Be 0 -Because $r.Output
+        Test-Path -LiteralPath (Join-Path $r.Work 'upgrade-alpha' '.claude' 'skills' 'ai-sdlc-gates' 'scripts' 'Old.Tests.ps1') | Should -BeFalse
+        $gates = @($r.ApmCalls | Where-Object { $_ -like 'gates *' })
+        $gates | Should -HaveCount 1
+        $gates[0] | Should -Match '-IncludeToolTests'
+        $gates[0] | Should -Match 'tests=Sample\.Tests\.ps1$'
+    }
+
+    It 'fails the consumer when the update leaves an installed test file behind, and names it (#45)' {
+        $r = Invoke-Upgrade -Root (New-SourceRepo) -Env @{ FAKE_LEAVE_TESTS = '1' }
+
+        $r.Code | Should -Be 1
+        $r.Output | Should -Match 'alpha: .*\.claude/skills/ai-sdlc-gates/scripts/Old\.Tests\.ps1'
     }
 
     It 'upgrades from the tag that -UpgradeFrom names' {

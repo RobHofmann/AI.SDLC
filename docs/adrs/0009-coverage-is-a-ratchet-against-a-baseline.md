@@ -107,7 +107,7 @@ measures its Pester runs with `tools/PesterCoverage.psm1`.
 
 ## Verification
 
-- `packs/dotnet/.apm/skills/dotnet-gates/scripts/Check-Coverage.Tests.ps1` covers the ratchet at, above
+- `packs/dotnet/tests/skills/dotnet-gates/scripts/Check-Coverage.Tests.ps1` covers the ratchet at, above
   and below the baseline, the tolerance in both directions, and every fail-closed path.
 - `tools/PesterCoverage.Tests.ps1` covers how the Pester runs of this repository turn into a coverage file.
 - Not covered by a test: whether a code-quality service and the local gate still count the same files.

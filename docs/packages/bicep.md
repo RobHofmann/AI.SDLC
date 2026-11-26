@@ -27,11 +27,11 @@ The package also contains these files:
 - `packs/bicep/.apm/skills/bicep-conventions/references/bicep.md` defines Bicep property and decorator order.
 - `packs/bicep/.apm/skills/bicep-conventions/references/modules-and-naming.md` covers the module registry, the deployment name limit and the resource names.
 - `packs/bicep/.apm/skills/bicep-conventions/scripts/Get-BicepFacts.ps1` reads a building block's scope, parameters, outputs, and resources.
-- `packs/bicep/.apm/skills/bicep-conventions/scripts/Get-BicepFacts.Tests.ps1`
+- `packs/bicep/tests/skills/bicep-conventions/scripts/Get-BicepFacts.Tests.ps1`
 - `packs/bicep/.apm/skills/bicep-conventions/scripts/Invoke-BicepPreflight.ps1` builds every Bicep template in the repository.
-- `packs/bicep/.apm/skills/bicep-conventions/scripts/Invoke-BicepPreflight.Tests.ps1`
+- `packs/bicep/tests/skills/bicep-conventions/scripts/Invoke-BicepPreflight.Tests.ps1`
 - `packs/bicep/.apm/skills/bicep-conventions/scripts/Reorder-BicepPropertyOrder.ps1` reorders declarations and resource or module body properties.
-- `packs/bicep/.apm/skills/bicep-conventions/scripts/Reorder-BicepPropertyOrder.Tests.ps1`
+- `packs/bicep/tests/skills/bicep-conventions/scripts/Reorder-BicepPropertyOrder.Tests.ps1`
 - `packs/bicep/.apm/skills/bicep-conventions/gates.json`
 - `packs/bicep/apm.yml`
 

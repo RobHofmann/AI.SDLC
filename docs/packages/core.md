@@ -193,7 +193,7 @@ GitHub Copilot ignores the `if` field of a hook and runs every hook entry in tur
 
 ## Changing it safely
 
-Keep each PowerShell script in step with its matching `*.Tests.ps1` test where that pair exists.
+Keep each PowerShell script in step with its matching `*.Tests.ps1` test where that pair exists. The test of a script under `core/.apm/skills/<skill>/scripts` sits under `core/tests/skills/<skill>/scripts`, so APM does not install it ([ADR 0015](../adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md)).
 
 Run `Invoke-LocalGates.ps1` for deterministic gates from installed packages and the repository.
 

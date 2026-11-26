@@ -3,7 +3,7 @@
 Describe 'Check-SharedAgentsPartSize' {
     BeforeAll {
         $script:Tool = Join-Path $PSScriptRoot 'Check-SharedAgentsPartSize.ps1'
-        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
 
         function New-Parts {
             param([int]$CoreLines, [int]$PackLines = 0)

@@ -25,6 +25,8 @@ says where they live and how to name them. It also says when a local package in 
   team uses reads them there.
 - A script always sits in the `scripts/` folder of a skill. The core gates and the gate runner are in
   `.claude/skills/ai-sdlc-gates/scripts/`, and the hook scripts are in `.claude/skills/ai-sdlc-hooks/scripts/`.
+  The Pester tests of these shared scripts stay in AI.SDLC, so `.claude/` holds no `*.Tests.ps1` of them.
+  A script of the repository's own keeps its test next to it.
 - APM merges the hook entries of each package into `.claude/settings.json`, next to the entries the
   repository adds itself.
 - `Sync-AgentsFile.ps1` writes the core part of `AGENTS.md`, and the part of each pack, between

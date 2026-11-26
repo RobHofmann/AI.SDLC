@@ -101,8 +101,9 @@ or `Check-ArtifactGraph.ps1` as the model, and do not invent a new shape:
 
 ## Step 3: scaffold the Pester test
 
-Write `Check-<Name>.Tests.ps1` beside the gate (Pester v5). No registration is needed. For a shared
-gate, the AI.SDLC pull request workflow runs it with every other test. For a repository gate, add a repository gate
+Write `Check-<Name>.Tests.ps1` (Pester v5). No registration is needed. For a repository gate, put it
+beside the gate. For a shared gate in AI.SDLC, put it under `<package>/tests/`, at the path of the gate
+under `.apm/`, so APM never installs it. The AI.SDLC pull request workflow runs it with every other test. For a repository gate, add a repository gate
 that runs `Invoke-PesterGate.ps1` over the folder of the gate, or put the folder under `commands.test`.
 Then every gate run, the pre-flight and the shared composite action run the test. The composite action and the
 pre-flight do not run `Invoke-LocalGates.ps1 -IncludeToolTests`.

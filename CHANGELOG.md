@@ -8,6 +8,31 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
+## v1.6.0 - 2026-11-26
+
+- The packages no longer ship the Pester tests of their scripts, so an update pull request holds only
+  files a consumer runs ([ADR 0015](docs/adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md), #45).
+  The 104 test files and `DocToolTestHarness.psm1` moved from `<package>/.apm/` to `<package>/tests/`,
+  at the same path. APM installs only `.apm/`. Each test finds its script under `.apm/` through one
+  path swap, and still works when it sits next to an installed script.
+- `tools/Update-SyncManifest.ps1` stops on a `*.Tests.ps1` or `*TestHarness.psm1` file under `.apm/`,
+  and names the path under `tests/`. The sync manifest lists the names of the kept tests as
+  `sharedTests`. `Check-DocDrift.ps1` of the dotnet pack reads that list, so a page that names such a
+  test does not count it as a stale file.
+- `tools/Invoke-PesterParallel.ps1 -Changed` finds the test of a package script under `tests/`, and
+  `tools/PesterCoverage.psm1` measures the scripts under `.apm/` for each moved test.
+- `tools/Test-Consumers.ps1` fails when an install puts a test file under `.claude/`. It then copies
+  the tests next to the installed scripts of each test consumer and runs them, as before.
+- The update pull request says that `.claude/` is a generated copy, reviewed and tested in AI.SDLC.
+
+What a consumer does when it takes this release:
+
+- Expect a larger update pull request once: it deletes the old test files under `.claude/`. No file
+  or setting of your own needs a change for that.
+- When one of your own tests checks that a script under `.claude/` has a `.Tests.ps1` file next to it,
+  check that only for your own scripts outside `.claude/`. The scripts under `.claude/` no longer come
+  with their tests.
+
 ## v1.5.1 - 2026-11-26
 
 - A pull request in AI.SDLC now says `Fixes #42`, so the merge closes its issue. Before, it said
