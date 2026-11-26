@@ -119,6 +119,22 @@ These are exceptions, not gates. The loop stops, says why, and waits when:
 
 A new ADR that follows an existing pattern does not stop the loop.
 
+## Step-by-step mode
+
+`/implement <n> manual` runs the same loop, but stops for the person at four points. This is the
+step-by-step mode. It is a test of the loop: the person sees where extra code starts, and corrects it
+at that step. Each stop holds for every change, a small one too: no size rule skips the walk, the plan
+or a stop.
+
+1. After the walk: the person checks the context block, and the nearest examples it names.
+2. After the plan: the person reads the approach, and confirms each seam and where the tests go,
+   before any test is written.
+3. Before the code of each test: the main session builds itself, one test at a time. It shows the
+   failing test and waits before it writes the code that makes it pass.
+4. Before the review fixes: the person sees both review reports and picks what to fix.
+
+Without `manual` the loop runs on its own, and stops only on the stop list above.
+
 ## The evidence record
 
 The evidence record is the pull request description. It is drafted in the git-ignored `temp/` folder
@@ -129,6 +145,8 @@ and holds:
 - the spec review and the code review as two separate reports, never merged into one list, each
   finding marked fixed or declined with the reason;
 - the ADRs written;
+- the model of the session, and the model of each agent step: the walk, the plan, the build and each
+  review;
 - what was not checked, for example "not deployed to dev";
 - whether each review ran in an agent or inline;
 - a **Merge danger** part: the door and the blast radius, as below.

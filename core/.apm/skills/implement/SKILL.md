@@ -8,7 +8,7 @@ description: >
   It runs on its own between the two human checkpoints: walk, plan (architect agent), branch, API contract
   when an endpoint moves, test-first build (builder agent), review by agents, wrap-up, push and open
   the PR. Then it loops on the PR checks and the bot review threads until no bot finding is open, and
-  waits at Checkpoint Bravo. Use whenever a request means writing or changing code, however it is phrased:
+  waits at Checkpoint Bravo. With "manual" it stops for a person at each main step. Use whenever a request means writing or changing code, however it is phrased:
   "implement #42", "add a field to the order", "fix this bug", "make the portal show X", "build
   this", or when guide-me reports that the next step is the build. Do NOT use for a question, or for
   a change that touches no code such as documentation. Do NOT use for a pure refactor (refactor), for
@@ -18,7 +18,8 @@ description: >
 
 # Implement (the build loop)
 
-Owned by the **Developer** persona. Called as `/implement`.
+Owned by the **Developer** persona. Called as `/implement <n>`, or `/implement <n> manual` to stop
+for the person at each main step. `<n>` is the issue number.
 
 This skill is a lead, not a performer. It runs the build loop and hands each step to the skill or
 agent that owns it. The main session walks, plans through the `architect` agent, builds through the
@@ -54,10 +55,15 @@ Without both, stop and say what is missing: a story nobody refined has no agreed
 With no user story at all, run `write-story` first; it ends at Checkpoint Alpha. The same condition holds
 for a bug that `fix-bug` hands over: a person refines the issue.
 
-**Light path:** a change you can state in one sentence, inside one component, with no HTTP surface, no
-data-model change and no new dependency. Skip the story file and the written plan; every other step
-applies. **Full path:** everything else, and the default when you are not sure. When a light change
-grows, switch to the full path.
+**Step-by-step mode:** with `manual`, the loop stops for the person at four points. It stops after
+the walk, after the plan to confirm the seams, before the code of each test, and before the review
+fixes. In step 5 the main session builds itself, one test at a time, instead of the `builder` agent.
+The stops are in [orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md#step-by-step-mode).
+Without `manual` the loop runs on its own as below, and stops only on the stop list.
+
+**Every change gets a plan.** No size of change skips a step or a stop. The plan step is where the
+seams, the reuse and the test class are decided, so it runs for a one-line fix too. For a small change
+the plan may be a few lines in this thread. Only the story file depends on size (step 1).
 
 ## The loop
 
@@ -68,7 +74,8 @@ grows, switch to the full path.
    points or more, or one that touches more than one component, write `docs/stories/<KEY>.md` (the issue number without `#`, such as `docs/stories/42.md`) from
    `references/story-context-template.md`. Link it from the area page it changes, and run `Build-DocsIndex.ps1`.
 2. **Plan.** Hand the context block to the `architect` agent on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot)
-   to write the plan. The plan names the files to change, and every member of any closed set the change
+   to write the plan. The plan opens with the approach: in a few sentences, what the change does
+   technically, where, the main design choice and why. Then it names the files to change, and every member of any closed set the change
    branches on. It also names the seams the tests go through, the test class each touched type's tests
    go in, and the reuse the walk found. A seam adds no product code (stop list). The agent returns the plan as text. Save it where the
    plan lives: the `## Tasks` section of `docs/stories/<KEY>.md` when the story has that file,
@@ -124,7 +131,8 @@ grows, switch to the full path.
 8. **Wrap up and record.** Check that each acceptance criterion maps to a test or a check. When none
    does, stop and say so: nothing shows the change does what the story asks, so no pull request opens.
    Write the pull request description in `temp/` in the evidence record shape
-   from orchestration.md. It keeps the spec review and the code review as two reports. Then run `wrap-up`, the single owner of the rest of the change. It searches
+   from orchestration.md. It names the model of the session and of each agent step, and keeps the
+   spec review and the code review as two reports. Then run `wrap-up`, the single owner of the rest of the change. It searches
    the repository for what the change renamed or removed. It runs `write-docs` for both doc layers,
    with the `docs-reviewer` agent, and the ADR check through `write-adr`. It brings the story and the
    pull request contract in line, and runs the lessons step. It ends by committing and running

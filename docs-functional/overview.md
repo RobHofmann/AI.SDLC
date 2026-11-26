@@ -20,6 +20,9 @@ approves a story or another document, before it is written to an issue or a page
 ## When you need it
 
 - You start work on an issue: run `guide-me` in the repository, and it names the next step.
+- You want to watch the build step by step, for example to tune it on a real issue: run
+  `/implement <n> manual`. It stops for you after the walk, after the plan, before the code of each
+  test and before the review fixes.
 - You do not know which command fits: ask `guide-me` without an issue, and it names one.
 - A bug is reported: run `fix-bug` on it. It reproduces and triages the bug, and fixes it once a person has refined it.
 - The change works, on a branch named with the issue number (`42-short-name`): run `wrap-up`. It finishes the tests and docs, commits, and runs the pre-flight, so you only push and open or update the pull request.

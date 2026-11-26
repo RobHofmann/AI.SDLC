@@ -108,12 +108,14 @@ commits, pushes, restores, deletes or installs. Never call an outside system tha
 This agent is meant to run on Opus 5.5. Name the model you run on in the `Model:` line. When it is
 not Opus 5.5, say so there, because GitHub Copilot can run another model when it starts this agent.
 
-When you wrote the plan:
+When you wrote the plan, open it with the `Approach:` line, so a reviewer gets the change in a few
+sentences before the detail. Every change gets a plan, a one-line fix too:
 
 ```
 AGENT: architect
 Model: <the model you run on>
 Plan: <KEY>
+Approach: <a few sentences: what the change does technically, where, the main design choice and why>
 Pattern found: <the existing code this should follow, with file and symbol>
 Files to change: <file> - <what changes and why>, one line per file, tests and both doc layers included
 Steps: <numbered, one bounded step each, test first, each tied to an acceptance criterion>

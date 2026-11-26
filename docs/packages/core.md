@@ -50,7 +50,7 @@ Workflow skills include:
 
 - `guide-me` reports the current lifecycle phase and next step. Without an issue, it reads the skill descriptions and names the command that fits a situation.
 - `walk-substrate` gathers context before implementation. It is an internal step. For a change to C# or Razor it runs `scripts/Find-NearestExample.ps1`, which names the test class of each touched type and the test doubles of its dependencies, or says "none found" and what it searched. It always exits 0.
-- `implement` runs the development flow from a refined story to a tested pull request.
+- `implement` runs the development flow from a refined story to a tested pull request. Every change gets a plan, a one-line fix too, and the plan opens with an `Approach:` line. `/implement <n> manual` is the step-by-step mode: it stops for the person after the walk, after the plan, before the code of each test and before the review fixes. The evidence record names the model of the session and of each agent step.
 - `refactor` improves code structure without changing observable behaviour. Like `implement`, it starts only from a refined issue: the `refined` label and a `size:<n>` label.
 - `wrap-up` updates tests, documentation, issues, and gates after code works. Then it commits and runs the pre-flight on that commit. It works only on a branch named with an issue number (`42-short-name`).
 - `run-preflight` runs local pull-request checks before a push. It is an internal step that `wrap-up` calls.
