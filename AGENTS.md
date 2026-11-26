@@ -112,11 +112,11 @@ step. That step runs every core, pack and repo gate once. `Test-Consumers.ps1` n
    `## vX.Y.Z - <date>`. Raise Z for a fix or a change in `tools/`. Raise Y for a new skill, gate or
    behaviour. Raise X for a change a consumer must act on. Set `version` in every `apm.yml` to the
    same version; `tools/Check-PackageVersion.ps1` fails the build when one differs. Then open a pull
-   request with `Refs #42`, never `Fixes #42`, so the merge leaves the issue open. `main` only changes
+   request with `Fixes #42`, so the merge closes the issue. `main` only changes
    through a pull request with green checks; the owner's merge is the approval.
 4. A release is an annotated tag on `main` whose message names the issue, and a GitHub release on that
-   tag. Write the message as `Release v1.2.0 for #42`, because git drops a line that starts with `#`. Then a person closes
-   the issue and keeps its `refined` label. AI.SDLC pushes nothing to a consumer: each one pulls the
+   tag. Write the message as `Release v1.2.0 for #42`, because git drops a line that starts with `#`. The
+   issue is closed by then and keeps its `refined` label. AI.SDLC pushes nothing to a consumer: each one pulls the
    release with its update workflow or the `update-ai-sdlc` skill, in a pull request that says
    `Refs RobHofmann/AI.SDLC#42`. The README has the steps.
 
