@@ -68,6 +68,7 @@ clear. The `adr-conventions` skill holds the full rules, and the `write-adr` ski
 | [0023](0023-a-story-has-six-sections-with-budgets-at-most-5-criteria-and-ste100.md) | A story has six sections with budgets, at most 5 plain criteria, and follows ASD-STE100 | Accepted |
 | [0024](0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md) | The agent opens a draft pull request, and the person publishes it | Accepted |
 | [0025](0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md) | A pack that needs another pack lists it as an APM dependency | Accepted |
+| [0026](0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md) | A test proves the team's own logic, not the framework's | Accepted |
 
 ## Related
 

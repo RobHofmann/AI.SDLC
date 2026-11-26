@@ -93,10 +93,19 @@ from input, deserialization and error bodies.
 
 ## Tests
 
-- Mock every constructor dependency; never pass `null`.
+- Mock every constructor dependency; never pass `null`. Use a loose `new Mock<T>()`, made in the test
+  and named `mock...`. A setup names the exact input; `It.IsAny` only where the test means any input.
+  Use `ReturnsAsync` and `Times.Once` without brackets. Name the class under test after what it is,
+  never `sut`.
+- Name a test `Method_Condition_Should_Result`, act once, and merge two tests of one path into one
+  `[Theory]`. Literals first; AutoFixture only where the test project uses it.
+- A test proves the team's own logic, not the framework (clause C04). The one wiring test is the
+  registration test without the container.
 - No controller tests for actions that only forward to a service. When a controller test is needed,
   assert the `ActionResult` type and status code, not the service call arguments.
-- The rest of the test shape lives in the `test-first-dotnet` knowledge skill.
+- The rest is in the [test style](references/csharp.md#test-style) and the
+  [test-first-dotnet](/.claude/skills/test-first-dotnet/SKILL.md) skill. The `test-analyzer` agent
+  reads this section and that skill for a C# test.
 
 ## Before you call it done
 

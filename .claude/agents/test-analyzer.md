@@ -61,7 +61,11 @@ caller for the diff if that file is missing.
    - a new test file or class for a unit that already has one. Search the test root for one that tests
      the same unit, and name it;
    - a new test double or test helper when one in the same test project does the same job. Name the
-     existing one.
+     existing one;
+   - a new test that only checks framework behaviour, such as a stop mode or the order of rules
+     (clause C04). So is a test that builds the container to see whether a service resolves. A test
+     that checks, without the container, that the team's `Add*()` method registers every dependency of
+     the team's class is own logic, not surplus.
 7. **Judge each No-Test waiver** the caller hands you, as `No-Test: <reason>: <why>`. For
    `no-behaviour-change`, check that the diff changes no behaviour a test could see. For
    `existing-tests-cover-it`, check that the named test exists and runs the changed code. A reason the
@@ -87,6 +91,9 @@ Rate on the one severity scale of `code-conventions`.
 - **Pre-Report Gate.** Re-read the test and the code it calls before you report. Name the test file
   and the test, and the behaviour that would break without the test failing.
 - **Zero findings is a valid result.**
+- **Framework behaviour is not a gap (clause C04).** Do not ask for a test of wiring, such as a stop
+  mode, the order of rules or whether the container resolves a service. Do ask for a test of a
+  decision the team wrote inside the wiring, such as the condition in a `When(x => ...)` call.
 - **Do not report** the coverage figure (the C04 ratchet and SonarCloud measure it), SonarCloud rules
   or formatting. Also skip what a gate in the `gates.json` of an installed skill already checks, such
   as the story trait of a C# test.

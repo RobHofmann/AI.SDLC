@@ -31,6 +31,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0023: A story has six sections with budgets, at most 5 plain criteria, and follows ASD-STE100](./adrs/0023-a-story-has-six-sections-with-budgets-at-most-5-criteria-and-ste100.md) - An issue had seven sections with no size limit, and a dev-ready story could add an eighth.
 - [ADR 0024: The agent opens a draft pull request, and the person publishes it](./adrs/0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md) - The agent opened every pull request as ready for review.
 - [ADR 0025: A pack that needs another pack lists it as an APM dependency](./adrs/0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md) - The Razor, CSS and JavaScript rules sat in one skill of the `blazor` pack.
+- [ADR 0026: A test proves the team's own logic, not the framework's](./adrs/0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md) - Clause C04 asked for tests of changed code, but did not say what a test should prove.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General

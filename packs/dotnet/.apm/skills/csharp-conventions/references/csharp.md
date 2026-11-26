@@ -96,14 +96,16 @@ exception types.
 - **An `Add*()` method registers every dependency the type it registers needs.** A caller builds a host
   from these methods and may expect each one to stand alone. Share a dependency with `TryAdd*`, so that
   calling several methods is safe.
-- **Test the registration, not only the class.** A registration test applies each `Add*()` method to a
-  bare `ServiceCollection`. It reads the constructor of each registered client and checks that a
-  descriptor exists for every interface it needs. It reads descriptors and builds no provider, so it
-  needs no cloud access. Add each new `Add*()` method to its data set.
+- **One registration test, without the container.** A test may check that the team's own `Add*()`
+  method registers every dependency of the team's own class. It applies the method to a bare
+  `ServiceCollection`, reads the constructor and the descriptors, and never calls
+  `BuildServiceProvider()` (clause C04). So it needs no cloud access. A test that builds the container
+  to see whether a service resolves stays out. Add each new `Add*()` method to its data set. Where no
+  such test covers a method, check every registration site by hand when a constructor gains a parameter.
 
 ## Testing
 
-- **Framework:** xUnit with Moq for mocks and AutoFixture for test data.
+- **Framework:** xUnit with Moq for mocks. Test data follows the [test style](#test-style): literals first.
 - **Structure:** test projects mirror the source folder (`paths.sourceRoot`) under the test folder
   (`paths.testRoot`).
 - **Thin controller tests.** Mock the service and check the HTTP status and the body shape. Business
@@ -148,6 +150,59 @@ exception types.
   the one call under test, and the checks clearly apart. A test with nothing to act on may merge
   `// Arrange` and `// Act`. Clause C10 keeps these markers, see
   [comments](/.claude/skills/ai-sdlc-handbook/references/comments.md).
+
+## Test style
+
+Write a new test in this style. A repository may set another rule on its own constitution page
+(`paths.constitution`); that rule wins. Each rule is a default where the test class gives no answer.
+
+- **Where these rules apply.** A new test and a refactored test class follow every rule in this
+  section. A refactor also renames the old names to the `Should_` form. A change of a few lines in an
+  existing test follows the rules for the lines it changes.
+- **Names.** `Method_Condition_Should_Result`: the member under test, the case, and what happens, for
+  example `GetOrdersAsync_CustomerHasTwoOrders_Should_ReturnBoth`. The result after `Should_` is one
+  PascalCase word with no underscore inside it: `Should_AddUserOnce`, not `Should_Add_User_Once`.
+- **One Act.** Each test acts once. An exception test merges the last two markers:
+  `// Act & Assert` with `await Assert.ThrowsAsync<T>(...)` or `Assert.Throws<T>(...)`.
+- **One theory for one path.** Two tests that check the same path with other data become one
+  `[Theory]`, with one data row per case.
+- **Setup inline.** Each test builds the class under test in its Arrange part. Add no
+  `IClassFixture` or shared base class, unless the class already has one. Each test makes its own mocks
+  as locals in its Arrange part, not as `private readonly` fields that the tests of the class share. A
+  shared create method such as `CreateService(...)` follows the test class.
+- **Mock names start with `mock`.** Write `mockOrderClient` for a local and `_mockLogger` for a field
+  that a class already has, not `orderClientMock` or `_loggerMock`.
+- **Exact inputs in a setup.** A setup or `Verify` names the exact value the code must pass, such as
+  `.Setup(client => client.GetOrdersAsync(customerId))`. Use `It.IsAny<T>()` only for an object
+  argument that is hard to match with `It.Is<T>(...)`, or when the test means any input. The logging
+  form `It.IsAny<Func<It.IsAnyType, Exception?, string>>()` stays.
+- **Literals first.** Use literal values and object initialisers, and `Guid.NewGuid()` for an id. Set
+  the field the test is about by hand, so the assertion reads. Use AutoFixture for the rest only where
+  the test project already does.
+- **Loose mocks with `new Mock<T>()`.** Make a mock with `new Mock<T>()`, the loose default, and set
+  up only the calls the test checks. Do not use `MockBehavior.Strict` or `Mock.Of<T>()`.
+- **`ReturnsAsync`, and `Times.Once` without brackets.** Write
+  `.Setup(client => client.GetAsync(id)).ReturnsAsync(item)`, not `.Returns(Task.FromResult(item))`.
+  Write `Verify(client => client.DeleteAsync(id), Times.Once)`, not `Times.Once()`.
+- **The class under test has a real name.** Name the variable after what it is, such as `service` or
+  `controller`, never `sut` or `_sut`.
+- **Theory data.** Use `[InlineData]`. Use `MemberData` or `TheoryData` only when a value cannot be a
+  constant.
+- **Doubles with Moq.** When Moq can do it, use Moq, also for an abstract class such as
+  `TimeProvider`. Use or write a hand-written double only where Moq cannot do the job, and then never
+  a second copy of one that exists. How to mock an `HttpMessageHandler` follows the test project.
+- **xUnit asserts.** Use `Assert.Equal`, `Assert.True`, `Assert.Null`, `Assert.Contains` and the like,
+  and `Assert.Equivalent` for a whole result object. Add no assertion library. Several asserts on one
+  result are fine.
+- **No waiting.** A test never calls `Thread.Sleep` or `Task.Delay`.
+- **Own logic only (clause C04).** A test proves the team's own logic, not what a framework already
+  does. The one wiring test is the registration test of the section "Dependency injection".
+
+Sources: the [Moq quickstart](https://github.com/devlooped/moq/wiki/Quickstart), the
+[xUnit documentation](https://xunit.net/docs/getting-started/v3/getting-started) and the Microsoft
+[unit testing best practices for .NET](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices).
+That last page also asks for one Act, a name with the case and the result, and no `Thread.Sleep`. The rules on `mock` names, `ReturnsAsync` and no `sut` are single-sourced house
+choices (clause C07).
 
 ## Code quality (analyzers)
 

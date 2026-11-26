@@ -46,8 +46,13 @@ the seam that reaches the bug. The plan then names that seam.
 
 ## The shape of a test
 
-- **Framework.** xUnit, Moq for mocks, AutoFixture for data. Do not let AutoFixture pick the value the
-  test is about; set it by hand so the assertion reads.
+- **Framework.** xUnit and Moq. Test data is literals first; AutoFixture only where the test project
+  already uses it, and never for the value the test is about.
+- **Test style.** A new test and a refactored test class follow the
+  [test style](/.claude/skills/csharp-conventions/references/csharp.md#test-style): names, one Act, one
+  theory per path, mocks per test and exact inputs.
+- **Own logic only (clause C04).** Test a rule, a calculation or a branch the team wrote, not how a
+  framework runs it. A test that builds the container to see whether a service resolves stays out.
 - **One test class per type.** A new test goes into the existing test class of the type it tests.
   Look for it first; the context block names it under the nearest examples, and the plan names it
   under `Tests go in:`. Write a new test class only when the type has none. Never start a test class
@@ -70,8 +75,8 @@ the seam that reaches the bug. The plan then names that seam.
 - **Logging and nullable traps.** A logging extension that checks `IsEnabled` first needs `IsEnabled`
   stubbed in the test. In a nullable-enabled test project, use the annotated `Verify` form. Both
   are in the Testing section of [the C# conventions page](/.claude/skills/csharp-conventions/references/csharp.md#testing).
-- **DI registration.** A new `Add*()` method joins the registration tests, when the repository has
-  a test that builds every `Add*()` method.
+- **DI registration.** A new `Add*()` method joins the one registration test, when the repository has
+  one. That test reads a bare `ServiceCollection` and never calls `BuildServiceProvider()`.
 
 ## Coverage (clause C04)
 

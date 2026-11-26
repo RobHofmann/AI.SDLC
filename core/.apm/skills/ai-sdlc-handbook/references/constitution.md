@@ -84,7 +84,30 @@ clause in each session.
 ## C04: Test changed code, mirroring the test layout
 
 - **Statement:** New and changed behaviour ships with mirrored tests: a test project or folder that
-  mirrors the source layout (`paths.sourceRoot` and `paths.testRoot` in `aisdlc.json`). Coverage is
+  mirrors the source layout (`paths.sourceRoot` and `paths.testRoot` in `aisdlc.json`). A test proves
+  the team's own logic. It does not prove that an outside framework or library does what its own
+  documentation says.
+  - **Own logic, always tested:** a rule, condition or check the team wrote, a calculation, a mapping
+    or a message text. A branch on a value the team chose is own logic too. So is the way team code
+    combines framework parts into a result that a criterion names.
+  - **Framework behaviour, not tested:** how a framework runs what the team set up. Examples are a
+    stop mode of a validator, the order in which a framework runs rules, middleware order and
+    attribute routing. Dependency injection is framework behaviour, with one exception. A test may
+    check, without building the container, that the team's own `Add*()` method registers every
+    dependency of the team's own class. That test compares two things the team wrote: the method and
+    the constructor. A test that builds the container to see whether a service resolves stays out.
+  - **The line between them:** wiring holds own logic when it holds a decision the team wrote. Examples
+    are the condition inside a `When(x => ...)` call and a factory with a branch. Test that decision,
+    not the framework call around it.
+  - **An acceptance criterion wins.** A criterion can name a visible result that depends on wiring,
+    such as "the user sees only the first error". That result is the team's behaviour. It needs a test
+    at the seam, or a check by hand that the evidence record names.
+  - **Worked example.** A change sets a stop mode on two validators and moves the order of their
+    rules; the rules themselves do not change. The rule classes keep their tests, and the validator
+    tests still assert the rule results and messages. The new mode and order only tell the framework
+    how to run the rules, so they need no new test.
+
+  Coverage is
   measured two ways, and both must hold. Where the repository sets a coverage baseline file
   (`paths.coverageBaseline`), total line coverage must not drop below the baseline in it. Coverage on
   new code (the lines a pull request changes) targets >= 80%. Both figures count only the code the team
@@ -96,7 +119,9 @@ clause in each session.
 - **Rationale:** Coverage protects against regressions and is the basis for acceptance-criteria
   coverage. A bar that no gate measures is read by nobody. A report that also counts third-party
   packages and test projects gives a figure that means nothing. So the fix is the denominator and the
-  shape of the check, never the threshold.
+  shape of the check, never the threshold. A test of framework behaviour checks what the vendor
+  already tests. It breaks when the framework changes while our behaviour stays the same, so it costs
+  upkeep and adds no safety (ADR 0026 of AI.SDLC).
 - **Enforcement:** where the dotnet pack is installed, `.claude/skills/dotnet-gates/scripts/Check-Coverage.ps1`
   runs as a ratchet against the recorded baseline. It is **blocking** in the pre-flight
   (`run-preflight`), which the agent push hook asks for. `Invoke-LocalGates.ps1` runs it only with `-CoverageFile`. The
@@ -106,9 +131,12 @@ clause in each session.
   a FAIL that names the fix, so it writes no receipt. Always pass the run settings when you collect coverage. The code-quality service reports the
   >= 80% on new code; whether that blocks a merge is a setting of the repository and a team decision.
   Where the dotnet pack is installed, `Check-StoryTraits.ps1 -Strict` (blocking) fails a test class with
-  no Story trait or with a malformed story key - active. Code review - active for "tests exist".
-- **Short form:** Changed code ships with mirrored tests; total line coverage must not drop below the
-  baseline file that `paths.coverageBaseline` names, where the repository sets one.
+  no Story trait or with a malformed story key - active. Code review - active for "tests exist". The
+  line between own logic and framework behaviour is upheld in code review and by the `test-analyzer`
+  agent - active. No gate can tell own logic from wiring, so none is planned.
+- **Short form:** Changed code ships with mirrored tests that prove the team's own logic, not the
+  framework's. Total line coverage must not drop below the baseline in `paths.coverageBaseline`, where
+  the repository sets one.
 
 ## C05: Documentation is one checked wiki
 

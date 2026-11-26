@@ -14,7 +14,7 @@ The `dotnet` pack adds development rules, code graph tools, and gates for .NET r
 The review agents `code-reviewer`, `test-analyzer` and `security-reviewer` live in [core](core.md). Each one reads the convention skills of the changed files from the table of file types in `code-conventions`. For a `.cs` file that table names `csharp-conventions` and `test-first-dotnet`.
 
 - `csharp-conventions` holds the C# review checks, such as async and resources, errors through the pipeline and closed sets. Its `## Security` section and its page `references/security.md` hold the C# security checks: access control, Graph and ARM scope, queries built from input, deserialization and error bodies.
-- `test-first-dotnet` holds the C# test rules that `test-analyzer` reads. Examples are one test class per type, the Story trait and real assertions. It also asks for a mock for every constructor dependency, and no controller test for an action that only forwards a call.
+- `test-first-dotnet` holds the C# test rules that `test-analyzer` reads. A new test follows the test style on `csharp-conventions/references/csharp.md`, and proves the team's own logic, not the framework's ([ADR 0026](../adrs/0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md)). Examples are one test class per type, the Story trait and real assertions. It also asks for a mock for every constructor dependency, and no controller test for an action that only forwards a call.
 
 ### Development skills
 
