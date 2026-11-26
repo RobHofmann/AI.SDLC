@@ -47,13 +47,15 @@ backlinks the file. This makes the canvas navigable from the work-item spine. Se
 
 The order matters. Question the belief first, then state the hypothesis and assumptions, and mark the
 riskiest. Define how it is validated and write the canvas file with its graph front matter. Then
-publish it through a pull request. The steps run on their own and stop once, at Checkpoint Alpha
-([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)), before the write to the issue.
+publish it through a pull request. The steps run on their own. They stop for a grilling round while a
+decision is open, and at Checkpoint Alpha ([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md))
+before the write to the issue.
 The canvas file is a local file and needs no confirmation.
 
-0. **Grill first.** Before stating the hypothesis, run `grilling` (Analyst-led, discovery depth)
-   to question the belief. Ask whose problem this is and the evidence it is real, and what is being
-   assumed. Ask which single assumption is riskiest, and what evidence would falsify it. The engine
+0. **Grill first.** Before stating the hypothesis, load the `grilling` skill (Analyst-led, discovery
+   depth) and ask no questions of your own. An open decision always gets a round before the draft ([grilling](/.claude/skills/grilling/SKILL.md#inside-an-authoring-run)). Its tree covers whose problem
+   this is and the evidence it is real, and what is being assumed. It also covers which single
+   assumption is riskiest, and what evidence would falsify it. The engine
    questions only the gaps, so a well-evidenced brief earns few questions. Carry the answers into the
    canvas and into the `intent` fields of the canvas file below. This way, the riskiest assumption
    enters the graph as structured intent, not just text.
@@ -114,9 +116,9 @@ The canvas file is a local file and needs no confirmation.
 7. **Checkpoint Alpha.** Hand the canvas file to the `draft-reviewer` agent on Opus 5.5 (model `opus`
    in Claude Code, `claude-opus-5.5` in Copilot) for a blind review. If you cannot run agents, check it against
    [node-templates.md](/.claude/skills/ai-sdlc-handbook/references/node-templates.md) yourself and say so at Checkpoint Alpha.
-   Then stop once at Checkpoint Alpha and show the review result and the canvas file with its path. Also
+   Then stop at Checkpoint Alpha and show the review result and the canvas file with its path. Also
    show the `write-story` update-mode diff that records the file path and the pull request link on the
-   spike issue, and the open questions from step 0. Ask one confirmation that names every write: the
+   spike issue. Show the open questions from step 0, or that grilling found no open decision, and why. Ask one confirmation that names every write: the
    issue update and each comment or link. Anything not named needs a new Checkpoint Alpha. Never move a
    status (C09). After the confirmation, re-read the canvas file and check that every section shown at
    Checkpoint Alpha is there. Then record the file path on the spike issue (via `write-story` in update

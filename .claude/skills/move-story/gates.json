@@ -1,0 +1,10 @@
+{
+  "package": "github-issues",
+  "gates": [],
+  "allow": [
+    "pwsh -NoProfile -File .claude/skills/move-story/scripts/Get-StoryMovePlan.ps1*",
+    "pwsh .claude/skills/move-story/scripts/Get-StoryMovePlan.ps1*",
+    "pwsh -NoProfile -File .claude/skills/move-story/scripts/Invoke-StoryMove.ps1*",
+    "pwsh .claude/skills/move-story/scripts/Invoke-StoryMove.ps1*"
+  ]
+}

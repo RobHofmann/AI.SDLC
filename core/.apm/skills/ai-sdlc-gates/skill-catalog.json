@@ -60,6 +60,7 @@
       "check-pr-contract",
       "fix-bug",
       "github-issue-conventions",
+      "move-story",
       "write-story"
     ],
     "knowledge": [

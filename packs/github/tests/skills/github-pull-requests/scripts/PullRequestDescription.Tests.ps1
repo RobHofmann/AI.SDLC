@@ -222,6 +222,52 @@ Describe 'PullRequestDescription' {
         }
     }
 
+    Context 'Add-PrPublishCheck' {
+        BeforeAll {
+            $script:Block = @(
+                '## Before you publish'
+                ''
+                '* This pull request is a draft. Check the pull request and its contents before you publish it.'
+                '* Read the code yourself and test the code yourself: run it and try the change. A green build is not enough.'
+                '* Read the evidence record below and the open threads. Publish the draft only when you agree with it.'
+                '* The agent never publishes a draft. Publishing is your step: click Ready for review.'
+                ''
+            )
+        }
+
+        It 'puts the block at the top of the description' {
+            @(Add-PrPublishCheck -Lines @('## Summary', 'text')) | Should -Be ($script:Block + @('## Summary', 'text'))
+        }
+
+        It 'adds the block once when it is already at the top' {
+            $lines = $script:Block + @('## Summary', 'text')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be $lines
+        }
+
+        It 'moves a copy that sits lower down to the top, once' {
+            $lines = @('## Summary', 'text') + $script:Block + @('tail')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('## Summary', 'text', 'tail'))
+        }
+
+        It 'does not remove partial block text' {
+            $lines = @('## Before you publish', '', '* This pull request is a draft. Check it.', 'tail')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + $lines)
+        }
+
+        It 'matches the block case-sensitive' {
+            $lines = @($script:Block | ForEach-Object { $_.ToUpperInvariant() })
+
+            @(Add-PrPublishCheck -Lines $lines).Count | Should -Be ($script:Block.Count + $lines.Count)
+        }
+
+        It 'returns just the block for no lines' {
+            @(Add-PrPublishCheck -Lines @()) | Should -Be $script:Block
+        }
+    }
+
     Context 'Get-PullRequestReadBack' {
         It 'asks gh to view the pull request as JSON, and returns it read' {
             $state = @{ Received = $null }
@@ -230,7 +276,7 @@ Describe 'PullRequestDescription' {
             $pr = Get-PullRequestReadBack -Id 42 -Repository 'contoso/portal' -GhInvoker $invoker
 
             $pr.body | Should -Be 'body'
-            @($state.Received | ForEach-Object { [string]$_ }) | Should -Be @('pr', 'view', '42', '--repo', 'contoso/portal', '--json', 'number,url,title,body')
+            @($state.Received | ForEach-Object { [string]$_ }) | Should -Be @('pr', 'view', '42', '--repo', 'contoso/portal', '--json', 'number,url,title,body,isDraft')
         }
 
         It 'leaves --repo out when no repository is given' {

@@ -2,22 +2,26 @@
 
 <#
 .SYNOPSIS
-Canonical, verified path for creating a GitHub pull request with a full, intact description.
+Canonical, verified path for creating a GitHub draft pull request with a full, intact description.
 
 .DESCRIPTION
 A multi-line description passed to `gh pr create --body` as one command-line value can lose lines or
 quotes on its way through the shell, and a here-string from bash leaks its `@` markers into the text.
 
 This script removes those traps and proves the result:
+  0. It always creates a draft (`gh pr create --draft`) and puts the "Before you publish" block at the
+     top of the description (Add-PrPublishCheck). The agent never publishes a draft; the person does.
   1. It writes the description to a temporary file and passes `--body-file <file>`, which gh reads
      whole, blank lines and quotes included. The file is removed after the call.
-  2. It refuses an empty/whitespace-only description outright, and one over the 65536-character
-     limit of GitHub before the call.
+  2. It refuses an empty/whitespace-only description outright (your own text, before the block is
+     added), and one over the 65536-character limit of GitHub before the call.
   3. After create it reads the PR back with `gh pr view --json`. It compares the line count, and the
      non-whitespace content length against a small tolerance (GitHub can normalize a few characters
      on store, so an exact match is too strict); on truncation it issues one corrective
      `gh pr edit --body-file` and re-reads. If the description is still truncated it throws. The
      read-back is the proof - the call is never assumed to have worked.
+  4. After the verified create, it asks Copilot for the first review with Request-CopilotReview.ps1
+     (-Force). A failed request is a warning, never an error. -SkipCopilotReview leaves it out.
 
 The gh invocation is injectable via -GhInvoker so the file form and the truncation logic are
 unit-testable without creating a real pull request (see New-PullRequest.Tests.ps1). The helpers
@@ -43,6 +47,9 @@ Source branch (the work branch). A bare name or a refs/heads/... ref both work.
 .PARAMETER TargetBranch
 Target branch. Defaults to github.trunk in aisdlc.json, else main.
 
+.PARAMETER SkipCopilotReview
+Do not ask Copilot for a review after the create.
+
 .PARAMETER GhInvoker
 Test seam. A scriptblock that receives the gh argument array (string[]) and returns gh stdout. When
 omitted, the real `gh` CLI is used. Tests pass a fake to exercise the flow offline.
@@ -62,7 +69,9 @@ Fixes #42
 '@
 
 .OUTPUTS
-On success, the read-back PR object (number, url, title, body). Throws on truncation or gh failure.
+On success, the read-back PR object (number, url, title, body, isDraft) with one more property,
+CopilotReview: the result of Request-CopilotReview.ps1, or $null with -SkipCopilotReview. Throws on
+truncation or gh failure.
 #>
 
 [CmdletBinding()]
@@ -83,6 +92,9 @@ param(
 
     [Parameter()]
     [string]$TargetBranch,
+
+    [Parameter()]
+    [switch]$SkipCopilotReview,
 
     [Parameter()]
     [scriptblock]$GhInvoker
@@ -108,23 +120,25 @@ function New-PullRequest {
         [string]$Repository,
         [string]$SourceBranch,
         [string]$TargetBranch,
+        [bool]$SkipCopilotReview,
         [scriptblock]$GhInvoker
     )
 
     $lines = ConvertTo-PrDescriptionLine -Description $Description
+    if ((Get-PrDescriptionContentLength -Text ($lines -join "`n")) -eq 0) {
+        throw "Refusing to create a PR with an empty or whitespace-only description."
+    }
+    $lines = Add-PrPublishCheck -Lines $lines
     Assert-PrDescriptionLength -Lines $lines
 
     $expectedContentLength = Get-PrDescriptionContentLength -Text ($lines -join "`n")
-    if ($expectedContentLength -eq 0) {
-        throw "Refusing to create a PR with an empty or whitespace-only description."
-    }
     $expectedLineCount = Get-PrDescriptionLineCount -Text ($lines -join "`n")
     $repoArgs = Get-RepositoryArgument -Repository $Repository
     $head = $SourceBranch -replace '^refs/heads/', ''
 
     $descriptionFile = New-PrDescriptionFile -Lines $lines
     try {
-        $createArgs = @('pr', 'create') + $repoArgs + @(
+        $createArgs = @('pr', 'create', '--draft') + $repoArgs + @(
             '--head', $head,
             '--base', $TargetBranch,
             '--title', $Title,
@@ -171,6 +185,19 @@ function New-PullRequest {
         Write-Information "Next: check that $storyHint shows this PR. The cycle is not done until the story shows the PR." -InformationAction Continue
     }
 
+    $copilot = $null
+    if (-not $SkipCopilotReview) {
+        try {
+            $copilotArgs = @{ Id = $id; Repository = $Repository; Force = $true }
+            if ($GhInvoker) { $copilotArgs['GhInvoker'] = $GhInvoker }
+            $copilot = & (Join-Path $PSScriptRoot 'Request-CopilotReview.ps1') @copilotArgs
+        }
+        catch {
+            Write-Warning "Copilot review not requested on PR ${id}: $($_.Exception.Message). Go on without it and say so in the evidence record."
+        }
+    }
+    $pr | Add-Member -NotePropertyName CopilotReview -NotePropertyValue $copilot -Force
+
     return $pr
 }
 
@@ -180,4 +207,5 @@ return New-PullRequest `
     -Repository $Repository `
     -SourceBranch $SourceBranch `
     -TargetBranch $TargetBranch `
+    -SkipCopilotReview $SkipCopilotReview.IsPresent `
     -GhInvoker $GhInvoker

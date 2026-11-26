@@ -62,8 +62,9 @@ for external tools.
    no epic exists yet, say so and point to `/write-story` to raise it; do not invent a
    key. If a discovery hypothesis or research synthesis fed this, note it to link later.
 
-2. **Grill before drafting.** Run `grilling` (Product-Manager-led, sized to the initiative) to question
-   the framing from the roles the work touches:
+2. **Grill before drafting.** Load the `grilling` skill (Product-Manager-led, sized to the initiative)
+   and ask no questions of your own. An open decision always gets a round before the draft ([grilling](/.claude/skills/grilling/SKILL.md#inside-an-authoring-run)). Its tree covers the framing
+   from the roles the work touches:
    - whose problem this is, and the evidence it is real;
    - what is in and out of scope;
    - the testable goals and explicit non-goals;
@@ -89,8 +90,9 @@ for external tools.
    with its front-matter without asking. Anchor on the epic; add the design/spec/research edges as they
    come to exist. Hand the draft to the `draft-reviewer` agent (github-issues pack)
    on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot) for a blind review. If you cannot run
-   agents, or the github-issues pack is not installed, check it against the handbook page `node-templates.md` yourself and say so at Checkpoint Alpha. Then stop once at Checkpoint Alpha
-   ([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)) and show the PRD and the open questions.
+   agents, or the github-issues pack is not installed, check it against the handbook page `node-templates.md` yourself and say so at Checkpoint Alpha. Then stop at Checkpoint Alpha
+   ([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)) and show the PRD and the open questions,
+   or that grilling found no open decision, and why.
    Also show the `write-story` update-mode (github-issues pack) diff that backlinks the PRD onto the epic issue. The
    backlink names the repository file. Ask one confirmation that names every GitHub issue write. After it,
    do exactly those writes; anything not named needs a new Checkpoint Alpha. Never close an issue (C09).

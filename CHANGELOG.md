@@ -45,6 +45,42 @@ Each entry names its issue, as `#42`.
 - `/implement <n> manual` is a step-by-step mode that stops for the person at four points. The light
   path is gone: every change gets a plan, which opens with an `Approach:` line. The evidence record
   names the model of each step (#59).
+- An issue body holds conclusions only. Test results, probes and measurements go in one evidence
+  comment per run, which starts with `Evidence YYYY-MM-DD HH:mm`. `write-story` shows it at Checkpoint
+  Alpha and posts it after the go. `draft-reviewer` fails an evidence comment that holds a requirement
+  or a decision. The walk carries it into the context block as context, not as scope. Update mode
+  rewrites a section the agent wrote, and only adds to a person's text. The triage comment of
+  `fix-bug` keeps its form and holds the investigation (#62).
+- A new issue has six sections, goal first, with a budget per section and at most 5 plain criteria
+  under `✅ Acceptance Criteria`. An issue in the old form, with `✅ Success Criteria` and an ELI5,
+  keeps a limit of 8 criteria and is still read and built as before. `draft-reviewer` fails a section
+  over its budget and an issue over the limit. The `architect` plan has a `Proof:` line per criterion.
+  `language.md` adds the ASD-STE100 writing rules as a third rule, and clause C11 points to them; the
+  constitution is now version 1.1. ADR 0023 records it (#63).
+- `grilling` gives every open decision a round before the draft, and the authoring skills ask no
+  questions of their own. A question starts with `❓`, lists its choices as bullets and ends with
+  `➡️ **Advice:**`. It checks words against the functional glossary and claims against the code, and
+  ends with a docs impact. `write-story` posts that as one `📚 Docs impact YYYY-MM-DD HH:mm` comment,
+  and `write-docs` applies it as docs scope. The word checks adapt the domain-modeling skill of
+  mattpocock/skills (MIT), named in `THIRD-PARTY-NOTICES.md` (#64).
+- The agent opens every pull request as a draft, and only the person publishes it. `New-PullRequest.ps1`
+  passes `--draft` and puts a `## Before you publish` block at the top of the description.
+  `Update-PullRequest.ps1` keeps that block while the pull request is a draft. `Deny-AgentMerge.ps1`
+  also refuses `gh pr ready` and the `markPullRequestReadyForReview` mutation. Clause C09 and the
+  Checkpoint Bravo text say so, and ADR 0024 records it. A person now clicks Ready for review before the
+  merge (#67).
+- The new `move-story` skill (github-issues pack) adds the in-review label to the open stories of a pull
+  request. It does that only when the person says the draft is published and GitHub shows it is no longer
+  a draft. It never moves a closed issue, and a failed move is a warning that the run summary names. The
+  label is `tracker.inReviewLabel` in `aisdlc.json`, `in-review` by default, and the skill creates it when
+  it is missing. Clause C09 and `orchestration.md` name it as the one status move the agent makes; the
+  merge still closes the issue through `Fixes #n`. ADR 0022 records the choice (#69).
+- `github-issue-conventions` and `github-pull-requests` move part of their text to a reference page,
+  so each stays within 120 lines (#63, #68).
+- The new `Request-CopilotReview.ps1` asks Copilot for a review with `gh pr edit --add-reviewer @copilot`.
+  `New-PullRequest.ps1` asks for the first review right after the create, unless `-SkipCopilotReview` is
+  passed. `fix-pr-feedback` asks again only after its own push, and only when 20 or more lines changed
+  since the commit Copilot last reviewed; binary files do not count. A failed request is a warning (#68).
 
 - The Bicep pre-flight builds the templates of a repository that sits in a git worktree under
   `.claude/worktrees/`. It left out every file whose full path held `.claude`, so it found no template
@@ -98,6 +134,11 @@ What a consumer does when it takes this release:
   index. On the update branch, run `pwsh .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1`
   and commit the index. Then fix any link that `Check-DocSectionRefs.ps1` or any name that
   `Check-DocPersonNames.ps1` now reports.
+- After `apm install`, `.claude/settings.json` has the new `Bash|PowerShell` hook block next to the
+  old one, so the push check runs twice. Remove the old block, the one without the `*gh* *eady*`
+  entries, in the update pull request (#67).
+- The agent now opens every pull request as a draft. Click Ready for review before you merge it (#67).
+
 
 ## v1.5.1 - 2026-11-26
 

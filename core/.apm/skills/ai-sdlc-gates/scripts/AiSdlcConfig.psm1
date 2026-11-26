@@ -132,6 +132,7 @@ $script:Defaults = [ordered]@{
         refinedLabel      = 'refined'
         toRefineLabel     = 'to-refine'
         sizeLabelPrefix   = 'size:'
+        inReviewLabel     = 'in-review'
         labels            = @()
         dataModelPatterns = @()
         acceptedRepositories = @()

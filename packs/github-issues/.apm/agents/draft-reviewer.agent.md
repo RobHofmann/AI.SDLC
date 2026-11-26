@@ -34,21 +34,36 @@ author cannot grade their own draft, so you do it before a person sees it at Che
 
 ## Task
 
-You get the draft text, its type, and the key when the item already exists. Review blind: judge the
-text as a reader would find it, not the conversation that made it.
+You get the draft text, its type, any drafted evidence comment, and the key when the item already exists.
+Review blind: judge the text as a reader would find it, not the conversation that made it. When the
+issue exists, also read its comments with `gh issue view <n> --json comments`. An evidence comment
+starts with `Evidence YYYY-MM-DD HH:mm` and holds the test results and probes the body points to.
 
 **For a story, epic, bug, task or spike: the readiness review.** Score each point pass, fail or unknown, and name the gap. A point you could not
 check is unknown, never a pass.
 
-1. **Criteria present** - a real `✅ Success Criteria` section.
-2. **Criteria testable** - each one states something a person or a test can observe.
-3. **Template complete** - all seven house sections have real detail, including `🧒 ELI5`.
+1. **Criteria present** - a real `✅ Acceptance Criteria` section, or `✅ Success Criteria` in an issue in the old form.
+2. **Criteria testable** - each one states something a person or a test can observe. A criterion that
+   names a file, a class, a setting or a rule ID fails. A criterion about docs, an ADR or a gate result
+   fails too, because it belongs in the definition of done.
+3. **Template complete** - all sections of the template have real detail, in template order, with no
+   `🧒 ELI5`. Judge an issue in the old form against the old order in `github-issue-conventions`, which
+   includes `🧒 ELI5`.
 4. **Governing references** - the ADR, spec or PRD the story rests on is linked when one is needed.
 5. **Single concern** - the criteria serve one concern and fit one story. A vertical slice through every layer is one concern.
 6. **Scope clean** - nothing in the text quietly adds a feature.
 7. **Estimate honest** - compared against real stories and labelled `to-refine`.
 8. **Claims checked** - every technical claim was read in the code, or is an open question. Check a
    sample yourself with Grep.
+9. **Evidence comment** - it holds facts only. Fail an evidence comment that holds a requirement or a
+   decision, and name where it belongs: the criteria, the body or an ADR. Fail test results or probes
+   in the body that belong in the evidence comment. A `📚 Docs impact` comment is not an evidence
+   comment: it says what docs pages will say, so do not fail it for that.
+10. **Size** - fail each section over its budget in github-issue-conventions, with the count. Name what
+   to trim: test evidence that belongs in the evidence comment, repeats across sections, code calls.
+   Fail a story, bug or task with more than 5 criteria, or 8 in the old form, and name the split. The
+   evidence comment has no budget. The person may keep a section over its budget or more criteria
+   than the limit on purpose at Checkpoint Alpha.
 
 Search the issues once for a likely duplicate with the key terms of the title, and name any match:
 `gh issue list --state all --search "<key terms>" --json number,title,state`.

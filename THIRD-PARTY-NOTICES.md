@@ -13,7 +13,7 @@ Skills whose text we keep close to upstream. Each folder holds the licence text 
 
 | Our skill | Upstream file |
 |---|---|
-| `core/.apm/skills/grilling` | `skills/productivity/grilling/SKILL.md` |
+| `core/.apm/skills/grilling` | `skills/productivity/grilling/SKILL.md`, and the session rules of `skills/engineering/domain-modeling/SKILL.md` |
 | `core/.apm/skills/grill-me` | `skills/productivity/grill-me/SKILL.md` |
 | `core/.apm/skills/wait-what` | `skills/productivity/wait-what/SKILL.md` |
 | `core/.apm/skills/handoff` | `skills/productivity/handoff/SKILL.md` |

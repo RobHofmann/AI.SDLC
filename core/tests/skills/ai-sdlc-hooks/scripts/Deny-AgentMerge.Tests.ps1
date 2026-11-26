@@ -1,4 +1,5 @@
 #requires -Version 7.4
+
 BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm' }
 
 Describe 'Deny-AgentMerge' {
@@ -49,6 +50,39 @@ Describe 'Deny-AgentMerge' {
         }
     }
 
+    Context 'the publish commands it refuses' {
+        It 'refuses <Command>' -ForEach @(
+            @{ Command = 'gh pr ready 42' }
+            @{ Command = 'gh pr ready' }
+            @{ Command = 'gh -R contoso/portal pr ready 42' }
+            @{ Command = 'git status && gh pr ready 42' }
+            @{ Command = 'gh pr ready 42 --undo=false' }
+            @{ Command = 'gh pr ready 42 # --undo' }
+            @{ Command = "gh pr ready 42`necho --undo" }
+            @{ Command = 'gh pr ready 42 --undone' }
+            @{ Command = 'gh pr ready 42 --undo --undo=false' }
+            @{ Command = 'gh pr ready 42 --undo --undo=0' }
+            @{ Command = 'gh pr ready 42 > --undo' }
+            @{ Command = 'gh pr ready 42 $(echo) --undo' }
+            @{ Command = 'gh pr ready 42 "x" --undo' }
+            @{ Command = 'gh api graphql -f query="mutation { markPullRequestReadyForReview(input: {pullRequestId: \"x\"}) { clientMutationId } }"' }
+        ) {
+            $r = Invoke-Hook -Payload (New-Payload -Command $Command)
+
+            $r.ExitCode | Should -Be 0
+            $decision = $r.Output | ConvertFrom-Json
+            $decision.permissionDecision | Should -Be 'deny'
+            $decision.hookSpecificOutput.permissionDecision | Should -Be 'deny'
+            $decision.permissionDecisionReason | Should -Match 'draft'
+        }
+
+        It 'refuses a publish through the PowerShell tool and in the Copilot payload shape' {
+            $r = Invoke-Hook -Payload (New-Payload -Command 'gh pr ready 42' -Tool 'PowerShell' -Copilot)
+
+            ($r.Output | ConvertFrom-Json).permissionDecision | Should -Be 'deny'
+        }
+    }
+
     Context 'the commands it allows' {
         It 'allows <Command>' -ForEach @(
             @{ Command = 'gh pr view 42' }
@@ -58,6 +92,11 @@ Describe 'Deny-AgentMerge' {
             @{ Command = 'gh api repos/contoso/portal/pulls/42' }
             @{ Command = 'gh pr view 42 && git merge --ff-only' }
             @{ Command = 'echo merge' }
+            @{ Command = 'gh pr ready 42 --undo' }
+            @{ Command = 'gh pr ready --undo -R contoso/portal 42' }
+            @{ Command = 'gh pr ready 42 --undo && gh pr view 42' }
+            @{ Command = 'gh pr create --draft --title "Get the ready state" --body "Fixes #42"' }
+            @{ Command = 'echo ready' }
         ) {
             $r = Invoke-Hook -Payload (New-Payload -Command $Command)
 

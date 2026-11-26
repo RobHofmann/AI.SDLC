@@ -8,7 +8,7 @@ Changes the title or the description of an existing GitHub pull request, and not
 The agent keeps the title and the description of its pull request true at any time, with no prompt
 (orchestration page of the ai-sdlc-handbook skill). This script is the one way it does that. It can
 only change the title and the description: it passes no reviewer, label, milestone, base or draft
-option to gh. So a repository can allow this script without a prompt, and keep `gh pr edit` itself
+option to gh. It never publishes a draft; that step is the person's. So a repository can allow this script without a prompt, and keep `gh pr edit` itself
 behind one.
 
 It uses the helpers of PullRequestDescription.psm1, as New-PullRequest.ps1 does. It passes the
@@ -16,6 +16,10 @@ description as a temporary file (`--body-file <file>`), so blank lines and quote
 an empty description and one over 65536 characters, then reads the pull request back with
 `gh pr view --json`. On a lost line or lost text it makes one corrective call; if the title or the
 description is still wrong, it throws.
+
+When -Description is passed, the script reads the pull request first. On a draft (`isDraft` is true)
+it puts the "Before you publish" block at the top of the description, exactly once (Add-PrPublishCheck).
+A published pull request gets the description as given.
 
 .PARAMETER Id
 The pull request number.
@@ -41,7 +45,7 @@ omitted, the real `gh` CLI is used.
 ./.claude/skills/github-pull-requests/scripts/Update-PullRequest.ps1 -Id 42 -Title "Show the owner on the order page"
 
 .OUTPUTS
-The read-back pull request object. Throws when the change did not land or gh fails.
+The read-back pull request object (number, url, title, body, isDraft). Throws when the change did not land or gh fails.
 #>
 
 [CmdletBinding()]
@@ -99,11 +103,18 @@ $expectedLineCount = 0
 $descriptionFile = $null
 if ($hasDescription) {
     $lines = ConvertTo-PrDescriptionLine -Description $Description
-    Assert-PrDescriptionLength -Lines $lines
-    $expectedContentLength = Get-PrDescriptionContentLength -Text ($lines -join "`n")
-    if ($expectedContentLength -eq 0) {
+    if ((Get-PrDescriptionContentLength -Text ($lines -join "`n")) -eq 0) {
         throw 'Refusing an empty or whitespace-only description.'
     }
+
+    # The block belongs on a draft only, so read the pull request first.
+    $current = Get-PullRequestReadBack -Id $Id -Repository $Repository -GhInvoker $GhInvoker
+    $isDraftProperty = $current.PSObject.Properties['isDraft']
+    if ($isDraftProperty -and $isDraftProperty.Value -eq $true) {
+        $lines = Add-PrPublishCheck -Lines $lines
+    }
+    Assert-PrDescriptionLength -Lines $lines
+    $expectedContentLength = Get-PrDescriptionContentLength -Text ($lines -join "`n")
     $expectedLineCount = Get-PrDescriptionLineCount -Text ($lines -join "`n")
     $descriptionFile = New-PrDescriptionFile -Lines $lines
     $editArgs += @('--body-file', $descriptionFile)

@@ -31,6 +31,20 @@
             "statusMessage": "Checking the command does not merge a pull request...",
             "command": "pwsh -NoProfile -Command \"& (Join-Path ([Environment]::GetEnvironmentVariable('CLAUDE_PROJECT_DIR') ?? '.') '.claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1')\"",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "if": "Bash(*gh* *eady*)",
+            "statusMessage": "Checking the command does not publish a draft pull request...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "if": "PowerShell(*gh* *eady*)",
+            "statusMessage": "Checking the command does not publish a draft pull request...",
+            "command": "pwsh -NoProfile -File .claude/skills/ai-sdlc-hooks/scripts/Deny-AgentMerge.ps1",
+            "timeout": 30
           }
         ]
       },
@@ -241,7 +255,22 @@
       "Bash(pwsh -NoProfile -File .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)",
       "PowerShell(pwsh -NoProfile -File .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)",
       "Bash(pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)",
-      "PowerShell(pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)"
+      "PowerShell(pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1*)",
+      "Bash(pwsh .claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1*)",
+      "PowerShell(pwsh .claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1*)",
+      "PowerShell(./.claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1 *)",
+      "PowerShell(& ./.claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1 *)",
+      "PowerShell(.claude/skills/github-pull-requests/scripts/Request-CopilotReview.ps1 *)",
+      "Bash(pwsh -NoProfile -File .claude/skills/move-story/scripts/Get-StoryMovePlan.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/move-story/scripts/Get-StoryMovePlan.ps1*)",
+      "Bash(pwsh .claude/skills/move-story/scripts/Get-StoryMovePlan.ps1*)",
+      "PowerShell(pwsh .claude/skills/move-story/scripts/Get-StoryMovePlan.ps1*)",
+      "Bash(pwsh -NoProfile -File .claude/skills/move-story/scripts/Invoke-StoryMove.ps1*)",
+      "PowerShell(pwsh -NoProfile -File .claude/skills/move-story/scripts/Invoke-StoryMove.ps1*)",
+      "Bash(pwsh .claude/skills/move-story/scripts/Invoke-StoryMove.ps1*)",
+      "PowerShell(pwsh .claude/skills/move-story/scripts/Invoke-StoryMove.ps1*)"
     ]
   }
 }

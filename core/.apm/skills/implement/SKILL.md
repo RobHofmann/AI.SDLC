@@ -143,14 +143,15 @@ the plan may be a few lines in this thread. Only the story file depends on size 
 9. **Push, pull request.** Push the story branch that `wrap-up` committed. Open the pull
     request through the pull request skill of the installed pack (`New-PullRequest.ps1` in
     `github-pull-requests`), or update the one that is open (`Update-PullRequest.ps1`). The script
-    opens it with your own `gh` login, and its body says `Fixes #42`. No
+    opens it as a draft with your own `gh` login, asks Copilot for the first review, and its body says `Fixes #42`. No
     confirmation: Checkpoint Bravo is the review, not the push. Never push to `main` or `master`; the push hook
     refuses it. Check the read-back. Then add the PR URL for the story to the run's list of issue
     updates (`write-story` in update mode, github-issues pack), which the person confirms once.
 10. **Work the PR feedback.** Hand the PR to `fix-pr-feedback` (github pack) in loop mode.
     It waits for the PR checks and the review bots. It fixes and pushes until no bot finding
-    is open. Then Checkpoint Bravo: a
-    person reviews the PR on GitHub and merges it. The merge is the approval; the agent never merges.
+    is open. Then Checkpoint Bravo: a person checks the draft on GitHub, publishes it with Ready for review,
+    and merges it. The merge is the approval; the agent never publishes or merges. When the person says
+    the draft is published, run `move-story` (github-issues pack), which adds the in-review label to the open stories.
 
 
 ## Stop and ask

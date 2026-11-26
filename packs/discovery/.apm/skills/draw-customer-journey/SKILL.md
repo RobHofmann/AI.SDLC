@@ -71,13 +71,14 @@ Defer the rendering mechanics to that tool.
 ## Workflow
 
 The order matters: question first, frame the persona and scenario, lay out the experience, render, then
-anchor. The steps run on their own and stop once, at Checkpoint Alpha
-([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)), before any write to an issue.
+anchor. The steps run on their own. They stop for a grilling round while a decision is open, and at
+Checkpoint Alpha ([orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md)) before any write to an issue.
 Repo-local files (the journey file, any diagram source and the front matter) need no confirmation.
 
-0. **Grill first.** Before laying out the journey, run `grilling` at discovery depth, with the
-   Analyst and, where a UI is meant, Designer/UX. It questions whose journey this is and the job being
-   done. It also asks where the evidence says the pain really occurs, and what is assumed and what is
+0. **Grill first.** Before laying out the journey, load the `grilling` skill at discovery depth, with
+   the Analyst and, where a UI is meant, Designer/UX. Ask no questions of your own.
+   An open decision always gets a round before the draft ([grilling](/.claude/skills/grilling/SKILL.md#inside-an-authoring-run)).
+   Its tree covers whose journey this is and the job being done. It also covers where the evidence says the pain really occurs, and what is assumed and what is
    known. The engine questions only the gaps. Carry the answers into the stages and into the `intent` fields of the repo doc below.
 
 1. **Find the persona and scenario.** Name whose journey this is and the scenario or job being
@@ -128,12 +129,12 @@ Repo-local files (the journey file, any diagram source and the front matter) nee
 5. **Checkpoint Alpha, then anchor on the issue.** Before any issue write, hand the draft to the
    `draft-reviewer` agent on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot) for a blind review. If you cannot run agents, check it against
    [node-templates.md](/.claude/skills/ai-sdlc-handbook/references/node-templates.md) yourself and say
-   so at Checkpoint Alpha. Then stop once and show these:
+   so at Checkpoint Alpha. Then stop and show these:
    - the review result and the diagram;
    - the journey file with its path;
    - the `write-story` update-mode diff that records the file path and the pull request link on the
      spike issue;
-   - the open questions from step 0.
+   - the open questions from step 0, or that grilling found no open decision, and why.
 
    Ask one confirmation that names every write: the issue update and each comment or link. After the
    person confirms, re-read the journey file and check that every section shown at Checkpoint Alpha is

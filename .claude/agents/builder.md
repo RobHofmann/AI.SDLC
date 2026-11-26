@@ -83,7 +83,7 @@ AGENT: builder
 Plan: <story key and the plan steps you built>
 Changed: <file> - <what changed>, one line per file
 Reused: <file> :: <symbol> - reused | extended, one line each | none, and what you searched
-Tests: <the new tests>, red first: <yes | no, why>
+Tests: <each new test with the AC-n it proves, from the plan's Proof field>, red first: <yes | no, why>
 Build: PASS | FAIL <first error>
 Test run: <passed>/<total> | FAIL <first failing test>
 Not done: <a plan step you could not build, a scope question, a hook that refused an edit, a new warning you could not fix>

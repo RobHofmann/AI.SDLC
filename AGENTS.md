@@ -13,7 +13,7 @@ next action. Give the full link to every pull request, issue or page the reader 
 checked. When a request can be read in more than one way, ask one question to make it clear before you start.
 Inside a run, look up what the substrate holds. Before Checkpoint Alpha, `grilling` asks the rest in rounds, and
 what the person leaves open goes to Checkpoint Alpha. In the build loop, an unclear story is a stop; any other open
-point goes to Checkpoint Bravo. Write **sentences at CEFR B2 and words at CEFR B1**: one main idea per sentence,
+point goes to Checkpoint Bravo. Write **sentences at CEFR B2, words at CEFR B1, and the ASD-STE100 rules**: one main idea per sentence,
 never over 25 words. Use the word you would say in a meeting. Keep every name, number, path and code name exactly
 as it is. Everything we keep is English: docs, ADRs, skills, work items, wiki pages, commits, branches, pull
 requests, code and log messages. Chat follows the language the user writes in. Nothing we keep names an AI tool as

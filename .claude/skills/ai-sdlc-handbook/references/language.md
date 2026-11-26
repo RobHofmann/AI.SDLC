@@ -1,9 +1,9 @@
 # Language and reading level
 
 This page says how we write, everywhere: documentation, work items, wiki pages, pull requests, and chat
-with an agent. It has two rules. The first says how easy the text must be to read. The second says
-which language to use. Clause C11 in the [constitution](constitution.md) makes both rules ones that
-never bend.
+with an agent. It has three rules. The first says how easy the text must be to read. The second says
+which language to use. The third says how to write a sentence in the style of ASD-STE100. Clause C11
+in the [constitution](constitution.md) makes all three rules ones that never bend.
 
 ## Rule 1: sentences at B2, words at B1
 
@@ -93,11 +93,52 @@ reader gets the wrong idea.
   or a page.
 - A chat in Dutch about an English page still writes the page in English. The reply may explain the
   change in Dutch. The text that goes into the work item, the page, or the pull request is English.
-- Both rules work together: a reply in another language is also written with B2 sentences and B1 words.
+- All the rules work together: a reply in another language is also written with B2 sentences and B1
+  words. It also follows the ASD-STE100 rules for every language. The rules for English only apply to a
+  reply in English.
+
+## Rule 3: the ASD-STE100 writing rules
+
+ASD-STE100 is Simplified Technical English, a controlled language for technical text. The
+AeroSpace, Security and Defence Industries Association of Europe (ASD) publishes it. This page uses
+Issue 9 of January 2025, which has 53 writing rules. ASD gives a copy of the standard free on request.
+Sources: <https://www.asd-ste100.org> (the standard itself),
+<https://en.wikipedia.org/wiki/Simplified_Technical_English> and
+<https://www.tcworld.info/e-magazine/column/asd-ste100-issue-9-setting-a-standard-for-technical-documentation>.
+The two articles were read on 2026-11-26; the standard itself was not. So the rules below are weakly
+sourced (clause C07): check them against the standard before a gate rests on them.
+
+ASD holds the copyright and the trademark of the standard. So this page states the rules in its own
+words and links to the source. It does not copy the standard or its dictionary, and we do not add the
+dictionary to the AI-SDLC.
+
+Rule 1 and Rule 3 both apply. Where an STE rule is stricter than Rule 1, the STE rule wins. For
+example, a sentence that gives an instruction has at most 20 words, not 25.
+
+### Rules for every language
+
+- Write one topic in a sentence.
+- A sentence that gives an instruction has at most 20 words. A sentence that describes has at most 25.
+- Give one instruction in a sentence.
+- Write an instruction in the command form, for example "Run the test".
+- Use the active voice. Use the passive voice only in a description, when the doer is not known.
+- Use one word for one meaning, and use the same term each time. Do not change a word for variety.
+- Write a paragraph about one topic, with at most 6 sentences.
+- Use a vertical list for steps and for complex text.
+- Do not drop the subject, the verb or the article to make a text shorter.
+
+### Rules for English only
+
+- Use each word in its common meaning and as one part of speech. Do not use "test" as a noun and as a
+  verb in the same text for the same thing.
+- Use only these verb forms: the infinitive, the command form, the simple present, the simple past and
+  the simple future. Use a past participle only as an adjective.
+- Do not use the -ing form, except in a technical name.
+- A noun cluster has at most 3 words. Break a longer one with "of", "for" or "in".
 
 ## Say the main thing first
 
-This is the form the two rules take in every reply, work item and page. `AGENTS.md` carries it in short;
+This is the form the three rules take in every reply, work item and page. `AGENTS.md` carries it in short;
 this is the full version.
 
 Say the main thing first: the answer, the decision, or the result. Give the reason after it, and only
@@ -171,14 +212,17 @@ Five things hold the rule in place:
   sentence length in headings or table rows. Run
   `pwsh .claude/skills/ai-sdlc-gates/scripts/Check-DocReadingLevel.ps1 -Path docs -Detail` to see each
   finding for one folder.
-- The `## Communication` part of `AGENTS.md` states both rules. Every agent loads that file in every
+- The `## Communication` part of `AGENTS.md` states the rules. Every agent loads that file in every
   session.
 - Every skill in `.claude/skills/` states the rule in short in its `## Standing rules` block and links
   here for the whole of it. `.claude/skills/ai-sdlc-gates/scripts/Check-SkillHygiene.ps1` blocks a skill
   that has no such block, or whose block does not link this page. The wording lives here, so a skill
   only points.
 - Clause C11 in the [constitution](constitution.md) makes the rule one that never bends.
-- A person checks both rules in code review.
+- A person checks all three rules in code review.
+
+No gate checks the ASD-STE100 rules, except the limit of 25 words a sentence. A person checks them in
+code review.
 
 The check does not read meaning. It cannot see a sentence with two stacked extra parts if the sentence
 is short. It does not know a short form was used before it was written out. Those two stay with the

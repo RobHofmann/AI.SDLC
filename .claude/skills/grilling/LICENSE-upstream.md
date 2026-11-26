@@ -1,6 +1,7 @@
 # Upstream licence
 
-This skill adapts text from `skills/productivity/grilling/SKILL.md` in [mattpocock/skills](https://github.com/mattpocock/skills). That
+This skill adapts text from `skills/productivity/grilling/SKILL.md` and the session rules of
+`skills/engineering/domain-modeling/SKILL.md` in [mattpocock/skills](https://github.com/mattpocock/skills). That
 repository is published under the MIT licence below. Our changes are listed in the Sources section of
 `SKILL.md`.
 

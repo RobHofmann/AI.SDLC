@@ -66,6 +66,7 @@ In the dotnet pack that is `[Trait("Story", "#42")]`. There is no tag per criter
 - Source tree to touch: <the files and the methods that do the work>.
 - Conventions in play: <the relevant convention pages and any constitution clause this touches>.
 - Regression risk: <existing behaviour that must stay intact, and the test that guards it>.
+- Docs impact: <each docs page and what it will say, from the `📚 Docs impact` comment, or "none">.
 
 ## Tasks
 

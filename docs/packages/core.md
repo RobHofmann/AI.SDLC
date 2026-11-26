@@ -79,8 +79,8 @@ Framework support skills include:
 - `handoff` writes the costly parts of a session to their own home, then a handoff document for the next session. Only a person starts it.
 - `update-ai-sdlc` takes a new AI.SDLC release in the repository through one update pull request, then does the steps its description lists on the same branch. The scheduled update workflow opens the same pull request every Monday.
 - `convene-personas` provides direct access to framework personas.
-- `grilling` asks the roles that matter in rounds before another skill drafts an artifact. It is an internal step.
-- `grill-me` runs `grilling` on a person's own plan. Only a person starts it.
+- `grilling` asks the roles that matter in rounds before another skill drafts an artifact. An open decision always gets a round before the draft. Each question lists its choices as bullets and ends with an advice. It checks words against the functional glossary and claims against the code, and ends with a docs impact. It is an internal step.
+- `grill-me` runs `grilling` on a person's own plan. With no issue and no branch it writes nothing, and shows the docs impact. Only a person starts it.
 - `wait-what` re-pitches the last answer that did not land. Only a person starts it.
 - `summary` creates a single-page HTML summary.
 - `write-prd` writes a Product Requirements Document for an initiative or epic. On a branch named with the issue number of the epic, `wrap-up` commits it; then the skill pushes and opens or updates the pull request.
@@ -188,7 +188,9 @@ Setup and hook scripts include:
 
 A `cwd` or a repository on a network share (a UNC path) works too, because the hook gives git the plain file path.
 
-The agent never merges, because the owner's merge is the approval (Checkpoint Bravo). A check in the same hooks refuses `gh pr merge` and a `gh api` call to a merge endpoint. Like the other hooks, it lets a command through when it cannot read it.
+The agent never merges, because the owner's merge is the approval (Checkpoint Bravo). A check in the same hooks, `Deny-AgentMerge.ps1`, refuses `gh pr merge` and a `gh api` call to a merge endpoint. It also refuses `gh pr ready` and the `markPullRequestReadyForReview` mutation, because only the person publishes a draft ([ADR 0024](../adrs/0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md)). Like the other hooks, it lets a command through when it cannot read it.
+
+The language page of the handbook holds three rules. They are CEFR B2 sentences and B1 words, English for what we keep, and the ASD-STE100 writing rules ([ADR 0023](../adrs/0023-a-story-has-six-sections-with-budgets-at-most-5-criteria-and-ste100.md)). Clause C11 points to all three. The `architect` plan has a `Proof:` line that names the test or the check by hand for each acceptance criterion.
 
 `Invoke-PostEditCheck.ps1` runs the house-style or build check that fits a file after an edit. Both edit hooks judge a file in a git worktree under the main checkout on that worktree. They use its root, its packs, its allow lists and its `apm.lock.yaml`. `Get-HookCheckoutRoot` in `HookPayload.psm1` finds that worktree.
 

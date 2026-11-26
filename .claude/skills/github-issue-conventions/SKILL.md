@@ -31,59 +31,58 @@ example are in the story template reference.
 
 ## The template
 
-- Seven sections, with the emoji headings exactly as written, because automation keys off them:
-  `📌 Background`, `🧒 ELI5`, `🎯 What's the Goal?`, `💡 Expected Value`, `✅ Success Criteria`,
-  `🛠️ How we'll do it`, `⚠️ Risks & Blockers`. Dev-ready stories may add `🔧 Technical Implementation`.
-- `🧒 ELI5` is required: plain words a newcomer gets at once, not a copy of the goal.
-- Code names (files, classes, methods) go only in the technical sections: How we'll do it, Technical
-  Implementation, Success Criteria and, where needed, Risks & Blockers. The narrative sections name
-  facts and issue keys, not symbols.
+- Six sections, with the emoji headings exactly as written and in this order, because automation keys off them:
+  `🎯 What's the Goal?`, `📌 Background`, `🛠️ How we'll do it`, `💡 Expected Value`, `✅ Acceptance Criteria`,
+  `⚠️ Risks & Blockers`. There is no `🧒 ELI5` section and no `🔧 Technical Implementation` section.
+- Each section has a budget, so an issue fits on one screen (ADR 0023). `📌 Background`: at most 3 bullets.
+  `🛠️ How we'll do it`: at most 5. `💡 Expected Value`: at most 3. `⚠️ Risks & Blockers`: at most 3.
+  Every section uses plain words, with no file, class, setting or rule ID, except as the next point says.
+- Code names (files, classes, methods) go only in How we'll do it and, where needed, Risks & Blockers.
+  How we'll do it holds the approach and what is reused. It names a file only to point at reuse or a
+  trap, never code calls or release steps; the plan step of `implement` writes those.
+- **The old form.** An issue whose criteria heading is `✅ Success Criteria` has the old form. Its order is
+  `📌 Background` (at most 5), `🧒 ELI5` (at most 2 sentences), `🎯 What's the Goal?`, `💡 Expected Value`,
+  `✅ Success Criteria` (at most 8), `🛠️ How we'll do it`, `⚠️ Risks & Blockers`, and it may add
+  `🔧 Technical Implementation`. Keep that form for the issue and do not change it unless the person
+  asks. Every reader accepts `✅ Acceptance Criteria` and `✅ Success Criteria`.
+- The body holds conclusions only. Test results, probes and measurements go in one evidence comment per run, which starts with
+  `Evidence YYYY-MM-DD HH:mm`. The body points to it by that date and time. A date alone is not enough, because two runs on one day give two comments.
+  The evidence comment has no budget and holds facts only, never a requirement or a decision. The one other dated
+  comment is the docs impact of `grilling` (`📚 Docs impact YYYY-MM-DD HH:mm`): per docs page what it will say, docs scope for the build.
 - The goal is "As a ..., I want ..., So that ...".
-- An update of an existing issue only adds to the person's text. The exception is a diff the person confirmed as shown in the run.
-  That is at Checkpoint Alpha of `write-story` or `fix-bug`, or in the run's one list of issue updates. It may rewrite a title or a disproved claim.
+- An update only adds to a person's text. The exception is a diff the person confirmed as shown in the run.
+  That is at Checkpoint Alpha of `write-story` or `fix-bug`, or in the run's one list of issue updates. A section the agent wrote is rewritten, not added to, as `write-story` update mode says.
 
 ## Acceptance criteria
 
 - Number them `AC-1`, `AC-2`, ... and never renumber; append new ones.
-- Each one is specific, observable, one assertion, about the result and not the code path.
+- Each one is specific, observable, one assertion, about behaviour and not the code path. It uses plain
+  words and names no file, class, setting or rule ID. Docs, ADRs and gate results are the definition of
+  done, not criteria.
+- A story, bug or task has at most 5 criteria, or 8 in the old form. An epic and a spike have no limit.
+  An issue that needs more is split before Checkpoint Alpha, unless the person keeps it whole on purpose.
 - Cover the edges: the empty state, the same-on-both-sides case, the unaffected neighbour, the error path.
-- Say how each is covered. Covering tests carry `[Trait("Story","#1234")]` or the test convention of the installed stack pack; there is no per-criterion `AC` trait. A criterion no unit test can check is marked as a check by hand.
+- A test covers a criterion unless the criterion says otherwise. Name the coverage only when it is not a
+  test, for example `Covered by: a check by hand`. Covering tests carry `[Trait("Story","#1234")]` or the
+  test convention of the installed stack pack; there is no per-criterion `AC` trait. An issue in the old
+  form may still name the test for each criterion.
 
-## Labels, priority, kind
+## Labels, priority, kind and the estimate
 
-- The default priority needs no label. Add `priority-high` or `priority-critical` only for a production blocker.
-- A new issue carries the label in `tracker.toRefineLabel` (default `to-refine`) and the labels in
-  `tracker.labels` of aisdlc.json. Never the label in `tracker.refinedLabel` (default `refined`): a
-  person sets that label and the size label when refining.
-- Kinds: a story or a task is a plain issue. A bug carries the `bug` label. A spike carries the `spike`
-  label. An epic is a parent issue with sub-issues. A spike is a research step. It uses the story
-  template. Its Success Criteria say what the research must answer, each as one question with the
-  evidence that settles it.
-- A kind change (bug to story) is a label change (`--add-label`, `--remove-label`), plus `--type` when the repository uses issue types.
-
-## The estimate
-
-Leave the size label off and post the estimate as a comment right after create. Place the story among
-3 to 5 comparable, recently closed issues. Find them with `gh issue list --state closed --search
-"<keyword>" --json number,title,labels,closedAt`; the size is in the `labels` of each:
-
-```
-💰 Estimate proposal: size 5. Comparable to #2537 (5, reused an existing engine plus a
-wiring layer); above a 3, below an 8. Set the size label during refinement.
-```
-
-Observed scale: **2** a very small fix or ops task; **3** a small multi-step task; **5** a medium task
-such as a new endpoint. **8** is a substantial feature with a domain model, UI and tests; **13** is a
-large migration.
+A new issue carries `to-refine` and no size label; a person sets `refined` and the size. The labels, the kinds,
+the estimate comment and the size scale are in [labels and estimate](references/labels-and-estimate.md).
 
 ## Before drafting and before Checkpoint Alpha
 
 - **Duplicate scan, always first.** Search with more than one query (keyword, words with the same
   meaning, the component name), with `--state all`. Restrict `--json` to number, title, state, labels
   and createdAt. Surface a collision; the person decides reuse or new.
-- **Readiness check**, each point pass, fail or unknown: criteria present; criteria testable; all seven
-  sections filled; governing ADR, spec or PRD linked. Then: one concern; scope clean; estimate honest
-  with `to-refine`; every technical claim read in the code or marked as an open question.
+- **Readiness check**, each point pass, fail or unknown. The points: criteria present; criteria testable;
+  all sections of the form filled; governing ADR, spec or PRD linked. Then: one concern; scope clean;
+  estimate honest with `to-refine`; every technical claim read in the code or marked as an open question.
+  Last, the size: a section over its budget fails, and the fix is to trim. More than 5 criteria on a
+  story, bug or task, or more than 8 in the old form, fails, and the fix is to split. The person may
+  keep either on purpose at Checkpoint Alpha.
 - Questions the substrate cannot answer go into an "Open questions" list for the person at Checkpoint Alpha.
 
 ## The start condition for a build
@@ -107,6 +106,7 @@ Checked on 2026-10-23 against gh 2.97.0. The same commands run in Claude Code an
 ## Sources
 
 - [Story template and worked example](/.claude/skills/write-story/references/story-template.md) - the full template.
+- [Labels and estimate](references/labels-and-estimate.md) - the labels, the kinds, the estimate comment and the size scale.
 - [Node templates](/.claude/skills/ai-sdlc-handbook/references/node-templates.md) - the story as a node in the artifact graph.
 - [Orchestration](/.claude/skills/ai-sdlc-handbook/references/orchestration.md) - the two human checkpoints and the start condition for a build.
 

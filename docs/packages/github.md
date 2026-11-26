@@ -41,12 +41,13 @@ Scripts live under `packs/github/.apm/skills/github-pull-requests/scripts`.
 - `Get-PrMetrics.ps1` reports weekly pull request metrics for how quickly changes reach `main`.
 - `Get-PullRequestFeedback.ps1` reports whether the checks of a pull request are complete, and which review threads are open. With `-Wait` it polls every 20 seconds. When no check has registered on the new commit yet, it waits 3 minutes before it says `ready`, with a note that no check ran.
 - `Initialize-GitHub.ps1` is the GitHub setup step used by `Install-AiSdlc.ps1`. It checks that `gh` is installed and signed in (`gh auth status`), and only advises. The allow rules of the pull request scripts and the `gh` calls are in the `allow` list of `gates.json`, which `Sync-AllowRules.ps1` of the core writes.
-- `New-PullRequest.ps1` creates a GitHub pull request with a complete description.
-- `PullRequestDescription.psm1` passes a pull request description to `gh` through a file and checks that it arrived intact.
+- `New-PullRequest.ps1` creates a GitHub pull request as a draft, with a complete description that starts with a `## Before you publish` block. Then it asks Copilot for the first review, unless `-SkipCopilotReview` is passed ([ADR 0024](../adrs/0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md)).
+- `PullRequestDescription.psm1` passes a pull request description to `gh` through a file and checks that it arrived intact. `Add-PrPublishCheck` puts the `## Before you publish` block at the top of a draft description, once.
+- `Request-CopilotReview.ps1` asks Copilot for a review with `gh pr edit --add-reviewer @copilot`. It asks when 20 or more lines changed since the commit Copilot last reviewed. It also asks when there is no Copilot review yet, when it cannot count, or with `-Force`. Binary files do not count, and a failed request is a warning.
 - `PullRequestFeedback.psm1` provides shared helpers for the pull request feedback loop.
 - `Set-BranchRuleset.ps1` sets the ruleset on the default branch: a pull request and the required status checks, and no force push or deletion. It asks for no approval, because the owner's merge is the approval. Pass more than one check as separate values to keep a comma in a check name.
 - `Reply-PullRequestThread.ps1` replies to a pull request review thread. It resolves the thread only when SonarQube Cloud or gitleaks opened it. A thread from any other bot stays open for a person.
-- `Update-PullRequest.ps1` changes only the title or description of an existing pull request.
+- `Update-PullRequest.ps1` changes only the title or description of an existing pull request. On a draft it keeps the `## Before you publish` block at the top. It never publishes a draft.
 - `Wait-WorkflowRun.ps1` waits for one or more workflow runs that are not pull request checks. It returns `ready` with each result. It polls every 20 seconds and fits one call in a ten-minute shell limit.
 
 ### Tests
@@ -55,7 +56,7 @@ Each test is `<Name>.Tests.ps1` under `packs/github/tests/skills/github-pull-req
 
 ## Dependencies
 
-The pull request workflow uses the GitHub CLI (`gh`), signed in with the owner's own account. GitHub then sees the owner as the author, so the owner cannot approve; the owner's merge is the approval, and the agent never merges.
+The pull request workflow uses the GitHub CLI (`gh`), signed in with the owner's own account. GitHub then sees the owner as the author, so the owner cannot approve; the owner's merge is the approval, and the agent never merges. The agent opens a draft, and only the person publishes it with Ready for review.
 
 `github-pull-requests` reads the repository from `github.repository` in `aisdlc.json`, or from the git remote when it is empty.
 

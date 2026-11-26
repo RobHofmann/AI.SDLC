@@ -257,7 +257,7 @@ if (-not $githubRepository) {
     $todo.Add('Set github.repository in aisdlc.json to owner/name once the repository exists on GitHub. Until then the scripts read it from the git remote origin, and this one has none on github.com.')
 }
 if ('github-issues' -in $Packs) {
-    $config.tracker = [ordered]@{ repository = $githubRepository; refinedLabel = 'refined'; toRefineLabel = 'to-refine'; sizeLabelPrefix = 'size:'; labels = @(); acceptedRepositories = @(@($aiSdlcRepository) | Where-Object { $_ }) }
+    $config.tracker = [ordered]@{ repository = $githubRepository; refinedLabel = 'refined'; toRefineLabel = 'to-refine'; sizeLabelPrefix = 'size:'; inReviewLabel = 'in-review'; labels = @(); acceptedRepositories = @(@($aiSdlcRepository) | Where-Object { $_ }) }
 }
 if ('knowledge' -in $Packs) {
     $config.knowledge = [ordered]@{ repository = '' }
