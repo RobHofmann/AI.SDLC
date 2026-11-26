@@ -11,6 +11,9 @@ person reviews and merges it.
   your GitHub App. A newer update pull request closes an older one that is still open.
 - The new version of every installed package, all pinned to the same tag. Only the `ref:` lines of the AI.SDLC packages move; another dependency keeps its own ref.
 - A root `CLAUDE.md` that only imports `AGENTS.md` moves to `.claude/CLAUDE.md`. Nothing else changes.
+- `.mcp.json` when a release adds or changes a shared MCP server, unless git ignores the file. The
+  update stops when the file holds a written-out token, and says how to fix it.
+- The index of each doc layer, rebuilt by the new version, so the index check passes.
 - The issue of AI.SDLC that the release tag names, so the change is traced to its issue. The title
   names it as `RobHofmann/AI.SDLC#42`, and the description as `Refs RobHofmann/AI.SDLC#42`. It says
   `Refs`, never `Fixes`, so your merge does not close the issue of AI.SDLC.

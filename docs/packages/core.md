@@ -206,6 +206,8 @@ GitHub Copilot ignores the `if` field of a hook and runs every hook entry in tur
 
 `AiSdlcSetup.ps1` also runs every `apm install` of the shared scripts without `AISDLC_SONAR_MCP_TOKEN`, `AISDLC_SONAR_ORG` and `SONAR_TOKEN` (`Invoke-WithoutSonarToken`). APM writes the value of such a variable into `.mcp.json`, and the update pull request must keep the placeholders.
 
+`Update-AiSdlc.ps1` also stages `.mcp.json`, so a new shared MCP server reaches the update pull request. It does so when git tracks the file, or when it exists and git does not ignore it. With the sonarcloud pack it runs `Check-McpToken.ps1` first, and a written-out token stops the update. Then it rebuilds the index of each doc layer with the new `Build-DocsIndex.ps1` and stages it, so the index gate passes on the update.
+
 `Find-RetiredSkillNames.ps1` lists the lines in the repository's own files that still use a retired skill name. `Update-AiSdlc.ps1` runs it after an update. It leaves out the ADR folder (`paths.adrFolder`), because an ADR is history. It also leaves out the files that `paths.historyPaths` marks as history, and prints one line with how many places it left out. A pattern that matches no file gives a warning, and the script still never fails.
 
 ## Changing it safely
