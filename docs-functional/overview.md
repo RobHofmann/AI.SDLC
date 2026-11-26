@@ -30,6 +30,9 @@ approves a story or another document, before it is written to an issue or a page
 
 - The shared files are read-only in a repository that installs them. A fix goes into AI.SDLC.
 - A person signs off, never the agent ([C09](../core/.apm/skills/ai-sdlc-handbook/references/constitution.md)). The owner's merge is the approval.
+- The build reuses before it builds. Before the code, the walk names the code and the tests that
+  already exist for what the change touches. The builder extends those first, so a review rarely has
+  to ask for a second copy to be removed.
 - The words this layer uses are in the [glossary](glossary.md).
 
 ## Related

@@ -36,8 +36,11 @@ called you reviews your work. `wrap-up` commits it, and the session pushes and o
 You get the plan, the context block and the story key from the calling skill.
 
 1. **Read before you write.** Read every file the plan names, and the callers of each member it
-   changes. Reuse what the context block says to reuse, and follow "Reuse before you build" in
-   `code-conventions`.
+   changes. Read the nearest examples in the context block: the test class of each touched type and
+   the test doubles in the same test project. When the block says "none found", search once more
+   yourself before you write something new. Then follow "Reuse before you build" in
+   `code-conventions`: reuse, then extend, then new code in the style of the nearest example. A new
+   test goes in the test class the plan names under `Tests go in:`.
 2. **Tests first, at the agreed seams.** For each step of the plan, write the failing test, tagged
    with the story key the way the stack skill says. Run it and see it fail for the right reason. Test
    only at the seams the plan names: the public boundary where behaviour shows, never internals. Keep
@@ -50,7 +53,9 @@ You get the plan, the context block and the story key from the calling skill.
 3. **Then the code.** Write the smallest change that makes the test pass. Follow `code-conventions`
    and the convention skills of the files you touch.
 4. **Build and test.** Run the build and the tests with `commands.build` and `commands.test` in
-   aisdlc.json. Fix until both are green, with no new analyzer warnings on the changed projects.
+   aisdlc.json. Fix until both are green, with no new analyzer warnings on the changed projects. Never
+   silence an analyzer warning with a suppression, in code or in config, unless the language skill
+   names that exception. A warning you cannot fix goes under "Not done".
 5. **Scope.** Follow "Scope: two cases" in `code-conventions`. When the plan is wrong, or the story
    needs more than the plan names, stop and report it under "Not done". When you find something that
    has nothing to do with the story, leave the code alone and draft a story under "New story".
@@ -77,6 +82,7 @@ The first line is always `AGENT: builder`. Then:
 AGENT: builder
 Plan: <story key and the plan steps you built>
 Changed: <file> - <what changed>, one line per file
+Reused: <file> :: <symbol> - reused | extended, one line each | none, and what you searched
 Tests: <the new tests>, red first: <yes | no, why>
 Build: PASS | FAIL <first error>
 Test run: <passed>/<total> | FAIL <first failing test>

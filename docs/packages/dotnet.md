@@ -14,7 +14,7 @@ The `dotnet` pack adds development rules, code graph tools, and gates for .NET r
 The review agents `code-reviewer`, `test-analyzer` and `security-reviewer` live in [core](core.md). Each one reads the convention skills of the changed files from the table of file types in `code-conventions`. For a `.cs` file that table names `csharp-generation-smells` and `test-first-dotnet`.
 
 - `csharp-generation-smells` holds the C# review checks, such as async and resources, errors through the pipeline and closed sets. Its `## Security` section and its page `references/security.md` hold the C# security checks: access control, Graph and ARM scope, queries built from input, deserialization and error bodies.
-- `test-first-dotnet` holds the C# test rules that `test-analyzer` reads: the Story trait, real assertions, a mock for every constructor dependency, and no controller test for an action that only forwards a call.
+- `test-first-dotnet` holds the C# test rules that `test-analyzer` reads, with one test class per type: the Story trait, real assertions, a mock for every constructor dependency, and no controller test for an action that only forwards a call.
 
 ### Development skills
 

@@ -105,7 +105,13 @@ These are exceptions, not gates. The loop stops, says why, and waits when:
    So is a role assignment, a secret in a secret store, a destructive git command, or a script that
    migrates stored data. See [where the gates are enforced](#where-the-gates-are-enforced);
 6. a reviewer finds a HIGH problem that needs a design change;
-7. the pull request loop would need a fourth bot review round, or its wait passes 45 minutes.
+7. the pull request loop would need a fourth bot review round, or its wait passes 45 minutes;
+8. in `implement`, the plan adds product code only so a test can reach it. Examples are a new
+   interface or wrapper with one real user, a public or virtual member, or a constructor parameter
+   that only a test passes. A seam should exist already; ask the person before the code changes shape
+   for a test;
+9. in `implement`, no acceptance criterion maps to a test or a check. Then nothing shows that the
+   change does what the story asks, so the loop opens no pull request and says so.
 
 A new ADR that follows an existing pattern does not stop the loop.
 

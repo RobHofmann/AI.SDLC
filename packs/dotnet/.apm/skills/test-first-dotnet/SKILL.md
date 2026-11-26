@@ -48,6 +48,10 @@ the seam that reaches the bug. The plan then names that seam.
 
 - **Framework.** xUnit, Moq for mocks, AutoFixture for data. Do not let AutoFixture pick the value the
   test is about; set it by hand so the assertion reads.
+- **One test class per type.** A new test goes into the existing test class of the type it tests.
+  Look for it first; the context block names it under the nearest examples, and the plan names it
+  under `Tests go in:`. Write a new test class only when the type has none. Never start a test class
+  per story.
 - **Layout.** Test projects under the test root (`paths.testRoot` in aisdlc.json) mirror the source
   root (`paths.sourceRoot`), for example `tests/Shared.StockLevel.Tests` for `src/Shared.StockLevel/`.
 - **Story trait.** Every new test class carries `[Trait("Story","#42")]` with the story key, the

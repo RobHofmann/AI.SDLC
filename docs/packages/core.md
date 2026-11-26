@@ -48,7 +48,7 @@ steps of the core are `walk-substrate`, `run-preflight` and `grilling`.
 Workflow skills include:
 
 - `guide-me` reports the current lifecycle phase and next step. Without an issue, it reads the skill descriptions and names the command that fits a situation.
-- `walk-substrate` gathers context before implementation. It is an internal step.
+- `walk-substrate` gathers context before implementation. It is an internal step. For a change to C# or Razor it runs `scripts/Find-NearestExample.ps1`, which names the test class of each touched type and the test doubles of its dependencies, or says "none found" and what it searched. It always exits 0.
 - `implement` runs the development flow from a refined story to a tested pull request.
 - `refactor` improves code structure without changing observable behaviour. Like `implement`, it starts only from a refined issue: the `refined` label and a `size:<n>` label.
 - `wrap-up` updates tests, documentation, issues, and gates after code works. Then it commits and runs the pre-flight on that commit. It works only on a branch named with an issue number (`42-short-name`).
@@ -217,7 +217,7 @@ Keep both documentation layers and a page for each unit. The documentation cover
 
 `implement`, `fix-bug` (github-issues pack), and `refactor` use `walk-substrate` before implementation.
 
-`implement` uses `architect` to write the plan and `builder` to build it test-first. `write-docs` uses `docs-reviewer` after documentation updates. Each hand-off names the model in both spellings: `opus` or `sonnet` for Claude Code, `claude-opus-5.5` or `claude-sonnet-5.5` for Copilot.
+`implement` uses `architect` to write the plan and `builder` to build it test-first. The plan names the test class each touched type's tests go in (`Tests go in:`), and the builder reports what it reused (`Reused:`). The order is reuse, then extend, then new code, as `code-conventions` says. A plan that adds product code only for a test seam, and a change where no acceptance criterion maps to a test or a check, stop the loop. `write-docs` uses `docs-reviewer` after documentation updates. Each hand-off names the model in both spellings: `opus` or `sonnet` for Claude Code, `claude-opus-5.5` or `claude-sonnet-5.5` for Copilot.
 
 `wrap-up` uses tests, both documentation layers, issues, and gates to complete a change. It is the single owner of the docs, the ADR check, the story and pull request contract, the lessons step, the commit and the pre-flight. `implement`, `refactor`, `fix-pr-feedback` and `adopt-docs` call it. `write-prd`, `write-pipeline` of the github pack, and `write-hypothesis`, `draw-customer-journey` and `write-research-summary` of the discovery pack call it for the repository files they write. `write-platform-note` of the knowledge pack writes to the knowledge repository instead, through its own branch and pull request there. `write-adr`, `update-constitution`, `write-docs`, `add-gate`, `capture-learning` and `write-api-spec` of the dotnet pack call it only when a person starts them. When `wrap-up` calls `write-docs`, `write-adr` or `capture-learning` itself, they write the files and do not call it back. None of them runs those steps itself; they push the commit it made. It stops before its first step on `main`, `master` or a branch with no issue number.
 

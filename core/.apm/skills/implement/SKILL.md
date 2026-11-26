@@ -69,7 +69,8 @@ grows, switch to the full path.
    `references/story-context-template.md`. Link it from the area page it changes, and run `Build-DocsIndex.ps1`.
 2. **Plan.** Hand the context block to the `architect` agent on Opus 5.5 (model `opus` in Claude Code, `claude-opus-5.5` in Copilot)
    to write the plan. The plan names the files to change, and every member of any closed set the change
-   branches on. It also names the seams the tests go through, and the reuse the walk found. The agent returns the plan as text. Save it where the
+   branches on. It also names the seams the tests go through, the test class each touched type's tests
+   go in, and the reuse the walk found. A seam adds no product code (stop list). The agent returns the plan as text. Save it where the
    plan lives: the `## Tasks` section of `docs/stories/<KEY>.md` when the story has that file,
    otherwise this thread. If you cannot run agents, load `adr-conventions`, write the plan yourself
    and check it against the ADRs. A conflict with an ADR or clause is a stop.
@@ -111,7 +112,9 @@ grows, switch to the full path.
    convention skills of the changed files and each topic skill that fits, such as
    `blazor-authorization`, and review the diff yourself. Then say in the evidence record that the review ran inline. Fix each
    finding or decline it with a reason, then check again. Run `update-constitution` in check mode.
-8. **Wrap up and record.** Write the pull request description in `temp/` in the evidence record shape
+8. **Wrap up and record.** Check that each acceptance criterion maps to a test or a check. When none
+   does, stop and say so: nothing shows the change does what the story asks, so no pull request opens.
+   Write the pull request description in `temp/` in the evidence record shape
    from orchestration.md. Then run `wrap-up`, the single owner of the rest of the change. It searches
    the repository for what the change renamed or removed. It runs `write-docs` for both doc layers,
    with the `docs-reviewer` agent, and the ADR check through `write-adr`. It brings the story and the
@@ -140,7 +143,9 @@ Stop, say why, and wait on any condition on the stop list in orchestration.md:
 - no convergence: 3 fix attempts on one check, 2 review rounds without progress, or a fourth round;
 - the story needs more than the plan names (a finding outside the story becomes a story draft instead);
 - a secret, permission, production, deploy or destructive git need;
-- a finding tagged `[HIGH][DESIGN]`.
+- a finding tagged `[HIGH][DESIGN]`;
+- a plan that adds product code only to make a test seam;
+- no acceptance criterion that maps to a test or a check.
 
 A new ADR that follows an existing pattern is not a stop.
 

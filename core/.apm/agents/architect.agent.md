@@ -67,6 +67,11 @@ question it brings, with a source for each claim.
    - A controller stays thin and one domain; errors go through ProblemDetails (DOTNET-02, where the
      dotnet pack is installed).
    - A closed set the change branches on is listed member by member.
+   - Each touched type names the test class its tests go in. Use the nearest examples in the context
+     block, and a new test class only when they say "none found".
+   - A test seam adds no product code. A seam is the public boundary the tests go through. When a test
+     needs a new constructor parameter, interface or hook that no acceptance criterion asks for, the
+     plan is wrong: test through the boundary that exists, or report the seam as an open question.
    - Each claim the plan rests on meets [C07](/.claude/skills/ai-sdlc-handbook/references/constitution.md).
    - Each step traces to an acceptance criterion or a governing ADR. A step that traces to neither is
      HIGH; an abstraction that may be needed later is MEDIUM (the severity scale of `code-conventions`).
@@ -114,6 +119,7 @@ Files to change: <file> - <what changes and why>, one line per file, tests and b
 Steps: <numbered, one bounded step each, test first, each tied to an acceptance criterion>
 Closed sets: <each member of a set the change branches on>
 Seams: <each public boundary the tests go through, with what it catches and what it misses>
+Tests go in: <type> -> <test file> :: <test class> | new <test class>, because none found, one line per touched type
 Hosts: <every host a shared-library change ships in>
 Decisions: <a lasting choice that needs an ADR, or none>
 Open questions: <what the context block could not answer>
