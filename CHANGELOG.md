@@ -8,7 +8,7 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
-## v2.0.0 - 2026-11-26
+## v2.0.0 - 2026-11-27
 
 - The packages no longer ship the Pester tests of their scripts, so an update pull request holds only
   files a consumer runs ([ADR 0015](docs/adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md), #45).
@@ -163,6 +163,35 @@ Each entry names its issue, as `#42`.
 - A decision needs an ADR only when it passes three tests: hard to undo, surprising without context,
   and a real trade-off. `adr-conventions` states them once, and the other skills point to them. A new
   gate no longer counts as key by itself (#65).
+- The new core skill `powershell-conventions` holds the PowerShell rules: a help block, strict mode
+  and Stop, an exit-code check after each native call, fail loudly, splatting and a Pester test per
+  script. It follows clause C10, so a comment that says why stays allowed. `add-gate` links it (#70).
+- The new core skill `yaml-conventions` holds the rules for any YAML file: spaces and never tabs, one
+  key once, quotes on text that looks like a number, the right block scalar and no secrets.
+  `github-actions-conventions` links it for the general YAML rules (#74).
+- The Blazor rules are split. `blazor-conventions` is renamed to `razor-conventions`, and its page
+  `portal-ui.md` is now `razor.md`. The new packs `css` and `javascript` each hold one convention skill,
+  so a repository without Blazor can take them. The `blazor` pack lists both as APM dependencies, so a
+  Blazor repository gets all three with one line ([ADR 0025](docs/adrs/0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md), #75).
+  The sync manifest records the dependencies, and `Check-SyncManifest.ps1` counts such a pack as
+  installed. `Add-AiSdlcConsumer.ps1` knows both packs. New test consumers: `blazor-only` and
+  `javascript-only`.
+- `csharp-generation-smells` is renamed to `csharp-conventions`. Its new page `house-style.md` gives
+  each house rule an example and two public sources, and `not-decided.md` lists the points of taste
+  with the default for a new file. The folders of a new interface, exception and options class come
+  from `dotnet.folders` in `aisdlc.json` (#76).
+- `csharp-conventions` ships an opt-in `.editorconfig` block, `assets/recommended.editorconfig`. It sets
+  fifteen code style rules of the house style to warning, and `code-style-block.md` says how to take
+  it (#77).
+- Clause C04 says a test proves the team's own logic, not what a framework already does. One
+  registration test without the container is the only wiring test. The constitution moves to version
+  1.1 ([ADR 0026](docs/adrs/0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md)). `csharp.md`
+  gets a Test style section, and `test-first-dotnet` and the `test-analyzer` agent follow it (#78).
+- A skill description that the model loads has at most 450 characters; `Check-SkillHygiene.ps1` fails
+  a longer one. A skill with `disable-model-invocation: true` keeps the 1024 limit. The gate looks for
+  `Use when` in the description only. Every shared description was cut, and the new routing prompt set
+  in `config/skill-routing-prompts.txt` picked the same skill before and after
+  ([ADR 0027](docs/adrs/0027-a-model-visible-skill-description-has-at-most-450-characters.md), #66).
 
 What a consumer does when it takes this release:
 
@@ -202,6 +231,18 @@ What a consumer does when it takes this release:
   old one, so the push check runs twice. Remove the old block, the one without the `*gh* *eady*`
   entries, in the update pull request (#67).
 - The agent now opens every pull request as a draft. Click Ready for review before you merge it (#67).
+- Two skills are renamed: `blazor-conventions` is now `razor-conventions`, and
+  `csharp-generation-smells` is now `csharp-conventions`. A link in your own files to an old folder
+  breaks your link gates. Run `pwsh .claude/skills/ai-sdlc-hooks/scripts/Find-RetiredSkillNames.ps1`
+  and change each line it lists, in the update pull request (#75, #76).
+- A skill of your own whose description the model loads, with more than 450 characters, now fails the
+  skill hygiene gate. Cut the description to 450 characters, or set `disable-model-invocation: true`
+  when only a person starts the skill (#66).
+- With the blazor pack, the css and javascript packs come with it; you add nothing to `apm.yml`. You
+  may set `css.tokenPrefix`, `css.colourSchemeFiles` and `javascript.cleanupHelper` in `aisdlc.json`.
+  A repository without Blazor can add `packs/css` or `packs/javascript` on its own (#75).
+- With the dotnet pack, you may set `dotnet.folders` in `aisdlc.json`, and copy the recommended
+  `.editorconfig` block. Read step 3 of its page first when your build turns warnings into errors (#76, #77).
 
 
 ## v1.5.1 - 2026-11-26
