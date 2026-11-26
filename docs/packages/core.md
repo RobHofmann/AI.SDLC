@@ -125,6 +125,11 @@ blocks. A crashed Advisory gate is a warning. `GateContract.Tests.ps1` runs ever
 repository and checks its code. [ADR 0019](../adrs/0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md)
 records the contract.
 
+Every gate entry has a name that says what passes, one clause, a `checks` text and a `fix` text. The
+runner fails an entry without a text, or with a name used twice, and prints `checks` before the
+output of a gate that failed. `references/gate-catalog.md` in the `ai-sdlc-gates` skill lists every
+gate; `tools/Build-GateCatalog.ps1` writes it from the `gates.json` files.
+
 `Invoke-LocalGates.ps1 -SkipScript <file name>` leaves out the gates of that script and lists them as `SKIP`.
 The gates, the pre-flight and `tools/Invoke-PesterParallel.ps1` compare a change with `origin/<github.trunk>`
 through `Get-AiSdlcMainBranch` in `AiSdlcConfig.psm1`. It falls back to `origin/main`, `origin/master` or

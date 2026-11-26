@@ -7,16 +7,34 @@ Describe 'Invoke-LocalGates' {
         $script:Runner = Join-Path $script:ScriptFolder 'Invoke-LocalGates.ps1'
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
 
+        # Every gate entry needs a checks and a fix text (#47). A fixture that does not test those texts
+        # gets plain ones here, so each test keeps its JSON short. -RawText leaves the entries as written.
+        function Add-GateText {
+            param([string]$Json)
+            if (-not $Json) { return $Json }
+            $data = $Json | ConvertFrom-Json -AsHashtable
+            foreach ($list in @($data['gates'], $data['repoGates'])) {
+                foreach ($entry in @($list | Where-Object { $_ -is [System.Collections.IDictionary] })) {
+                    if (-not $entry.Contains('checks')) { $entry['checks'] = 'It checks the fixture. Exit 2 means it could not check, and exit 3 means nothing to check.' }
+                    if (-not $entry.Contains('fix')) { $entry['fix'] = 'Fix the fixture.' }
+                }
+            }
+            return ($data | ConvertTo-Json -Depth 10)
+        }
+
         function New-GateRepo {
-            param([string]$Config, [hashtable]$Files, [string]$Packs = '[]')
+            param([string]$Config, [hashtable]$Files, [string]$Packs = '[]', [switch]$RawText)
             $root = Join-Path ([System.IO.Path]::GetTempPath()) ('ilg-' + [guid]::NewGuid().ToString('n'))
             New-Item -ItemType Directory -Path $root -Force | Out-Null
+            if (-not $RawText) { $Config = Add-GateText -Json $Config }
             Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $Config -Encoding utf8
             Set-Content -LiteralPath (Join-Path $root 'apm.yml') -Value ((@('dependencies:', '  apm:') + @($Packs | ConvertFrom-Json | ForEach-Object { "    - ../AI.SDLC/packs/$_" })) -join "`n")
             foreach ($rel in $Files.Keys) {
                 $full = Join-Path $root $rel
                 New-Item -ItemType Directory -Path (Split-Path $full -Parent) -Force | Out-Null
-                Set-Content -LiteralPath $full -Value $Files[$rel] -Encoding utf8
+                $text = $Files[$rel]
+                if (-not $RawText -and (Split-Path -Leaf $rel) -eq 'gates.json') { $text = Add-GateText -Json $text }
+                Set-Content -LiteralPath $full -Value $text -Encoding utf8
             }
             return $root
         }
@@ -132,6 +150,61 @@ Describe 'Invoke-LocalGates' {
         $result.Output | Should -Not -Match 'ran Check-Core'
         $result.Output | Should -Match 'ran Check-Repo\.ps1'
         $result.Output | Should -Match 'core gate\s+Blocking\s+SKIP'
+    }
+
+    It 'fails a gate entry with no <Field> text, names the field, and does not run that gate' -Tag '#47' -ForEach @(@{ Field = 'checks' }, @{ Field = 'fix' }) {
+        $other = if ($Field -eq 'checks') { '"fix": "Fix it."' } else { '"checks": "It checks. Exit 2 means x, and exit 3 means y."' }
+        $root = New-GateRepo -RawText -Config '{}' -Files @{
+            '.claude/skills/ai-sdlc-gates/gates.json'             = "{ `"package`": `"core`", `"gates`": [ { `"name`": `"core gate`", `"script`": `"scripts/Check-Core.ps1`", `"mode`": `"Advisory`", $other } ] }"
+            '.claude/skills/ai-sdlc-gates/scripts/Check-Core.ps1' = $script:PassGate
+        }
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 1 -Because $result.Output
+        $result.Output | Should -Match "Invalid gate entry 'core gate': $Field is missing or empty"
+        $result.Output | Should -Not -Match 'ran Check-Core'
+        $result.Output | Should -Match 'core gate\s+Blocking\s+FAIL'
+    }
+
+    It 'keeps an Advisory entry that is not valid in a -BlockingOnly run, so the push fails on it' -Tag '#47' {
+        $root = New-GateRepo -RawText -Config '{}' -Files @{
+            '.claude/skills/ai-sdlc-gates/gates.json'             = '{ "package": "core", "gates": [ { "name": "core gate", "script": "scripts/Check-Core.ps1", "mode": "Advisory" } ] }'
+            '.claude/skills/ai-sdlc-gates/scripts/Check-Core.ps1' = $script:PassGate
+        }
+
+        $result = Invoke-Runner -Root $root -Extra @('-BlockingOnly')
+
+        $result.Code | Should -Be 1 -Because $result.Output
+        $result.Output | Should -Match 'Invalid gate entry'
+    }
+
+    It 'fails both entries when two gates share a name' -Tag '#47' {
+        $root = New-StandardRepo -RepoGates '[ { "name": "core gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking" } ]'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 1 -Because $result.Output
+        ([regex]::Matches($result.Output, 'the name is used by 2 gates')).Count | Should -Be 2
+        $result.Output | Should -Not -Match 'ran Check-Core'
+        $result.Output | Should -Not -Match 'ran Check-Repo'
+    }
+
+    It 'prints the checks text before the output of a gate that failed, and not for a gate that passed' -Tag '#47' {
+        $root = New-StandardRepo -CoreScript $script:FailGate -RepoGates '[ { "name": "repo gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking", "checks": "Repo checks text. Exit 2 means x, and exit 3 means y." } ]'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Output | Should -Match '(?s)What this gate checks: It checks the fixture\..*ran failing gate'
+        $result.Output | Should -Not -Match 'What this gate checks: Repo checks text'
+    }
+
+    It 'prints the checks text under each gate with -List' -Tag '#47' {
+        $root = New-StandardRepo
+
+        $result = Invoke-Runner -Root $root -Extra @('-List')
+
+        $result.Output | Should -Match 'checks: It checks the fixture\.'
     }
 
     It 'leaves out the advisory gates with -BlockingOnly' {

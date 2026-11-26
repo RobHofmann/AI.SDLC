@@ -44,15 +44,22 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
 
 ```json
 { "package": "dotnet",
-  "gates": [ { "name": "C10 ...", "script": "scripts/Check-CommentHygiene.ps1", "clause": "C10",
-               "mode": "Blocking", "args": { }, "requires": "CoverageFile" } ],
+  "gates": [ { "name": "The change adds no commented-out code ...", "script": "scripts/Check-CommentHygiene.ps1",
+               "clause": "C10", "mode": "Blocking", "args": { }, "requires": "CoverageFile",
+               "checks": "It reads the C# lines the change adds. ... Exit 2 means ..., and exit 3 means ...",
+               "fix": "Remove the commented-out code." } ],
   "setup": "scripts/Initialize-Dotnet.ps1",
   "preflight": "scripts/Invoke-DotnetPreflight.ps1",
   "postEdit": { "extensions": [".cs", ".razor"], "script": "scripts/Invoke-DotnetPostEdit.ps1" },
   "allow": [ "dotnet test *", "PowerShell(./build.ps1 *)" ] }
 ```
 
-- `gates` may be empty. `requires: CoverageFile` runs the gate only when the runner gets `-CoverageFile`.
+- `gates` may be empty. Each entry needs a unique `name` that says what passes, a `clause` (a core
+  clause, a pack clause or `AI-SDLC`), a `checks` text and a `fix` text. The runner fails an entry
+  without them, or with a name used twice, and does not run it. It prints `checks` before the output
+  of a gate that failed, and under each gate with `-List`. The [gate list](references/gate-catalog.md)
+  shows every gate with both texts.
+- `requires: CoverageFile` runs the gate only when the runner gets `-CoverageFile`.
   The shared composite action passes it when the workflow gives it the `coverage-file` input.
 - `setup` runs from `Initialize-AiSdlc.ps1` in `ai-sdlc-hooks`, for each package that runs.
 - `preflight` runs from `Invoke-Preflight.ps1`. It returns rows with Check, Status and Detail, and a

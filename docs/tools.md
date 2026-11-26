@@ -19,6 +19,7 @@ The `tools` unit provides scripts, tests, and workflow templates for shared AI-S
 - `tools/Test-Consumers.ps1` installs this repository's packages into each test consumer under `test-consumers/`. Then it runs `Add-AiSdlcConsumer.ps1` on a generated repository, the `setup-script` consumer. With `-Upgrade` it installs each test consumer at the previous release tag. Then it moves it to the change with the `Update-AiSdlc.ps1` of that old version, as a real consumer does. Before the first release there is no older tag, so that pass says so and passes. Both passes fail when an install puts a test file under `.claude/`. Then they copy the tests of each installed skill from `tests/` next to its scripts, and run them there.
 - `tools/Update-SyncManifest.ps1` writes the list of every file and hook each package delivers to a consumer, with its git hash, and the retired skill names. It also lists the names of the kept tests as `sharedTests`, and it stops on a test file under `.apm/`. It can also check that the list is current. The core gate `Check-SyncManifest.ps1` reads it.
 - `tools/Update-SkillCatalog.ps1` writes the list of every skill and agent in every AI.SDLC package. It can also check that the list is current.
+- `tools/Build-GateCatalog.ps1` writes the [gate list pages](gates.md) from the `gates.json` files and `repoGates`: the shared page `core/.apm/skills/ai-sdlc-gates/references/gate-catalog.md` and `docs/gates.md`. With `-Check` it fails when a page is out of date. A repository gate runs it.
 
 ### Tests
 
@@ -32,6 +33,7 @@ Most scripts have a matching test file:
 - `tools/PesterCoverage.Tests.ps1`
 - `tools/Test-Consumers.Tests.ps1`
 - `tools/Update-SkillCatalog.Tests.ps1`
+- `tools/Build-GateCatalog.Tests.ps1`
 - `tools/Update-SyncManifest.Tests.ps1`
 
 The unit also contains `tools/PrPipeline.Tests.ps1`. It checks the pull request workflow `.github/workflows/pr.yml`: its triggers, its read rights, the SHA pins of its actions, and its jobs and matrices. It also checks that every script and action it names exists. It checks that the workflow runs no gate by hand, because the composite action runs every core, pack and repo gate once.

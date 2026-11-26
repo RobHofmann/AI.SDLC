@@ -126,9 +126,13 @@ file-wide search lets through.
   it. For a repository gate, add the same entry to `repoGates` in aisdlc.json, with the script path
   from the repository root. The runner `.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1`
   reads both:
-  `{ "name": "<clause/area> <what>", "script": "scripts/Check-<Name>.ps1", "clause": "<clause>", "mode": "Advisory" }`.
-  When no clause covers the gate, name its rule family, as the core gates do with `AI-SDLC` and
-  `house-style`. Or leave `clause` out, and the runner then shows the package name.
+  `{ "name": "<what passes>", "script": "scripts/Check-<Name>.ps1", "clause": "<clause>", "mode": "Advisory", "checks": "<2 to 4 sentences>", "fix": "<1 sentence>" }`.
+  The name is a short statement of what passes, such as "Docs hold no em-dash characters", unique
+  among all gates, with no clause, owner prefix or note in brackets. The clause is a core clause
+  (C01 to C12), a pack clause such as DOTNET-01, or `AI-SDLC` when no clause holds the rule.
+  `checks` says what the gate checks, the main thing it does not check, and what exit 2 and exit 3
+  mean for it. `fix` is one instruction. The runner fails an entry without either text and does not
+  run it. In AI.SDLC, run `pwsh tools/Build-GateCatalog.ps1` to update the gate list pages.
   New gates enter **Advisory** so they do not block while the codebase clears any old debt. Promote
   them to `Blocking` once they are green (the standard path). A pure contract-verifying gate with no
   backlog of violations may start `Blocking`.

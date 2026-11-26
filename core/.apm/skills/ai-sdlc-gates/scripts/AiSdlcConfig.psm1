@@ -353,6 +353,7 @@ function Test-AiSdlcPathExcluded {
         foreach ($name in $names) { if ($parent -ieq $name) { return $true } }
     }
     return $false
+}
 
 function Get-AiSdlcMainBranch {
     # Returns the remote-tracking ref of the main branch, such as origin/main, for the scripts that

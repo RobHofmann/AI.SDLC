@@ -60,6 +60,7 @@ Describe 'Every gate keeps the exit-code contract' {
             'Update-SyncManifest.ps1'           = @(2, 3)
             'Check-SharedAgentsPartSize.ps1'    = @(2, 3)
             'Check-PackageVersion.ps1'          = @(2, 3)
+            'Build-GateCatalog.ps1'             = @(2, 3)
         }
 
         $script:Work = Join-Path ([IO.Path]::GetTempPath()) ('gate-contract-' + [guid]::NewGuid().ToString('n'))

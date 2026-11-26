@@ -27,8 +27,23 @@
     A gates.json entry names the script relative to its skill folder:
 
         { "package": "core", "gates": [
-            { "name": "C06 no em-dash characters", "script": "scripts/Check-DocEmDashes.ps1",
-              "clause": "C06", "mode": "Blocking", "args": { } } ] }
+            { "name": "Docs hold no em-dash characters", "script": "scripts/Check-DocEmDashes.ps1",
+              "clause": "C06", "mode": "Blocking", "args": { },
+              "checks": "It reads the docs. It finds the em-dash character. Exit 2 means no doc layer exists, and exit 3 means no page.",
+              "fix": "Replace each em-dash with a comma or a colon." } ] }
+
+    The name is a short statement of what passes. It holds no clause, no owner prefix and no note in
+    brackets, and it is unique among all gates, because the runner matches a result to its gate by name.
+    A name used twice fails both entries as a blocking failure. The clause lives only in "clause": a core
+    clause such as C06, a pack clause such as DOTNET-01, or AI-SDLC for a rule of the framework that no
+    clause holds. The run header shows it after the name.
+
+    "checks" and "fix" are required. A missing or empty value fails that gate as a blocking failure that
+    names the field, and the gate is not run. "checks" is 2 to 4 short sentences: what the gate checks,
+    the main thing it does not check, and what exit 2 and 3 mean for it. "fix" is one sentence. -List
+    prints "checks" under each gate, and a run prints it before the output of a gate that failed, could
+    not check or stopped. references/gate-catalog.md in this skill lists every gate of every package with
+    both texts.
 
     A "repoGates" entry has the same fields, with the script relative to the repository root. An entry
     with "requires": "CoverageFile" runs only when -CoverageFile is passed, and gets it as an argument.
@@ -87,11 +102,13 @@
     its setup, and says why.
 
 .PARAMETER BlockingOnly
-    Run only the blocking gates, as the pre-push hook does.
+    Run only the blocking gates, as the pre-push hook does. A gate entry that is not valid stays in the
+    run whatever its mode, also an Advisory entry without a checks or fix text, so the push fails on it.
 
 .PARAMETER List
-    Print the gates that would run, with their package, mode and clause and where each one runs
-    (pre-push, pull request, local run), and run none. It also lists a gate that needs -CoverageFile.
+    Print the gates that would run, with their package, mode and clause, what each one checks and where
+    each one runs (pre-push, pull request, local run), and run none. It also lists a gate that needs
+    -CoverageFile.
 
 .EXAMPLE
     pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1
@@ -128,6 +145,11 @@ function Add-Gate {
 
     $needsCoverage = $Entry.requires -eq 'CoverageFile'
     if ($needsCoverage -and -not $CoverageFile -and -not $List) { return }
+    $problems = [System.Collections.Generic.List[string]]::new()
+    foreach ($field in @('checks', 'fix')) {
+        $value = $Entry.$field
+        if (-not ($value -is [string]) -or [string]::IsNullOrWhiteSpace($value)) { $problems.Add(("{0} is missing or empty, and every gate needs a {0} text" -f $field)) }
+    }
     $gateArgs = @{ RepoRoot = $RepoRoot }
     if ($Entry.args) { foreach ($key in $Entry.args.Keys) { $gateArgs[$key] = $Entry.args[$key] } }
     if ($needsCoverage -and $CoverageFile) { $gateArgs['CoverageFile'] = $CoverageFile }
@@ -138,7 +160,9 @@ function Add-Gate {
             Args          = $gateArgs
             Mode          = if ($Entry.mode) { $Entry.mode } else { 'Blocking' }
             Clause        = if ($Entry.clause) { [string]$Entry.clause } else { $Package }
+            Checks        = if ($Entry.checks -is [string]) { $Entry.checks.Trim() } else { '' }
             NeedsCoverage = $needsCoverage
+            Invalid       = if ($problems.Count -gt 0) { ("Invalid gate entry '{0}': {1}. The gate was not run." -f $Entry.name, ($problems -join '; ')) } else { $null }
         })
 }
 
@@ -165,8 +189,16 @@ foreach ($entry in @($config.repoGates)) {
     if ((Test-Path -LiteralPath $folder) -and -not $testFolders.Contains($folder)) { $testFolders.Add($folder) }
 }
 
+$byName = $gates | Group-Object Name | Where-Object Count -GT 1
+foreach ($duplicate in $byName) {
+    foreach ($g in $duplicate.Group) {
+        $note = ("Invalid gate entry '{0}': the name is used by {1} gates, and the runner matches a result to its gate by name, so every name must be unique. The gate was not run." -f $g.Name, $duplicate.Count)
+        $g.Invalid = if ($g.Invalid) { $g.Invalid + ' ' + $note } else { $note }
+    }
+}
+
 if ($BlockingOnly) {
-    $kept = @($gates | Where-Object { $_.Mode -eq 'Blocking' })
+    $kept = @($gates | Where-Object { $_.Mode -eq 'Blocking' -or $_.Invalid })
     $gates.Clear()
     foreach ($g in $kept) { $gates.Add($g) }
 }
@@ -178,6 +210,8 @@ if ($List) {
     foreach ($g in $gates) {
         Write-Host ("{0,-13} {1,-9} {2,-12} {3}" -f $g.Package, $g.Mode, $g.Clause, $g.Name)
         Write-Host ("{0,-13} runs in: {1}" -f '', (Get-GateStage -Gate $g))
+        if ($g.Checks) { Write-Host ("{0,-13} checks: {1}" -f '', $g.Checks) }
+        if ($g.Invalid) { Write-Host ("{0,-13} {1}" -f '', $g.Invalid) }
     }
     Write-Host ''
     Write-Host ("{0} gate(s) from {1} package manifest(s), apm.yml and aisdlc.json." -f $gates.Count, $manifests.Count)
@@ -188,20 +222,20 @@ $results = [System.Collections.Generic.List[object]]::new()
 $testGates = @('Invoke-PesterGate.ps1', 'Invoke-PesterParallel.ps1')
 $skipped = @()
 if ($SkipTests) {
-    $skipped = @($gates | Where-Object { (Split-Path -Leaf $_.Script) -in $testGates })
-    $kept = @($gates | Where-Object { (Split-Path -Leaf $_.Script) -notin $testGates })
+    $skipped = @($gates | Where-Object { -not $_.Invalid -and (Split-Path -Leaf $_.Script) -in $testGates })
+    $kept = @($gates | Where-Object { $_.Invalid -or (Split-Path -Leaf $_.Script) -notin $testGates })
     $gates.Clear()
     foreach ($g in $kept) { $gates.Add($g) }
 }
 if ($SkipScript) {
     $names = @($SkipScript | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-    $skipped += @($gates | Where-Object { (Split-Path -Leaf $_.Script) -in $names })
-    $kept = @($gates | Where-Object { (Split-Path -Leaf $_.Script) -notin $names })
+    $skipped += @($gates | Where-Object { -not $_.Invalid -and (Split-Path -Leaf $_.Script) -in $names })
+    $kept = @($gates | Where-Object { $_.Invalid -or (Split-Path -Leaf $_.Script) -notin $names })
     $gates.Clear()
     foreach ($g in $kept) { $gates.Add($g) }
 }
 
-$runs = @($gates | ForEach-Object -ThrottleLimit ([Math]::Max(1, [Environment]::ProcessorCount)) -Parallel {
+$runs = @($gates | Where-Object { -not $_.Invalid } | ForEach-Object -ThrottleLimit ([Math]::Max(1, [Environment]::ProcessorCount)) -Parallel {
         $ErrorActionPreference = 'Stop'
         $g = $_
         $run = [pscustomobject]@{ Name = $g.Name; Lines = [System.Collections.Generic.List[object]]::new(); Code = 0; Error = $null }
@@ -219,10 +253,18 @@ $runs = @($gates | ForEach-Object -ThrottleLimit ([Math]::Max(1, [Environment]::
 
 foreach ($g in $gates) {
     Write-Host ""
-    Write-Host ("===== {0} ({1}, {2}) =====" -f $g.Name, $g.Package, $g.Mode) -ForegroundColor Cyan
+    Write-Host ("===== {0} ({1}, {2}, {3}) =====" -f $g.Name, $g.Package, $g.Mode, $g.Clause) -ForegroundColor Cyan
+    if ($g.Invalid) {
+        Write-Host $g.Invalid -ForegroundColor Red
+        if ($inPipeline) { Write-GateCommand -Type error -Title $g.Name -Message ("AI-SDLC: {0}" -f $g.Invalid) }
+        $results.Add([pscustomobject]@{ Gate = $g.Name; Mode = 'Blocking'; Status = 'FAIL' })
+        continue
+    }
     $howToRepeat = Get-GateRepeatCommand -Script $g.Script -RepoRoot $RepoRoot
     $run = @($runs | Where-Object Name -EQ $g.Name)[0]
+    $aboutGate = ("What this gate checks: {0}" -f $g.Checks)
     if (-not (Test-Path -LiteralPath $g.Script -PathType Leaf)) {
+        Write-Host $aboutGate -ForegroundColor DarkGray
         Write-Host ("Could not check: the gate script {0} does not exist." -f $g.Script) -ForegroundColor Yellow
         if ($inPipeline) {
             Write-GateAnnotation -Lines @("The gate script $($g.Script) does not exist; install the package that ships it.") -ExitCode 2 -Clause $g.Clause -What $g.Name -Mode $g.Mode -HowToRepeat $howToRepeat | Out-Null
@@ -231,6 +273,7 @@ foreach ($g in $gates) {
         continue
     }
     $lines = @($run.Lines)
+    if ($run.Error -or ($run.Code -ne 0 -and $run.Code -ne 3)) { Write-Host $aboutGate -ForegroundColor DarkGray }
     $lines | ForEach-Object { Write-Host $_ }
     if ($run.Error) {
         Write-Host ("The gate script stopped before it could report, so nothing was checked: {0}" -f $run.Error.Exception.Message) -ForegroundColor Red

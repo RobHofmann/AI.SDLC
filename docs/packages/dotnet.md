@@ -40,15 +40,15 @@ The Graphify code graph reference lives in `packs/dotnet/.apm/skills/dotnet-code
 
 The `dotnet-gates` skill defines these blocking gates:
 
-- `C10 the change adds no commented-out code, open TODO or AI tool name in a C# or Razor comment`
-- `Story-trait coverage: every test class tagged with a well-formed key`
-- `DOTNET-01 PascalCase JSON wire names`
+- `The change adds no commented-out code, open TODO or AI tool name in a C# or Razor comment`
+- `Every test class carries a Story trait with a well-formed story key`
+- `JSON wire names in C# and in specs are PascalCase`
 - `Docs match the code they cite`
-- `C04 coverage ratchet: must not drop below the recorded baseline`
+- `Line coverage stays at the baseline, and a gain of a point is written to the baseline file`
 
-It also defines the advisory gates `C10 added public C# types and members carry a doc comment` and `Spec drift: a described endpoint moved and its spec did not`.
+It also defines the advisory gates `Added public C# types and members carry a doc comment` and `A change to an endpoint that has a spec also changes that spec`.
 
-The `dotnet-code-graph` skill defines the advisory gate `Docs match the relationships the code has (needs the code graph)`.
+The `dotnet-code-graph` skill defines the advisory gate `Docs match the relationships the code graph has`.
 
 Gate definitions live in `packs/dotnet/.apm/skills/dotnet-gates/gates.json` and `packs/dotnet/.apm/skills/dotnet-code-graph/gates.json`.
 

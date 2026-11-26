@@ -89,6 +89,7 @@ pwsh tools/Invoke-PesterParallel.ps1                    # every test file in its
 pwsh core/.apm/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1 -Required   # no private term anywhere
 pwsh tools/Check-RetiredSkillNames.ps1                  # no shared file names a retired skill
 pwsh tools/Update-SkillCatalog.ps1 -Check               # the skill catalog is current
+pwsh tools/Build-GateCatalog.ps1 -Check                 # the gate list pages match the gates
 pwsh tools/Update-SyncManifest.ps1 -Check               # the sync manifest is current
 pwsh tools/Check-SharedAgentsPartSize.ps1               # the shared AGENTS.md parts stay within budget
 pwsh tools/Check-PackageVersion.ps1                     # every apm.yml has the newest CHANGELOG version
