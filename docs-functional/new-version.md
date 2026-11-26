@@ -17,7 +17,8 @@ person reviews and merges it.
 - A description that says what to fix in the same pull request. It lists each line of your own files that
   still uses a retired skill name, with the new name. A file whose name marks it as history, such as a
   change list, is listed apart, with the `paths.historyPaths` entry to add instead of a rename. It also
-  holds the steps that each release since your old version asks of you. A "Before you merge" list at the
+  holds the steps that each release since your old version asks of you, which the AI.SDLC changelog
+  lists under the line "What a consumer does when it takes this release:". A "Before you merge" list at the
   top names each step, so the whole update fits in this one pull request. When the list is too long, the
   full list is in a comment on the pull request.
 

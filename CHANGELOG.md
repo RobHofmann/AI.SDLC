@@ -218,6 +218,8 @@ This release holds the whole AI-SDLC for repositories on GitHub:
 - `tools/`: the setup script for a new consumer, with a starter pull request workflow and the update
   workflow. Then the test consumers and the parallel Pester runner.
 
-What a consumer does when it takes this release: run `tools/Add-AiSdlcConsumer.ps1` from a clone of
-AI.SDLC, or add `apm.yml` by hand as the README says. Then switch on Issues, run
-`Set-BranchRuleset.ps1` once, and set up the GitHub App of the update workflow.
+What a consumer does when it takes this release:
+
+- Run `tools/Add-AiSdlcConsumer.ps1` from a clone of AI.SDLC, or add `apm.yml` by hand as the README
+  says. Then switch on Issues, run `Set-BranchRuleset.ps1` once, and set up the GitHub App of the
+  update workflow.
