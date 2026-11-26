@@ -269,7 +269,8 @@ function Test-RefspecReachesProtected {
     if ($Refspec.Contains('*') -and ($Refspec -split ':')[-1] -notmatch '^refs/tags/') { return $true }
     $target = ($Refspec.TrimStart('+') -split ':')[-1] -replace '^(?:refs/)?heads/', ''
     if ($target -in $protectedBranches) { return $true }
-    return ($target -eq 'HEAD' -and $Branch -in $protectedBranches)
+    # git reads @ as HEAD, and on a file system that ignores case it finds HEAD as head too.
+    return ($target -in 'HEAD', '@' -and $Branch -in $protectedBranches)
 }
 
 function Get-ConfigValue {

@@ -186,7 +186,9 @@ run_gates() (
             echo "pre-push: a pushed ref is not the checked-out commit, so every blocking gate runs, not only the ones the change touches."
         fi
         echo "pre-push: running blocking CA gates ($runner -BlockingOnly $all_flag)..."
-        AISDLC_PUSHED_COMMITS="$pushed" "$PWSH" -NoProfile -File "$runner" -BlockingOnly $all_flag
+        # AISDLC_CHANGE_BASE is for the pre-flight only. An inherited value would narrow the gates this
+        # hook runs, so it is cleared here.
+        AISDLC_CHANGE_BASE= AISDLC_PUSHED_COMMITS="$pushed" "$PWSH" -NoProfile -File "$runner" -BlockingOnly $all_flag
         status=$?
     fi
 

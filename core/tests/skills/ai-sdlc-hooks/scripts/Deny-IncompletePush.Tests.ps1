@@ -228,6 +228,14 @@ exit 0
             $r.Output | Should -Match 'main or master is refused'
         }
 
+        It 'refuses a push of <Command> while the current branch is main, because git reads it as HEAD' -Tag '#52' -ForEach @(
+            @{ Command = 'git push origin @' }
+            @{ Command = 'git push origin head' }
+        ) {
+            $r = Invoke-Hook -Payload (New-Payload -Command $Command) -CheckScript $script:CleanCheck -Branch 'main'
+            $r.Output | Should -Match 'main or master is refused'
+        }
+
         It 'refuses a bare push while the current branch is main' {
             $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $script:CleanCheck -Branch 'main'
             $r.Output | Should -Match 'main or master is refused'
