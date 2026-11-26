@@ -18,7 +18,7 @@ core.
 
 | File | Skills | Pack | Warning source |
 |---|---|---|---|
-| `.cs` | `csharp-generation-smells`, `test-first-dotnet` | dotnet | the .NET analyzers in the build, on the clean code page of `csharp-generation-smells` |
+| `.cs` | `csharp-conventions`, `test-first-dotnet` | dotnet | the .NET analyzers in the build, on the clean code page of `csharp-conventions` |
 | `.razor` | `razor-conventions`; also `css-conventions` when the change adds layout classes in markup, and `javascript-conventions` when it adds a JavaScript call | blazor, css, javascript | the .NET build, and the Razor gates of `razor-conventions` |
 | `.css` | `css-conventions` | css | none in the build |
 | `.js` | `javascript-conventions` | javascript | none in the build |

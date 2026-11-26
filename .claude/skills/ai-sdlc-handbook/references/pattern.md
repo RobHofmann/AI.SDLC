@@ -153,7 +153,7 @@ that page, so a rule lives once and a knowledge skill cannot drift from it.
 
 ```
 ---
-name: <topic-name>                 # e.g. csharp-generation-smells, adr-conventions
+name: <topic-name>                 # e.g. csharp-conventions, adr-conventions
 kind: knowledge
 user-invocable: false              # stays out of the slash-command list
 description: "<what it covers; Use when a change touches ...>"

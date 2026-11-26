@@ -7,6 +7,7 @@ BeforeDiscovery {
         @{ Package = 'blazor'; Skill = 'razor-conventions'; Pages = @('references/razor.md') }
         @{ Package = 'css'; Skill = 'css-conventions'; Pages = @('references/css.md', 'references/not-decided.md') }
         @{ Package = 'javascript'; Skill = 'javascript-conventions'; Pages = @('references/javascript.md') }
+        @{ Package = 'dotnet'; Skill = 'csharp-conventions'; Pages = @('references/house-style.md', 'references/not-decided.md', 'references/csharp.md') }
     )
 }
 
@@ -92,5 +93,39 @@ Describe 'The split of the Blazor rules' {
         $apm = Get-Content -LiteralPath (Join-Path $script:RepoRoot "test-consumers/$_-only/apm.yml") -Raw
         $packs = @([regex]::Matches($apm, 'packs/([a-z-]+)') | ForEach-Object { $_.Groups[1].Value })
         $packs | Should -Be @($_)
+    }
+}
+
+Describe 'The house style of csharp-conventions' {
+    BeforeAll {
+        $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+        $script:Skill = Join-Path $script:RepoRoot 'packs/dotnet/.apm/skills/csharp-conventions'
+    }
+
+    It 'gives each house rule a code example or an inline example, and at least two public links' {
+        $text = Get-Content -LiteralPath (Join-Path $script:Skill 'references/house-style.md') -Raw
+        $sections = @([regex]::Split($text, '(?m)^## ') | Select-Object -Skip 1 | Where-Object { $_ -notmatch '^(Related|The folder of a new type)' })
+        $sections.Count | Should -BeGreaterThan 5
+        foreach ($section in $sections) {
+            $title = ($section -split "`n")[0]
+            $section | Should -Match '`' -Because "$title needs an example"
+            ([regex]::Matches($section, '\]\(https://')).Count | Should -BeGreaterOrEqual 2 -Because "$title needs two public sources"
+        }
+    }
+
+    It 'says on not-decided.md that a change follows the file it edits' {
+        $text = Get-Content -LiteralPath (Join-Path $script:Skill 'references/not-decided.md') -Raw
+        $text | Should -Match 'A change follows the form of the file or class it edits'
+    }
+
+    It 'reads the folders of a new type from dotnet.folders' {
+        $text = Get-Content -LiteralPath (Join-Path $script:Skill 'references/house-style.md') -Raw
+        foreach ($key in 'contracts', 'exceptions', 'options') { $text | Should -Match "dotnet\.folders\.$key" }
+    }
+
+    It 'leaves out the app settings rule and a fixed default folder name' {
+        $all = (Get-ChildItem -LiteralPath $script:Skill -Recurse -File -Filter '*.md' | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
+        $all | Should -Not -Match 'App Configuration'
+        $all | Should -Not -Match 'Configs/Options'
     }
 }

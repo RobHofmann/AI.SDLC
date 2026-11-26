@@ -66,7 +66,7 @@ This keeps the gate honest: the build only fails on a rule that was clean when i
 ## Related
 
 - [C# conventions](csharp.md) - the wider C# style these rules sit inside.
-- [The csharp-generation-smells skill](../SKILL.md) - the C# review checks.
+- [The csharp-conventions skill](../SKILL.md) - the C# review checks.
 - [Clean code for every language](/.claude/skills/code-conventions/references/clean-code.md) - the Bucket 2 rules.
 - [Comments](/.claude/skills/ai-sdlc-handbook/references/comments.md) - the Bucket 3 comment policy.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - clause C03 on secrets and C10 on comments.

@@ -1,35 +1,53 @@
 ---
-name: csharp-generation-smells
+name: csharp-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  The ways generated C# and Razor drift from the house conventions where no analyzer catches it. They
-  cover errors through the pipeline, async and resources, validation, logging, wire names, doc
-  comments, naming, DI, closed sets and the C# security rules. They also cover Razor component shape
-  and test shape. The rules for every
-  language live in code-conventions. Use when writing or reviewing C# or Razor in this repository. Also use at the build and
-  review steps of implement, refactor or fix-pr-feedback, or when the
-  code-reviewer agent reads a diff. Do NOT use to run the build or the gates (run-preflight) or to
-  decide the order of the build steps (implement).
+  The C# rules: the house style, errors through the pipeline, async and resources, validation,
+  logging, wire names, DI, closed sets, C# security and test shape. The rules for every language are
+  in code-conventions. Use when writing or reviewing C#, at the build and review steps of implement,
+  refactor and fix-pr-feedback. Do NOT use for Razor markup (razor-conventions) or to run the gates
+  (run-preflight).
 ---
 
-# C# generation smells
+# C# conventions
 
-This is a fast check for the mistakes generated C# really makes here. Most are judgement calls that no
-analyzer enforces, so the build stays green while the code drifts. Each item points at the page that
-holds the full rule; the page wins when the two differ. The rules that hold in every language live once in
+This skill holds the C# rules. Most are judgement calls that no analyzer enforces, so the build stays
+green while the code drifts. Each item points at the page that holds the full rule; the page wins when
+the two differ. The rules that hold in every language live once in
 [code-conventions](/.claude/skills/code-conventions/SKILL.md). Examples are reuse before you build,
-build only what the story needs, a twin follows its sibling, and fix the class. This skill adds the C# and
-Razor rules only. `implement`, `refactor` and `fix-pr-feedback`
-load this at the build and review steps. The `builder`, `code-reviewer` and `security-reviewer` agents
-read it through the table of file types in `code-conventions`.
+build only what the story needs, a twin follows its sibling, and fix the class. This skill adds the C#
+rules only. `implement`, `refactor` and `fix-pr-feedback` load this at the build and review steps. The
+`builder`, `code-reviewer` and `security-reviewer` agents read it through the table of file types in
+`code-conventions`.
 
 ## Before you write
+
+- **A point of taste** follows the file or class you edit, and a new file follows its neighbours. The
+  C# points of taste, with the default for a new file, are on [not-decided.md](references/not-decided.md).
+- **Folder names are settings** in `dotnet.folders` of `aisdlc.json`: `contracts`, `exceptions` and
+  `options`. Without a key, a new type goes where the types of its kind next to the change sit. A file
+  that exists stays where it is.
 
 - **One domain per controller.** Extend the controller that owns the resource; see
   [api.md](/.claude/skills/api-contract-conventions/references/api.md), "One Domain Per Controller".
 - **A closed set in C#.** When the change branches on an enum or a sealed hierarchy, read the type and
   handle every member ([csharp.md](references/csharp.md), "Control flow over closed sets").
+
+## House style
+
+The full rules, with an example and two public sources each, are on
+[house-style.md](references/house-style.md).
+
+- A primary constructor, with its parameters used directly; no `_field` copies.
+- One top-level type per file, with the same name.
+- An options class ends in `Options` and comes in through `IOptions<T>`, never `IConfiguration`.
+- A method that returns a task ends in `Async`, except a controller action.
+- A null check is `is null` or `is not null`; no null check on a value that cannot be null.
+- `nameof` when a string must equal a C# name; a literal when the name is a contract.
+- A controller action has a `[ProducesResponseType]`, a route `Name` and a kebab-case route.
+- No `#region`. Target-typed `new()`, `[]`, `var`, expression bodies, a file-scoped namespace and the
+  `is` pattern; a switch expression with a default arm, also for two cases.
 
 ## While you write
 
@@ -85,6 +103,8 @@ from input, deserialization and error bodies.
 
 ## Sources
 
+- [House style](references/house-style.md) - the C# house rules, with an example and two sources each.
+- [Not decided](references/not-decided.md) - the C# points of taste, with the default for a new file.
 - [C# conventions](references/csharp.md) - language, DI, testing and closed sets.
 - [Code conventions](/.claude/skills/code-conventions/SKILL.md) - the rules for every language.
 - [Clean Code rules](references/clean-code.md) - the analyzer rules of C#.

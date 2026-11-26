@@ -15,5 +15,5 @@ that agent when it moved from the dotnet pack to core. The checks for every lang
 
 ## Related
 
-- [The csharp-generation-smells skill](../SKILL.md) - the C# rules this page belongs to.
+- [The csharp-conventions skill](../SKILL.md) - the C# rules this page belongs to.
 - [C# conventions](csharp.md) - the wider C# style, with validation and errors.

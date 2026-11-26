@@ -48,7 +48,7 @@
     ],
     "dotnet": [
       "api-contract-conventions",
-      "csharp-generation-smells",
+      "csharp-conventions",
       "dotnet-code-graph",
       "dotnet-gates",
       "nuget-vulnerability-remediation",

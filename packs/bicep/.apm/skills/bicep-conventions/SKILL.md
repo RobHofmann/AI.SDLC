@@ -10,7 +10,7 @@ description: >
   state and not the journey, and the script that reorders a file. Use when writing or reviewing a .bicep or .bicepparam
   file, or when a template replaces one resource with another. Also use before a pull request that
   touches infrastructure code. Do NOT use for deploying a template, for the C#
-  code that calls Azure (csharp-generation-smells) or to write a new gate (add-gate).
+  code that calls Azure (csharp-conventions) or to write a new gate (add-gate).
 ---
 
 # Bicep conventions

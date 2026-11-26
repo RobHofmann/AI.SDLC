@@ -193,7 +193,7 @@ A knowledge skill says how we do one thing and links the page that holds the ful
 | `code-conventions` | core | The code rules for every language, the severity scale, and the convention skill of each file type |
 | `powershell-conventions` | core | The PowerShell rules: help block, strict mode, exit-code checks, Pester tests and script security |
 | `yaml-conventions` | core | The rules for any YAML file: spaces, unique keys, quotes, block scalars, comments and no secrets |
-| `csharp-generation-smells` | dotnet | The C# and Razor rules where no analyzer looks, and the C# security rules |
+| `csharp-conventions` | dotnet | The C# and Razor rules where no analyzer looks, and the C# security rules |
 | `test-first-dotnet` | dotnet | Test-first, the story trait, AAA markers, the coverage ratchet |
 | `api-contract-conventions` | dotnet | The wire rules and the spec that moves with its endpoint |
 | `dotnet-gates` | dotnet | The gates the dotnet pack adds |
@@ -300,7 +300,7 @@ sized to how much depth it needs.
   in a public repository. The list itself lives outside the repository.
 - **Coding conventions** - the `code-conventions` skill holds the code rules every repository shares,
   with [comments.md](comments.md) and [language.md](language.md). Its table of skills by file type names
-  the convention skill of each stack pack, for example `csharp-generation-smells` for C# or
+  the convention skill of each stack pack, for example `csharp-conventions` for C# or
   `bicep-conventions` for Bicep. The
   create-phase skills follow them and several gates enforce them.
 - **Docs wiki, and whether it is true** - [docs-wiki.md](docs-wiki.md). Two different questions, both

@@ -14,7 +14,7 @@ description: >
 # Code conventions
 
 This is the one home of the code rules that hold in every language; the agents and build skills point
-here. A convention skill of one language, such as `csharp-generation-smells` in the dotnet pack, adds
+here. A convention skill of one language, such as `csharp-conventions` in the dotnet pack, adds
 the rules of that language only. When a language skill and this page disagree on a shared rule, this
 page wins.
 

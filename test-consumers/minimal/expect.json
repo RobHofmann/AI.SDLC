@@ -28,7 +28,7 @@
     ".claude/skills/test-first-dotnet",
     ".claude/skills/dotnet-gates",
     ".claude/skills/dotnet-code-graph",
-    ".claude/skills/csharp-generation-smells",
+    ".claude/skills/csharp-conventions",
     ".claude/skills/bicep-conventions",
     ".claude/skills/razor-conventions",
     ".claude/skills/css-conventions",

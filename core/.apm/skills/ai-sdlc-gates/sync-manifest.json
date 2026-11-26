@@ -48,7 +48,7 @@
         ".claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.ps1": "f9ec411c8663d771b516b302ef4fd1a10ca85e03",
         ".claude/skills/ai-sdlc-gates/scripts/data/cefrj-vocabulary-profile-1.5.csv": "1a9cee97a531d04c67751eb4049127c4227bd26a",
         ".claude/skills/ai-sdlc-gates/scripts/data/octanove-vocabulary-profile-c1c2-1.0.csv": "4c44a971b4fb7b51da472b1dd8370cb64ff4234a",
-        ".claude/skills/ai-sdlc-gates/scripts/data/reading-level-allowlist.txt": "af857f2957355719361953d507cbf289468db814",
+        ".claude/skills/ai-sdlc-gates/scripts/data/reading-level-allowlist.txt": "70251668a30b5dee405924ecb165a2ef3968f889",
         ".claude/skills/ai-sdlc-gates/scripts/data/README.md": "5594aa4e7c50727e500cbd49f8581ecdd45c64a3",
         ".claude/skills/ai-sdlc-gates/scripts/DocCoverage.psm1": "c244df54881a49e8238d15b233a54411445b086b",
         ".claude/skills/ai-sdlc-gates/scripts/GateAnnotation.psm1": "f65a427de349ed62e3a20d63bdc91b9315bc3e5c",
@@ -68,7 +68,7 @@
         ".claude/skills/ai-sdlc-gates/scripts/Test-PushReceipt.ps1": "54ec6a3e42d488994ee91d0f4993ba5d3366d96a",
         ".claude/skills/ai-sdlc-gates/scripts/Test-PushSendsNothingNew.ps1": "79da28786523f1f0c908c66032cce19d5b07f541",
         ".claude/skills/ai-sdlc-gates/scripts/ToolOutput.psm1": "1175b499e53dbe8b8ee25a177f65940eed07a492",
-        ".claude/skills/ai-sdlc-gates/skill-catalog.json": "53900219d20d8af0ded3e582943b611060189f01",
+        ".claude/skills/ai-sdlc-gates/skill-catalog.json": "db8e3b5702ac846de8cd25b5a152a321abb7e215",
         ".claude/skills/ai-sdlc-gates/SKILL.md": "e75802ee86277f43c4c6452e3311fb4e980d6468",
         ".claude/skills/ai-sdlc-handbook/references/artifact-graph.md": "8e16413affc7aa745d6626d424f637113c9b31cf",
         ".claude/skills/ai-sdlc-handbook/references/autolearn.md": "c2b854cdc59a976d1fda98d61726a90460a8af17",
@@ -79,13 +79,13 @@
         ".claude/skills/ai-sdlc-handbook/references/docs-wiki.md": "ed10110d14907bc57b40c455d84c39ae646a742f",
         ".claude/skills/ai-sdlc-handbook/references/first-story.md": "becb20bf0dd30283e6d1f28cad5db57a698ed38a",
         ".claude/skills/ai-sdlc-handbook/references/language.md": "cfe824f37e86c091235508e4416105db5c187225",
-        ".claude/skills/ai-sdlc-handbook/references/layout.md": "0cdcd9405bf6d2f715b345a6d4dd892f3c19fc4d",
+        ".claude/skills/ai-sdlc-handbook/references/layout.md": "f5fc39221975bf8006808df16fa7b7c329b571bc",
         ".claude/skills/ai-sdlc-handbook/references/node-templates.md": "580c9c92c470a6abbaa0145cc3060ff1a11d247c",
         ".claude/skills/ai-sdlc-handbook/references/orchestration.md": "fd587b03f7a21a482da633e7225e8b68d9dc3c7d",
-        ".claude/skills/ai-sdlc-handbook/references/pattern.md": "d088deb0e7b56c08eb2d4cc320f6196c437c450f",
+        ".claude/skills/ai-sdlc-handbook/references/pattern.md": "04bcddc5fcb46d21b8779521a5c965726a94cfed",
         ".claude/skills/ai-sdlc-handbook/references/personas.md": "40a114737db558ee68471895014cfbdd80d3c5b7",
         ".claude/skills/ai-sdlc-handbook/references/plan.md": "92007175656aacef724eb793ef52ff6d16ae524f",
-        ".claude/skills/ai-sdlc-handbook/references/README.md": "adea478e720ba835e8f5aa846de90e5c3827a778",
+        ".claude/skills/ai-sdlc-handbook/references/README.md": "56e6327c95936bc8bf06fe8534c20ec2271bd07d",
         ".claude/skills/ai-sdlc-handbook/references/skill-usage.md": "156c716dbc880667ae6872ac2d2a39190b7568b1",
         ".claude/skills/ai-sdlc-handbook/SKILL.md": "67ec15d52be245a90fa92436624c922d0df77ac5",
         ".claude/skills/ai-sdlc-hooks/gates.json": "5ccede757f407e1b86737666375bbb67532c1c51",
@@ -114,9 +114,9 @@
         ".claude/skills/ai-sdlc-hooks/scripts/WindowsLongPaths.ps1": "fa3d7f509b6f9a1a935178c1eaf0d1566b7afead",
         ".claude/skills/ai-sdlc-hooks/SKILL.md": "0771734d3685b454c193d440389bfd1898dd07e3",
         ".claude/skills/capture-learning/SKILL.md": "cfff58fcc5084919d5daf85f616a7098bbbba32c",
-        ".claude/skills/code-conventions/references/clean-code.md": "8e5baf2342a4d05d271f851d62c3c383457dda4c",
-        ".claude/skills/code-conventions/references/skills-by-file-type.md": "d475ca2bf0428c5ef9b00e6712d2648d73279e84",
-        ".claude/skills/code-conventions/SKILL.md": "f07f72f9662da6263f908eeabfe04c139f90d99f",
+        ".claude/skills/code-conventions/references/clean-code.md": "0202b05bfed511ae0004c5c556a549595e9590ae",
+        ".claude/skills/code-conventions/references/skills-by-file-type.md": "d11897bbe749ec4f8f343de32ab49bafeff37ffb",
+        ".claude/skills/code-conventions/SKILL.md": "fc10a4bd111ecc8d0f217a78b9f497cd91b1be24",
         ".claude/skills/convene-personas/SKILL.md": "78e86f4f20c694f3d0c28fe82ba005c3859828d8",
         ".claude/skills/docs-wiki-conventions/SKILL.md": "0679512fa39815b63da6373ff29bb6eadc52ff24",
         ".claude/skills/grill-me/LICENSE-upstream.md": "497124fad03f5c788bc6d76bea4beea086ccf8e7",
@@ -233,7 +233,7 @@
         ".claude/skills/bicep-conventions/scripts/Get-BicepFacts.ps1": "22262a1ddee2b5b2c1e62b69cd5144ec83c1b54a",
         ".claude/skills/bicep-conventions/scripts/Invoke-BicepPreflight.ps1": "2cb069aff40ac612408ccf890bbdc2beb617f872",
         ".claude/skills/bicep-conventions/scripts/Reorder-BicepPropertyOrder.ps1": "2df56588ccd935e98e0e8b09f90ff3de9b349746",
-        ".claude/skills/bicep-conventions/SKILL.md": "f9a873851846c238f3443a19a7b74e2ed77da47c"
+        ".claude/skills/bicep-conventions/SKILL.md": "cb128f2067ca4d175310430dfcc4e9e388aa467b"
       },
       "hooks": []
     },
@@ -270,13 +270,15 @@
     },
     "dotnet": {
       "files": {
-        ".claude/skills/api-contract-conventions/references/api.md": "249bee70f46c8158a5e7f83c9e044d022803010a",
+        ".claude/skills/api-contract-conventions/references/api.md": "a5946f310e5f622db128cffb2bc941604e5e5f8a",
         ".claude/skills/api-contract-conventions/references/clauses.md": "b43706da544110478b8d3c092c9eb9501a019d3e",
         ".claude/skills/api-contract-conventions/SKILL.md": "9e125dcd395a271c778f8f89360e4dd762744297",
-        ".claude/skills/csharp-generation-smells/references/clean-code.md": "d0bc98e92b6589511874e5fbe98690cdfa148ee1",
-        ".claude/skills/csharp-generation-smells/references/csharp.md": "72eef15e3204e9f253b0fb08aad3e2a6d2c5ce44",
-        ".claude/skills/csharp-generation-smells/references/security.md": "aeeaedfd102e9813c6b11211ee06470fa5613a7b",
-        ".claude/skills/csharp-generation-smells/SKILL.md": "75b39ea2341c5559684143f24b8e930a9e517457",
+        ".claude/skills/csharp-conventions/references/clean-code.md": "bbe2906132f7e6f079da82a669c231256507b9e5",
+        ".claude/skills/csharp-conventions/references/csharp.md": "65564c28a6c237e19ed23025ada7c9bb988749a1",
+        ".claude/skills/csharp-conventions/references/house-style.md": "59103eaf551b1faee746b58662f497bd8ce9b316",
+        ".claude/skills/csharp-conventions/references/not-decided.md": "bddecca729c22b4ab44a5ba999e358d20d338c81",
+        ".claude/skills/csharp-conventions/references/security.md": "fdafeec335342de508c3a4cb9c4821c2ec124993",
+        ".claude/skills/csharp-conventions/SKILL.md": "1ab122d8d8a75f86462c337119066e58abe4e957",
         ".claude/skills/dotnet-code-graph/gates.json": "e35f10172566401a07483af1448182bf7d10f9be",
         ".claude/skills/dotnet-code-graph/references/code-graph.md": "9ccaafe0e5ecd6ad81a1fd50993d124e7652877e",
         ".claude/skills/dotnet-code-graph/scripts/Check-DocGraphClaims.ps1": "7d0d3c3fdac337e80ebf7a9b3f9c236257438834",
@@ -305,9 +307,9 @@
         ".claude/skills/dotnet-gates/scripts/Initialize-Dotnet.ps1": "ce7dd39b322e53394568550feb02b21385045579",
         ".claude/skills/dotnet-gates/scripts/Invoke-DotnetPostEdit.ps1": "7187cd4062bd13947e1709287d08abcadf02d1d5",
         ".claude/skills/dotnet-gates/scripts/Invoke-DotnetPreflight.ps1": "7cab24897327d52c63190c6e57e1a11c95a334f4",
-        ".claude/skills/dotnet-gates/SKILL.md": "d140d6cdf37622c0a570e0b18197522d1e7b6070",
-        ".claude/skills/nuget-vulnerability-remediation/SKILL.md": "5edd5bd3d27b96845b2136d513ecfec32a894b27",
-        ".claude/skills/test-first-dotnet/SKILL.md": "17825a6895936850ad48aa37a7698db7b6f06434",
+        ".claude/skills/dotnet-gates/SKILL.md": "3a038783974f4888f06c86ad7548ffcffe57bc3d",
+        ".claude/skills/nuget-vulnerability-remediation/SKILL.md": "db0e7ba1f983d139c3f9448caed26d7182819ae6",
+        ".claude/skills/test-first-dotnet/SKILL.md": "6d3effa3bc9978f4eda5da28ccc57593273634f1",
         ".claude/skills/write-api-spec/SKILL.md": "f9934b28d9986ea046bbd26cdc24cfd0040b4c7f"
       },
       "hooks": [
@@ -418,7 +420,8 @@
     }
   },
   "retired": {
-    "blazor-conventions": "razor-conventions"
+    "blazor-conventions": "razor-conventions",
+    "csharp-generation-smells": "csharp-conventions"
   },
   "sharedTests": [
     "AiSdlcConfig.Tests.ps1",

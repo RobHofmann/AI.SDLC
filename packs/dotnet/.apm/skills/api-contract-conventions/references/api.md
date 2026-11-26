@@ -65,5 +65,5 @@ writes it, and the dotnet gate `Check-SpecDrift.ps1` compares it with the contro
 
 - [The dotnet clauses](clauses.md) - DOTNET-01 and DOTNET-02 in full.
 - [The api-contract-conventions skill](../SKILL.md) - the short rules a build and a review check.
-- [C# conventions](/.claude/skills/csharp-generation-smells/references/csharp.md) - JSON settings and typed exceptions.
+- [C# conventions](/.claude/skills/csharp-conventions/references/csharp.md) - JSON settings and typed exceptions.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - the core clauses and the ID scheme.

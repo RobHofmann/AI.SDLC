@@ -4,3 +4,4 @@
 # into sync-manifest.json, so a consumer can find a folder an older version left behind.
 
 blazor-conventions razor-conventions
+csharp-generation-smells csharp-conventions

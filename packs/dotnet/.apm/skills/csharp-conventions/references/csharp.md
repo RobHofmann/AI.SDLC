@@ -1,7 +1,7 @@
 # C# conventions
 
 This page is the detailed C# reference of the dotnet pack. The short rules sit in the
-[csharp-generation-smells skill](../SKILL.md), and the analyzer rules sit in [Clean Code rules](clean-code.md).
+[csharp-conventions skill](../SKILL.md), and the analyzer rules sit in [Clean Code rules](clean-code.md).
 A repository can add its own C# rules on a page of its own, for example its logging method and its
 exception types.
 
@@ -170,7 +170,7 @@ the lines a change adds, and `Check-XmlDocs.ps1` reports a public declaration wi
 ## Related
 
 - [Clean Code rules](clean-code.md) - the analyzer-backed quality gate these conventions feed.
-- [The csharp-generation-smells skill](../SKILL.md) - the short rules a build and a review check.
+- [The csharp-conventions skill](../SKILL.md) - the short rules a build and a review check.
 - [API conventions](/.claude/skills/api-contract-conventions/references/api.md) - the wire rules and thin controllers.
 - [Comments](/.claude/skills/ai-sdlc-handbook/references/comments.md) - clause C10 in full.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - clause C04 on tests and coverage.

@@ -61,7 +61,7 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -CoverageFile <m
 
 ## Sources
 
-- [C# conventions](/.claude/skills/csharp-generation-smells/references/csharp.md) - the rules these gates hold the code to.
+- [C# conventions](/.claude/skills/csharp-conventions/references/csharp.md) - the rules these gates hold the code to.
 - [Test-first .NET](/.claude/skills/test-first-dotnet/SKILL.md) - story traits, coverage and the run settings.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - DOTNET-01, C04 and C10.
 

@@ -69,7 +69,7 @@ the seam that reaches the bug. The plan then names that seam.
   members.
 - **Logging and nullable traps.** A logging extension that checks `IsEnabled` first needs `IsEnabled`
   stubbed in the test. In a nullable-enabled test project, use the annotated `Verify` form. Both
-  are in the Testing section of [the C# conventions page](/.claude/skills/csharp-generation-smells/references/csharp.md#testing).
+  are in the Testing section of [the C# conventions page](/.claude/skills/csharp-conventions/references/csharp.md#testing).
 - **DI registration.** A new `Add*()` method joins the registration tests, when the repository has
   a test that builds every `Add*()` method.
 
@@ -99,7 +99,7 @@ mark a criterion done on your own judgement (C09); show the test and leave the s
 
 ## Sources
 
-- [C# conventions, Testing](/.claude/skills/csharp-generation-smells/references/csharp.md) - the full test style.
+- [C# conventions, Testing](/.claude/skills/csharp-conventions/references/csharp.md) - the full test style.
 - [Run pre-flight](/.claude/skills/run-preflight/SKILL.md) - running the PR checks locally.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - C04, C09, C10.
 - The seams rule and the anti-patterns come from `skills/engineering/tdd/SKILL.md` in

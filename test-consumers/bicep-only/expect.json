@@ -16,7 +16,7 @@
     ".claude/skills/test-first-dotnet",
     ".claude/skills/dotnet-gates",
     ".claude/skills/dotnet-code-graph",
-    ".claude/skills/csharp-generation-smells",
+    ".claude/skills/csharp-conventions",
     ".claude/skills/github-pull-requests",
     ".claude/skills/github-issue-conventions",
     ".claude/skills/ai-sdlc-gates/assets/pipelines"
