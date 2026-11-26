@@ -3,3 +3,4 @@
 # Check-RetiredSkillNames.ps1 fails when an old name is still used. Update-SyncManifest.ps1 writes the pairs
 # into sync-manifest.json, so a consumer can find a folder an older version left behind.
 
+blazor-conventions razor-conventions

@@ -64,7 +64,9 @@ Start any piece of work with `guide-me`. It reads where the work stands and name
 | `discovery` | Research summaries, journey maps and hypothesis canvases, as markdown | Repositories with discovery work |
 | `knowledge` | Short, sourced notes about how a system really behaves, kept in a private knowledge repository | Repositories that keep such notes |
 | `dotnet` | C# conventions, test-first, the .NET gates and a local [Graphify](https://graphify.com) code graph | .NET repositories |
-| `blazor` | Blazor component and authorization conventions | Blazor repositories |
+| `blazor` | Razor component and authorization conventions; it brings the `css` and `javascript` packs | Blazor repositories |
+| `css` | CSS conventions for style sheets | Repositories with CSS, also without Blazor |
+| `javascript` | JavaScript conventions for browser modules | Repositories with JavaScript, also without Blazor |
 | `bicep` | Bicep conventions and the Bicep pre-flight | Repositories with Bicep templates |
 | `sonarcloud` | The SonarQube MCP server for the agent session | Repositories with a SonarCloud project |
 

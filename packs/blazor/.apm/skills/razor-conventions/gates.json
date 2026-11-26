@@ -5,7 +5,7 @@
     { "name": "Component attributes sit on their own line above the member they mark", "script": "scripts/Check-RazorAttributePlacement.ps1", "clause": "AI-SDLC", "mode": "Blocking", "checks": "It scans the source root for a component attribute that shares a line with the member below it. It does not check the other rules of `Check-RazorConventions.ps1`. Exit 2 means `paths.sourceRoot` is not set, and it never exits 3.", "fix": "Move the attribute onto its own line above its member." }
   ],
   "allow": [
-    "pwsh -NoProfile -File .claude/skills/blazor-conventions/scripts/Check-*",
-    "pwsh .claude/skills/blazor-conventions/scripts/Check-*"
+    "pwsh -NoProfile -File .claude/skills/razor-conventions/scripts/Check-*",
+    "pwsh .claude/skills/razor-conventions/scripts/Check-*"
   ]
 }

@@ -63,7 +63,7 @@ read it through the table of file types in `code-conventions`.
   components. No inline `<style>` blocks.
 - When markup moves between components, list what the old home also provided before you delete it,
   such as a `PageTitle`.
-- The full rules: `blazor-conventions`, when the blazor pack is installed.
+- The full rules: `razor-conventions`, when the blazor pack is installed.
 
 ## Security
 

@@ -1,20 +1,9 @@
-# Blazor component conventions
+# Razor rules
 
-This page is the reference for the components of a Blazor Server app. The short rules and the two
-gates sit in [the blazor-conventions skill](../SKILL.md). A repository keeps its design system, its CSS
-variables and the name of its API client on a page of its own.
-
-## Styling
-
-- **Blazor Server** with CSS isolation: component styles live in `*.razor.css`.
-- **A scoped stylesheet does not travel with a class name.** `Foo.razor.css` only reaches elements that
-  `Foo.razor` renders, because Blazor stamps those with a scope attribute. Copying a class name from
-  another component gives you the name and none of its styling. A common symptom: the element has the
-  right size and place but paints nothing, because it renders under a fixed background layer. Give a new
-  component its own class and its own scoped stylesheet.
-- Prefer a component of the design system when one exists. Fall back to layout utility classes for what
-  the design system does not cover.
-- Keep the styling of a component in its own `*.razor.css`, not in a global stylesheet.
+This page is the reference for the Razor components of a Blazor Server app. The short rules and the
+two gates sit in [the razor-conventions skill](../SKILL.md). A repository keeps its design system, its
+CSS variables and the name of its API client on a page of its own. The rules for the style sheet of a
+component are in [css-conventions](/.claude/skills/css-conventions/SKILL.md).
 
 ## Component conventions
 
@@ -77,8 +66,8 @@ down here.
   breaking. A refused write can happen in normal operation, for example while writes are switched off
   for maintenance.
 
-- **No inline `<style>` blocks.** Put styles in the component's `*.razor.css`, or in a stylesheet under
-  `wwwroot`. This follows the OWASP guidance, and it means no page needs `unsafe-inline`. The blazor gate
+- **No inline `<style>` blocks.** Put styles in the component's `*.razor.css`, as
+  [css.md](/.claude/skills/css-conventions/references/css.md) says. This follows the OWASP guidance, and it means no page needs `unsafe-inline`. The blazor gate
   `Check-RazorConventions.ps1` checks it.
 
 - **Render a page the way the app renders pages:** a routable component, reached through `App.razor` and
@@ -88,6 +77,7 @@ down here.
 
 ## Related
 
-- [The blazor-conventions skill](../SKILL.md) - the short rules and the two gates that hold them.
+- [The razor-conventions skill](../SKILL.md) - the short rules and the two gates that hold them.
+- [CSS rules](/.claude/skills/css-conventions/references/css.md) - the style sheet of a component.
 - [The blazor-authorization skill](/.claude/skills/blazor-authorization/SKILL.md) - authorization checks in the same app.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - clause C01, and clause C10 on doc comments and comments.

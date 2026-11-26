@@ -32,7 +32,9 @@
     ".claude/skills/dotnet-gates",
     ".claude/skills/dotnet-code-graph",
     ".claude/skills/csharp-generation-smells",
-    ".claude/skills/blazor-conventions",
+    ".claude/skills/razor-conventions",
+    ".claude/skills/css-conventions",
+    ".claude/skills/javascript-conventions",
     ".claude/skills/draw-customer-journey",
     ".claude/skills/write-platform-note"
   ]

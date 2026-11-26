@@ -83,7 +83,7 @@ in-circuit navigation.
 
 ## Sources
 
-- [Portal UI conventions](/.claude/skills/blazor-conventions/references/portal-ui.md) - the component rules the pages follow.
+- [Razor rules](/.claude/skills/razor-conventions/references/razor.md) - the component rules the pages follow.
 - [ADR conventions](/.claude/skills/adr-conventions/SKILL.md) - how the authorization ADR is amended when a case is not covered.
 
 ## Standing rules

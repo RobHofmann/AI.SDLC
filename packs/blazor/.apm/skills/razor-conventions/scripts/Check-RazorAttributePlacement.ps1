@@ -6,7 +6,7 @@
 .DESCRIPTION
     Scans the source root (paths.sourceRoot in aisdlc.json) for a component attribute sharing a line with the member it decorates, for
     example "[Parameter] public RenderFragment ChildContent { get; set; }". The convention is in
-    .claude/skills/blazor-conventions/references/portal-ui.md under Component conventions.
+    .claude/skills/razor-conventions/references/razor.md under Component conventions.
 
     Split out from Check-RazorConventions.ps1 rather than living inside it, because this rule carried
     a backlog while that gate's other rules did not. Invoke-Gate.ps1 derives the CI signal from the
@@ -60,7 +60,7 @@ foreach ($file in $targets) {
 
 if ($violations.Count -gt 0) {
     Write-Host "Component attribute placement: put the attribute on its own line above the member." -ForegroundColor Yellow
-    Write-Host "FIX: Put [Parameter] and [CascadingParameter] on their own line above the member (.claude/skills/blazor-conventions/references/portal-ui.md, Component conventions)." -ForegroundColor Yellow
+    Write-Host "FIX: Put [Parameter] and [CascadingParameter] on their own line above the member (.claude/skills/razor-conventions/references/razor.md, Component conventions)." -ForegroundColor Yellow
     foreach ($v in $violations) { Write-Host ("  {0}:{1}  {2}" -f $v.File, $v.Line, $v.Text) }
     Write-Host ("Found {0} attribute(s) sharing a line with the member they decorate." -f $violations.Count) -ForegroundColor Yellow
     exit 1

@@ -1,7 +1,7 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Enforces the mechanical portal component conventions in the portal-ui page of the blazor-conventions skill.
+    Enforces the mechanical portal component conventions in the razor page of the razor-conventions skill.
 
 .DESCRIPTION
     Scans the source root (paths.sourceRoot in aisdlc.json) for the razor and component rules that a
@@ -116,14 +116,14 @@ function Write-Violations {
 $failed = $false
 
 if ($blocking.Count -gt 0) {
-    Write-Host "Portal component convention violation (.claude/skills/blazor-conventions/references/portal-ui.md, Component conventions)." -ForegroundColor Red
+    Write-Host "Portal component convention violation (.claude/skills/razor-conventions/references/razor.md, Component conventions)." -ForegroundColor Red
     Write-Violations -Items $blocking -Colour Red
     Write-Host ("Found {0} violation(s) of the enforced component rules." -f $blocking.Count) -ForegroundColor Red
     $failed = $true
 }
 
 if ($failed) {
-    Write-Host "FIX: Follow the component rules each finding names: no I*State interface over a state class, no inline style block, and no <!DOCTYPE outside the app component (.claude/skills/blazor-conventions/references/portal-ui.md)."
+    Write-Host "FIX: Follow the component rules each finding names: no I*State interface over a state class, no inline style block, and no <!DOCTYPE outside the app component (.claude/skills/razor-conventions/references/razor.md)."
     exit 1
 }
 

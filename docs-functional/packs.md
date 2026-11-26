@@ -30,7 +30,9 @@ Each pack can bring any of these, and the core picks them up by itself:
 | Pack | Install it when | What it adds, in short |
 |---|---|---|
 | `dotnet` | the repository has a .NET solution | C# rules and their security checks, test-first, seven gates, the code graph, a page per project |
-| `blazor` | the repository has a Blazor app | the component and authorization conventions, and two gates on the components |
+| `blazor` | the repository has a Blazor app | the Razor and authorization conventions, and two gates on the components; it brings `css` and `javascript` with it |
+| `css` | the repository has style sheets, also without Blazor | the CSS conventions |
+| `javascript` | the repository has browser JavaScript, also without Blazor | the JavaScript conventions |
 | `bicep` | the repository has Bicep templates | the Bicep conventions, the Bicep pre-flight, a page per building block |
 | `github` | the repository lives on GitHub | the pull request helpers, the feedback loop on a pull request, the workflow conventions, and the ruleset on the main branch |
 | `github-issues` | the repository tracks its work in GitHub Issues | the story and bug skills, the in-review label on a published pull request, the story contract gate, the backlink check and the issue pre-flight |
@@ -39,7 +41,8 @@ Each pack can bring any of these, and the core picks them up by itself:
 | `sonarcloud` | the repository has a SonarCloud project | the SonarQube MCP server, so an agent can read the quality gate and the issues, and a gate that keeps your token out of the repository |
 
 The technical page of each pack lists its skills, agents and gates by name: [dotnet](../docs/packages/dotnet.md),
-[blazor](../docs/packages/blazor.md), [bicep](../docs/packages/bicep.md), [github](../docs/packages/github.md),
+[blazor](../docs/packages/blazor.md), [css](../docs/packages/css.md),
+[javascript](../docs/packages/javascript.md), [bicep](../docs/packages/bicep.md), [github](../docs/packages/github.md),
 [github-issues](../docs/packages/github-issues.md), [discovery](../docs/packages/discovery.md),
 [knowledge](../docs/packages/knowledge.md) and [sonarcloud](../docs/packages/sonarcloud.md).
 

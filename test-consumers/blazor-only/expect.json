@@ -1,0 +1,22 @@
+{
+  "present": [
+    ".claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1",
+    ".claude/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1",
+    ".claude/skills/code-conventions/references/skills-by-file-type.md",
+    ".claude/skills/razor-conventions/SKILL.md",
+    ".claude/skills/razor-conventions/references/razor.md",
+    ".claude/skills/razor-conventions/scripts/Check-RazorConventions.ps1",
+    ".claude/skills/blazor-authorization/SKILL.md",
+    ".claude/skills/css-conventions/SKILL.md",
+    ".claude/skills/css-conventions/references/css.md",
+    ".claude/skills/javascript-conventions/SKILL.md",
+    ".claude/skills/javascript-conventions/references/javascript.md"
+  ],
+  "absent": [
+    ".claude/skills/blazor-conventions",
+    ".claude/skills/test-first-dotnet",
+    ".claude/skills/dotnet-gates",
+    ".claude/skills/bicep-conventions",
+    ".claude/skills/github-pull-requests"
+  ]
+}

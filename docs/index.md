@@ -30,6 +30,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0022: A published pull request puts its stories in review with a label](./adrs/0022-a-published-pull-request-puts-its-stories-in-review-with-a-label.md) - A GitHub issue has two states, open and closed.
 - [ADR 0023: A story has six sections with budgets, at most 5 plain criteria, and follows ASD-STE100](./adrs/0023-a-story-has-six-sections-with-budgets-at-most-5-criteria-and-ste100.md) - An issue had seven sections with no size limit, and a dev-ready story could add an eighth.
 - [ADR 0024: The agent opens a draft pull request, and the person publishes it](./adrs/0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md) - The agent opened every pull request as ready for review.
+- [ADR 0025: A pack that needs another pack lists it as an APM dependency](./adrs/0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md) - The Razor, CSS and JavaScript rules sat in one skill of the `blazor` pack.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General
@@ -41,11 +42,13 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 ## packages
 
 - [bicep](./packages/bicep.md) - The `bicep` package provides conventions and scripts for writing, reviewing, checking, and reordering `.bicep` and `.bicepparam` files.
-- [blazor](./packages/blazor.md) - The `blazor` package provides checks and guidance for portal authorization and Blazor component conventions.
+- [blazor](./packages/blazor.md) - The `blazor` package provides checks and guidance for portal authorization and the Razor conventions of a Blazor component.
 - [core](./packages/core.md) - The `core` package provides shared AI-SDLC agents, skills, gates, hooks, workflow guidance, and documentation tools.
+- [css](./packages/css.md) - The `css` package provides the CSS conventions for style sheets.
 - [discovery](./packages/discovery.md) - The `discovery` pack provides skills for research synthesis, customer journey mapping, and evidence-based hypothesis framing during discovery.
 - [dotnet](./packages/dotnet.md) - The `dotnet` pack adds development rules, code graph tools, and gates for .NET repositories.
 - [github-issues](./packages/github-issues.md) - The `github-issues` package supports GitHub issue creating, updates, triage, review, conventions, and PR contract checks.
 - [github](./packages/github.md) - The `github` package supports opening, updating, checking, and reviewing pull requests on GitHub, and the GitHub Actions workflows of a repository.
+- [javascript](./packages/javascript.md) - The `javascript` package provides the JavaScript conventions for the browser modules of a repository.
 - [knowledge](./packages/knowledge.md) - The `packs/knowledge` unit holds the skills for the notes on how a platform behaves.
 - [sonarcloud](./packages/sonarcloud.md) - The `packs/sonarcloud` unit gives an agent session in a repository read access to its SonarCloud analysis.

@@ -46,7 +46,7 @@ a change touches, and skips a skill whose pack is not installed. A new language 
 
 **The three review agents live in core.** `code-reviewer`, `test-analyzer` and `security-reviewer`
 preload `code-conventions` and read the rules of each changed file type from the table. The C# checks
-of the old agents moved into `csharp-generation-smells`, and the Razor checks into `blazor-conventions`.
+of the old agents moved into `csharp-generation-smells`, and the Razor checks into the Razor convention skill of the blazor pack (`razor-conventions` since v2.0.0).
 Each language skill with security rules has a section named Security. The dotnet pack ships no agent.
 
 ## Consequences

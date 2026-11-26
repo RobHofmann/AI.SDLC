@@ -199,7 +199,9 @@ A knowledge skill says how we do one thing and links the page that holds the ful
 | `dotnet-gates` | dotnet | The gates the dotnet pack adds |
 | `dotnet-code-graph` | dotnet | The local code graph and what it answers |
 | `nuget-vulnerability-remediation` | dotnet | Finding and fixing a vulnerable NuGet package |
-| `blazor-conventions` | blazor | The Blazor component conventions and their gates |
+| `razor-conventions` | blazor | The Razor conventions of a Blazor component and their gates |
+| `css-conventions` | css | The CSS rules: layout, class names, lengths, colour tokens and scoped style sheets |
+| `javascript-conventions` | javascript | The JavaScript rules: one module per component, `export function`, listener cleanup |
 | `blazor-authorization` | blazor | The checks before a portal authorization change |
 | `bicep-conventions` | bicep | How a Bicep template is laid out and changed |
 | `platform-knowledge-conventions` | knowledge | Looking up and trusting the platform notes, and the shape of a note |

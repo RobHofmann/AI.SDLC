@@ -36,7 +36,10 @@
     ],
     "blazor": [
       "blazor-authorization",
-      "blazor-conventions"
+      "razor-conventions"
+    ],
+    "css": [
+      "css-conventions"
     ],
     "discovery": [
       "draw-customer-journey",
@@ -65,6 +68,9 @@
       "move-story",
       "write-story"
     ],
+    "javascript": [
+      "javascript-conventions"
+    ],
     "knowledge": [
       "platform-knowledge-conventions",
       "write-platform-note"
@@ -87,12 +93,14 @@
     ],
     "bicep": [],
     "blazor": [],
+    "css": [],
     "discovery": [],
     "dotnet": [],
     "github": [],
     "github-issues": [
       "draft-reviewer"
     ],
+    "javascript": [],
     "knowledge": [],
     "sonarcloud": []
   }

@@ -1,0 +1,20 @@
+{
+  "repository": "Test.Consumer",
+  "visibility": "private",
+  "paths": {
+    "docsRoots": [
+      "docs",
+      "docs-functional"
+    ],
+    "technicalDocs": "docs",
+    "readingLevelRoots": [
+      "docs",
+      "docs-functional"
+    ],
+    "sectionRefRoots": [
+      "docs",
+      "docs-functional"
+    ],
+    "functionalDocs": "docs-functional"
+  }
+}

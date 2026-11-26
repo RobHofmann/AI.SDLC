@@ -101,8 +101,12 @@ jobs:
         include:
           - { consumer: "bicep-only,setup-script", pass: fresh }
           - { consumer: bicep-only, pass: upgrade }
+          - { consumer: blazor-only, pass: fresh }
+          - { consumer: blazor-only, pass: upgrade }
           - { consumer: full, pass: fresh }
           - { consumer: full, pass: upgrade }
+          - { consumer: javascript-only, pass: fresh }
+          - { consumer: javascript-only, pass: upgrade }
           - { consumer: minimal, pass: fresh }
           - { consumer: minimal, pass: upgrade }
           - { consumer: platform, pass: fresh }

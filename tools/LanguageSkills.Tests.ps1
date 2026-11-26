@@ -4,6 +4,9 @@ BeforeDiscovery {
     $script:LanguageSkills = @(
         @{ Package = 'core'; Skill = 'powershell-conventions'; Pages = @('references/house-style.md', 'references/not-decided.md') }
         @{ Package = 'core'; Skill = 'yaml-conventions'; Pages = @('references/yaml.md') }
+        @{ Package = 'blazor'; Skill = 'razor-conventions'; Pages = @('references/razor.md') }
+        @{ Package = 'css'; Skill = 'css-conventions'; Pages = @('references/css.md', 'references/not-decided.md') }
+        @{ Package = 'javascript'; Skill = 'javascript-conventions'; Pages = @('references/javascript.md') }
     )
 }
 
@@ -56,5 +59,38 @@ Describe 'The YAML rules of github-actions-conventions' {
         $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
         $text = Get-Content -LiteralPath (Join-Path $repoRoot 'packs/github/.apm/skills/github-actions-conventions/SKILL.md') -Raw
         $text | Should -Match ([regex]::Escape('/.claude/skills/yaml-conventions/SKILL.md'))
+    }
+}
+
+Describe 'The split of the Blazor rules' {
+    BeforeAll {
+        $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+    }
+
+    It 'leaves no blazor-conventions skill in the blazor pack' {
+        Test-Path -LiteralPath (Join-Path $script:RepoRoot 'packs/blazor/.apm/skills/blazor-conventions') | Should -BeFalse
+    }
+
+    It 'lists the css and javascript packs as APM dependencies of the blazor pack' {
+        $apm = Get-Content -LiteralPath (Join-Path $script:RepoRoot 'packs/blazor/apm.yml') -Raw
+        $apm | Should -Match '(?m)^\s*-\s+\.\./css\s*$'
+        $apm | Should -Match '(?m)^\s*-\s+\.\./javascript\s*$'
+    }
+
+    It 'gives the css and javascript packs one skill each' -ForEach @('css', 'javascript') {
+        $skills = @(Get-ChildItem -LiteralPath (Join-Path $script:RepoRoot "packs/$_/.apm/skills") -Directory)
+        $skills.Count | Should -Be 1
+        $skills[0].Name | Should -Be "$_-conventions"
+    }
+
+    It 'records the dependencies of the blazor pack in the sync manifest' {
+        $manifest = Get-Content -LiteralPath (Join-Path $script:RepoRoot 'core/.apm/skills/ai-sdlc-gates/sync-manifest.json') -Raw | ConvertFrom-Json -AsHashtable
+        @($manifest.packages.blazor.dependencies) | Should -Be @('css', 'javascript')
+    }
+
+    It 'has a test consumer with only the <_> pack' -ForEach @('blazor', 'javascript') {
+        $apm = Get-Content -LiteralPath (Join-Path $script:RepoRoot "test-consumers/$_-only/apm.yml") -Raw
+        $packs = @([regex]::Matches($apm, 'packs/([a-z-]+)') | ForEach-Object { $_.Groups[1].Value })
+        $packs | Should -Be @($_)
     }
 }

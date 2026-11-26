@@ -109,6 +109,23 @@ Describe 'Check-SyncManifest' {
         $r.Output | Should -Match 'package dotnet, which apm\.yml does not install: \.claude/skills/dotnet-skill/'
     }
 
+    It 'counts a pack that an installed pack depends on as installed' {
+        $script:Manifest.packages['github-issues']['dependencies'] = @('dotnet')
+        Save-Manifest
+        Write-LfFile -Path (Join-Path $script:Root '.claude/skills/dotnet-skill/SKILL.md') -Content "dotnet`n"
+        $r = Invoke-Gate -RepoRoot $script:Root
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+        $r.Output | Should -Match 'of 3 package\(s\)'
+    }
+
+    It 'fails on a missing file of a pack that an installed pack depends on' {
+        $script:Manifest.packages['github-issues']['dependencies'] = @('dotnet')
+        Save-Manifest
+        $r = Invoke-Gate -RepoRoot $script:Root
+        $r.ExitCode | Should -Be 1
+        $r.Output | Should -Match 'missing: \.claude/skills/dotnet-skill/SKILL\.md'
+    }
+
     It 'leaves a skill and an agent of the repository alone, with no list to keep' {
         Write-LfFile -Path (Join-Path $script:Root '.claude/skills/own-skill/SKILL.md') -Content "ours`n"
         Write-LfFile -Path (Join-Path $script:Root '.claude/agents/own-agent.md') -Content "ours`n"
