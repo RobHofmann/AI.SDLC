@@ -35,7 +35,8 @@
     With -Check it writes nothing. It exits 1 when a rule of an installed package is missing. The
     knowledge folder is not checked, because CI never has it.
 
-    Exit codes follow the gate contract: 0 in sync (or written), 1 a rule missing, 2 could not check.
+    Exit codes follow the gate contract: 0 in sync (or written), 1 a rule missing, 2 could not check, 3
+    not applicable (no installed package part).
 
 .PARAMETER RepoRoot
     The repository root. Defaults to the folder that holds aisdlc.json, found from the current location.
@@ -70,6 +71,7 @@ try {
 }
 catch {
     Write-Host "Could not check: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host 'FIX: Run the gate in a repository with an aisdlc.json and an apm.yml that lists its packages, and run apm install first.' -ForegroundColor Yellow
     exit 2
 }
 
@@ -174,6 +176,7 @@ if (Test-Path -LiteralPath $settingsPath -PathType Leaf) {
         try { $settings = $raw | ConvertFrom-Json -AsHashtable }
         catch {
             Write-Host "Could not check: .claude/settings.json is not valid JSON: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host 'FIX: Correct the JSON in .claude/settings.json, then run the gate again.' -ForegroundColor Yellow
             exit 2
         }
     }
@@ -182,6 +185,11 @@ $allowed = @(if ($settings['permissions'] -and $settings['permissions']['allow']
 $missing = @($wanted | Where-Object { $_ -notin $allowed })
 
 if (-not $Check) { Sync-KnowledgeDirectory }
+
+if ($packages.Count -eq 0) {
+    Write-Host "Allow rules: not applicable, there is no installed package part, so there is no rule to hold .claude/settings.json against."
+    exit 3
+}
 
 if ($missing.Count -eq 0) {
     Write-Host "Allow rules OK: .claude/settings.json holds the $($wanted.Count) rule(s) of $($packages.Count) installed package part(s)."

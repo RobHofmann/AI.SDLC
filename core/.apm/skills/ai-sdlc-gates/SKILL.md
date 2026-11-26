@@ -59,17 +59,17 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
   without them, or with a name used twice, and does not run it. It prints `checks` before the output
   of a gate that failed, and under each gate with `-List`. The [gate list](references/gate-catalog.md)
   shows every gate with both texts.
-- `requires: CoverageFile` runs the gate only when the runner gets `-CoverageFile`.
+- `requires: CoverageFile` runs the gate only when the runner gets `-CoverageFile`. The shared
+  composite action passes it when the workflow gives it the `coverage-file` input.
 - `inputs` is an optional list of path globs, such as `**/*.md`. A local run starts the gate only when
   the change touches a file that matches, or the skill folder of its script; otherwise it shows
   `NOT TOUCHED`. Every gate runs on a delete, a change to the gate setup, an unreadable change, with
   `-All` and in GitHub Actions.
 - `mode` is Blocking, Advisory or Off. No run, hook or pre-flight starts an Off gate. A repository
   sets the mode of a shared gate in `gateModes` of its own `aisdlc.json`, in any letter case. The
-  summary shows where the mode comes from in its Source column. The secret scan and the private-terms
-  gate refuse a weaker mode there. In a push hook a gate counts as Off only once the setting is in
+  summary shows where the mode comes from in its Source column. The secret scan, the private-terms gate
+  and the sync manifest check always run Blocking. In a push hook a gate counts as Off only once the setting is in
   every pushed commit.
-  The shared composite action passes it when the workflow gives it the `coverage-file` input.
 - `setup` runs from `Initialize-AiSdlc.ps1` in `ai-sdlc-hooks`, for each package that runs.
 - `preflight` runs from `Invoke-Preflight.ps1`. It returns rows with Check, Status and Detail, and a
   FAIL row fails the pre-flight and writes no receipt.
@@ -98,34 +98,10 @@ A gate prints each finding with two spaces in front, as `path:line  what`, and o
 with `FIX: `. `Invoke-Gate.ps1` lifts both into a GitHub Actions annotation (`::error` or `::warning`), and names the command to
 repeat the gate locally with the path of the script it ran.
 
-## The shared part of AGENTS.md
-
-`Sync-AgentsFile.ps1` writes the core part of `AGENTS.md`, and the part of each listed pack, between
-`ai-sdlc:<package>:start` and `ai-sdlc:<package>:end` markers. Its `-Check` mode is a core gate: a
-hand edit between the markers fails it. Change the shared text in AI.SDLC, then run the script:
-`pwsh .claude/skills/ai-sdlc-gates/scripts/Sync-AgentsFile.ps1`.
-
 ## Helper scripts and modules
 
-These sit in the same `scripts/` folder but are not gates:
-
-- `Install-Apm.ps1` installs the pinned APM release for this machine (Linux, macOS or Windows) and
-  refuses it on a SHA-256 mismatch. `-AddToPath` keeps it on the PATH.
-- `GateAnnotation.psm1` turns a gate result into GitHub Actions annotations when `GITHUB_ACTIONS` is `true`, for `Invoke-Gate.ps1` and the runner.
-- `Invoke-PesterGate.ps1` is a repository gate that runs the Pester tests under `args.Path`.
-- `PreflightReceipt.psm1` writes and reads the pre-flight receipt that the push hook asks for.
-- `Test-PushReceipt.ps1` and `Test-PushSendsNothingNew.ps1` tell the pre-push hook whether a receipt or the remote already covers each pushed commit.
-- `ToolOutput.psm1` prints numbers the same way on every machine, whatever its culture settings.
-- `DocToolTestHarness.psm1` builds the throwaway repository that the tests of the doc tools share. Its `Invoke-ScriptInProcess` runs a script in the test process, so the coverage of the Pester run measures it.
-- `Create-GitleaksBaseline.ps1` makes a gitleaks baseline with the rule sets pinned in
-  `gitleaks-rules.json`. `Test-GitleaksBaseline.ps1` runs gitleaks against that baseline, or without
-  one when the repository has none. It is the blocking C03 gate of `gates.json`. On a pull request in
-  GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, and in a local run `<trunk>..HEAD` (`origin/main`, `origin/master` or `origin/HEAD`). When git cannot read the folder, for example as "dubious ownership", it scans nothing and exits 2 locally and 1 in GitHub Actions, never 0.
-- `Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and refuses
-  it on a SHA-256 mismatch, as `Install-Apm.ps1` does for APM.
-- `GitleaksConfig.psm1` writes the gitleaks configuration of a scan: the rules plus an allowlist for
-  `sync-manifest.json`, whose git blob hashes look like keys.
-- `DocCoverage.psm1` finds the units that need a page.
+The modules and helper scripts next to the gates, such as `ChangedFiles.psm1`, `PreflightReceipt.psm1`,
+`Sync-AgentsFile.ps1` and the gitleaks scripts, are listed on the [helper scripts page](references/helper-scripts.md).
 
 ## Sources
 

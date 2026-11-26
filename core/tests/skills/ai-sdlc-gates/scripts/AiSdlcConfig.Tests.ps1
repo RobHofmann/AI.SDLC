@@ -380,6 +380,22 @@ Describe 'AiSdlcConfig' {
             $resolved.Problem | Should -Match 'stays Blocking'
         }
 
+        It 'keeps a protected gate Blocking when its package entry sets a weaker mode' -Tag '#49' {
+            $resolved = Resolve-AiSdlcGateMode -Entry @{ name = 'The change adds no secret'; script = 'scripts/Test-GitleaksBaseline.ps1'; mode = 'Off' } -Package core
+
+            $resolved.Mode | Should -Be 'Blocking'
+            $resolved.Problem | Should -Match 'always runs Blocking'
+        }
+
+        It 'refuses to set the sync manifest check weaker in gateModes' -Tag '#49' {
+            $gates = '{ "package": "core", "gates": [ { "name": "Installed files match the manifest", "script": "scripts/Check-SyncManifest.ps1", "mode": "Blocking" } ] }'
+            $root = New-ModeRepo -Json '{ "gateModes": { "Installed files match the manifest": "Off" } }' -CoreGates $gates
+            $config = Get-AiSdlcConfig -RepoRoot $root
+            $setting = Get-AiSdlcGateModeSetting -Config $config -Package @(Get-AiSdlcPackage -RepoRoot $root -All)
+
+            $setting.Override['Installed files match the manifest'].Problem | Should -Match 'stays Blocking'
+        }
+
         It 'says a committed Off gate is Off, and an uncommitted edit to Off is not' -Tag '#49' {
             $root = New-ModeRepo -Json '{ "gateModes": { "A change moves its tests": "Off" } }' -CoreGates $script:CoreGates
 

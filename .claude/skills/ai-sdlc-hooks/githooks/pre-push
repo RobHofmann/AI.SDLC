@@ -15,6 +15,19 @@
 # when the dotnet pack is installed, because its gates.json registers it as Blocking. Advisory scans
 # are left to the full local run (`pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1`) and
 # to the pull request pipeline; coverage (C09) is left to the pre-flight.
+# The runner reads the exit code of each gate: 1 fails the push, 2 (could not check) is a warning here,
+# because the pull request build is where it blocks, and 3 (not applicable) is shown as N/A.
+
+# A gate that is Off (its mode, or gateModes in aisdlc.json) does not run here. It counts as Off only
+# when each pushed commit holds the same gate settings as the working tree, so an edit to Off counts only
+# once it is committed: the runner reads AISDLC_PUSHED_COMMITS, and gate_is_off below does the same for
+# the two advisory reports. Without pwsh or the module the gate is not Off.
+gate_is_off() {
+    module="$2/.claude/skills/ai-sdlc-gates/scripts/AiSdlcConfig.psm1"
+    [ -f "$module" ] || return 1
+    AISDLC_CONFIG_MODULE="$module" AISDLC_REPO_ROOT="$2" AISDLC_SCRIPT="$1" AISDLC_COMMITS="$3" \
+        "$PWSH" -NoProfile -NonInteractive -Command 'try { Import-Module (Resolve-Path -LiteralPath $env:AISDLC_CONFIG_MODULE).ProviderPath -Force; $c = @($env:AISDLC_COMMITS -split "\s+" | Where-Object { $_ }); if (Test-AiSdlcGateOff -RepoRoot $env:AISDLC_REPO_ROOT -Script $env:AISDLC_SCRIPT -Commit $c) { exit 0 } } catch { }; exit 1' >/dev/null 2>&1
+}
 
 # A push to main or master is refused before any gate runs. The agent hook Deny-IncompletePush.ps1
 # refuses it in Claude Code; this is the same rule for every other tool and for a push from a terminal.
@@ -158,8 +171,22 @@ run_gates() (
             export "GIT_CONFIG_KEY_$n=safe.directory" "GIT_CONFIG_VALUE_$n=$safe_dir" "GIT_CONFIG_COUNT=$((n + 1))"
             runner="$gate_root/.claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1"
         fi
-        echo "pre-push: running blocking CA gates ($runner -BlockingOnly)..."
-        "$PWSH" -NoProfile -File "$runner" -BlockingOnly
+        # A gate with inputs runs only when the change touches them. When a pushed ref is not the
+        # checked-out commit, the working tree says nothing about what is pushed, so every gate runs.
+        head=$(git rev-parse HEAD 2>/dev/null)
+        all_flag=""
+        for sha in $pushed; do
+            case "$sha" in
+                0000000000000000000000000000000000000000) ;;
+                "$head") ;;
+                *) all_flag="-All" ;;
+            esac
+        done
+        if [ -n "$all_flag" ]; then
+            echo "pre-push: a pushed ref is not the checked-out commit, so every blocking gate runs, not only the ones the change touches."
+        fi
+        echo "pre-push: running blocking CA gates ($runner -BlockingOnly $all_flag)..."
+        AISDLC_PUSHED_COMMITS="$pushed" "$PWSH" -NoProfile -File "$runner" -BlockingOnly $all_flag
         status=$?
     fi
 
@@ -170,17 +197,21 @@ run_gates() (
     # Advisory as well, for the same reason: lists the pages whose "Last checked" date is older than
     # docs.lastCheckedMaxAgeDays. It prints nothing when the setting is off or every date is recent.
     last_checked="${gate_root:-$repo_root}/.claude/skills/ai-sdlc-gates/scripts/Check-DocLastChecked.ps1"
-    if [ -f "$last_checked" ]; then
+    if [ -f "$last_checked" ] && ! gate_is_off Check-DocLastChecked.ps1 "${gate_root:-$repo_root}" "$pushed"; then
         "$PWSH" -NoProfile -File "$last_checked" -Quiet || true
     fi
 
     if [ -f "$completeness" ]; then
-        "$PWSH" -NoProfile -File "$completeness" || true
+        if gate_is_off Check-ChangeCompleteness.ps1 "${gate_root:-$repo_root}" "$pushed"; then
+            echo "pre-push: the gate for Check-ChangeCompleteness.ps1 is Off, so the completeness report does not run."
+        else
+            "$PWSH" -NoProfile -File "$completeness" || true
+        fi
     fi
 
     if [ "$status" -ne 0 ]; then
         echo "" >&2
-        echo "pre-push: blocking gate(s) failed. Fix the issues above, or push with --no-verify to bypass intentionally." >&2
+        echo "pre-push: blocking gate(s) failed. Fix the issues above. When you cannot, an agent stops and asks the person, and gives the push command in a code block the person can run. Only a person pushes with --no-verify." >&2
         return 1
     fi
     return 0

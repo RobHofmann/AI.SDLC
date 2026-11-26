@@ -21,7 +21,7 @@ points `core.hooksPath` at that folder.
 
 | Event | Script | What it does |
 |---|---|---|
-| Before a Bash or PowerShell command | `Deny-IncompletePush.ps1` | Refuses a push to `main` or `master` (a plain push may update it when `git.allowTrunkPush` is true), a push of an unfinished change, and a push of a commit without a green pre-flight receipt. It looks the receipt up for the commit of each pushed ref, not for `HEAD`. A push that sends nothing new, such as a tag on a commit the remote has or a branch delete, needs no receipt. It also refuses a matching push (`:` or `+:`), a wildcard push outside `refs/tags/`, a target such as `HEAD:heads/main`, and a push with no refspec while `push.default`, `remote.<name>.push` or `remote.<name>.mirror` can reach `main`. It refuses `git -c` with `push.*`, `remote.<name>.push`, `remote.<name>.mirror` or `core.hooksPath`. It refuses a push whose commit it cannot tell, and a command that pushes to two repositories. While `aisdlc.json` cannot be read, or a hook module cannot load or lacks a function, it refuses every push. When the completeness check cannot start, the receipt check still runs, and a green receipt allows the push with a note. After an unexpected error the hook allows the push with a warning. Only a person pushes with `--no-verify` |
+| Before a Bash or PowerShell command | `Deny-IncompletePush.ps1` | Refuses a push to `main` or `master` (a plain push may update it when `git.allowTrunkPush` is true), a push of an unfinished change, and a push of a commit without a green pre-flight receipt. It looks the receipt up for the commit of each pushed ref, not for `HEAD`. A push that sends nothing new, such as a tag on a commit the remote has or a branch delete, needs no receipt. It also refuses a matching push (`:` or `+:`), a wildcard push outside `refs/tags/`, a target such as `HEAD:heads/main`, and a push with no refspec while `push.default`, `remote.<name>.push` or `remote.<name>.mirror` can reach `main`. It refuses any `git -c` or `--config-env` option, and a bare push whose `branch.<name>.merge` names `main`. It refuses a push whose commit it cannot tell, and a command that pushes to two repositories. While `aisdlc.json` cannot be read, or a hook module cannot load or lacks a function, it refuses every push. When the completeness check cannot start, the receipt check still runs, and a green receipt allows the push with a note. After an unexpected error the hook allows the push with a warning. Only a person pushes with `--no-verify` |
 | Before a Bash or PowerShell command | `Deny-AgentMerge.ps1` | Refuses `gh pr merge`, a `gh api` call to a pull request merge endpoint, `gh pr ready` and the `markPullRequestReadyForReview` mutation, so the agent never merges or publishes a draft (clause C09, ADR 0024). The owner's merge is the approval at Checkpoint Bravo. Like the other hooks, it lets the command through when it cannot judge it |
 | Before an edit or write | `Deny-SharedFileEdit.ps1` | Refuses an edit to a file listed in `apm.lock.yaml`, and names its source in AI.SDLC |
 | Before an edit or write | `Invoke-CompactSuggestionHook.ps1` | Suggests a compact at a logical boundary when the context window is full |
@@ -46,8 +46,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   hooks refresh the code graph, and do nothing when the graph tooling is absent.
 - `githooks/git-lfs-hook` is shared by `pre-push`, `post-checkout`, `post-commit` and `post-merge`.
   Git ignores the LFS hooks in `.git/hooks` once `core.hooksPath` is set, so these hooks hand on to
-  Git LFS themselves. A repository whose `.gitattributes` never names `filter=lfs` sees no change.
-  When the repository uses LFS but git cannot run `git lfs`, the push fails with a clear message.
+  Git LFS themselves. Without `filter=lfs` in `.gitattributes` nothing changes, and without `git-lfs`
+  a repository that uses LFS fails the push with a clear message.
 - `githooks/commit-msg` removes a `Co-authored-by` trailer that names a coding tool; it never fails.
 - A clone that still points `core.hooksPath` at an older folder, such as `.githooks/`, moves to
   `githooks/` the next time `Initialize-AiSdlc.ps1` runs.
@@ -62,9 +62,8 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   says so, with the `gh repo clone` command when `knowledge.repository` is set. When a blocking setup check fails, it skips `apm install` and says so.
   It still runs `Initialize-AiSdlc.ps1`, and then exits 1. It works before APM is on the machine,
   because the repository commits the installed files.
-- `scripts/AiSdlcSetup.ps1` holds three setup steps that the setup and update scripts share. They are
-  the GitHub login check (`Test-GitHubLogin`), the advice after a failed `apm install`, and the executable bit of the
-  git hooks.
+- `scripts/AiSdlcSetup.ps1` holds the setup steps that the setup and update scripts share: the GitHub
+  login check (`Test-GitHubLogin`), the advice after a failed `apm install`, and the hook executable bit.
 - `scripts/Initialize-AiSdlc.ps1` wires `core.hooksPath`, checks the core tools and runs the `setup`
   script of each installed pack. When no ignore rule covers `temp/`, it adds `temp/` to
   `.git/info/exclude`, so a pre-flight receipt is never committed. It does the same for the folder
@@ -78,10 +77,9 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   every hook entry in turn before each tool call. So a script checks the command or file first, before
   it loads a slow module, and exits 0 in silence when it does not apply. Only `HookPayload.psm1` may
   load first, because a script needs it to read the payload. Keep one entry per tool.
-- **Fail open.** A payload the script cannot read, a missing file or a bug exits 0 with no output. A
-  hook error is a deny in Copilot CLI, so a crash must never block every step. The push hook is the one
-  exception for a fault it can name. It refuses a push it cannot check, because `aisdlc.json` or a
-  module is broken. An unexpected error in it still allows the push, with a warning.
+- **Fail open.** A payload the script cannot read, a missing file or a bug exits 0 with no output.
+  A hook error is a deny in Copilot CLI. The one exception: the push hook refuses a push while
+  `aisdlc.json` or a module is broken. An unexpected error in it still allows the push, with a warning.
 - **Read every payload shape** through `HookPayload.psm1`. Claude Code sends `tool_input`. Copilot CLI
   sends `tool_input` or `toolArgs`, sometimes as a JSON string. A GPT model in Copilot edits with
   `apply_patch`, which sends the text of the edit, and one such edit can name several files.
@@ -97,18 +95,13 @@ The dotnet pack adds one more: `Deny-StaleGraphQuery.ps1` in `dotnet-code-graph`
   request. A change reaches `main` only through a pull request, unless `git.allowTrunkPush` is set.
 - Any other push was refused: run `wrap-up`. It commits the change and ends with the pre-flight on
   that commit. Never push with `--no-verify`; only a person does that.
-- A push was refused for a setting, a module, a `git -c` option, a form the hook cannot read, or
-  two repositories in one command. Fix the setting, or run `apm install` for a module. Push one
-  repository per command in the plain form `git push [options] <remote> <branch>`. If the push
-  still cannot go, the agent stops and asks the person. It gives the push command in a code block
-  the person can run.
-- The push check judges the repository the push targets. A push that names no folder is judged on
-  the repository of the `cwd` field of the hook payload. In a session that works in a git worktree,
-  that is the worktree, even though the hook runs from the main checkout. The edit hooks do the same.
-- A push names a folder only in the plain forms: `git -C <dir> push`, and one `cd`, `pushd` or
-  `Set-Location` right before the push, joined with `&&` or `;`. The folder may stand in quotes, and a
-  relative folder starts at the `cwd`. Any other form is judged on the repository of the `cwd`. That
-  covers a chain of steps, a `-C` folder with `$` or a wildcard, and a relative `-C` after a `cd`.
+- A push was refused for a setting, a module, a `git -c` option, a form the hook cannot read, or two
+  repositories in one command. Fix the setting or run `apm install`, and push one repository in the
+  plain form `git push [options] <remote> <branch>`. If it still cannot go, the agent stops and gives
+  the person the push command in a code block.
+- The push check judges the repository the push targets: the `cwd` of the hook payload, or a folder
+  named in a plain form such as `git -C <dir> push`. The help block of `Deny-IncompletePush.ps1` lists
+  the forms; in a git worktree the `cwd` is the worktree. The edit hooks do the same.
 - An edit was refused: the file is shared. Change it in AI.SDLC; the handbook page on the layout says
   how to try the change against a local clone first.
 

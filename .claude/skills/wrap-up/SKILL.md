@@ -117,8 +117,9 @@ a human asks for it.
    it? Where a layer had none, the new page must describe the whole area, not only this change (the
    scope step of `/write-docs`). No gate sees this, because `Check-DocCoverage.ps1` knows
    only units.
-5. **Decisions: call `/write-adr`** when the change rests on a key choice (C01). A routine
-   change covered by an existing convention does not need one.
+5. **Decisions: call `/write-adr`** when the change rests on a choice that passes the three tests of
+   `adr-conventions` (C01), or changes a decision an ADR records. A routine change covered by an
+   existing convention does not need one.
 6. **The substrate.** Three jobs, all for `write-story` (github-issues pack), and none for this skill:
    - **`/write-story`** when the change changed what "done" means, because it owns the acceptance
      criteria. The mapping of criteria to tests is in the evidence record.
@@ -189,6 +190,16 @@ a human asks for it.
     change makes a separate branch for it first. Say
     plainly that a commit is not a sign-off: it is a save point. The person still reviews the change at
     Checkpoint Bravo, and nothing is pushed here.
+
+    **Waivers: only this skill writes a trailer.** Some change needs no test, no page or no ADR. Before
+    the commit, ask `test-analyzer` to judge each `No-Test` reason, `docs-reviewer` each `No-Docs`
+    reason, and `architect` each `No-ADR` reason. Write a trailer at the end of the message only after
+    the agent agrees, such as `No-Test: no-behaviour-change: rename only`. For a weak reason, add the
+    test or the page instead. The reasons are `no-behaviour-change` (both),
+    `existing-tests-cover-it` (`No-Test` only) and `no-doc-reader-affected` (`No-Docs` only). A
+    `No-Test` or `No-Docs` trailer covers only the files of its own commit. A data-model change with no
+    ADR gets `No-ADR: <why>`, which `check-pr-contract` reads for the whole pull request. A caller or
+    another skill never writes a trailer.
 11. **Pre-flight: call `run-preflight` on that commit.** It runs the pull request checks locally, and a green
     run on the committed tree writes the receipt the push hook asks for. When it fails, fix, commit again
     and run it again until it is green. Report the result. The calling loop then pushes and opens or

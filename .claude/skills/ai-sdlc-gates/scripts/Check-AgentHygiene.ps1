@@ -56,7 +56,7 @@
                           autolearn.md, the same pointer every skill carries.
       - no em-dash        no U+2014 (house style).
 
-    A repository with no .claude/agents/ folder passes with zero agents.
+    Exit 3 (not applicable) when the repository has no .claude/agents/ folder, so there are zero agents.
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script.
 .PARAMETER AgentsRoot
@@ -101,12 +101,13 @@ $connectorToolPattern = '^mcp__(claude_ai_[^_]|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{
 $mcpWritePattern = '(^|_)(create|edit|update|delete|transition|add|run|vote|reply|resolve|batch|push|set|merge|complete|approve|queue)([A-Z_]|$)'
 
 if (-not (Test-Path $AgentsRoot)) {
-    Write-Host 'Agent hygiene OK: no .claude/agents/ folder, so there are 0 agents to check.'
-    exit 0
+    Write-Host 'Agent hygiene: not applicable, there is no .claude/agents/ folder, so there are 0 agents to check.'
+    exit 3
 }
 
 if (-not (Test-Path $PersonasFile)) {
     Write-Host "Agent hygiene: the persona registry is not at $PersonasFile, so personas could not be checked and NOTHING WAS CHECKED." -ForegroundColor Yellow
+    Write-Host 'FIX: Install the AI-SDLC handbook (apm install), or pass -PersonasFile with the path of personas.md.' -ForegroundColor Yellow
     exit 2
 }
 $personas = @([regex]::Matches((Get-Content -LiteralPath $PersonasFile -Raw), '(?m)^###\s+(.+?)\s*$') | ForEach-Object { $_.Groups[1].Value })

@@ -78,7 +78,7 @@ Each package declares its gates in its `gates.json`. The runner, `Invoke-LocalGa
 | Where | Which gates |
 |---|---|
 | The pre-push hook | The Blocking gates, unless a passing pre-flight receipt covers the tree of the tip commit of each pushed ref (`Test-PushReceipt.ps1`). None for a push that only deletes refs or sends commits the remote already has |
-| The pull request workflow, through the shared composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr` | Every gate; an Advisory gate, or a gate that could not check, is a warning |
+| The pull request workflow, through the shared composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr` | Every gate; an Advisory gate is a warning, and a Blocking gate that could not check fails the job |
 | A local run of `Invoke-LocalGates.ps1` | Every gate; an Advisory gate never fails the run |
 
 A gate with `requires: CoverageFile`, such as C04, runs only when the runner gets `-CoverageFile`. The
@@ -141,13 +141,14 @@ installs. `AiSdlcConfig.psm1` takes each dependency whose path ends in `packs/<n
 | `docs.lastCheckedMaxAgeDays` | A positive whole number switches on a warning for every `Last checked: <date>` in `AGENTS.md` and the doc layers that is older than this many days. The local gate run and the pre-push hook show it, and it never fails a push. Any other value counts as off. | `0` (off) |
 | `docs.units` / `docs.unitExclude` | The units that need a page, when the list of the packs does not fit, and the unit paths left out on purpose | the packs' list / none |
 | `paths.solution`, `paths.sourceRoot`, `paths.testRoot`, `paths.runSettings`, `paths.coverageBaseline`, `paths.packagesProps` | The .NET solution, its code, its tests and its coverage setup, for the `dotnet` pack | none |
-| `commands.build` / `commands.test` | How to build and test the repository. The pre-flight runs `commands.test` from the repository root, unless a pack pre-flight runs the tests itself, as the dotnet pack does | none |
+| `commands.build` / `commands.test` / `commands.testChanged` | How to build and test the repository. The pre-flight runs `commands.test` from the repository root, unless a pack pre-flight runs the tests itself, as the dotnet pack does. A scoped pre-flight runs `commands.testChanged` in its place when it is set; a test command that exits 3 ran no test and shows `N/A` | none |
 | `tracker` | The issue repository (`tracker.repository`, `owner/name`; empty means the `origin` remote), an own key pattern (`tracker.keyPattern`), the `refined` and `to-refine` labels, the size label prefix (`size:`), the labels and the data model patterns, for the `github-issues` pack. `tracker.acceptedRepositories` lists other repositories, as `owner/name`, whose issues may anchor a pull request here, such as the AI.SDLC source for an update pull request | `refined`, `to-refine`, `size:`; no accepted repositories |
-| `github` | The repository (`github.repository`, `owner/name`; empty means the `origin` remote) and the main branch (`github.trunk`), for the `github` pack | `main` |
+| `github` | The repository (`github.repository`, `owner/name`; empty means the `origin` remote) and the main branch (`github.trunk`). It is the one setting for the main branch: the gates, the pre-flight and the test runner compare a change with `origin/<trunk>` through `Get-AiSdlcMainBranch` | `main` |
 | `sonarcloud` | The SonarCloud organization and project key, for the `sonarcloud` pack | none |
 | `knowledge` | The knowledge repository (`knowledge.repository`, `owner/name`). The setup offers `gh repo clone` into `paths.knowledgeRoot` when the folder is missing | none |
 | `dotnet` | The code graph benchmark, the external contract paths, the wire name allow list, the portal app component and the API page folders, for the `dotnet` pack | none |
-| `repoGates` | The repository's own gates, each with a name, a script and a mode, and a clause or a rule family when one covers it; without one, the runner shows `repo` | none |
+| `repoGates` | The repository's own gates, each with a name that says what passes, a script, a mode (Blocking, Advisory or Off), a clause (a core clause, a pack clause or `AI-SDLC`), a `checks` text and a `fix` text | none |
+| `gateModes` | An object of shared gate names and modes (Blocking, Advisory or Off), which sets the mode of a shared gate in this repository. A name that no shared gate that runs has fails the run. The secret scan, the private-terms gate and the sync manifest check always run Blocking. A weaker mode shows as a warning in every run | none |
 
 ## Pinning a version
 
@@ -240,8 +241,9 @@ In GitHub Actions the gate also reads the event of the run, so it fails closed i
   and that wrong setting fails the build. Set `"visibility": "public"`, so a local run checks it too.
 - In a public repository, a run with no list fails. So pass the secret `AISDLC_PRIVATE_TERMS` to the
   shared step as `private-terms`. `tools/Add-AiSdlcConsumer.ps1` reads the visibility and lists this step.
-- A pull request from a fork gets no secrets, so there the gate warns (exit 2) instead. Before you merge
-  such a pull request, check out its branch and run `Check-PrivateTerms.ps1 -Required` with the list.
+- A pull request from a fork gets no secrets, so there the gate could not check (exit 2) and the build
+  fails. Before you merge such a pull request, check out its branch and run
+  `Check-PrivateTerms.ps1 -Required` with the list.
 
 ## Related
 

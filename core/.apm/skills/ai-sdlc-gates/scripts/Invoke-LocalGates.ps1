@@ -59,7 +59,8 @@
     Source column that says where the mode comes from: package, or aisdlc.json; -List prints it on a
     "mode from:" line. A gateModes that sets a gate weaker than its package mode (Blocking, then
     Advisory, then Off) raises one warning for each such gate. The secret scan (Test-GitleaksBaseline.ps1)
-    and the private-terms gate (Check-PrivateTerms.ps1) cannot be set weaker than Blocking in gateModes.
+    the private-terms gate (Check-PrivateTerms.ps1) and the sync manifest check (Check-SyncManifest.ps1)
+    always run Blocking, whatever gateModes or a package entry says.
 
     A gateModes that cannot be used fails the run with one row, aisdlc.json gateModes, also with
     -BlockingOnly, and then no key of gateModes is used: a name that no shared gate that runs has, the

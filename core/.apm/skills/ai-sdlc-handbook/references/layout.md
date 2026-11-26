@@ -78,7 +78,7 @@ Each package declares its gates in its `gates.json`. The runner, `Invoke-LocalGa
 | Where | Which gates |
 |---|---|
 | The pre-push hook | The Blocking gates, unless a passing pre-flight receipt covers the tree of the tip commit of each pushed ref (`Test-PushReceipt.ps1`). None for a push that only deletes refs or sends commits the remote already has |
-| The pull request workflow, through the shared composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr` | Every gate; an Advisory gate, or a gate that could not check, is a warning |
+| The pull request workflow, through the shared composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr` | Every gate; an Advisory gate is a warning, and a Blocking gate that could not check fails the job |
 | A local run of `Invoke-LocalGates.ps1` | Every gate; an Advisory gate never fails the run |
 
 A gate with `requires: CoverageFile`, such as C04, runs only when the runner gets `-CoverageFile`. The
@@ -148,7 +148,7 @@ installs. `AiSdlcConfig.psm1` takes each dependency whose path ends in `packs/<n
 | `knowledge` | The knowledge repository (`knowledge.repository`, `owner/name`). The setup offers `gh repo clone` into `paths.knowledgeRoot` when the folder is missing | none |
 | `dotnet` | The code graph benchmark, the external contract paths, the wire name allow list, the portal app component and the API page folders, for the `dotnet` pack | none |
 | `repoGates` | The repository's own gates, each with a name that says what passes, a script, a mode (Blocking, Advisory or Off), a clause (a core clause, a pack clause or `AI-SDLC`), a `checks` text and a `fix` text | none |
-| `gateModes` | An object of shared gate names and modes (Blocking, Advisory or Off), which sets the mode of a shared gate in this repository. A name that no shared gate that runs has fails the run. The secret scan and the private-terms gate cannot be set weaker than Blocking. A weaker mode shows as a warning in every run | none |
+| `gateModes` | An object of shared gate names and modes (Blocking, Advisory or Off), which sets the mode of a shared gate in this repository. A name that no shared gate that runs has fails the run. The secret scan, the private-terms gate and the sync manifest check always run Blocking. A weaker mode shows as a warning in every run | none |
 
 ## Pinning a version
 
@@ -241,8 +241,9 @@ In GitHub Actions the gate also reads the event of the run, so it fails closed i
   and that wrong setting fails the build. Set `"visibility": "public"`, so a local run checks it too.
 - In a public repository, a run with no list fails. So pass the secret `AISDLC_PRIVATE_TERMS` to the
   shared step as `private-terms`. `tools/Add-AiSdlcConsumer.ps1` reads the visibility and lists this step.
-- A pull request from a fork gets no secrets, so there the gate warns (exit 2) instead. Before you merge
-  such a pull request, check out its branch and run `Check-PrivateTerms.ps1 -Required` with the list.
+- A pull request from a fork gets no secrets, so there the gate could not check (exit 2) and the build
+  fails. Before you merge such a pull request, check out its branch and run
+  `Check-PrivateTerms.ps1 -Required` with the list.
 
 ## Related
 

@@ -22,7 +22,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Runs in: pre-push hook, pull request action, local run
 - Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.ps1`
-- Checks: It scans the docs for a line number such as `file.ext:42` or the words line 42. It does not check that a cited path or symbol exists. Exit 2 means a path passed with `-Path` is missing, and exit 3 means there is no markdown file to scan.
+- Checks: It scans the docs for a line number after a file name or after the word line. It does not check that a cited path or symbol exists. Exit 2 means a path passed with `-Path` is missing, and exit 3 means there is no markdown file to scan.
 - Fix: Replace each line number with the file path and the name of the symbol.
 
 ### Artifact links in doc front matter point at files that exist

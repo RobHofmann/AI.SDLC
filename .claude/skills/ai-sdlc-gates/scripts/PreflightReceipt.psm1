@@ -89,4 +89,48 @@ function Test-PushSendsNothingNew {
     catch { return $false }
 }
 
-Export-ModuleMember -Function Get-HeadTree, Test-CleanTree, Get-ReceiptPath, Write-PreflightReceipt, Test-PreflightReceipt, Test-PushSendsNothingNew
+function Find-PreflightBase {
+    <#
+    .SYNOPSIS
+        The commit of the newest passing receipt on this branch, or nothing.
+    .DESCRIPTION
+        It reads the 20 newest receipts. A receipt counts when its commit is in the history of HEAD and
+        comes after the merge base with MainRef, and when the tree of that commit is the tree the receipt
+        names. When more count, the one closest to HEAD wins. Invoke-Preflight.ps1 measures a scoped run
+        from it, so a fix commit checks only what changed since the last green run.
+    .PARAMETER ReceiptRoot
+        Where the receipts live.
+    .PARAMETER RepoRoot
+        The repository root.
+    .PARAMETER MainRef
+        The main branch ref, such as origin/main.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$ReceiptRoot,
+        [string]$RepoRoot = (Get-Location).Path,
+        [Parameter(Mandatory)][string]$MainRef
+    )
+
+    if (-not (Test-Path -LiteralPath $ReceiptRoot -PathType Container)) { return $null }
+    $mergeBase = "$(git -C $RepoRoot merge-base $MainRef HEAD 2>$null)".Trim()
+    if ($LASTEXITCODE -ne 0 -or -not $mergeBase) { $global:LASTEXITCODE = 0; return $null }
+    $best = $null
+    $bestDistance = [int]::MaxValue
+    $files = @(Get-ChildItem -LiteralPath $ReceiptRoot -Filter '*.json' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 20)
+    foreach ($file in $files) {
+        try { $receipt = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json } catch { continue }
+        $commit = [string]$receipt.Commit
+        if ([string]$receipt.Status -ne 'PASS' -or $commit -notmatch '^[0-9a-f]{40}$' -or $commit -eq $mergeBase) { continue }
+        if ("$(git -C $RepoRoot rev-parse --verify --quiet "$commit^{tree}" 2>$null)".Trim() -ne [string]$receipt.Tree) { continue }
+        git -C $RepoRoot merge-base --is-ancestor $commit HEAD 2>$null
+        if ($LASTEXITCODE -ne 0) { continue }
+        git -C $RepoRoot merge-base --is-ancestor $mergeBase $commit 2>$null
+        if ($LASTEXITCODE -ne 0) { continue }
+        $distance = [int](git -C $RepoRoot rev-list --count "$commit..HEAD" 2>$null)
+        if ($distance -lt $bestDistance) { $best = $commit; $bestDistance = $distance }
+    }
+    $global:LASTEXITCODE = 0
+    return $best
+}
+
+Export-ModuleMember -Function Get-HeadTree, Test-CleanTree, Get-ReceiptPath, Write-PreflightReceipt, Test-PreflightReceipt, Test-PushSendsNothingNew, Find-PreflightBase

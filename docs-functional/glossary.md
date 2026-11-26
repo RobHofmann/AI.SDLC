@@ -12,7 +12,9 @@ The words the AI-SDLC uses, each with one plain sentence.
 - **Consumer**: a repository that installs the AI-SDLC from AI.SDLC.
 - **Core**: the package every consumer installs, with the workflow skills, the agents, the hooks and the core gates.
 - **Functional layer**: the docs that say what a repository gives its users, in plain words.
-- **Gate**: a check that a script runs the same way on a machine and in the workflow, and that can stop a change.
+- **Gate**: a check that a script runs the same way on a machine and in the workflow, and that can stop a change. It answers pass, finding, could not check or not applicable ([how a gate answers](gate-results.md)).
+- **Gate mode**: Blocking, Advisory or Off. A repository can set the mode of a shared gate in `gateModes` of its own `aisdlc.json`.
+- **Waiver**: a `No-Test`, `No-Docs` or `No-ADR` line at the end of a commit message that says why a test, a page or a decision record is not needed. A person reviews it.
 - **Human checkpoint**: a moment where a person decides and no script does. There are two: Checkpoint Alpha and Checkpoint Bravo.
 - **Evidence comment**: the one comment per run, starting with `Evidence` and a date and time, that holds the test results and probes behind an issue. The issue body holds only the conclusions.
 - **In-review label**: the label (`in-review` by default) that says a story has a published pull request that waits for review. The agent adds it only after a person publishes the draft.

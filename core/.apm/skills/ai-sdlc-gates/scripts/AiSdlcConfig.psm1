@@ -528,10 +528,11 @@ function Get-AiSdlcPackage {
     }
 }
 
-# The gates a repository may not set weaker than Blocking in gateModes. Each one guards a rule whose
-# break cannot be taken back once it is pushed: a secret (C03), or a private term in a public
-# repository (ADR 0011). The package mode still decides; only gateModes is refused.
-$script:ProtectedGateScripts = @('Test-GitleaksBaseline.ps1', 'Check-PrivateTerms.ps1')
+# The gates that always run Blocking. Two guard a break that cannot be taken back once it is pushed: a
+# secret (C03), or a private term in a public repository (ADR 0011). The third, the sync manifest
+# check, guards the installed gates.json files themselves, so turning it off would let a package entry
+# turn off the other two. Neither gateModes nor a package or repoGates entry can make them weaker.
+$script:ProtectedGateScripts = @('Test-GitleaksBaseline.ps1', 'Check-PrivateTerms.ps1', 'Check-SyncManifest.ps1')
 
 function Get-AiSdlcGateMode {
     <#
@@ -647,7 +648,7 @@ function Get-AiSdlcGateModeSetting {
                 if ($value -is [string] -and $value -ne '') { $found.Mode = Get-AiSdlcGateMode -Entry @{ mode = $value } }
                 if (-not $found.Mode) { $found.Problem = ("gateModes sets '{0}' to '{1}', and the allowed values are Blocking, Advisory and Off" -f $first, (Format-AiSdlcGateModeValue -Value $value)) }
                 elseif ($found.Mode -ne 'Blocking' -and $runningScript[$first] -in $script:ProtectedGateScripts) {
-                    $found.Problem = ("gateModes sets '{0}' to '{1}', but this gate guards a secret or a private term, which cannot be taken back once pushed, so it stays Blocking" -f $first, $found.Mode)
+                    $found.Problem = ("gateModes sets '{0}' to '{1}', but this gate guards a secret, a private term or the installed gate files, so it stays Blocking" -f $first, $found.Mode)
                     $found.Mode = $null
                 }
             }
@@ -703,6 +704,11 @@ function Resolve-AiSdlcGateMode {
         $source = 'aisdlc.json'
         if ($named.Problem) { $problems.Add([string]$named.Problem) }
         elseif ($problems.Count -eq 0) { $mode = $named.Mode }
+    }
+
+    $leaf = if ($Entry.script -is [string]) { Split-Path -Leaf $Entry.script } else { '' }
+    if ($leaf -in $script:ProtectedGateScripts -and $mode -ne 'Blocking' -and -not ($named -and $named.Problem)) {
+        $problems.Add(("the mode is '{0}', but {1} guards a secret, a private term or the installed gate files, so it always runs Blocking" -f $mode, $leaf))
     }
 
     if ($problems.Count -gt 0) { $mode = 'Blocking' }

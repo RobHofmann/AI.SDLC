@@ -17,7 +17,8 @@
 .PARAMETER Path
     One or more markdown files or folders to check instead of AGENTS.md and docs/, relative to
     RepoRoot. A value may hold several paths split by commas, for example "core,packs,README.md". A
-    path that does not exist exits 2 (could not check). The allow list still applies.
+    path that does not exist exits 2 (could not check). The allow list still applies. Exit 3 (not
+    applicable) when there is no markdown file to scan.
 
 .EXAMPLE
     pwsh .claude/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.ps1 -Path "core,packs,README.md"
@@ -50,6 +51,7 @@ if ($paths) {
     $missing = @($paths | Where-Object { -not (Test-Path -LiteralPath (Join-Path $RepoRoot $_)) })
     if ($missing) {
         Write-Host ("Could not check: the path(s) {0} do not exist under {1}." -f ($missing -join ', '), $RepoRoot) -ForegroundColor Yellow
+        Write-Host 'FIX: Pass -Path with files or folders that exist under the repository root, or leave -Path out to check AGENTS.md and the technical docs.' -ForegroundColor Yellow
         exit 2
     }
     foreach ($p in $paths) {
@@ -69,6 +71,11 @@ else {
     $docsDir = Join-Path $RepoRoot $config.paths.technicalDocs
     if (Test-Path $docsDir) { Get-ChildItem -Path $docsDir -Recurse -Filter *.md -File | ForEach-Object { $targets.Add($_) } }
     $scope = 'AGENTS.md or docs/'
+}
+
+if ($targets.Count -eq 0) {
+    Write-Host "C02: not applicable, there is no markdown file to scan in $scope."
+    exit 3
 }
 
 $violations = [System.Collections.Generic.List[object]]::new()

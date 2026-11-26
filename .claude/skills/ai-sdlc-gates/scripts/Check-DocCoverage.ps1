@@ -62,7 +62,6 @@ if ($layerFindings.Count -gt 0 -or $missing.Count -gt 0) {
     foreach ($finding in $layerFindings) { Write-Host "  [layer] $($finding.Problem)" }
     foreach ($unit in $missing) { Write-Host "  [no page] $($unit.Kind) $($unit.Unit) has no technical page; write $($unit.SuggestedPage)" }
     Write-Host 'FIX: Run the adopt-docs skill, which drafts each missing page for review. A page that covers a unit under another name lists it in its front matter as "unit: <path>".'
-    Write-Output "::error::Documentation coverage: $($layerFindings.Count) layer problem(s) and $($missing.Count) unit(s) without a page."
     exit 1
 }
 

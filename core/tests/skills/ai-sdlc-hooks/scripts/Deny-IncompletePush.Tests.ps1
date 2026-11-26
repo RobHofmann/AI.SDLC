@@ -1175,14 +1175,17 @@ exit 0
             $r.Output | Should -Match 'remote.<name>.mirror'
         }
 
-        It 'still judges a push whose git -c value is quoted and holds a space: <Command>' -Tag '#52' -ForEach @(
+        It 'refuses any other git -c or --config-env option on a push too, also quoted: <Command>' -Tag '#52' -ForEach @(
             @{ Command = 'git -c "user.name=A B" push origin feature/x' }
             @{ Command = "git -c 'user.name=A B' push origin feature/x" }
+            @{ Command = 'git -c include.path=../x.cfg push origin feature/x' }
+            @{ Command = 'git -c branch.feature/x.merge=refs/heads/main push origin' }
+            @{ Command = 'git --config-env=remote.pushDefault=X push' }
         ) {
-            $r = Invoke-Hook -Payload (New-Payload -Command $Command)
+            $r = Invoke-Hook -Payload (New-Payload -Command $Command) -CheckScript $script:CleanCheck
 
             $r.Output | Should -Match '"permissionDecision":"deny"'
-            $r.Output | Should -Match 'wrap-up'
+            $r.Output | Should -Match 'git -c or --config-env'
         }
 
         It 'refuses a push to main whose git -c value is quoted and holds a space: <Command>' -Tag '#52' -ForEach @(
@@ -1195,10 +1198,10 @@ exit 0
             $r.Output | Should -Match 'main or master is refused'
         }
 
-        It 'allows another git -c option on a complete push' -Tag '#52' {
-            $r = Invoke-Hook -Payload (New-Payload -Command 'git -c http.version=HTTP/1.1 push origin feature/x') -CheckScript $script:CleanCheck
+        It 'does not read git -C <dir> as a git -c option' -Tag '#52' {
+            $r = Invoke-Hook -Payload (New-Payload -Command 'git -C . push origin feature/x') -CheckScript $script:CleanCheck
 
-            $r.Output | Should -Not -Match 'permissionDecision'
+            $r.Output | Should -Not -Match 'git -c or --config-env'
         }
     }
 
@@ -1228,6 +1231,8 @@ exit 0
             @{ Key = 'remote.origin.push'; Value = 'HEAD:refs/heads/main'; Command = 'git push origin' }
             @{ Key = 'remote.origin.mirror'; Value = 'true'; Command = 'git push origin' }
             @{ Key = 'remote.origin.mirror'; Value = 'true'; Command = 'git push' }
+            @{ Key = 'branch.feature/x.merge'; Value = 'refs/heads/main'; Command = 'git push' }
+            @{ Key = 'branch.feature/x.merge'; Value = 'refs/heads/master'; Command = 'git push origin' }
         ) {
             $repo = New-ConfiguredRepo -Name ('configured-' + [guid]::NewGuid().ToString('N')) -Key $Key -Value $Value
 
@@ -1351,7 +1356,6 @@ exit 0
         It 'checks the receipt of the pushed branch, not of HEAD, for <Command>' -Tag '#52' -ForEach @(
             @{ Command = "git push origin 'other'" }
             @{ Command = 'git push origin "other"' }
-            @{ Command = 'git -c http.version=HTTP/1.1 push origin other' }
             @{ Command = 'git push origin other:refs/heads/elsewhere' }
             @{ Command = 'git push origin other 2>&1 | Select-Object -Last 1' }
         ) {

@@ -43,7 +43,8 @@ $ErrorActionPreference = 'Stop'
 
 $file = Join-Path $RepoRoot (Get-AiSdlcConfig -RepoRoot $RepoRoot).paths.agentsFile
 if (-not (Test-Path -LiteralPath $file)) {
-    Write-Output "::warning::AGENTS.md size could not be checked: $file does not exist."
+    Write-Host "AGENTS.md size could not be checked: $file does not exist."
+    Write-Host "FIX: Add the AGENTS.md file the repository names in paths.agentsFile of aisdlc.json, or correct that setting."
     exit 2
 }
 

@@ -27,7 +27,8 @@
     contributor named in permanent prose. The cost is a surname-only mention ("as Sample noted"),
     which is both rarer and the shape most likely to collide with an ordinary word.
 
-    The gate blocks: it reports findings and exits non-zero, and the CI wrapper (Invoke-LocalGates.ps1, through
+    Exit 3 (not applicable) when there is no contributor name to check, because the roster is empty or
+    every name is allow-listed. The gate blocks: it reports findings and exits non-zero, and the CI wrapper (Invoke-LocalGates.ps1, through
     GateAnnotation.psm1) fails the build. Intentional, lawful exceptions (a name that must stand with consent) go in the
     allow-list file (default docs/.person-name-allowlist), one token per line, '#' for comments.
 
@@ -137,8 +138,8 @@ if (Test-Path -LiteralPath $AllowListPath) {
 $matchTokens = @($tokens | Where-Object { -not $allow.Contains($_) })
 
 if ($matchTokens.Count -eq 0) {
-    Write-Host "Person-name OK: no contributor names to check (empty roster or all allow-listed)."
-    exit 0
+    Write-Host "Person-name: not applicable, no contributor names to check (empty roster or all allow-listed)."
+    exit 3
 }
 
 # Each name is looked for as "First Last" and as "Last, First". A name with a particle also has
@@ -164,6 +165,7 @@ $rx = [regex]::new($pattern, [System.Text.RegularExpressions.RegexOptions]::Igno
 $targets = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
 if (-not @($layers | Where-Object { Test-Path (Join-Path $RepoRoot $_) })) {
     Write-Host ("Could not check: none of the doc layers in aisdlc.json exists ({0})." -f ($layers -join ', ')) -ForegroundColor Yellow
+    Write-Host 'FIX: Create the doc layer folders that aisdlc.json names (paths.technicalDocs and paths.functionalDocs), or run the adopt-docs skill, or correct those settings.' -ForegroundColor Yellow
     exit 2
 }$agents = Join-Path $RepoRoot $config.paths.agentsFile
 if (Test-Path $agents) { $targets.Add((Get-Item $agents)) }

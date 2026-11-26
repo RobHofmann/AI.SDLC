@@ -16,13 +16,31 @@
     An ADR whose `story:` has no value (an unquoted # starts a YAML comment) is reported too; that part
     needs no issue read.
 
+    It judges only the change. It reads an ADR only when the change adds or changes that ADR's `story:`
+    line (Get-AiSdlcLineChange in ChangedFiles.psm1), so an ADR whose story line is older is skipped,
+    also when other lines of the file changed. A change that holds no such ADR is not applicable.
+
     ADVISORY by design: it never writes the "::error::" annotation and is wrapped by Invoke-Gate.ps1 in
     Advisory mode, so a missing backlink is a warning, not a failed build. It reads issues only in GitHub
-    Actions with a GH_TOKEN, so a local run is a safe NO-OP for the issue reads and never false-alarms off
-    the workflow.
+    Actions with a GH_TOKEN, so a local run is not applicable (exit 3) for the issue reads and never false-alarms
+    off the workflow. It is also not applicable when no ADR is anchored to a story by the change, and in a
+    local run with no merge base, where the lines of the change cannot be told.
+
+    Exit 0 clean, 1 a finding, 2 could not check (no issue body could be read, or CHANGED_FILES is set but
+    there is no merge base; the output has a FIX: line), 3 not applicable. With an explicit -ChangedFiles
+    list and no merge base, every line of the listed files counts as added.
 
 .PARAMETER RepoRoot
     Repository root containing the ADR folder. Defaults to the folder that holds aisdlc.json, found from this script.
+
+.PARAMETER BaseRef
+    The ref the change is measured against. Defaults to origin/<github.trunk> from aisdlc.json
+    (Get-AiSdlcMainBranch), origin/main unless the repository names another trunk.
+
+.PARAMETER ChangedFiles
+    Explicit repository-relative paths, bypassing git for the file list. Falls back to the
+    newline-separated CHANGED_FILES environment variable, which the pipeline sets from the pull request
+    diff, and then to git.
 
 .PARAMETER GhCommand
     The GitHub CLI command. Defaults to gh.
@@ -40,6 +58,8 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot,
+    [string]$BaseRef,
+    [string[]]$ChangedFiles,
     [string]$GhCommand = 'gh',
     [string]$GhToken = $env:GH_TOKEN,
     [bool]$InCi = ($env:GITHUB_ACTIONS -eq 'true'),
@@ -49,12 +69,21 @@ param(
 $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
 if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
 Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
+Import-Module (Join-Path $aiSdlcGates 'ChangedFiles.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
+if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
 
 $ErrorActionPreference = 'Stop'
 
 $aiSdlc = Get-AiSdlcConfig -RepoRoot $RepoRoot
 $excludedAdrNames = @('0000-template.md')
+
+# A list the caller passes has no base to measure lines against, so its files count as new. A list from
+# the pipeline must have a base, because reading every listed ADR would blame the change for old files.
+$change = Get-AiSdlcChange -RepoRoot $RepoRoot -BaseRef $BaseRef -Explicit $ChangedFiles
+$listedByCaller = [bool]$ChangedFiles
+$changedPath = [System.Collections.Generic.HashSet[string]]::new([string[]]@($change.Files))
+foreach ($gone in @($change.Deleted)) { [void]$changedPath.Remove($gone) }
 
 function Get-TrackerRepository {
     foreach ($value in @($aiSdlc.tracker.repository, $aiSdlc.github.repository)) {
@@ -81,6 +110,20 @@ function Get-AdrStory([string]$frontMatter) {
     return $story
 }
 
+# True when the change adds or changes the story: line in the front matter of this ADR. The line number
+# is read from the file on disk, which is the numbering that Get-AiSdlcLineChange uses.
+function Test-StoryLineChanged {
+    param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][System.IO.FileInfo]$File, [Parameter(Mandatory)][string]$Text, [Parameter(Mandatory)][System.Text.RegularExpressions.Match]$FrontMatter)
+
+    $relative = [IO.Path]::GetRelativePath($Root, $File.FullName).Replace('\', '/')
+    if (-not $changedPath.Contains($relative)) { return $false }
+    $storyLine = [regex]::Match($FrontMatter.Groups[1].Value, '(?m)^[ \t]*story:')
+    if (-not $storyLine.Success) { return $false }
+    $lineNumber = ($Text.Substring(0, $FrontMatter.Groups[1].Index + $storyLine.Index) -split "`n").Count
+    $lines = Get-AiSdlcLineChange -RepoRoot $Root -Base $change.Base -Path $relative -AssumeNew:$listedByCaller
+    return [bool]($lines -and ($lines.Added -contains $lineNumber))
+}
+
 # Map each anchoring artifact to the issues it declares. v1 covers ADRs; widen to specs/docs when their
 # repo-to-issue backlink is also worth surfacing.
 function Get-StoryToArtifacts([string]$root) {
@@ -94,6 +137,7 @@ function Get-StoryToArtifacts([string]$root) {
         $text = Get-Content -LiteralPath $adr.FullName -Raw
         $fm = [regex]::Match($text, '\A\s*---\r?\n(.*?)\r?\n---\r?\n', 'Singleline')
         if (-not $fm.Success) { continue }
+        if (-not (Test-StoryLineChanged -Root $root -File $adr -Text $text -FrontMatter $fm)) { continue }
         $story = Get-AdrStory $fm.Groups[1].Value
         if (-not $story) { continue }
         if ($story.Status -eq 'empty') { $traps.Add($adr.BaseName); continue }
@@ -156,6 +200,11 @@ function Get-BackEdgeState {
 }
 
 function Get-StoryBackEdgeResult {
+    if ($env:CHANGED_FILES -and -not $listedByCaller -and (-not $change.Readable -or -not $change.Base)) {
+        $why = if ($change.Reason) { $change.Reason } else { "no merge base between $BaseRef and HEAD" }
+        return [pscustomobject]@{ State = 'NoBase'; Reason = $why }
+    }
+    if (-not $listedByCaller -and -not $change.Readable) { return [pscustomobject]@{ State = 'NoChange' } }
     $anchors = Get-StoryToArtifacts $RepoRoot
     $map = $anchors.Map
     $findings = [System.Collections.Generic.List[string]]::new()
@@ -192,13 +241,22 @@ function Show-StoryBackEdgeResult {
     param([Parameter(Mandatory)][object]$Result)
 
     switch ($Result.State) {
+        'NoBase' {
+            Write-Host "Story back-edges could not be checked: CHANGED_FILES is set, but the lines of the change cannot be told ($($Result.Reason))."
+            Write-Host 'FIX: Fetch the target branch with full history (for example fetch-depth: 0 in the checkout step), then run the gate again.'
+            return 2
+        }
+        'NoChange' {
+            Write-Host 'Story back-edges: not applicable, there is no merge base, so the lines of the change cannot be told and no ADR is read.'
+            return 3
+        }
         'NoAnchors' {
-            Write-Host 'Story back-edges: no graph-anchored ADRs found; nothing to check.'
-            return 0
+            Write-Host 'Story back-edges: not applicable, the change adds or changes no story: line of an ADR; nothing to check.'
+            return 3
         }
         'NoCredentials' {
-            Write-Host 'Story back-edges: not in GitHub Actions with a GH_TOKEN, or gh is missing; skipping (advisory, runs in CI with the token).'
-            return 0
+            Write-Host 'Story back-edges: not applicable, this is not GitHub Actions with a GH_TOKEN, or gh is missing (advisory, runs in CI with the token).'
+            return 3
         }
         'Findings' {
             Write-Host "Story back-edge advisories (repo-to-issue backlinks; see the artifact-graph page of the ai-sdlc-handbook skill):"
@@ -214,10 +272,12 @@ function Show-StoryBackEdgeResult {
             Write-Host ("Story back-edges could not be checked: not one of the {0} anchored issue body(ies) could be read from GitHub." -f $Result.Unreadable.Count)
             Write-Host "  Every one failing the same way points at the GH_TOKEN of the workflow or its read access to issues rather than at the issues, and nothing was verified."
             Write-Host ("  issues: {0}" -f (($Result.Unreadable | Select-Object -First 10) -join ', '))
+            Write-Host 'FIX: Give the workflow a GH_TOKEN with read access to the issues of the tracker repository, then run the gate again.'
             return 2
         }
         'PartlyReadable' {
             Write-Host ("Story back-edges partly checked: {0} issue body(ies) reference their anchoring ADR(s), and {1} could not be read from GitHub ({2})." -f $Result.Checked, $Result.Unreadable.Count, (($Result.Unreadable | Select-Object -First 5) -join ', '))
+            Write-Host 'FIX: Give the workflow a GH_TOKEN with read access to the issues of the tracker repository, then run the gate again.'
             return 2
         }
         default {

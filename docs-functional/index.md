@@ -7,6 +7,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 ## General
 
 - [Complete documentation](./documentation.md) - Every repository that uses the AI-SDLC has two layers of docs, and every part of its code has a page.
+- [How a gate answers](./gate-results.md) - A gate is a check that can stop a change.
 - [Glossary](./glossary.md) - The words the AI-SDLC uses, each with one plain sentence.
 - [Adding the AI-SDLC to a repository](./joining.md) - A new or existing repository joins the AI-SDLC with one script, run from a clone of AI.SDLC.
 - [Taking a new version](./new-version.md) - AI.SDLC releases one version for all its packages at once.

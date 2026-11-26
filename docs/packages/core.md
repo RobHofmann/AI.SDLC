@@ -134,8 +134,8 @@ gate; `tools/Build-GateCatalog.ps1` writes it from the `gates.json` files.
 
 A gate has the mode Blocking, Advisory or Off. A repository sets the mode of a shared gate in
 `gateModes` of its own `aisdlc.json`, read by `Get-AiSdlcGateModeSetting` in `AiSdlcConfig.psm1`. An
-Off gate runs in no hook, pre-flight or run, and shows as `OFF`. The secret scan and the private-terms
-gate cannot be set weaker than Blocking there. A push hook counts a gate as Off only when every
+Off gate runs in no hook, pre-flight or run, and shows as `OFF`. The secret scan, the private-terms gate
+and the sync manifest check always run Blocking. A push hook counts a gate as Off only when every
 pushed commit holds the same gate settings.
 
 A gate may name its `inputs`, a list of path globs. A local run then starts it only when the change
@@ -216,7 +216,9 @@ Setup and hook scripts include:
 
 `Deny-SharedFileEdit.ps1` stops edits to files installed by APM from AI.SDLC. It also stops an edit through `apply_patch`, the edit tool of a GPT model in GitHub Copilot, when it names an installed file. In AI.SDLC itself it names the source file in the same repository, and says to run `apm install` again.
 
-`Deny-IncompletePush.ps1` refuses a push that leaves tests or documentation behind. A push that names no folder is judged on the repository of the `cwd` field of the hook payload. In a session that works in a git worktree, that is the worktree, even though the hook runs from the main checkout. The hook also reads a folder in quotes after `cd`, `pushd` or `Set-Location`, so a folder with a space works.
+`Deny-IncompletePush.ps1` refuses a push that leaves tests or documentation behind, a push to `main`,
+and a push it cannot check. It looks up the receipt for the tree of each pushed ref, and shows a note
+when the completeness check could not check. The `ai-sdlc-hooks` skill lists the refused forms. A push that names no folder is judged on the repository of the `cwd` field of the hook payload. In a session that works in a git worktree, that is the worktree, even though the hook runs from the main checkout. The hook also reads a folder in quotes after `cd`, `pushd` or `Set-Location`, so a folder with a space works.
 
 A `cwd` or a repository on a network share (a UNC path) works too, because the hook gives git the plain file path.
 
@@ -280,7 +282,7 @@ The git `pre-push` hook skips the blocking gates when a passing pre-flight recei
 
 `Install-Apm.ps1` installs a pinned APM release and checks its SHA-256 value.
 
-`Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and checks its SHA-256 value. The composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml` runs it before the gate step. `Test-GitleaksBaseline.ps1` is the blocking C03 gate of `gates.json`, a secret scan against `gitleaks-baseline.json`. So `Invoke-LocalGates.ps1` runs it in the composite action, in the pre-push hook and in a local run. On a pull request in GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, as the pre-flight does. In a local run it scans `origin/main..HEAD`. A repository without a baseline counts every finding. In GitHub Actions a missing gitleaks, or rules that could not be downloaded, fail the gate. In a local run the gate reports "could not check" (exit 2), so a push still goes out.
+`Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and checks its SHA-256 value. The composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml` runs it before the gate step. `Test-GitleaksBaseline.ps1` is the blocking C03 gate of `gates.json`, a secret scan against `gitleaks-baseline.json`. So `Invoke-LocalGates.ps1` runs it in the composite action, in the pre-push hook and in a local run. On a pull request in GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, as the pre-flight does. In a local run it scans `<main branch>..HEAD`, where `Get-AiSdlcMainBranch` gives `origin/<github.trunk>` or a fallback. A repository without a baseline counts every finding. In GitHub Actions a missing gitleaks, or rules that could not be downloaded, fail the gate. In a local run the gate reports "could not check" (exit 2), so a push still goes out.
 
 `GitleaksConfig.psm1` writes the gitleaks configuration of each scan: the rule set plus an allowlist for `sync-manifest.json`, whose git blob hashes look like keys. A repository can add its own paths in `secretScan.allowPaths` of `aisdlc.json`, as a second allowlist. The composite action, the pre-flight and `Create-GitleaksBaseline.ps1` use it.
 

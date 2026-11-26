@@ -8,7 +8,7 @@ merge is ready to tag, and no second pull request is needed to name the version.
 
 Each entry names its issue, as `#42`.
 
-## v1.6.0 - 2026-11-26
+## v2.0.0 - 2026-11-26
 
 - The packages no longer ship the Pester tests of their scripts, so an update pull request holds only
   files a consumer runs ([ADR 0015](docs/adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md), #45).
@@ -117,8 +117,66 @@ Each entry names its issue, as `#42`.
 - The `sonarqube` MCP server offers only the seven tool groups the skills use, through the header
   `SONARQUBE_TOOLSETS` (#86).
 
+- A gate reports one of four exit codes: 0 pass, 1 finding, 2 could not check, 3 not applicable. Exit 2
+  of a Blocking gate now fails the pull request action; a local run and the pre-push hook keep it a
+  warning. Exit 3 shows as `N/A` and never blocks, and a crashed Advisory gate is a warning. The agent
+  push hook denies only on a finding and shows a note after exit 2. Every gate that passed with
+  nothing to check now exits 3, and every exit 2 prints a `FIX:` line. `GateContract.Tests.ps1` runs
+  every gate in an empty repository. ADR 0019 supersedes point 1 of ADR 0005 (#46).
+- `Check-Coverage.ps1` fails when coverage is a point or more above the baseline file and the change
+  did not raise it, so a gain is kept. `Invoke-LocalGates.ps1 -SkipScript` leaves a gate out by its
+  script name. The gates, the pre-flight and `Invoke-PesterParallel.ps1 -Changed` read the main branch
+  from `github.trunk` through `Get-AiSdlcMainBranch`. The new core module `ChangedFiles.psm1` gives one
+  list of the files and lines a change touched (#90).
+- Every gate is named for what passes, with its clause in its own field: a core clause, a pack clause
+  or `AI-SDLC`. Each entry carries a `checks` and a `fix` text. The runner fails an entry without them,
+  or with a name used twice, and prints the checks text before the output of a gate that failed.
+  `tools/Build-GateCatalog.ps1` writes the shared gate list `references/gate-catalog.md` and
+  `docs/gates.md` (#47).
+- A gate mode is Blocking, Advisory or Off. A repository sets the mode of a shared gate in `gateModes`
+  of its own `aisdlc.json`; the summary shows where each mode comes from, and a weaker mode raises a
+  warning. An Off gate runs in no run, hook or pre-flight, and a push hook counts it as Off only once
+  the setting is in every pushed commit. The secret scan, the private-terms gate and the sync manifest
+  check always run Blocking, whatever `gateModes` or a package entry says (#49).
+- `Check-StoryTraits.ps1`, `Check-DocDrift.ps1`, `Check-SpecDrift.ps1` and `Check-StoryBackEdges.ps1`
+  judge only the lines a change adds or changes. Older drift is listed as not blocking, and `LEGACY-0`
+  never covers added code (#80).
+- A gate may name its `inputs` as path globs. A local run then starts it only when the change touches
+  one of them, and shows `NOT TOUCHED` otherwise; GitHub Actions and `-All` run every gate. The
+  pre-flight measures a scoped run from the last green pre-flight, runs `commands.testChanged` when it
+  is set, and runs everything with `-Full`. ADR 0020 (#48).
+- `tools/Invoke-PesterParallel.ps1 -Changed` follows a changed module or data file to the tests that
+  name it, and exits 3 when no test is reached. `-ChangedOutsideCi` runs every test in GitHub Actions,
+  and the pre-flight of AI.SDLC uses it (#93).
+- The agent push hook refuses more forms it cannot check: a broken `aisdlc.json` or hook module, a
+  matching (`:`) or wildcard refspec, a target such as `HEAD:heads/main`, a bare push that
+  `push.default`, `branch.<name>.merge` or a remote push or mirror setting sends to main, and any
+  `git -c` or `--config-env` option. It also refuses a push to two repositories, and a push whose commit it cannot tell.
+  It checks the receipt of each pushed tip, not of HEAD. No refusal names `--no-verify` as a way past
+  (#52).
+- A `No-Test: <reason>: <why>` or `No-Docs: <reason>: <why>` commit trailer clears the completeness
+  finding for the files of its own commit, and `No-ADR: <why>` clears the missing ADR of a data-model
+  change. Each waiver is printed. Only `wrap-up` writes a trailer, after `test-analyzer`,
+  `docs-reviewer` or `architect` agrees. C01 names the waiver. ADR 0021 (#60).
+- A decision needs an ADR only when it passes three tests: hard to undo, surprising without context,
+  and a real trade-off. `adr-conventions` states them once, and the other skills point to them. A new
+  gate no longer counts as key by itself (#65).
+
 What a consumer does when it takes this release:
 
+- A Blocking gate that exits 2 in your pull request workflow now fails it. Read the first run after
+  the update: give each gate what it needs (a full-depth checkout for gitleaks, `paths.sourceRoot` and
+  `paths.testRoot` for the .NET gates, `coverage-file` for the coverage gate), or set the gate to
+  Advisory or Off in `gateModes` and say why in the pull request.
+- Give every entry of your own `repoGates` a `checks` and a `fix` text, and a name that says what
+  passes, or the run fails on it. A script or a dashboard that matches an old gate name in an
+  annotation must use the new name; `.claude/skills/ai-sdlc-gates/references/gate-catalog.md` lists
+  them all.
+- When a test of your own pins the gate modes to Blocking and Advisory, let it accept Off.
+- After a coverage gain of a point or more, raise `lineCoveragePercent` in the baseline file in the
+  same pull request, or the coverage gate fails.
+- An agent push that the hook now refuses, such as a bare push with `push.default=matching`, needs the
+  plain form `git push <remote> <branch>`.
 - Expect a larger update pull request once: it deletes the old test files under `.claude/`. No file
   or setting of your own needs a change for that.
 - When one of your own tests checks that a script under `.claude/` has a `.Tests.ps1` file next to it,

@@ -29,7 +29,7 @@
     where n is the line number of the rule in the list. The owner of the list looks the rule up.
 
     The gate runs only when "visibility" in aisdlc.json is "public", or with -Force. A private
-    repository passes with "skipped".
+    repository is not applicable (exit 3).
 
     In GitHub Actions the gate also reads the event file of the run (GITHUB_EVENT_PATH), but only when
     it checks the checked-out repository (GITHUB_WORKSPACE). When GitHub says that repository is public:
@@ -38,7 +38,7 @@
       - no list is a failure, because a public repository must never pass unchecked;
       - a pull request from a fork gets no secrets, so there no list stays exit 2 with a FIX line.
 
-    Exit codes follow the gate contract: 0 nothing found or skipped, 1 a finding, 2 could not check
+    Exit codes follow the gate contract: 0 nothing found, 1 a finding, 3 not applicable (a private repository), 2 could not check
     (no list, or a rule that is not a valid regular expression). With -Required, no list exits 1.
     A repository root that is not an existing folder is "could not check" too: exit 2 in a local run,
     and exit 1 with -Required or in GitHub Actions.
@@ -50,8 +50,8 @@
     The private term list to use instead of the other sources.
 
 .PARAMETER BaseRef
-    The commits after this ref are checked. Defaults to origin/main when it exists; without it, no
-    commit message is checked.
+    The commits after this ref are checked. Defaults to origin/<github.trunk> from aisdlc.json
+    (Get-AiSdlcMainBranch) when it exists; without it, no commit message is checked.
 
 .PARAMETER Force
     Check a repository whose visibility is private too.
@@ -117,8 +117,8 @@ if ($wrongVisibility) {
     Write-Host 'FIX: Set "visibility": "public" in aisdlc.json, so the gate runs on every machine too.' -ForegroundColor Red
 }
 elseif ($config.visibility -ne 'public' -and -not $Force) {
-    Write-Host 'Private terms: skipped: the repository is private (visibility in aisdlc.json). -Force checks it anyway.'
-    exit 0
+    Write-Host 'Private terms: not applicable, the repository is private (visibility in aisdlc.json). -Force checks it anyway.'
+    exit 3
 }
 
 function Exit-Gate([int]$Code) {
@@ -243,8 +243,9 @@ foreach ($rel in $tracked) {
 }
 
 if (-not $BaseRef) {
-    git -C $RepoRoot rev-parse --verify --quiet origin/main *> $null
-    if ($LASTEXITCODE -eq 0) { $BaseRef = 'origin/main' }
+    $trunk = Get-AiSdlcMainBranch -RepoRoot $RepoRoot
+    git -C $RepoRoot rev-parse --verify --quiet $trunk *> $null
+    if ($LASTEXITCODE -eq 0) { $BaseRef = $trunk }
 }
 $commits = 0
 if ($BaseRef) {

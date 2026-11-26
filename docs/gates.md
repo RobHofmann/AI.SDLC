@@ -76,7 +76,7 @@ The gates of the core and of the packs are on the [shared gate list](../core/.ap
 - Runs in: pre-push hook, pull request action, local run
 - Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `core/.apm/skills/ai-sdlc-gates/scripts/Check-DocLineCitations.ps1`
-- Checks: It scans the markdown in `core`, `packs`, the docs, `README.md` and `AGENTS.md` for a line number such as `file.ext:42` or the words line 42. It does not check that a cited path exists. Exit 2 means a listed path is missing, and exit 3 means there is no markdown file to scan.
+- Checks: It scans the markdown in `core`, `packs`, the docs, `README.md` and `AGENTS.md` for a line number after a file name or after the word line. It does not check that a cited path exists. Exit 2 means a listed path is missing, and exit 3 means there is no markdown file to scan.
 - Fix: Replace each line number with the file path and the name of the symbol.
 
 ### Shared files and docs read at B2 sentences and B1 words

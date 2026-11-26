@@ -80,7 +80,7 @@ or `Check-ArtifactGraph.ps1` as the model, and do not invent a new shape:
   gate checked nothing. Add the gate to the Expected table of `GateContract.Tests.ps1` in AI.SDLC.
 - Collect violations, and print each with the file and the rule. **Exit non-zero on any violation,
   zero on none** (loud on failure, silent on success). For a substrate gate, an unreachable substrate
-  exits 2: a warning, never a pass.
+  exits 2: never a pass, and a blocking gate that exits 2 fails the pull request build.
 - **Print each finding with two spaces in front, as `path:line  what is wrong`.** `Invoke-Gate.ps1`
   reads that shape back and raises up to five findings as their own GitHub Actions annotations
   (`::error file=<path>,line=<n>::`). Each one has its file and line, so it shows in the run summary

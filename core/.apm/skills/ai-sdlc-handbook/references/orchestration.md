@@ -206,8 +206,8 @@ What stays in `.claude/settings.json` is not enforcement:
   the remote it goes to. A release tag is an example. The hook looks the receipt up for the commit of
   each pushed ref, not for `HEAD`. It also refuses a push it cannot check. That covers a matching or
   wildcard push, and a push that can reach `main` through `push.default`, `remote.<name>.push` or
-  `remote.<name>.mirror`. It covers `git -c` with one of those settings or `core.hooksPath`, a commit it
-  cannot tell, and two repositories in one command. It refuses any push while `aisdlc.json` or a hook
+  `remote.<name>.mirror`, or through `branch.<name>.merge`. It covers any `git -c` or `--config-env`
+  option, a commit it cannot tell, and two repositories in one command. It refuses any push while `aisdlc.json` or a hook
   module is broken. After such a refusal the agent stops and asks the person. It gives the push command
   in a code block the person can run. Only a person pushes with `--no-verify`. A branch policy on `main` should refuse a direct push on the server
   as well.

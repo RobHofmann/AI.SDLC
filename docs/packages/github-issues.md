@@ -44,8 +44,8 @@ The package configuration lives at `packs/github-issues/apm.yml`.
 
 The gate configuration lives at `packs/github-issues/.apm/skills/check-pr-contract/gates.json`.
 
-- `PR-story contract` is blocking in CI and PR runs. It is a no-op locally.
-- `Graph: stories backlink their anchoring ADRs` is advisory in CI. It is a no-op locally.
+- `The pull request is tied to a refined issue, and a data-model change has an ADR for that story` is blocking in the pull request build. Locally it is not applicable (exit 3).
+- `Each issue that an ADR names points back at that ADR` is advisory in the pull request build. Locally it is not applicable (exit 3).
 
 ### Scripts and tests
 

@@ -77,9 +77,10 @@ gate and the advisory-first path.
 code and never fails a run. The runner still checks the entry, refuses any other mode, and shows the
 gate as `OFF`. A gateModes key that names no shared gate that runs fails the run, and then no key is
 used. A push hook counts a gate as Off only when every pushed commit holds the same gate settings. So
-an edit to Off counts only once it is committed. The secret scan (C03) and the private-terms gate
-([ADR 0011](0011-the-public-repository-holds-no-private-information.md)) refuse a weaker mode in
-gateModes. What they guard cannot be taken back after a push. The exit codes and what each mode does
+an edit to Off counts only once it is committed. The secret scan (C03), the private-terms gate
+([ADR 0011](0011-the-public-repository-holds-no-private-information.md)) and the sync manifest check
+always run Blocking, whatever gateModes or a package entry says. What the first two guard cannot be
+taken back after a push, and the third guards the installed gates.json files. The exit codes and what each mode does
 with them stay the same.
 
 ## Consequences

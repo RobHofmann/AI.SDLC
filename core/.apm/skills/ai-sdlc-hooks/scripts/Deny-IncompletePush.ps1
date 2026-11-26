@@ -50,9 +50,10 @@
     with no refspec is judged on what git is set to send: push.default (matching reaches main),
     remote.<name>.push and remote.<name>.mirror (true reaches main), for the remote the push names, else
     the push remote of the branch, else origin. A bare push whose settings send only a story branch passes.
-    After that check it refuses git -c with push.*, remote.<name>.push, remote.<name>.mirror or
-    core.hooksPath, also when the key or value is quoted, because such an option changes what the push
-    sends or turns off the git pre-push hook. Another git -c option, such as http.version, passes. A
+    A bare push under push.default upstream, tracking or simple counts as a push to main when
+    branch.<name>.merge of the current branch names main or master. After that check it refuses any
+    git -c or --config-env option on a push, also quoted. A list of bad keys cannot be complete
+    (include.*, branch.<name>.merge, remote.pushDefault), and no agent push needs one. A
     command that holds pushes to two different repositories is refused too. A repository that
     sets git.allowTrunkPush to true in aisdlc.json may update main or master directly, but only in a plain
     push that is the whole command: a +refspec, a delete refspec (:main), any push option outside a short
@@ -297,10 +298,12 @@ function Get-ConfiguredPush {
     $default = "$(@(Get-ConfigValue -Root $Root -Key 'push.default') | Select-Object -Last 1)"
     $refspecs = Get-ConfigValue -Root $Root -Key "remote.$Remote.push"
     $mirror = @(Get-ConfigValue -Root $Root -Key "remote.$Remote.mirror") | Select-Object -Last 1
+    $merge = "$(@(Get-ConfigValue -Root $Root -Key "branch.$Branch.merge") | Select-Object -Last 1)"
     return [pscustomobject]@{
         Default  = $default.Trim()
         Refspecs = @($refspecs | Where-Object { $_ })
         Mirror   = @($mirror | Where-Object { "$_".Trim() -match '^(?i:true|yes|on|1)$' }).Count -gt 0
+        Merge    = ($merge.Trim() -replace '^refs/heads/', '')
     }
 }
 
@@ -326,6 +329,9 @@ function Test-TargetsProtectedBranch {
             $remote = if ($words.Count -gt 0) { $words[0] } else { $repoOption }
             $configured = Get-ConfiguredPush -Root $Root -Remote $remote -Branch $Branch
             if ($configured.Default -eq 'matching' -or $configured.Mirror) { return $true }
+            # upstream (tracking) pushes to the branch that branch.<name>.merge names, and simple does
+            # so when the names match; a feature branch that tracks main would reach it.
+            if ($configured.Default -in '', 'simple', 'upstream', 'tracking' -and $configured.Merge -in $protectedBranches) { return $true }
             $refspecs = $configured.Refspecs
         }
         foreach ($refspec in $refspecs) {
@@ -336,13 +342,14 @@ function Test-TargetsProtectedBranch {
 }
 
 function Test-PushConfigOverride {
-    # True for git -c with a setting that changes what a push sends or turns off the git pre-push hook.
-    # Quotes and backslashes are dropped first, so "push.default"=matching and push\.default count too.
+    # True for any git -c or --config-env option on a push. A list of bad keys cannot be complete:
+    # include.*, includeIf.*, branch.<name>.merge and remote.pushDefault change a push as well. No agent
+    # push needs a setting on the command line, so every one is refused.
     param([string]$CommandLine)
 
-    $option = '-c\s+(?i:push\.[^=\s]+|remote\.[^=\s]+\.(?:push|mirror)|core\.hookspath)(?:=|\s|$)'
+    $option = '(?:^|\s)(?:-c|--config-env)(?:\s|=)'
     foreach ($push in [regex]::Matches($CommandLine, "$gitPrefix\s+push(?:\s|$)")) {
-        if (($push.Value -replace '[''"\\`]', '') -match $option) { return $true }
+        if (($push.Value -replace '[''"\\`]', '') -cmatch $option) { return $true }
     }
     return $false
 }
@@ -693,8 +700,9 @@ if (Test-TargetsProtectedBranch -CommandLine $command -Branch ([string]$CurrentB
 }
 
 if (Test-PushConfigOverride -CommandLine $command) {
-    Write-Deny ('A push with git -c push.*, remote.<name>.push, remote.<name>.mirror or core.hooksPath is refused, because it can change ' +
-        'what the push sends or turn off the git pre-push hook. Push without that option. When a git hook does not ' +
+    Write-Deny ('A push with a git -c or --config-env option is refused, because a setting such as push.*, remote.<name>.push, ' +
+        'remote.<name>.mirror, include.* or core.hooksPath can change what the push sends or turn off the git pre-push hook. ' +
+        'Push without that option. When a git hook does not ' +
         'work, an agent stops and asks the person, and gives the push command in a code block the person can run. ' +
         'Only a person pushes with git push --no-verify.')
     exit 0
