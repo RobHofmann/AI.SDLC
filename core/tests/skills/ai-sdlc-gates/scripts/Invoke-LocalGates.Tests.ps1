@@ -4,6 +4,10 @@ BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\
 
 Describe 'Invoke-LocalGates' {
     BeforeAll {
+        # These tests describe a local run. The pull request workflow sets GITHUB_ACTIONS, which turns on the
+        # pipeline behaviour, so it is cleared here and put back after the file.
+        $script:SavedGithubActions = $env:GITHUB_ACTIONS
+        $env:GITHUB_ACTIONS = $null
         $script:Runner = Join-Path $script:ScriptFolder 'Invoke-LocalGates.ps1'
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
 
@@ -58,6 +62,11 @@ Describe 'Invoke-LocalGates' {
             $run = Invoke-ScriptInProcess -Path $script:Runner -Arguments (@('-RepoRoot', $Root) + $Extra)
             return [pscustomobject]@{ Code = $run.ExitCode; Output = $run.Output }
         }
+    }
+
+
+    AfterAll {
+        $env:GITHUB_ACTIONS = $script:SavedGithubActions
     }
 
     It 'runs the core gates and skips the gates of a pack that apm.yml does not list' {

@@ -4,6 +4,10 @@ BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\
 
 Describe 'Invoke-Preflight' {
     BeforeAll {
+        # These tests describe a local run. The pull request workflow sets GITHUB_ACTIONS, which turns on the
+        # pipeline behaviour, so it is cleared here and put back after the file.
+        $script:SavedGithubActions = $env:GITHUB_ACTIONS
+        $env:GITHUB_ACTIONS = $null
         $script:Made = [System.Collections.Generic.List[string]]::new()
 
         function New-PreflightRepo {
@@ -81,6 +85,7 @@ Describe 'Invoke-Preflight' {
 
     AfterAll {
         Remove-Variable -Name PreflightTest -Scope Global -ErrorAction SilentlyContinue
+        $env:GITHUB_ACTIONS = $script:SavedGithubActions
         foreach ($dir in $script:Made) { Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue }
     }
 

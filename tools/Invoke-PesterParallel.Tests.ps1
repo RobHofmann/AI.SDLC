@@ -2,6 +2,10 @@
 
 Describe 'Invoke-PesterParallel' {
     BeforeAll {
+        # These tests describe a local run. The pull request workflow sets GITHUB_ACTIONS, which turns on the
+        # pipeline behaviour, so it is cleared here and put back after the file.
+        $script:SavedGithubActions = $env:GITHUB_ACTIONS
+        $env:GITHUB_ACTIONS = $null
         $script:Tool = Join-Path $PSScriptRoot 'Invoke-PesterParallel.ps1'
         Import-Module (Join-Path $PSScriptRoot '..' 'core' 'tests' 'skills' 'ai-sdlc-gates' 'scripts' 'DocToolTestHarness.psm1') -Force
 
@@ -29,6 +33,7 @@ Describe 'Invoke-PesterParallel' {
     }
 
     AfterAll {
+        $env:GITHUB_ACTIONS = $script:SavedGithubActions
         Get-ChildItem ([System.IO.Path]::GetTempPath()) -Filter 'pester-parallel-*' -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     }
 
