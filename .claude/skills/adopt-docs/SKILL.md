@@ -4,16 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: Tech Writer
 description: >
-  Give a repository complete documentation that meets the AI-SDLC wiki rules: a technical and a
-  functional layer, and a page for every unit (a .NET project, a Bicep building block, a package).
-  It lists what is missing, runs the machine fixes, proposes moves between the layers, drafts each
-  missing page from facts read out of
-  the code, and has every claim checked before it is merged. Use once per repository after the first
-  install, when the coverage gate or the doc gates fail on pages that existed before the AI-SDLC, or
-  when a repository has no functional layer. Also use when the user says "make our docs AI-SDLC
-  compatible", "adopt the docs", "document every project" or "we have no functional docs". Do NOT use
-  to document a change that was just built (write-docs), to write an ADR (write-adr) or to change the
-  wiki rules themselves (docs-wiki-conventions).
+  Give a whole repository documentation that meets the AI-SDLC wiki rules: a technical and a
+  functional layer and a page for every unit, drafted from facts in the code. Use once after the first
+  install, when the doc gates fail on old pages, or on "make our docs AI-SDLC compatible", "adopt the
+  docs" or "document every project". Do NOT use to document a change just built (write-docs) or to
+  change the wiki rules (docs-wiki-conventions).
 ---
 
 # Adopt the documentation

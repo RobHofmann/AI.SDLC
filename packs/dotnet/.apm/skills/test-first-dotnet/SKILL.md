@@ -3,13 +3,11 @@ name: test-first-dotnet
 kind: knowledge
 user-invocable: false
 description: >
-  How tests are written first and coverage is measured in a .NET repository. It covers red, green,
-  refactor; xUnit with Moq and AutoFixture; tests that mirror src/; the Story trait. It also covers the Arrange,
-  Act, Assert markers, the coverage ratchet with the run settings, and 80% on new code in SonarCloud.
-  Use when writing or changing C# behaviour and its tests, or when mapping acceptance criteria to
-  tests. Also use when reading a coverage result, or when the test-analyzer agent reviews a diff. Do
-  NOT use to run the whole pipeline locally (run-preflight) or to decide the order of the build steps
-  (implement).
+  How tests are written first and coverage is measured in a .NET repository: red, green, refactor;
+  xUnit and Moq; tests that mirror src/; the Story trait; Arrange, Act and Assert markers; the
+  coverage ratchet and 80% on new code. Use when writing or changing C# behaviour and its tests,
+  mapping acceptance criteria to tests, reading a coverage result, or when test-analyzer reviews a
+  diff. Do NOT use to run the pipeline locally (run-preflight).
 ---
 
 # Test first in .NET

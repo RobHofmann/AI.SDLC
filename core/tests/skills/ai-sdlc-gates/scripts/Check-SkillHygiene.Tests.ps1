@@ -21,7 +21,8 @@ Describe 'Check-SkillHygiene' {
                 [switch]$NoPersona,
                 [switch]$NoSkillMd,
                 [switch]$NoStandingRules,
-                [switch]$NoAutolearnPointer
+                [switch]$NoAutolearnPointer,
+                [string]$ExtraFrontmatter
             )
             $dir = Join-Path $Root $Folder
             New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -36,6 +37,7 @@ Describe 'Check-SkillHygiene' {
             if (-not $NoKind) { $fm += "`nkind: $Kind" }
             if (-not $NoPhase) { $fm += "`nphase: $Phase" }
             if (-not $NoPersona) { $fm += "`npersona: $Persona" }
+            if ($ExtraFrontmatter) { $fm += "`n$ExtraFrontmatter" }
             $content = "---`n$fm`ndescription: >`n  $Description`n---`n`n# Title`n`n$resolvedBody"
             Set-Content -LiteralPath (Join-Path $dir 'SKILL.md') -Value $content -NoNewline
             return $dir
@@ -107,9 +109,9 @@ Describe 'Check-SkillHygiene' {
         $r.Output | Should -Match 'trigger-rich-desc'
     }
 
-    It 'fails a description over 1024 characters, which GitHub Copilot refuses to load' {
+    It 'fails a description of a person-only skill over 1024 characters, which GitHub Copilot refuses to load' {
         $long = 'Use when the user says "do the thing". ' + ('word ' * 200)
-        New-SkillFixture -Root $script:Skills -Folder 'do-thing' -Description $long.Trim() | Out-Null
+        New-SkillFixture -Root $script:Skills -Folder 'do-thing' -Description $long.Trim() -ExtraFrontmatter 'disable-model-invocation: true' | Out-Null
         $r = Invoke-Hygiene -SkillsRoot $script:Skills
         $r.ExitCode | Should -Be 1
         $r.Output | Should -Match '\[description-length\]'
@@ -126,11 +128,33 @@ Describe 'Check-SkillHygiene' {
         $r.Output | Should -Match '\[description-length\]'
     }
 
-    It 'passes a description of exactly 1024 characters' {
+    It 'passes a description of exactly 1024 characters on a skill only a person can start' {
         $start = 'Use when the user says "do the thing". '
-        New-SkillFixture -Root $script:Skills -Folder 'do-thing' -Description ($start + ('x' * (1024 - $start.Length))) | Out-Null
+        New-SkillFixture -Root $script:Skills -Folder 'do-thing' -Description ($start + ('x' * (1024 - $start.Length))) -ExtraFrontmatter 'disable-model-invocation: true' | Out-Null
         $r = Invoke-Hygiene -SkillsRoot $script:Skills
         $r.ExitCode | Should -Be 0 -Because $r.Output
+    }
+
+    It 'passes a model-visible description of exactly 450 characters' {
+        $start = 'Use when the user says "do the thing". '
+        New-SkillFixture -Root $script:Skills -Folder 'do-thing' -Description ($start + ('x' * (450 - $start.Length))) | Out-Null
+        $r = Invoke-Hygiene -SkillsRoot $script:Skills
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+    }
+
+    It 'fails a model-visible description of 451 characters, because every session loads it' {
+        $start = 'Use when the user says "do the thing". '
+        New-SkillFixture -Root $script:Skills -Folder 'do-thing' -Description ($start + ('x' * (451 - $start.Length))) | Out-Null
+        $r = Invoke-Hygiene -SkillsRoot $script:Skills
+        $r.ExitCode | Should -Be 1
+        $r.Output | Should -Match 'has 451 characters, which is over 450'
+    }
+
+    It 'looks for the trigger words in the description only, not in the body' {
+        New-SkillFixture -Root $script:Skills -Folder 'do-thing' -Description 'Just does a thing.' -Body "Invoked as ``/{0}``. Use when the user says so.`n`n## Next steps`n- none`n" | Out-Null
+        $r = Invoke-Hygiene -SkillsRoot $script:Skills
+        $r.ExitCode | Should -Be 1
+        $r.Output | Should -Match 'trigger-rich-desc'
     }
 
     It 'counts a folded description the way YAML reads it, one space where a line breaks' {

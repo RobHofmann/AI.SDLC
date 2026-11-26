@@ -368,6 +368,14 @@ every word costs on every turn. Three rules keep it short and sharp:
 - **Cut identity the body already carries.** The description says when to load the skill, not how it
   works inside.
 
+**The limit is 450 characters** once the YAML block is folded, for every skill the model can load.
+`Check-SkillHygiene.ps1` fails a longer one. A skill with `disable-model-invocation: true` keeps the
+1024 limit of the Agent Skills standard, because only a person starts it and no session loads
+its description. The gate looks for the trigger words (`Use when`) in the description only, not in the
+body. Keep a `Do NOT use` line only for a neighbour that a repository installs next to the skill. Run
+the routing layer of `test-skills` before and after a change, with the prompt set in
+`config/skill-routing-prompts.txt` of AI.SDLC (ADR 0027 of AI.SDLC).
+
 Every skill spends one of **two loads**. **Context load** is the cost on the model: a description sits
 in the context window every turn, whether the skill fires or not. **Cognitive load** is the cost on
 the person, who must remember which commands exist. A command a person types pays cognitive load; a

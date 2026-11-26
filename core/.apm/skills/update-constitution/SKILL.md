@@ -4,15 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: Lead
 description: >
-  Create, amend or check the project's governing "constitution": the small set of non-negotiable
-  engineering principles that every agent run (Claude Code and GitHub Copilot) should honour.
-  Use when the user says "create/set up a constitution", "add a rule/principle to the
-  constitution", "amend/update the constitution", "make this a non-negotiable", "what are our
-  project principles", or asks to bootstrap the AGENTS.md contract; and in check mode when the
-  user says "check my changes against the constitution", "does this violate a clause",
-  "constitution check" or "review this for constitution compliance". Do NOT use to author a single
-  architectural decision (write-adr) or to validate doc or graph link integrity
-  (Invoke-LocalGates.ps1). Do NOT use for ordinary docs or for editing tracker work items.
+  Create, change or check the project constitution: the small set of engineering rules every agent run
+  must honour. Use when the user says "set up a constitution", "add a rule to the constitution", "make
+  this a non-negotiable" or "what are our principles", and in check mode on "check my changes against
+  the constitution" or "does this break a clause". Do NOT use for a single architecture decision
+  (write-adr), ordinary docs or work items.
 ---
 
 # Constitution

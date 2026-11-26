@@ -4,13 +4,11 @@ kind: workflow
 phase: elaboration
 persona: Architect
 description: >
-  Produce a machine-readable API specification (OpenAPI 3.x in YAML) for the slice being built, so
-  the build and tests consume a contract instead of prose. This is the L3 keystone: the contract
-  lives in the repo. Use when designing or changing a REST endpoint, or before code generation
-  begins on a slice that exposes or changes an HTTP surface: "design the API for this", "write the
-  OpenAPI spec", "define the contract for #42", "what should the request/response shape
-  be". Do NOT use to author an ADR (write-adr), to write feature docs, to generate the
-  implementation (implement) or for non-HTTP work.
+  Write a machine-readable API specification (OpenAPI 3.x in YAML) for the slice being built, so the
+  build and tests use a contract instead of prose. Use when designing or changing a REST endpoint, or
+  before building a slice that changes an HTTP surface: "design the API for this", "write the OpenAPI
+  spec", "define the contract for #42". Do NOT use for an ADR (write-adr), feature docs, the
+  implementation (implement) or work with no HTTP surface.
 ---
 
 # Elaboration: API design

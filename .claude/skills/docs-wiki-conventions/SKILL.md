@@ -3,16 +3,11 @@ name: docs-wiki-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  How the two documentation layers stay one checked wiki. It covers which layer a change belongs in,
-  the generated indexes, and relative links and a Related section on every page. It also covers no
-  orphans, no line numbers, no em-dash and no team member names. The reading level is in it too, and
-  the gates that check pages against the code. Use when writing or reviewing a page in docs/ or docs-functional/, or
-  when an ADR or a skill links a page. Also use when the docs-reviewer agent checks a change. This is
-  a rulebook, not a task: it fixes nothing. Do NOT use to fix or rewrite a page that fails the reading level,
-  the orphan check or another gate (write-docs), to run the documentation step itself
-  (write-docs), to bring a whole repository up to the rules (adopt-docs), for ADR
-  content (adr-conventions), for the constitution (update-constitution) or to re-pitch an answer in chat
-  (wait-what).
+  The rules that keep the two documentation layers one checked wiki: which layer a change belongs in,
+  generated indexes, relative links and a Related section, no orphans, no line numbers, no em-dash, no
+  team names, and the reading level. A rulebook that fixes nothing. Use when writing or reviewing a
+  page in docs/ or docs-functional/. Do NOT use to fix or write a page (write-docs) or to bring a
+  whole repository in line (adopt-docs).
 ---
 
 # Docs wiki conventions

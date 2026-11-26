@@ -4,14 +4,11 @@ kind: workflow
 phase: mature
 persona: PM, Developer
 description: >
-  Take an existing GitHub issue for a bug, request or incident (in the tracker repository named in aisdlc.json) from report to
-  a framed fix. It reads the state first: it triages an item nobody triaged, says what a person must
-  add to an item that is triaged but not refined, and frames the fix of a refined bug for implement.
-  Use when the user says "triage #1234", "is this a real bug?", "can you reproduce this?", "what
-  priority is this", "is this a duplicate", "look into this report", "fix #1234" or "this defect
-  is confirmed, go fix it". It handles an item that already exists. Do NOT use to log a new bug item
-  (write-story). Do NOT use for new behaviour (implement) or a cleanup with no behaviour change
-  (refactor).
+  Take an existing GitHub issue for a bug or incident from report to a framed fix: triage it, say what
+  a person must add before it is refined, or frame the fix of a refined bug for implement. Use when
+  the user says "triage #42", "is this a real bug?", "can you reproduce this?", "is this a duplicate",
+  "fix #42" or "this defect is confirmed, go fix it". Do NOT use to log a new bug (write-story), for
+  new behaviour (implement) or a cleanup (refactor).
 ---
 
 # Fix a bug

@@ -69,6 +69,7 @@ clear. The `adr-conventions` skill holds the full rules, and the `write-adr` ski
 | [0024](0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md) | The agent opens a draft pull request, and the person publishes it | Accepted |
 | [0025](0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md) | A pack that needs another pack lists it as an APM dependency | Accepted |
 | [0026](0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md) | A test proves the team's own logic, not the framework's | Accepted |
+| [0027](0027-a-model-visible-skill-description-has-at-most-450-characters.md) | A model-visible skill description has at most 450 characters | Accepted |
 
 ## Related
 

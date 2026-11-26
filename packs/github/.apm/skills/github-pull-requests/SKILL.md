@@ -3,15 +3,11 @@ name: github-pull-requests
 kind: knowledge
 user-invocable: false
 description: >
-  How a pull request is opened and checked on GitHub, in the repository named in aisdlc.json or read
-  from the git remote. It covers gh auth login rather than a token in a file, the gh CLI with gh api for
-  REST and GraphQL, and the helpers New-PullRequest.ps1 and Update-PullRequest.ps1. It also covers the
-  description traps and the read-back, the gh errors, and linking the PR to its issue. Use whenever a
-  pull request is opened or updated, also on a plain request such as "open the PR for my branch" or
-  "create the pull request". Also use when a gh call fails on auth, or when checking that a PR path
-  works before the build starts. Do NOT use for the build that leads to the PR (implement, which opens
-  it at the end of its loop). Do NOT use to work the review threads (fix-pr-feedback) or to edit the
-  story's title, description or links (write-story).
+  How a pull request is opened and checked on GitHub: gh auth login, gh and gh api, the helpers
+  New-PullRequest.ps1 and Update-PullRequest.ps1, the description traps, the read-back and the link to
+  the issue. Use whenever a pull request is opened or updated ("open the PR for my branch", "create
+  the pull request"), or when a gh call fails on auth. Do NOT use for the build (implement), the
+  review threads (fix-pr-feedback) or the story (write-story).
 ---
 
 # GitHub pull requests

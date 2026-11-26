@@ -4,11 +4,10 @@ kind: knowledge
 user-invocable: false
 description: >
   The code rules for every language, written once: reuse before you build, build only what the story
-  needs, two scope cases, documented code with comments that say why (C10), no new warning, the
-  convention skill of each file type, one severity scale for every reviewer, a point that is not
-  decided, and where team facts live. Use when writing, planning or reviewing code in any language, at
-  the plan, build and review steps of implement, refactor or fix-pr-feedback. Do NOT use for the rules
-  of one language (the convention skill of that file type) or to run the gates (run-preflight).
+  needs, two scope cases, comments that say why (C10), no new warning, the convention skill of each
+  file type and one severity scale for every reviewer. Use when writing, planning or reviewing code in
+  any language, at the plan, build and review steps. Do NOT use for the rules of one language (its
+  convention skill) or to run the gates (run-preflight).
 ---
 
 # Code conventions

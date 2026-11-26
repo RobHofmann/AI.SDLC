@@ -3,14 +3,11 @@ name: bicep-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  How a Bicep template is laid out and changed. It covers the order of top-level declarations, the
-  order of the properties in a resource or module, and decorators first. It also covers a name on
-  every module and parent instead of a slash in a name. It covers modules from the registry pinned to
-  a version tag, deployment names within 64 characters and the resource naming pattern. Then a template that describes the target
-  state and not the journey, and the script that reorders a file. Use when writing or reviewing a .bicep or .bicepparam
-  file, or when a template replaces one resource with another. Also use before a pull request that
-  touches infrastructure code. Do NOT use for deploying a template, for the C#
-  code that calls Azure (csharp-conventions) or to write a new gate (add-gate).
+  How a Bicep template is laid out and changed: the order of declarations and properties, decorators
+  first, a name on every module, parent over a slash, registry modules pinned to a tag, names within
+  64 characters, and the target state only. Use when writing or reviewing a .bicep or .bicepparam
+  file, or before a pull request that touches infrastructure code. Do NOT use for deploying a template
+  or for C# that calls Azure (csharp-conventions).
 ---
 
 # Bicep conventions

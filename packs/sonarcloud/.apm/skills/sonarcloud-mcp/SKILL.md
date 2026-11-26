@@ -3,12 +3,11 @@ name: sonarcloud-mcp
 kind: knowledge
 user-invocable: false
 description: >
-  How to read SonarQube Cloud through the sonarqube MCP server that the sonarcloud pack installs: the
-  quality gate, the issues and the rules of the project of this repository. Each person sets their own
-  token in AISDLC_SONAR_MCP_TOKEN and the organization in AISDLC_SONAR_ORG, and only the placeholders go
-  in a committed file. Use when a SonarQube Cloud quality gate fails,
-  when a pull request has SonarQube Cloud comments, when a rule such as S3776 needs checking, or when the
-  MCP server does not answer or the gate Check-McpToken.ps1 fails.
+  How to read SonarQube Cloud through the sonarqube MCP server of the sonarcloud pack: the quality
+  gate, the issues and the rules of this repository's project, with each person's own token in
+  AISDLC_SONAR_MCP_TOKEN and never in a file. Use when a quality gate fails, when a pull request has
+  SonarQube Cloud comments, when a rule such as S3776 needs checking, or when the MCP server does not
+  answer or Check-McpToken.ps1 fails.
 ---
 
 # SonarQube Cloud through the MCP server

@@ -4,15 +4,11 @@ kind: workflow
 phase: create
 persona: Developer
 description: >
-  Resolve ALL the feedback on a pull request, from every source: human review comments, bot review
-  threads, the gitleaks secret scan and the SonarCloud findings. It fixes the findings, then wrap-up
-  captures the lessons from the open review before any thread is resolved. After implement opens a PR,
-  it runs as a loop: it waits for the PR checks and any bot review, then fixes and pushes, until no bot
-  finding is open. Use when the user says "address PR feedback", "work through the review comments",
-  "resolve the sonarcloud findings", "fix the gitleaks findings", "iterate on PR feedback" or "go
-  through the review on PR #42". Do NOT use to mine a finished review for process improvements
-  (capture-learning, which wrap-up runs for this skill), to run the gates locally (run-preflight) or to
-  author the change itself (implement).
+  Resolve all the feedback on a pull request: review comments, bot threads, the gitleaks scan and the
+  SonarCloud findings. After implement opens a PR, it loops until no bot finding is open. Use when the
+  user says "address PR feedback", "work through the review comments", "resolve the sonarcloud
+  findings" or "go through the review on PR #42". Do NOT use to run the gates locally (run-preflight)
+  or to build the change (implement).
 ---
 
 # Fix PR feedback

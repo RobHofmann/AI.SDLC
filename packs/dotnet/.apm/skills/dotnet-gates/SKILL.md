@@ -3,13 +3,11 @@ name: dotnet-gates
 kind: knowledge
 user-invocable: false
 description: >
-  The gates the dotnet pack adds for a .NET repository and how to run each one. They check comments
-  and doc comments in C# and Razor, a story trait on every test class, and PascalCase JSON wire names. They
-  check docs that match the code they cite. They also cover spec drift and the coverage ratchet. The skill also holds
-  the dotnet steps of the pre-flight, the post-edit build and the restore at setup. Use when one of
-  these gates failed, or when a change touches C#, Razor, tests or coverage. Also use when the
-  pre-flight reports a build, test or coverage row. Do NOT use for the core gates (ai-sdlc-gates), for
-  the code graph (dotnet-code-graph) or to write a new gate (add-gate).
+  The gates the dotnet pack adds and how to run each: comments and doc comments in C# and Razor, a
+  story trait on every test class, PascalCase wire names, docs that match the code, spec drift and the
+  coverage ratchet, plus the dotnet pre-flight, post-edit build and restore. Use when one of these
+  gates failed, or when the pre-flight reports a build, test or coverage row. Do NOT use for the core
+  gates (ai-sdlc-gates) or to write a gate (add-gate).
 ---
 
 # .NET gates

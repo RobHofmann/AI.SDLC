@@ -5,16 +5,11 @@ phase: cross-cutting
 persona: Developer
 user-invocable: false
 description: >
-  Run the whole pull-request workflow locally before pushing: the deterministic gates, the
-  SonarCloud analyzer rules, the tests and the coverage ratchet, and gitleaks. So failures are
-  caught in seconds against your working diff instead of after a slow CI round-trip. It loops the
-  checks to green and surfaces what needs a human decision; it never suppresses a finding and
-  never pushes. Use when the user says "run the pre-flight", "check everything before I push",
-  "run the PR checks locally", "what will the PR build flag". It is the last step of wrap-up, on the
-  commit wrap-up makes; a build loop does not run it again before the push.
-  For the deterministic gates alone, run Invoke-LocalGates.ps1 directly. Do NOT use to work
-  findings on an already-open PR's threads (fix-pr-feedback). Do NOT use to mine a finished
-  review for process learnings (capture-learning) or to author the change (implement).
+  Run the whole pull request workflow locally before a push: the gates, the SonarCloud analyzer rules,
+  the tests, the coverage ratchet and gitleaks, looped to green. Use when the user says "run the
+  pre-flight", "check everything before I push", "run the PR checks locally" or "what will the PR
+  build flag"; it is also the last step of wrap-up. Do NOT use for the threads of an open PR
+  (fix-pr-feedback) or to build the change (implement).
 ---
 
 # Run pre-flight

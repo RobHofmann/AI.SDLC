@@ -3,12 +3,11 @@ name: api-contract-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  The wire rules for the REST API. JSON bodies are PascalCase (DOTNET-01), with snake_case query and
-  path parameters. Controllers are thin, with one domain each (DOTNET-02). A business result that is not an
-  error gets 200, and ProblemDetails is for real errors. An OpenAPI spec in specs/ moves with its
-  endpoint. Use when a change touches a controller action, a route, or the shape of a request or
-  response. Also use when a spec or a plan for an HTTP surface is reviewed. Do NOT use to write the
-  spec itself (write-api-spec) or for a change with no HTTP surface.
+  The wire rules for the REST API: PascalCase JSON bodies (DOTNET-01), snake_case query and path
+  parameters, thin controllers with one domain each (DOTNET-02), 200 for a business result,
+  ProblemDetails for real errors, and a spec that moves with its endpoint. Use when a change touches a
+  controller action, a route or a request or response shape, or when a spec is reviewed. Do NOT use to
+  write the spec itself (write-api-spec).
 ---
 
 # API contract conventions

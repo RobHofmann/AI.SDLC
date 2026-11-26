@@ -4,16 +4,11 @@ kind: workflow
 phase: create
 persona: Developer
 description: >
-  The one way a change to product code is built here, from a refined story to a tested pull request.
-  It runs on its own between the two human checkpoints: walk, plan (architect agent), branch, API contract
-  when an endpoint moves, test-first build (builder agent), review by agents, wrap-up, push and open
-  the PR. Then it loops on the PR checks and the bot review threads until no bot finding is open, and
-  waits at Checkpoint Bravo. With "manual" it stops for a person at each main step. Use whenever a request means writing or changing code, however it is phrased:
-  "implement #42", "add a field to the order", "fix this bug", "make the portal show X", "build
-  this", or when guide-me reports that the next step is the build. Do NOT use for a question, or for
-  a change that touches no code such as documentation. Do NOT use for a pure refactor (refactor), for
-  a standalone git request (a branch, a commit, a rebase), or to triage or start the fix of a bug
-  already in GitHub Issues (fix-bug).
+  The one way a change to product code is built, from a refined story to a tested pull request: walk,
+  plan, branch, test-first build, agent review, wrap-up, push and the PR, then a loop on checks and
+  bot threads until Checkpoint Bravo. Use whenever a request means writing or changing code:
+  "implement #42", "add a field to the order", "build this". Do NOT use for a change with no code, a
+  pure refactor (refactor), or to triage a bug (fix-bug).
 ---
 
 # Implement (the build loop)

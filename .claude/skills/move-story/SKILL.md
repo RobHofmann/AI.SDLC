@@ -5,14 +5,11 @@ phase: create
 persona: Developer
 user-invocable: false
 description: >
-  Mark the stories of a pull request as waiting for review with the in-review label (tracker.inReviewLabel
-  in aisdlc.json, default in-review), after the person published the draft. It plans the move from facts:
-  the person says the draft is published, and GitHub shows the pull request open and no longer a draft.
-  It names the stories only from the branch, the title and the Fixes lines, never labels a closed issue,
-  and a failed move never stops the pull request. Use when the person says "I published the PR", "the
-  draft is ready for review", "mark the story in review", or at Checkpoint Bravo after the publish. Do NOT
-  use to publish a draft (only the person does), to close or reopen an issue (the merge closes it through
-  Fixes #n), or to write the body of an issue (write-story).
+  Mark the stories of a pull request as in review with the in-review label (tracker.inReviewLabel in
+  aisdlc.json), after the person published the draft and GitHub shows it out of draft. It names the
+  stories from the branch, the title and the Fixes lines. Use when the person says "I published the
+  PR", "the draft is ready for review" or "mark the story in review". Do NOT use to publish a draft,
+  to close an issue, or to write an issue (write-story).
 ---
 
 # Move a story to in review

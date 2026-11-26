@@ -5,13 +5,10 @@ phase: elaboration
 persona: PM
 description: >
   Write a Product Requirements Document for an initiative or epic: the problem, goals, scope,
-  requirements and success metrics. It is the elaboration-phase anchor that stories derive from.
-  Use when an initiative needs framing before it is sliced into work: "write a PRD", "draft the
-  product requirements", "what are the requirements for this epic", "spec out this initiative",
-  "what's in and out of scope", "define success for #42", or when a confirmed hypothesis is
-  ready to become a buildable epic. Do NOT use to capture an early hypothesis
-  (write-hypothesis) or to slice a PRD into stories (write-story). Do NOT use to design
-  the API contract (write-api-spec) or to author an ADR (write-adr).
+  requirements and success metrics. Use when an initiative needs framing before it is sliced: "write a
+  PRD", "draft the product requirements", "what are the requirements for this epic", "spec out this
+  initiative". Do NOT use for an early hypothesis (write-hypothesis), to slice stories (write-story)
+  or for the API contract (write-api-spec).
 ---
 
 # Elaboration: PRD

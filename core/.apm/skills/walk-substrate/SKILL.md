@@ -5,16 +5,11 @@ phase: cross-cutting
 persona: any
 user-invocable: false
 description: >
-  Walk a work item's full substrate before any code is written. Then the build runs against the
-  assembled upstream and code-side context instead of the story text alone. It walks and returns a
-  context block; it writes nothing. Use when implementation is about to begin on a story or bug
-  issue: "walk the substrate before I build", "what do I need to know before implementing this", "get the context
-  for #42". Also use it inline as the pre-build step of an action skill (implement,
-  fix-bug, refactor). Do NOT use to start the build (implement, which runs this walk first). Do NOT
-  use to report where a work item is in the lifecycle or what
-  step is next (guide-me). Do NOT use to interrogate scope and the why before authoring an artifact
-  (grilling). Do NOT use to validate graph/doc integrity (Invoke-LocalGates.ps1) or to author any
-  artifact.
+  Walk the full substrate of a work item before code is written: the issue, its links, the ADRs, the
+  spec and the code it touches, as one context block; it writes nothing. Use when a build is about to
+  start: "walk the substrate before I build", "what do I need to know before implementing this", "get
+  the context for #42", or as the first step of implement, fix-bug or refactor. Do NOT use to start
+  the build (implement).
 ---
 
 # Core substrate walk

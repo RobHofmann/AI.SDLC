@@ -129,3 +129,28 @@ Describe 'The house style of csharp-conventions' {
         $all | Should -Not -Match 'Configs/Options'
     }
 }
+
+Describe 'The descriptions of the shared skills' {
+    BeforeDiscovery {
+        $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+        $script:SkillFiles = @(
+            @(Get-ChildItem -LiteralPath (Join-Path $root 'core/.apm/skills') -Directory) +
+            @(Get-ChildItem -LiteralPath (Join-Path $root 'packs') -Directory | ForEach-Object { Get-ChildItem -LiteralPath (Join-Path $_.FullName '.apm/skills') -Directory -ErrorAction SilentlyContinue }) |
+                ForEach-Object { @{ Name = $_.Name; Path = (Join-Path $_.FullName 'SKILL.md') } }
+        )
+    }
+
+    BeforeAll {
+        $gate = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..' 'core/.apm/skills/ai-sdlc-gates/scripts/Check-SkillHygiene.ps1') -Raw
+        foreach ($fn in 'Get-PlainDescription', 'Get-BlockDescription', 'Get-FrontmatterDescription') {
+            . ([scriptblock]::Create([regex]::Match($gate, "(?ms)^function $fn \{.*?^\}").Value))
+        }
+    }
+
+    It 'keeps the description of <Name> within its limit, measured with the parser of the hygiene gate' -ForEach $script:SkillFiles {
+        $text = Get-Content -LiteralPath $Path -Raw
+        $fm = [regex]::Match($text, '\A\s*---\r?\n(.*?)\r?\n---\r?\n', 'Singleline').Groups[1].Value
+        $limit = if ($fm -match '(?m)^disable-model-invocation:\s*true') { 1024 } else { 450 }
+        (Get-FrontmatterDescription -Frontmatter $fm).Length | Should -BeLessOrEqual $limit
+    }
+}

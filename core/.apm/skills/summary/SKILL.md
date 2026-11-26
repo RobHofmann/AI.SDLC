@@ -4,15 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: any
 description: >
-  A single-page HTML summary of a conversation, branch, work tree or set of user instructions:
-  visual and digestible, charts and diagrams over long explanations. Use whenever the user asks
-  for a summary or recap page, plain or with something attached. Bare asks ("summary", "simple
-  summary", "quick summary", "just summarise this") build the plain page. Attached asks ("summary,
-  make it ADHD friendly", "recap but make it look good", "summarise this for a client", "recap and
-  animate it") build the same page in the matching mode or audience variant (accessible for ADHD,
-  autistic or dyslexia; artistic; animated). If they want an explanation in chat and no file at all,
-  answer in chat; no skill writes a file for that. Do NOT use to finish a change before the pull
-  request (wrap-up) or to write a handoff document for the next session (handoff).
+  A single-page HTML summary of a conversation, branch, work tree or set of instructions: visual, with
+  charts and diagrams over long text. Use whenever the user asks for a summary or recap page
+  ("summary", "quick summary", "recap this"), also with a mode or audience such as "make it ADHD
+  friendly", "for a client" or "animate it". For an answer in chat with no file, answer in chat. Do
+  NOT use to finish a change (wrap-up) or for a handoff (handoff).
 ---
 
 # summary

@@ -59,6 +59,10 @@ person reviews and merges it.
   the line says so, because a person cannot type it. When there is one, it names the command to type instead, such as `/grill-me`. `Update-AiSdlc.ps1` prints the same list.
   The list leaves out your decision records (`paths.adrFolder`, `docs/adrs` by default). An ADR records a
   decision as it was made, so you do not change the names in it.
+- The skill check fails a skill of your own whose description the model loads and that holds more
+  than 450 characters. Every session loads that text, so keep it short: say when to use the skill, and
+  move the rest into the body. A skill that only a person starts, with `disable-model-invocation: true`,
+  may keep up to 1024 characters.
 - Some of your files record history on purpose, such as a change list that shows the old text next to the
   new text. List them in `paths.historyPaths` of `aisdlc.json`, as paths or glob patterns, and the list
   leaves them out. It then says in one line how many places it left out. Do not list a page that people

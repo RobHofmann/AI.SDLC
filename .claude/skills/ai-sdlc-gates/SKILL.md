@@ -3,10 +3,9 @@ name: ai-sdlc-gates
 kind: knowledge
 user-invocable: false
 description: >
-  The deterministic gates of the AI-SDLC and how to run them. It covers the core gates every
-  repository runs, the gates each pack adds, and the repository's own gates from aisdlc.json. It also covers the exit
-  codes 0, 1, 2 and 3, and the runner that runs only the gates of the installed packs. Use when a gate failed and needs
-  explaining, when checking a change before a push, when adding a gate, or when reading aisdlc.json.
+  The deterministic gates of the AI-SDLC and how to run them: the core gates, the gates of each pack,
+  the repository's own gates from aisdlc.json, the exit codes 0, 1, 2 and 3, and the runner. Use when a
+  gate failed and needs explaining, when checking a change before a push, or when reading aisdlc.json.
   Do NOT use to run the full pull request workflow locally (run-preflight), to write a new gate
   (add-gate) or to explain a hook (ai-sdlc-hooks).
 ---

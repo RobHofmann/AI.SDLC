@@ -3,12 +3,10 @@ name: github-actions-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  How a GitHub Actions workflow is laid out and written here: the files in .github/workflows, the
-  release workflow that builds once and deploys per environment, workflow_dispatch toggles with risky
-  work off by default, actions pinned to a full commit SHA, least-privilege permissions, concurrency,
-  environments with required reviewers for production, and the pull request workflow with the shared
-  AI-SDLC job. Use when writing, changing or reviewing workflow YAML, for example a new toggle, a new
-  deploy job or a new environment. Do NOT use to run or approve a workflow, or to set the branch
+  How a GitHub Actions workflow is laid out and written here: the files in .github/workflows, build
+  once and deploy per environment, workflow_dispatch toggles, actions pinned to a full commit SHA,
+  least-privilege permissions, concurrency, protected environments and the shared AI-SDLC job. Use
+  when writing, changing or reviewing workflow YAML. Do NOT use to run a workflow or to set the branch
   ruleset (github-pull-requests).
 ---
 

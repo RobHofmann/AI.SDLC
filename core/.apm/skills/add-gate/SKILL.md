@@ -5,14 +5,10 @@ phase: cross-cutting
 persona: Lead
 description: >
   Turn a plain-English rule into a new deterministic gate: the validator, its Pester test and its
-  entry in gates.json or repoGates, which the shared composite action also runs. Then show the diff and how to trip it. It
-  hands the draft back for human review; a standalone run then goes to a pull request. Use when the intent is to
-  ENFORCE a rule mechanically: "add a gate for this", "make this a CI check", "scaffold a
-  validator that X", "enforce X on every PR", "turn this convention into a gate", "we keep getting
-  X wrong, gate it", or as the home for a learning that capture-learning classified as a new
-  gate. Do NOT use to RUN the existing gates (Invoke-LocalGates.ps1, or run-preflight for the
-  whole PR check set). Do NOT use to author an architecture decision (write-adr) or to evaluate a
-  skill's quality (test-skills).
+  entry in gates.json or repoGates, then show how to trip it. Use when a rule must be ENFORCED: "add a
+  gate for this", "make this a CI check", "enforce X on every PR", "we keep getting X wrong, gate it",
+  or for a learning capture-learning sends here. Do NOT use to run the gates (run-preflight) or to
+  evaluate a skill (test-skills).
 ---
 
 # Add a gate
