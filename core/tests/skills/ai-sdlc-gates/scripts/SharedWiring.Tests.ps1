@@ -163,7 +163,7 @@ Describe 'The shared scripts are wired the same way in every repository' {
             if ($registrations.Count -eq 0) { Set-ItResult -Skipped -Because 'this layout carries no hook registration to read'; return }
 
             $pushHooks = @($registrations | ForEach-Object { $_.hooks.PreToolUse } | Where-Object { @($_.matcher -split '\|') -contains 'Bash' } |
-                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-IncompletePush.ps1' })
+                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-IncompletePush.ps1*' })
 
             @($pushHooks.if) | Should -Contain 'Bash(*git* *push*)' -Because 'Claude Code 2.x matched it for git push, git -C <dir> push and cd <dir> && git push, and not for git log (probed 2026-10-20)'
         }
@@ -173,7 +173,7 @@ Describe 'The shared scripts are wired the same way in every repository' {
             if ($registrations.Count -eq 0) { Set-ItResult -Skipped -Because 'this layout carries no hook registration to read'; return }
 
             $pushHooks = @($registrations | ForEach-Object { $_.hooks.PreToolUse } | Where-Object { $_.matcher -match 'Bash|PowerShell' } |
-                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-IncompletePush.ps1' })
+                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-IncompletePush.ps1*' })
 
             $pushHooks.Count | Should -BeLessOrEqual 2
         }
@@ -183,7 +183,7 @@ Describe 'The shared scripts are wired the same way in every repository' {
             if ($registrations.Count -eq 0) { Set-ItResult -Skipped -Because 'this layout carries no hook registration to read'; return }
 
             $pushHooks = @($registrations | ForEach-Object { $_.hooks.PreToolUse } | Where-Object { @($_.matcher -split '\|') -contains 'PowerShell' } |
-                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-IncompletePush.ps1' })
+                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-IncompletePush.ps1*' })
 
             @($pushHooks.if) | Should -Contain 'PowerShell(*git* *push*)'
         }
@@ -193,7 +193,7 @@ Describe 'The shared scripts are wired the same way in every repository' {
             if ($registrations.Count -eq 0) { Set-ItResult -Skipped -Because 'this layout carries no hook registration to read'; return }
 
             $everyTool = @($registrations | ForEach-Object { $_.hooks.PreToolUse } | Where-Object { -not $_.matcher -or $_.matcher -eq '*' } |
-                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-IncompletePush.ps1' -or $_.command -like '*Deny-StaleGraphQuery.ps1' })
+                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-IncompletePush.ps1*' -or $_.command -like '*Deny-StaleGraphQuery.ps1*' })
 
             $everyTool | Should -BeNullOrEmpty
         }
@@ -205,7 +205,7 @@ Describe 'The shared scripts are wired the same way in every repository' {
             if ($registrations.Count -eq 0) { Set-ItResult -Skipped -Because 'this layout carries no hook registration to read'; return }
 
             $mergeHooks = @($registrations | ForEach-Object { $_.hooks.PreToolUse } | Where-Object { $_.matcher -match 'Bash|PowerShell' } |
-                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-AgentMerge.ps1' })
+                    ForEach-Object { $_.hooks } | Where-Object { $_.command -like '*Deny-AgentMerge.ps1*' })
 
             @($mergeHooks.if) | Should -Contain 'Bash(*gh* *merge*)'
             @($mergeHooks.if) | Should -Contain 'PowerShell(*gh* *merge*)'
