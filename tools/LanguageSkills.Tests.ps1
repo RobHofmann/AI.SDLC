@@ -3,6 +3,7 @@
 BeforeDiscovery {
     $script:LanguageSkills = @(
         @{ Package = 'core'; Skill = 'powershell-conventions'; Pages = @('references/house-style.md', 'references/not-decided.md') }
+        @{ Package = 'core'; Skill = 'yaml-conventions'; Pages = @('references/yaml.md') }
     )
 }
 
@@ -47,5 +48,13 @@ Describe 'The language skill <Skill> of <Package>' -ForEach $script:LanguageSkil
     It 'has a row in the skills-by-file-type table of code-conventions' {
         $table = Get-Content -LiteralPath (Join-Path $script:RepoRoot 'core/.apm/skills/code-conventions/references/skills-by-file-type.md') -Raw
         $table | Should -Match ('`' + [regex]::Escape($Skill) + '`')
+    }
+}
+
+Describe 'The YAML rules of github-actions-conventions' {
+    It 'links yaml-conventions for the general YAML rules' {
+        $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+        $text = Get-Content -LiteralPath (Join-Path $repoRoot 'packs/github/.apm/skills/github-actions-conventions/SKILL.md') -Raw
+        $text | Should -Match ([regex]::Escape('/.claude/skills/yaml-conventions/SKILL.md'))
     }
 }

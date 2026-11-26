@@ -68,7 +68,7 @@
         ".claude/skills/ai-sdlc-gates/scripts/Test-PushReceipt.ps1": "54ec6a3e42d488994ee91d0f4993ba5d3366d96a",
         ".claude/skills/ai-sdlc-gates/scripts/Test-PushSendsNothingNew.ps1": "79da28786523f1f0c908c66032cce19d5b07f541",
         ".claude/skills/ai-sdlc-gates/scripts/ToolOutput.psm1": "1175b499e53dbe8b8ee25a177f65940eed07a492",
-        ".claude/skills/ai-sdlc-gates/skill-catalog.json": "093b11c6e55b4bb76681312504aeb46e7b402adb",
+        ".claude/skills/ai-sdlc-gates/skill-catalog.json": "0080523781e43dbb453b7bf8ecf02f77029a570e",
         ".claude/skills/ai-sdlc-gates/SKILL.md": "e75802ee86277f43c4c6452e3311fb4e980d6468",
         ".claude/skills/ai-sdlc-handbook/references/artifact-graph.md": "8e16413affc7aa745d6626d424f637113c9b31cf",
         ".claude/skills/ai-sdlc-handbook/references/autolearn.md": "c2b854cdc59a976d1fda98d61726a90460a8af17",
@@ -85,7 +85,7 @@
         ".claude/skills/ai-sdlc-handbook/references/pattern.md": "d088deb0e7b56c08eb2d4cc320f6196c437c450f",
         ".claude/skills/ai-sdlc-handbook/references/personas.md": "40a114737db558ee68471895014cfbdd80d3c5b7",
         ".claude/skills/ai-sdlc-handbook/references/plan.md": "92007175656aacef724eb793ef52ff6d16ae524f",
-        ".claude/skills/ai-sdlc-handbook/references/README.md": "c6249c88c82091ced641de6964b25c597e4ed8d6",
+        ".claude/skills/ai-sdlc-handbook/references/README.md": "e95dde8d3a72d3d494fa080660d40c5e17bfa999",
         ".claude/skills/ai-sdlc-handbook/references/skill-usage.md": "156c716dbc880667ae6872ac2d2a39190b7568b1",
         ".claude/skills/ai-sdlc-handbook/SKILL.md": "67ec15d52be245a90fa92436624c922d0df77ac5",
         ".claude/skills/ai-sdlc-hooks/gates.json": "5ccede757f407e1b86737666375bbb67532c1c51",
@@ -115,7 +115,7 @@
         ".claude/skills/ai-sdlc-hooks/SKILL.md": "0771734d3685b454c193d440389bfd1898dd07e3",
         ".claude/skills/capture-learning/SKILL.md": "cfff58fcc5084919d5daf85f616a7098bbbba32c",
         ".claude/skills/code-conventions/references/clean-code.md": "8e5baf2342a4d05d271f851d62c3c383457dda4c",
-        ".claude/skills/code-conventions/references/skills-by-file-type.md": "033fd5e68be6168c91705151dac3eb1d6f9607c9",
+        ".claude/skills/code-conventions/references/skills-by-file-type.md": "79be6d7f760bea1ce6f1ea6e31b019f40865ee61",
         ".claude/skills/code-conventions/SKILL.md": "f07f72f9662da6263f908eeabfe04c139f90d99f",
         ".claude/skills/convene-personas/SKILL.md": "78e86f4f20c694f3d0c28fe82ba005c3859828d8",
         ".claude/skills/docs-wiki-conventions/SKILL.md": "0679512fa39815b63da6373ff29bb6eadc52ff24",
@@ -152,7 +152,9 @@
         ".claude/skills/wrap-up/SKILL.md": "18b3bb795bdea624266351b1985d26254a08de06",
         ".claude/skills/write-adr/SKILL.md": "0db29e932e06fdc7366cfb8f426480387f5541e3",
         ".claude/skills/write-docs/SKILL.md": "dbc679c157e71ddbaa28b6562ec035394ed8876f",
-        ".claude/skills/write-prd/SKILL.md": "78900d8aa63427abc0a7e0ad72d9f96959ec760d"
+        ".claude/skills/write-prd/SKILL.md": "78900d8aa63427abc0a7e0ad72d9f96959ec760d",
+        ".claude/skills/yaml-conventions/references/yaml.md": "4952b7e522ab5575463a7905a891b8e58b16dee8",
+        ".claude/skills/yaml-conventions/SKILL.md": "fb9cf6e05d87673714ec4483d5a27d0925c890ef"
       },
       "hooks": [
         {
@@ -314,7 +316,7 @@
     "github": {
       "files": {
         ".claude/skills/fix-pr-feedback/SKILL.md": "559047f827853374d1823832de326fd0dfd79e15",
-        ".claude/skills/github-actions-conventions/SKILL.md": "16c3d369277163bc029a48bea8aeddabc38f2dba",
+        ".claude/skills/github-actions-conventions/SKILL.md": "3cb8923c9e70565ba4920183fcfcf33023752ef4",
         ".claude/skills/github-pull-requests/gates.json": "67e282a56340d84adcdbc9bd1bcba0671970acef",
         ".claude/skills/github-pull-requests/references/delivery-metrics.md": "355038d329f6dc4e895912ecfc7c5698140a2851",
         ".claude/skills/github-pull-requests/references/pr-path-and-copilot.md": "a62a681ac39ad194dd665fb9251cb98cc2877f32",

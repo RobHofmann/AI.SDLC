@@ -28,7 +28,8 @@
       "wrap-up",
       "write-adr",
       "write-docs",
-      "write-prd"
+      "write-prd",
+      "yaml-conventions"
     ],
     "bicep": [
       "bicep-conventions"

@@ -16,7 +16,9 @@ description: >
 
 How a workflow of a team repository is written. `write-pipeline` loads this for every new workflow,
 and any change to workflow YAML follows it. The starter workflows that the AI.SDLC setup script writes
-are the reference: when an example elsewhere differs, the starter layout wins.
+are the reference: when an example elsewhere differs, the starter layout wins. The rules for any
+YAML file are in [yaml-conventions](/.claude/skills/yaml-conventions/SKILL.md) of core. This skill
+adds the GitHub Actions side only.
 
 ## The layout
 

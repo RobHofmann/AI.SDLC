@@ -14,7 +14,7 @@ Each pack can bring any of these, and the core picks them up by itself:
   and `security-reviewer`, so every repository has them. Each one reads the rulebook of the changed
   files, such as the C# rules of the `dotnet` pack. The core skill `code-conventions` holds the rules
   for every language and a table of the rulebook of each file type. A new pack adds its row there.
-  The core also has the rulebooks for the files every repository holds, such as `powershell-conventions`.
+  The core also has the rulebooks for the files every repository holds, such as `powershell-conventions` and `yaml-conventions`.
 - **Gates**: checks that run on your machine before a push and again in the pull request workflow.
   The coverage gate of the `dotnet` pack runs in the pre-flight, and in the pull request workflow when a
   test step hands it the coverage. The starter workflow of a new .NET repository does that.

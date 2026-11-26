@@ -186,6 +186,9 @@ dependencies:
   - .claude/skills/write-docs/SKILL.md
   - .claude/skills/write-prd
   - .claude/skills/write-prd/SKILL.md
+  - .claude/skills/yaml-conventions
+  - .claude/skills/yaml-conventions/SKILL.md
+  - .claude/skills/yaml-conventions/references/yaml.md
   deployed_file_hashes:
     .claude/agents/architect.md: sha256:532899e2bd2138ed0960ad9f73009cc1ddc83320bf2d714a60aa7646d7a6f364
     .claude/agents/blind-judge.md: sha256:f6dbd5687dedbe41e9d247215314239db9b2325813740cd56aef251f61a7237b
@@ -254,10 +257,10 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/data/reading-level-allowlist.txt: sha256:224f9807c308400db0f7f04ea38151cfbcf34c967d2433205cf24d07baa94d19
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
-    .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:3432ba4d84597403a8c8b711199e50d94b88e25285ef5435b6e4ea3970ab2459
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:e4e5fa26c8597ec85da2812e1b03d24b1ca2a5fc807bb1da31d70e6ccfb99f96
+    .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:fd3cfe5a3c6273df50667f281c652bc3ace1b3012362c4529ceba478ff9191b2
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:38de2263d439f72cf73f425018b23ea9d85093bbe2f0f78dfd8efdaf6d322aaa
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:548e6b9ad79d3d2afa2f5779835988eeb12c49cda08917c4bbaa9ac0486a47a0
-    .claude/skills/ai-sdlc-handbook/references/README.md: sha256:b45ce8a708f54d6521bc44f08f97997bc1f9a950f76e235094a1eecae9271581
+    .claude/skills/ai-sdlc-handbook/references/README.md: sha256:047d9c3a51e5d3c8f69ac63c9b9d626c4f98504429e36bcfae1392afc14f685b
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
     .claude/skills/ai-sdlc-handbook/references/autolearn.md: sha256:f24e6f4bc651670e6ca4790a1db9ccb26a168d7b0ed178ffffdb80c06303a216
     .claude/skills/ai-sdlc-handbook/references/comments.md: sha256:ca8122804196f4c5c032f0c3352b58657564076ae67d55412ccbcfdc9c2a2f25
@@ -302,7 +305,7 @@ dependencies:
     .claude/skills/capture-learning/SKILL.md: sha256:d814eab2d08cd86a20d48a8940f982456a673db9f63abb19671019cebcb12bc0
     .claude/skills/code-conventions/SKILL.md: sha256:e52af7ac82b3ddd4d1565117157e6868496d0c3ee89545255814a74cabdb75b2
     .claude/skills/code-conventions/references/clean-code.md: sha256:aa32d7a18eae2cb946883392c6b66435ef417cb762f66a128c833a4b776f4941
-    .claude/skills/code-conventions/references/skills-by-file-type.md: sha256:04c7598aef621621abad72e1907b22f943293319a7e187a59b9fe9f7f882efa0
+    .claude/skills/code-conventions/references/skills-by-file-type.md: sha256:17080a1b2fef2197f2349621f38d3bcb49f11f26f110d801b1e0219e49cdf3a0
     .claude/skills/convene-personas/SKILL.md: sha256:365eacf55a39238d1f5c19701294d21bc2896877f1346f6f78b307ecf245ee59
     .claude/skills/docs-wiki-conventions/SKILL.md: sha256:e0903077d2e2b589f23fd69084555246c6bb9f0c43b34e56e9e2ccaf2954e75f
     .claude/skills/grill-me/LICENSE-upstream.md: sha256:b77f224d2bb77cd3bd67ad44a9ae2e845e4eae25085fd225bedd013859965716
@@ -339,6 +342,8 @@ dependencies:
     .claude/skills/write-adr/SKILL.md: sha256:671617f2d3cc2fe5a14e86185cee3698b4876b787826b59f8d79575777ed844e
     .claude/skills/write-docs/SKILL.md: sha256:441054435f705b6446b21b9c07355ec18fa5d057c605e8e71a41560e95981628
     .claude/skills/write-prd/SKILL.md: sha256:098c1927fa0fb4be3ba734a131c3dfa0ca0d37f6df981dc6761e425164525965
+    .claude/skills/yaml-conventions/SKILL.md: sha256:ae37d1dcf8a7bd0363c72f65258cb02865b4060639675c301c6e08f90b9d50d5
+    .claude/skills/yaml-conventions/references/yaml.md: sha256:e45ba63db041a96c1404690c5c19436589a35b64149b575a6b9e6212bce5f9ac
   source: local
   local_path: ./core
 - repo_url: _local/discovery
@@ -400,7 +405,7 @@ dependencies:
   - .claude/skills/write-pipeline/references/yaml-syntax-reference.md
   deployed_file_hashes:
     .claude/skills/fix-pr-feedback/SKILL.md: sha256:eca3954728a1f6741b34ef06bca102f3b89445d090d936bea36d026d502f8ec6
-    .claude/skills/github-actions-conventions/SKILL.md: sha256:0ebf2363a0ff9aa3b8fdecef9d9ffb817cf3aba483d8efae0611b2c5c3b65d87
+    .claude/skills/github-actions-conventions/SKILL.md: sha256:7216418199708ed4719602d5e157ad03679425dd5fcf7b8c7b737024326b10d9
     .claude/skills/github-pull-requests/SKILL.md: sha256:c2ee698dcad112cc13001fd426a758674e5913f591b28bb4d9614c559fb6e508
     .claude/skills/github-pull-requests/gates.json: sha256:e58f1bea2e470b0ba5f7b3c58d760026a8dbe96a2eef068dabdc006007424864
     .claude/skills/github-pull-requests/references/delivery-metrics.md: sha256:e68cda7b7772b71f456a3c48f316ae80ae8fbd7c63275a1f9780234376c68ca4
@@ -1134,7 +1139,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:3432ba4d84597403a8c8b711199e50d94b88e25285ef5435b6e4ea3970ab2459
+  content_hash: sha256:fd3cfe5a3c6273df50667f281c652bc3ace1b3012362c4529ceba478ff9191b2
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/sync-manifest.json
@@ -1143,7 +1148,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:e4e5fa26c8597ec85da2812e1b03d24b1ca2a5fc807bb1da31d70e6ccfb99f96
+  content_hash: sha256:38de2263d439f72cf73f425018b23ea9d85093bbe2f0f78dfd8efdaf6d322aaa
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
@@ -1170,7 +1175,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:b45ce8a708f54d6521bc44f08f97997bc1f9a950f76e235094a1eecae9271581
+  content_hash: sha256:047d9c3a51e5d3c8f69ac63c9b9d626c4f98504429e36bcfae1392afc14f685b
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook/references/artifact-graph.md
@@ -1656,7 +1661,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:04c7598aef621621abad72e1907b22f943293319a7e187a59b9fe9f7f882efa0
+  content_hash: sha256:17080a1b2fef2197f2349621f38d3bcb49f11f26f110d801b1e0219e49cdf3a0
 - kind: project-relative
   target: claude
   value: .claude/skills/convene-personas
@@ -1764,7 +1769,7 @@ deployments:
   owners:
   - ./packs/github
   active_owner: ./packs/github
-  content_hash: sha256:0ebf2363a0ff9aa3b8fdecef9d9ffb817cf3aba483d8efae0611b2c5c3b65d87
+  content_hash: sha256:7216418199708ed4719602d5e157ad03679425dd5fcf7b8c7b737024326b10d9
 - kind: project-relative
   target: claude
   value: .claude/skills/github-issue-conventions
@@ -2656,3 +2661,30 @@ deployments:
   - ./packs/github-issues
   active_owner: ./packs/github-issues
   content_hash: sha256:39326657400ee043530cf549d3591241aacb61552db42294ae9aadf902b33505
+- kind: project-relative
+  target: claude
+  value: .claude/skills/yaml-conventions
+  runtime: null
+  scope: project
+  owners:
+  - ./core
+  active_owner: ./core
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/yaml-conventions/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - ./core
+  active_owner: ./core
+  content_hash: sha256:ae37d1dcf8a7bd0363c72f65258cb02865b4060639675c301c6e08f90b9d50d5
+- kind: project-relative
+  target: claude
+  value: .claude/skills/yaml-conventions/references/yaml.md
+  runtime: null
+  scope: project
+  owners:
+  - ./core
+  active_owner: ./core
+  content_hash: sha256:e45ba63db041a96c1404690c5c19436589a35b64149b575a6b9e6212bce5f9ac

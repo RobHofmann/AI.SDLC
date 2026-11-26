@@ -67,6 +67,7 @@ Code skills include:
 
 - `code-conventions` holds the code rules for every language once. Examples are reuse before you build, build only what the story needs, two scope cases, the comment rule of C10 and no new warning. It also holds one severity scale for every reviewer and the plan: HIGH and MEDIUM, with no LOW. Its page `references/skills-by-file-type.md` is a table that names the convention skill of each file type and its pack. A new language adds one row there. The `builder`, `architect`, `code-reviewer`, `test-analyzer`, `security-reviewer` and `spec-reviewer` agents preload it. See [ADR 0017](../adrs/0017-the-shared-code-rules-and-the-review-agents-live-in-core.md).
 - `powershell-conventions` holds the PowerShell rules. Examples are the help block, strict mode, an exit-code check after each native call and a Pester test per script. It has a house style page with an example and a public source for each rule, and a page of points not decided. It follows clause C10, so a comment that says why is fine. `add-gate` links it for the script rules.
+- `yaml-conventions` holds the rules for any YAML file. Examples are spaces and never tabs, one key once, quotes on text that looks like a number, and no secrets. A comment says why, as C10 asks. `github-actions-conventions` of the github pack links it for the general YAML rules.
 - `update-constitution` creates, changes, or checks the project constitution. Started by a person, a create or a change ends like `write-prd`.
 
 Framework support skills include:
