@@ -127,7 +127,7 @@ Remove-Item Env:GITHUB_ACTIONS -ErrorAction SilentlyContinue
 # its gate then fails. A test consumer gets the placeholder, as in the pipeline. SONAR_TOKEN goes too:
 # an upgrade test can install an older release, which named it, and the gate fails on its value. The
 # list of variables lives in AiSdlcSetup.ps1 (#84).
-. (Join-Path $RepoRoot 'core' '.apm' 'skills' 'ai-sdlc-hooks' 'scripts' 'AiSdlcSetup.ps1')
+. (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-hooks' 'scripts' 'AiSdlcSetup.ps1')
 $null = Remove-ApmSecretVariable
 
 $testRoot = Join-Path $RepoRoot 'test-consumers'
