@@ -356,7 +356,6 @@ function Find-ScriptCommentProblem {
 }
 
 function Get-ScriptDiff {
-    $pathspec = @('*.ps1', '*.psm1', '*.psd1', '*.yml', '*.yaml')
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         return [pscustomobject]@{ Problem = 'git is not available, so the change could not be read'; Text = ''; Base = $null }
     }
@@ -365,12 +364,13 @@ function Get-ScriptDiff {
         return [pscustomobject]@{ Problem = "no merge base with '$BaseRef', so the change could not be read"; Text = ''; Base = $null }
     }
     $baseCommit = ([string]@($base)[0]).Trim()
-    $diff = git -C $RepoRoot -c core.quotepath=off diff --unified=30 --no-color --no-ext-diff $baseCommit -- @pathspec 2>$null
+    # Quoted literals, because pwsh on Linux expands a wildcard held in a variable against the current folder.
+    $diff = git -C $RepoRoot -c core.quotepath=off diff --unified=30 --no-color --no-ext-diff $baseCommit -- '*.ps1' '*.psm1' '*.psd1' '*.yml' '*.yaml' 2>$null
     if ($LASTEXITCODE -ne 0) {
         return [pscustomobject]@{ Problem = "git diff against $baseCommit failed"; Text = ''; Base = $baseCommit }
     }
     $text = ($diff -join "`n")
-    $untracked = git -C $RepoRoot -c core.quotepath=off ls-files --others --exclude-standard -- @pathspec 2>$null
+    $untracked = git -C $RepoRoot -c core.quotepath=off ls-files --others --exclude-standard -- '*.ps1' '*.psm1' '*.psd1' '*.yml' '*.yaml' 2>$null
     if ($LASTEXITCODE -ne 0) {
         return [pscustomobject]@{ Problem = 'git ls-files failed, so the new files could not be listed'; Text = ''; Base = $baseCommit }
     }

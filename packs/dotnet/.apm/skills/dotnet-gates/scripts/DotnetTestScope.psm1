@@ -176,7 +176,7 @@ function Get-DotnetProjectGraph {
         $folder = [IO.Path]::GetDirectoryName($file)
         try { [xml]$xml = [IO.File]::ReadAllText($file) }
         catch {
-            [pscustomobject]@{ Path = $path; Folder = (Split-Path $path -Parent).Replace('\', '/'); References = @(); IsTest = $false; Error = 'cannot be read'; ReferenceItems = @(); Usings = @(); RootNamespace = $null; UsingsError = $null }
+            [pscustomobject]@{ Path = $path; Folder = ([string][IO.Path]::GetDirectoryName($path)).Replace('\', '/'); References = @(); IsTest = $false; Error = 'cannot be read'; ReferenceItems = @(); Usings = @(); RootNamespace = $null; UsingsError = $null }
             continue
         }
         $problem = $null
@@ -209,7 +209,7 @@ function Get-DotnetProjectGraph {
         $usingAnswer = Get-DotnetProjectUsing -RepoRoot $RepoRoot -ProjectFolder $folder -Own $ownUsings -Cache $propsCache
         [pscustomobject]@{
             Path           = $path
-            Folder         = (Split-Path $path -Parent).Replace('\', '/')
+            Folder         = ([string][IO.Path]::GetDirectoryName($path)).Replace('\', '/')
             References     = $references.ToArray()
             IsTest         = $flag -or [bool]@($packages | Where-Object { $_ -match $script:TestPackages }).Count -or $name -match '\.Tests?$'
             Error          = $problem

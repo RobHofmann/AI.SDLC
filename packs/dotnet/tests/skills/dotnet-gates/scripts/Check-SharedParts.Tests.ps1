@@ -129,7 +129,7 @@ Describe 'Check-SharedParts' {
         function Write-SourceFile {
             param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Content)
             $full = Join-Path $Root $Path
-            New-Item -ItemType Directory -Path (Split-Path $full) -Force | Out-Null
+            New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($full)) -Force | Out-Null
             Set-Content -LiteralPath $full -Value $Content -Encoding utf8
         }
 
