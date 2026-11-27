@@ -54,8 +54,8 @@ The first exits non-zero and names the skill at fault and the rule on any violat
 rules of each kind. A workflow skill needs its phase, persona, persona line and Next-steps section. A
 knowledge skill needs `user-invocable: false`, a Sources section whose links resolve, and at most 120
 lines. Both kinds need a name in the Agent Skills form and a trigger-rich description of at most 450
-characters. A skill only a person starts may use 1024 (ADR 0027 of AI.SDLC). Run Layer 1 with the
-prompt set in `config/skill-routing-prompts.txt` of AI.SDLC. They also need the Standing
+characters. A skill only a person starts may use 1024 (ADR 0027 of AI.SDLC). AI.SDLC keeps its
+Layer 1 prompt set in `config/skill-routing-prompts.txt`; a repository writes its own. They also need the Standing
 rules, no em-dash, no line-citations,
 cross-refs that resolve and no plugin-style reference. The second checks every agent in
 `.claude/agents/`. Each needs an explicit tool list, read-only except for the writer agent `builder`, and a known persona. A model line, when

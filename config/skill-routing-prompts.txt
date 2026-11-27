@@ -68,3 +68,17 @@ P63 | refactor | BAIT Implement a cleaner structure for this class without chang
 P64 | grilling | BAIT Before you write the PRD, question me about the scope until we agree.
 P65 | guide-me | BAIT Run the SDLC on #42: what is missing before it can ship?
 P66 | run-preflight | BAIT Check everything before I push, not only the gates.
+# Bait prompts at the line between a workflow skill and a knowledge skill. The knowledge skills are in
+# the routing set for these, because the model sees them too.
+P67 | write-docs | BAIT This page fails the reading level gate. Fix the page.
+P68 | ai-sdlc-gates | BAIT Why did the em-dash gate fail on my branch, and what does exit code 2 mean?
+P69 | ai-sdlc-hooks | BAIT The push hook refused my push. Why?
+P70 | github-pull-requests | BAIT Open the PR for my branch.
+P71 | adr-conventions | BAIT How do we number ADRs, and which sections does one need?
+P72 | write-adr | BAIT Record this decision: we keep one database per service.
+P73 | github-issue-conventions | BAIT Which size label and template does an issue need here?
+P74 | write-story | BAIT Log a bug: the order export drops the last line.
+P75 | docs-wiki-conventions | BAIT What are the rules for links between doc pages in docs/?
+P76 | csharp-conventions | BAIT Should a new C# options class use init or set?
+P77 | code-conventions | BAIT What severity does a reviewer give code that no criterion asks for?
+P78 | platform-knowledge-conventions | BAIT Do we already know how the Contoso build agents handle their cache?
