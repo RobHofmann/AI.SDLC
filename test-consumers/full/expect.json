@@ -10,7 +10,7 @@
     ".claude/agents/test-analyzer.md",
     ".claude/agents/security-reviewer.md",
     ".claude/agents/spec-reviewer.md",
-    ".claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1",
+    ".claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1",
     ".claude/skills/test-first-dotnet/SKILL.md",
     ".claude/skills/csharp-conventions/references/house-style.md",
     ".claude/skills/razor-conventions/SKILL.md",

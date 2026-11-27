@@ -68,12 +68,16 @@ A comment holds one or two lines. Longer reasoning goes somewhere it can be foun
 
 ## Enforcement
 
-Clause C10 in the [constitution](constitution.md). For C# and Razor the dotnet pack ships two gates.
-Both read only the lines a change adds, and both skip generated files:
+Clause C10 in the [constitution](constitution.md). Two gates read only the lines a change adds, and
+both skip generated files:
 
-- `.claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1` (blocking) fails on commented-out
-  code, on a `TODO`, `FIXME` or `HACK` without an issue key, and on a comment that names an AI tool.
-- `.claude/skills/dotnet-gates/scripts/Check-XmlDocs.ps1` (advisory) names each added public or
+- `.claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1` is a core gate. On C# and Razor it
+  fails (blocking) on commented-out code, on a `TODO`, `FIXME` or `HACK` without an issue key, and on a
+  comment that names an AI tool. On YAML and PowerShell it reports the same three breaks (advisory). It
+  reads PowerShell comments with the PowerShell parser, and YAML comments outside quoted strings. The
+  help block, `#Requires`, `#region`, a shebang and the `ai-sdlc:<package>` marker lines pass. It skips
+  the files that `apm.lock.yaml` lists as installed.
+- `.claude/skills/dotnet-gates/scripts/Check-XmlDocs.ps1` (advisory, dotnet pack) names each added public or
   protected type and member without a `///` doc comment. It skips the test root (`paths.testRoot`) and
   types marked `[GeneratedCode]`.
 
