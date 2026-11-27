@@ -28,7 +28,6 @@ rules only. `implement`, `refactor` and `fix-pr-feedback` load this at the build
 - **Folder names are settings** in `dotnet.folders` of `aisdlc.json`: `contracts`, `exceptions` and
   `options`. Without a key, a new type goes where the types of its kind next to the change sit. A file
   that exists stays where it is.
-
 - **One domain per controller.** Extend the controller that owns the resource; see
   [api.md](/.claude/skills/api-contract-conventions/references/api.md), "One Domain Per Controller".
 - **A closed set in C#.** When the change branches on an enum or a sealed hierarchy, read the type and
@@ -47,9 +46,8 @@ The full rules, with an example and two public sources each, are on
 - `nameof` when a string must equal a C# name; a literal when the name is a contract.
 - A controller action has a `[ProducesResponseType]`, a route `Name` and a kebab-case route.
 - No `#region`. Target-typed `new()`, `[]`, `var`, expression bodies, a file-scoped namespace and the
-  `is` pattern; a switch expression with a default arm, also for two cases.
-- A repository can let the build check the short forms with the recommended `.editorconfig` block:
-  [code-style-block.md](references/code-style-block.md) says how to take it.
+  `is` pattern; a switch expression with a default arm, also for two cases. The build can check these
+  with the opt-in `.editorconfig` block of [code-style-block.md](references/code-style-block.md).
 
 ## While you write
 
@@ -74,16 +72,12 @@ The full rules, with an example and two public sources each, are on
   ([csharp.md](references/csharp.md), "Dependency injection").
 - **Rename the old twin too.** When a new twin of a method mirrors its sibling (`code-conventions`),
   the old sibling is renamed to the same convention.
+- **Infrastructure replaces, it does not pile up.** A Bicep template describes only the target state
+  (`bicep-conventions`, when the bicep pack is installed).
 
 ## Razor components
 
-- `[Parameter]` and `[CascadingParameter]` go on their own line above the member.
-- No `I*State` interface over a state class, not even to mock it; test with the real state object.
-- Subscribe to state changes with the same `OnChangeHandler` / `HandleChange` shape as the other
-  components. No inline `<style>` blocks.
-- When markup moves between components, list what the old home also provided before you delete it,
-  such as a `PageTitle`.
-- The full rules: `razor-conventions`, when the blazor pack is installed.
+The rules of a Razor component, also of its `@code` block, live in `razor-conventions` (blazor pack).
 
 ## Security
 
@@ -93,24 +87,13 @@ from input, deserialization and error bodies.
 
 ## Tests
 
-- Mock every constructor dependency; never pass `null`. Use a loose `new Mock<T>()`, made in the test
-  and named `mock...`. A setup names the exact input; `It.IsAny` only where the test means any input.
-  Use `ReturnsAsync` and `Times.Once` without brackets. Name the class under test after what it is,
-  never `sut`.
-- Name a test `Method_Condition_Should_Result`, act once, and merge two tests of one path into one
-  `[Theory]`. Literals first; AutoFixture only where the test project uses it.
+- Mock every constructor dependency with a loose `new Mock<T>()` named `mock...`; never pass `null`.
+  A setup names the exact input. Name the class under test after what it is, never `sut`.
+- Name a test `Method_Condition_Should_Result` and act once. Literals first.
 - A test proves the team's own logic, not the framework (clause C04). The one wiring test is the
-  registration test without the container.
-- No controller tests for actions that only forward to a service. When a controller test is needed,
-  assert the `ActionResult` type and status code, not the service call arguments.
-- The rest is in the [test style](references/csharp.md#test-style) and the
-  [test-first-dotnet](/.claude/skills/test-first-dotnet/SKILL.md) skill. The `test-analyzer` agent
-  reads this section and that skill for a C# test.
-
-## Before you call it done
-
-- **Infrastructure replaces, it does not pile up.** A Bicep template describes only the target state
-  (`bicep-conventions`, when the bicep pack is installed).
+  registration test without the container. No test of a controller action that only forwards.
+- The rest is in the [test style](references/csharp.md#test-style) and
+  [test-first-dotnet](/.claude/skills/test-first-dotnet/SKILL.md), which `test-analyzer` reads.
 
 ## Sources
 

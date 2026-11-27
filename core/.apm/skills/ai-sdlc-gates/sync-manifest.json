@@ -280,7 +280,7 @@
         ".claude/skills/csharp-conventions/references/house-style.md": "df723e0fde4fd603ab6cc11e87fdfd52959e1c1b",
         ".claude/skills/csharp-conventions/references/not-decided.md": "bddecca729c22b4ab44a5ba999e358d20d338c81",
         ".claude/skills/csharp-conventions/references/security.md": "fdafeec335342de508c3a4cb9c4821c2ec124993",
-        ".claude/skills/csharp-conventions/SKILL.md": "b9f025cd25dbe5a4213e889e575d8bf53a7971a2",
+        ".claude/skills/csharp-conventions/SKILL.md": "e5e5200c28da24a2d8bb954be3f7c028d77d297f",
         ".claude/skills/dotnet-code-graph/gates.json": "e35f10172566401a07483af1448182bf7d10f9be",
         ".claude/skills/dotnet-code-graph/references/code-graph.md": "9ccaafe0e5ecd6ad81a1fd50993d124e7652877e",
         ".claude/skills/dotnet-code-graph/scripts/Check-DocGraphClaims.ps1": "7d0d3c3fdac337e80ebf7a9b3f9c236257438834",
