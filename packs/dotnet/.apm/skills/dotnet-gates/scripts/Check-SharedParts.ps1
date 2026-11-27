@@ -375,7 +375,8 @@ $unchecked = [System.Collections.Generic.List[string]]::new()
 foreach ($rel in $files) {
     $full = Join-Path $RepoRoot $rel
     $raw = $null
-    try { $raw = @(Get-Content -LiteralPath $full) }
+    # .NET reads the path as it is; a cmdlet takes the text before :: in a file name for a provider name.
+    try { $raw = @([IO.File]::ReadAllLines($full)) }
     catch {
         $unchecked.Add("$rel : the file cannot be read")
         continue

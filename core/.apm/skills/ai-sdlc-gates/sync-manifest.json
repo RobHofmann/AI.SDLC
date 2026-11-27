@@ -312,7 +312,7 @@
         ".claude/skills/dotnet-gates/scripts/Check-DocDrift.ps1": "06e53de00b2e31aa827c73dde3cb866d27fe9827",
         ".claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1": "4f90933bcf8e7a85c2cb07a680f7bf3ed6259e3d",
         ".claude/skills/dotnet-gates/scripts/Check-ProjectReferenceUse.ps1": "a9a24ce6e029426cc0092e44da54f3c21c8682e0",
-        ".claude/skills/dotnet-gates/scripts/Check-SharedParts.ps1": "5b5d6d5da4a229122e182c61dd31040df62260c1",
+        ".claude/skills/dotnet-gates/scripts/Check-SharedParts.ps1": "3e5df9f4db4008d3ce04398d2f9cc6133cc36996",
         ".claude/skills/dotnet-gates/scripts/Check-SpecDrift.ps1": "b9c0a33bdedaf8d370e179d36fa0fcf7ffa05399",
         ".claude/skills/dotnet-gates/scripts/Check-StoryTraits.ps1": "cba811aae941ebcc963fcde451339df11d2edb9f",
         ".claude/skills/dotnet-gates/scripts/Check-TestShape.ps1": "f013dc7aa331a22959369d8976863efe02c81889",
