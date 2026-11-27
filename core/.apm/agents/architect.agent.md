@@ -64,6 +64,12 @@ question it brings, with a source for each claim.
    - Answer each question in the `## Review checks` section of the architecture page for this plan,
      and name the rule behind a failed check.
    - A change to a shared library ships in every host that references it. Does the plan name them all?
+   - When the dotnet pack is installed and the plan adds a `ProjectReference`, run the layer check for
+     each one: `pwsh .claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1 -From <project> -To
+     <project>` ([DOTNET-03](/.claude/skills/api-contract-conventions/references/clauses.md)). Exit 1 is
+     a reference that does not point down: a `MEDIUM` `DESIGN` finding that names both layers. Exit 3
+     means the layers are not set: write `not set` and raise no layer finding. Exit 2 names a project in
+     no layer or a setting error: quote it, and raise no layer finding for that reference.
    - A controller stays thin and one domain; errors go through ProblemDetails (DOTNET-02, where the
      dotnet pack is installed).
    - A closed set the change branches on is listed member by member.
@@ -125,6 +131,7 @@ Closed sets: <each member of a set the change branches on>
 Seams: <each public boundary the tests go through, with what it catches and what it misses>
 Tests go in: <type> -> <test file> :: <test class> | new <test class>, because none found, one line per touched type
 Hosts: <every host a shared-library change ships in>
+Layers: <only with the dotnet pack: per new project reference, `<from> (<layer>) -> <to> (<layer>): points down | not lower`, or the exit 2 cause; `not set` without dotnet.layers; `no new project reference` when there is none>
 Decisions: <a lasting choice that needs an ADR, or none>
 Proof: <for each AC-n, the test that proves it, or "a check by hand" and what the person checks>
 Open questions: <what the context block could not answer>
