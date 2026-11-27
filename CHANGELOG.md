@@ -123,6 +123,8 @@ Each entry names its issue, as `#42`.
   push hook denies only on a finding and shows a note after exit 2. Every gate that passed with
   nothing to check now exits 3, and every exit 2 prints a `FIX:` line. `GateContract.Tests.ps1` runs
   every gate in an empty repository. ADR 0019 supersedes point 1 of ADR 0005 (#46).
+  So a pull request from a fork, which gets no secrets, now fails on the private-terms gate. Run
+  `Check-PrivateTerms.ps1 -Required` on its branch before the merge.
 - `Check-Coverage.ps1` fails when coverage is a point or more above the baseline file and the change
   did not raise it, so a gain is kept. `Invoke-LocalGates.ps1 -SkipScript` leaves a gate out by its
   script name. The gates, the pre-flight and `Invoke-PesterParallel.ps1 -Changed` read the main branch
@@ -168,6 +170,8 @@ What a consumer does when it takes this release:
   the update: give each gate what it needs (a full-depth checkout for gitleaks, `paths.sourceRoot` and
   `paths.testRoot` for the .NET gates, `coverage-file` for the coverage gate), or set the gate to
   Advisory or Off in `gateModes` and say why in the pull request.
+- A public repository: a pull request from a fork now fails on the private-terms gate, because it gets
+  no secrets. Before you merge one, run `Check-PrivateTerms.ps1 -Required` on its branch with the list.
 - Give every entry of your own `repoGates` a `checks` and a `fix` text, and a name that says what
   passes, or the run fails on it. A script or a dashboard that matches an old gate name in an
   annotation must use the new name; `.claude/skills/ai-sdlc-gates/references/gate-catalog.md` lists

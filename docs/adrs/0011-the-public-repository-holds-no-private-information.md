@@ -79,8 +79,9 @@ text and the rule text never appear, locally or in CI. Then one `FIX:` line.
 **6. It fails closed in every public repository in CI.** No list is exit 2, "could not check"
 ([ADR 0005](0005-the-gate-contract.md)), on a machine and in a private repository. In GitHub Actions, a
 repository that GitHub says is public fails with exit 1 instead, because it must never pass unchecked.
-The one exception is a pull request from a fork. It gets no secrets, so it warns with exit 2. The owner
-then runs the gate by hand before the merge. AI.SDLC runs the gate with `-Required`, so a missing list
+A pull request from a fork gets no secrets, so there the gate cannot check and exits with 2. Since
+[ADR 0019](0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md), exit 2 of a blocking gate fails the build in CI, so
+that pull request fails too. The owner then runs the gate by hand before the merge. AI.SDLC runs the gate with `-Required`, so a missing list
 is exit 1 there in every case, its pre-push hook and fork pull requests included.
 
 **7. Lessons are routed by kind.** `capture-learning` sends a rule about the way of working to AI.SDLC
@@ -97,8 +98,9 @@ backstop for a lesson that carries a private name.
 
 **Negative:**
 
-- GitHub passes no secrets to a workflow run from a fork. So the gate cannot run in CI on an outside
-  contribution. The owner runs it locally before merging such a pull request.
+- GitHub passes no secrets to a workflow run from a fork. So the gate cannot check an outside
+  contribution in CI, and that build fails (exit 2). The owner runs the gate locally on its branch
+  before merging such a pull request.
 - The gate protects only what the list names. A new private term must go on the list first.
 - Someone else who installs AI.SDLC gets no protection until they write their own list.
 - A finding names only a rule number, so the reader opens the private list to see which term it was.

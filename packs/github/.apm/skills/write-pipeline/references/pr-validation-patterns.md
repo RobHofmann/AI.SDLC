@@ -102,8 +102,8 @@ request waiting forever, and a change outside the filter still needs the gates.
 ## Pull requests from forks
 
 GitHub gives no secrets to a run from a fork. The `ai-sdlc` job then runs without the private terms
-list, and a gate that needs it reports that it could not check. Run the pre-flight locally before you
-merge such a pull request.
+list, and a gate that needs it could not check (exit 2), which fails the build. Run the pre-flight
+locally on its branch before you merge such a pull request.
 
 ## Per-job runner
 

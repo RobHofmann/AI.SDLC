@@ -336,7 +336,7 @@
         ".claude/skills/write-pipeline/references/build-patterns.md": "bae9031b27dcbf0860bd02f42be80f9f69a14846",
         ".claude/skills/write-pipeline/references/deployment-job-patterns.md": "277e90af6a91adb7db4d7397ec1254b59777ea47",
         ".claude/skills/write-pipeline/references/orchestrator-patterns.md": "da7e07310c2ba030cefd7f3007a7a970be14b545",
-        ".claude/skills/write-pipeline/references/pr-validation-patterns.md": "c700fe1123ad4f11ab8ffc28608e97f88309f844",
+        ".claude/skills/write-pipeline/references/pr-validation-patterns.md": "1fc9a55f79c2a64c207f72606a7010f02ede4001",
         ".claude/skills/write-pipeline/references/release-patterns.md": "c615743eb7f7ba347dccc2e508ea5d66732800a7",
         ".claude/skills/write-pipeline/references/variables-patterns.md": "0582c2fe778a0239fc5d17c1da5a910b4b19389c",
         ".claude/skills/write-pipeline/references/yaml-syntax-reference.md": "d56ff5f450116fb6dbcf5951bf97a816dfab8c2e",
