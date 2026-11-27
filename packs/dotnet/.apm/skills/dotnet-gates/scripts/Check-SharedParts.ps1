@@ -105,7 +105,7 @@ $builderAlternation = $builderTypes -join '|'
 $declaredNew = '\??\s+\w+\s*(?:\{[^{}]*\}\s*)?=\s*new\s*\('
 $httpClientPattern = '\bnew\s+(?:(?:global::)?System\.Net\.Http\.)?(?<type>HttpClient)\s*[({]|(?<![\w.])(?:(?:global::)?System\.Net\.Http\.)?HttpClient' + $declaredNew
 $credentialPattern = "\bnew\s+(?:(?:global::)?Azure\.Identity\.)?(?<type>$credentialAlternation)\s*[({]|(?<![\w.])(?:(?:global::)?Azure\.Identity\.)?(?:$credentialAlternation)" + $declaredNew
-$extensionPattern = "\bstatic\b[^;{]*?\(\s*(?:\[[^\]]*\]\s*)*this\s+(?:global::)?(?:\w+\.)*(?:$builderAlternation)\b"
+$extensionPattern = "\bstatic\b[^;{]*?\(\s*(?:\[[^\]\r\n]*\]\s*)*this\s+(?:global::)?(?:\w+\.)*(?:$builderAlternation)\b"
 $configurationPattern = '(?<![\w<])IConfiguration\??\s+\w+'
 $maxSpan = 40
 $maxParameterLines = 100
@@ -127,6 +127,8 @@ function Find-BlockEnd {
     $depth = 0
     $opened = $false
     for ($i = $From; $i -lt $Code.Count; $i++) {
+        # A signature that opens no block within the span is no block, and a longer scan costs time on each match.
+        if (-not $opened -and $i - $From -gt $maxSpan) { return $From }
         foreach ($ch in $Code[$i].ToCharArray()) {
             if ($ch -eq '{') { $depth++; $opened = $true }
             elseif ($ch -eq '}') {
@@ -222,7 +224,7 @@ function Find-SettingsFinding {
     foreach ($m in [regex]::Matches($joined.Text, $typeDeclarationPattern)) { [void]$typeNames.Add($m.Groups['name'].Value) }
     $openings = [System.Collections.Generic.List[int]]::new()
     foreach ($m in [regex]::Matches($joined.Text, $primaryConstructorPattern)) { $openings.Add($m.Index + $m.Length - 1) }
-    $constructorPattern = '(?m)^[ \t]*(?:\[[^\]]*\]\s*)*(?:(?:public|internal|protected|private|static|unsafe|extern)\s+)*(?<name>\w+)\s*\('
+    $constructorPattern = '(?m)^[ \t]*(?:\[[^\]\r\n]*\][ \t]*)*(?:(?:public|internal|protected|private|static|unsafe|extern)\s+)*(?<name>\w+)\s*\('
     foreach ($m in [regex]::Matches($joined.Text, $constructorPattern)) {
         if ($typeNames.Contains($m.Groups['name'].Value)) { $openings.Add($m.Index + $m.Length - 1) }
     }
