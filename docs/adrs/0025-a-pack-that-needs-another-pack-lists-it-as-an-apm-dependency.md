@@ -3,7 +3,7 @@ story: "#75"
 phase: governance
 step: write-adr
 intent:
-  assumption: "APM installs a pack that another pack lists under dependencies, also when a consumer installs that pack from git at a release tag"
+  assumption: "APM installs a pack that another pack lists under dependencies, also when a consumer installs that pack from git at a ref (checked by a probe)"
   decision-drivers:
     - "a repository with only CSS or JavaScript could not take those rules without the blazor pack"
     - "a Blazor repository needs the CSS and JavaScript rules too, and should not have to list them by hand"
@@ -58,10 +58,10 @@ file records it with `resolved_by` and the `local_path` of the dependency.
 - `Get-AiSdlcApmPack` reads only `apm.yml`. So a pack that comes as a dependency does not count for the
   gate runner. The `css` and `javascript` packs ship no gate, so nothing is missed. A dependency pack
   that ships a gate needs that function to read the manifest too.
-- The local probe does not cover a consumer that installs the `blazor` pack from git at a release tag.
-  The `-Upgrade` run of `tools/Test-Consumers.ps1` for the `full` consumer covers it in the pull
-  request workflow. If it fails, the `blazor` pack drops its `dependencies`, and a Blazor consumer adds `css`
-  and `javascript` to its own `apm.yml`, as a step in the CHANGELOG.
+- A dependency pack needs the same source and ref as the pack that lists it. A second probe installed
+  `packs/blazor` from git at a branch of AI.SDLC: APM took `../css` from the same repository and ref,
+  as a git package (`virtual_path: packs/css`, no `local_path`). The `-Upgrade` run of
+  `tools/Test-Consumers.ps1` for the `full` consumer checks the same form in every pull request.
 
 **Neutral:**
 
@@ -77,8 +77,9 @@ file records it with `resolved_by` and the `local_path` of the dependency.
 
 ## Sources
 
-- The probe: `apm install` of a consumer with `packs/blazor` only, on APM 0.31.0, installed
-  `css-conventions` and `javascript-conventions` and wrote `resolved_by: _local/blazor` in the lock file.
+- The probes, on APM 0.31.0: a consumer with only the local `packs/blazor` got `css-conventions` and
+  `javascript-conventions`, with `resolved_by: _local/blazor` in the lock file. A consumer with
+  `packs/blazor` from git at a ref got both too, resolved from the same repository and ref.
 - [APM dependencies](https://microsoft.github.io/apm/guides/dependencies/) - the `dependencies: apm:`
   list of a package. Single-sourced; the probe is the second, first-hand check.
 
