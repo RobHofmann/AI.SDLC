@@ -566,4 +566,49 @@ Describe 'AiSdlcConfig' {
         }
     }
 
+    Context 'Resolve-AiSdlcSourceRoot' {
+        It 'returns the full folder for <Value>' -Tag '#83' -ForEach @(
+            @{ Value = 'sub'; Expected = 'sub' }
+            @{ Value = 'sub/deeper/'; Expected = 'sub/deeper' }
+            @{ Value = '.'; Expected = '' }
+            @{ Value = 'sub/../sub'; Expected = 'sub' }
+        ) {
+            $root = New-ConfigRepo -Json '{}'
+
+            $full = Resolve-AiSdlcSourceRoot -RepoRoot $root -Path $Value
+
+            $full | Should -Be ([IO.Path]::GetFullPath((Join-Path $root $Expected))).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        }
+
+        It 'returns an empty string when no folder is set' -Tag '#83' {
+            Resolve-AiSdlcSourceRoot -RepoRoot (New-ConfigRepo -Json '{}') -Path '' | Should -Be ''
+        }
+
+        It 'refuses <Value>, which leaves the repository' -Tag '#83' -ForEach @(
+            @{ Value = '../outside' }
+            @{ Value = 'sub/../../outside' }
+            @{ Value = '..' }
+        ) {
+            $root = New-ConfigRepo -Json '{}'
+
+            { Resolve-AiSdlcSourceRoot -RepoRoot $root -Path $Value } | Should -Throw '*outside the repository*'
+        }
+
+        It 'refuses an absolute folder outside the repository' -Tag '#83' {
+            $root = New-ConfigRepo -Json '{}'
+
+            { Resolve-AiSdlcSourceRoot -RepoRoot $root -Path ([IO.Path]::GetTempPath()) } | Should -Throw '*outside the repository*'
+        }
+
+        It 'refuses a folder that is a link' -Tag '#83' -Skip:(-not $IsWindows -and -not (Get-Command ln -ErrorAction SilentlyContinue)) {
+            $root = New-ConfigRepo -Json '{}'
+            $target = Join-Path ([IO.Path]::GetTempPath()) ('aisdlc-target-' + [guid]::NewGuid().ToString('n'))
+            New-Item -ItemType Directory -Path $target | Out-Null
+            New-Item -ItemType SymbolicLink -Path (Join-Path $root 'link') -Target $target -ErrorAction SilentlyContinue | Out-Null
+
+            if (Test-Path -LiteralPath (Join-Path $root 'link')) {
+                { Resolve-AiSdlcSourceRoot -RepoRoot $root -Path 'link' } | Should -Throw '*link*'
+            }
+        }
+    }
 }

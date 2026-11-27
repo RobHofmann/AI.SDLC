@@ -3,8 +3,13 @@
   "preflight": "scripts/Invoke-BicepPreflight.ps1",
   "docUnits": [ { "glob": "{bicepRoot}/*", "kind": "building block", "folder": "building-blocks" } ],
   "docFacts": "scripts/Get-BicepFacts.ps1",
-  "gates": [],
+  "gates": [
+    { "name": "Registry module calls are pinned to a tag other than latest", "script": "scripts/Check-BicepConventions.ps1", "clause": "BICEP-01", "mode": "Advisory", "args": {"Rule":"ModuleTag"}, "inputs": ["**/*.bicep", "**/*.bicepparam"], "checks": "It reads the `.bicep` and `.bicepparam` files, where a comment or a plain string never counts. It reports a module, test, import, extension or using reference to the registry that ends in the tag `latest`. Exit 3 means no Bicep file, and it never exits 2.", "fix": "Pin each registry module to a dated tag, such as `2026.01.01.1-main`, and never to `latest`." },
+    { "name": "Role IDs come from the lookup files that aisdlc.json names", "script": "scripts/Check-BicepConventions.ps1", "clause": "BICEP-02", "mode": "Advisory", "args": {"Rule":"RoleId"}, "checks": "It reads the `.bicep` and `.bicepparam` files and reports each line outside the lookup files that holds a GUID from them. A comment is not read. Exit 2 means a lookup file is missing or holds no GUID. Exit 3 means `bicep.roleLookupFiles` is not set or there is no Bicep file.", "fix": "Read each role ID from the lookup file that `bicep.roleLookupFiles` names, and never type the GUID again." }
+  ],
   "allow": [
-    "az bicep build *"
+    "az bicep build *",
+    "pwsh -NoProfile -File .claude/skills/bicep-conventions/scripts/Check-BicepConventions.ps1 *",
+    "pwsh .claude/skills/bicep-conventions/scripts/Check-BicepConventions.ps1 *"
   ]
 }

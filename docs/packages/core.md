@@ -111,13 +111,30 @@ Blocking gates check:
 - documentation rows
 - pull-request hygiene
 - section references
+- comments that the change adds to C# and Razor (`Check-CommentHygiene.ps1`, clause C10): no commented-out code, no `TODO` without an issue key and no AI tool name. The gate moved from the dotnet pack to core, together with `CodeDiff.psm1`, so every repository runs it
 - documentation coverage: both layers and a page per unit
 - the installed files against the sync manifest, including a skill folder or an agent file left behind under a retired name. When `apm.yml` installs the core from inside the repository (`- ./core`, as in AI.SDLC), it reads the source manifest there
 - every local package that `apm.yml` or `apm.lock.yaml` names is a folder in git (`Check-LocalPackages.ps1`)
 - no private term in a public repository: `Check-PrivateTerms.ps1` runs when `visibility` is `public` in `aisdlc.json`, or when GitHub Actions says the repository is public. In a public repository in CI, a missing list fails. A pull request from a fork gets no secrets, so the gate cannot check there (exit 2), and that fails the build too. Run `Check-PrivateTerms.ps1 -Required` on its branch before the merge. It reads the private list from outside the repository. It scans every tracked file, the commit messages, the branch name and the pull request text. It prints only the file, the line and the rule number
 
-The one advisory gate checks change completeness. It reads the commits since the base and the edits that
-are not committed yet. It also reads the new files git does not ignore, because `wrap-up` runs it before it commits.
+The advisory gates warn and never stop a push:
+
+- change completeness. It reads the commits since the base and the edits that are not committed yet. It
+  also reads the new files git does not ignore, because `wrap-up` runs it before it commits.
+- comments that the change adds to YAML and PowerShell: the same three breaks as the C# entry, from a
+  second entry of `Check-CommentHygiene.ps1` with `-Language YamlPowerShell`. It reads PowerShell with the
+  parser and YAML outside quoted strings.
+- a native call with no exit code check (`Check-NativeExitCode.ps1`, clause C13). It reports an added
+  `git`, `az`, `dotnet` or `bicep` call with no `$LASTEXITCODE` check after it.
+- PSScriptAnalyzer findings on the added PowerShell lines (`Check-ScriptAnalyzer.ps1`, clause C13). It
+  passes its own settings, without `PSAvoidUsingWriteHost`, and exits 2 without PSScriptAnalyzer 1.21.0
+  or newer.
+- the size of a pull request (`Check-PrSize.ps1`, clause C14). It counts the added and removed lines
+  against `pullRequest.sizeLimit`, read at the merge base, and leaves out `pullRequest.sizeExclude`.
+
+The change gates skip the files that `apm.lock.yaml` lists as installed at the base commit, through
+`Get-AiSdlcInstalledPath` in `ChangedFiles.psm1`. They read the lock at the base, so a change cannot add its
+own files to that list.
 
 A commit can carry a `No-Test` or `No-Docs` trailer with a listed reason and a why. Git reads the trailer, and it clears the finding for the files of that commit only. The check prints each waiver it used, did not use or did not need. Only `wrap-up` writes a trailer, after `test-analyzer` or `docs-reviewer` agrees with the reason.
 

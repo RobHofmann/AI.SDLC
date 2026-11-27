@@ -205,6 +205,55 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Checks: It reads each `Last checked` date in `AGENTS.md` and the doc layers, and lists a date older than `docs.lastCheckedMaxAgeDays`. It does nothing when that setting is off. Exit 3 means the setting is off, and it never exits 2.
 - Fix: Check the facts on the page again and update its `Last checked` date, or raise `docs.lastCheckedMaxAgeDays`.
 
+### The change adds no commented-out code, open TODO or AI tool name in a C# or Razor comment
+
+- Clause: C10
+- Mode: Blocking
+- Runs in: pre-push hook, pull request action, local run
+- Runs locally when the change touches: `**/*.cs`, `**/*.razor`, or the skill or tool folder of its script
+- Script: `.claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1`
+- Checks: It reads only the lines that the change adds to `.cs` and `.razor` files. It fails on commented-out code, on a TODO, FIXME or HACK with no issue key, and on a comment that names an AI tool. Exit 2 means the change could not be worked out, and it never exits 3.
+- Fix: Delete the commented-out code, add an issue key such as `#42` to the TODO, or remove the AI tool name from the comment.
+
+### The change adds no commented-out code, open TODO or AI tool name in a YAML or PowerShell comment
+
+- Clause: C10
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Runs locally when the change touches: `**/*.ps1`, `**/*.psm1`, `**/*.psd1`, `**/*.yml`, `**/*.yaml`, or the skill or tool folder of its script
+- Script: `.claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1`
+- Checks: It reads the comments on the lines that the change adds to PowerShell and YAML files, outside quoted strings, and skips installed files. It reports commented-out code, a TODO, FIXME or HACK with no issue key, and an AI tool name. The help block, `#Requires`, `#region`, a shebang and the marker lines pass. Exit 2 means the change could not be read or a script does not parse, and exit 3 means nothing to check.
+- Fix: Delete the commented-out code, add an issue key such as `#42` to the TODO, or remove the AI tool name from the comment.
+
+### A native call that the change adds in PowerShell checks its exit code
+
+- Clause: C13
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Runs locally when the change touches: `**/*.ps1`, `**/*.psm1`, or the skill or tool folder of its script
+- Script: `.claude/skills/ai-sdlc-gates/scripts/Check-NativeExitCode.ps1`
+- Checks: It parses the added PowerShell lines, and reports a `git`, `az`, `dotnet` or `bicep` call with no exit code check after it. A `||` or `&&` chain and `$PSNativeCommandUseErrorActionPreference = $true` pass, and it skips installed files. Exit 2 means the change could not be read or a script does not parse, and exit 3 means nothing to check.
+- Fix: Check `$LASTEXITCODE` right after the call and throw when it is not 0, or set `$PSNativeCommandUseErrorActionPreference = $true` in the script.
+
+### PSScriptAnalyzer finds nothing on the PowerShell lines that the change adds
+
+- Clause: C13
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Runs locally when the change touches: `**/*.ps1`, `**/*.psm1`, or the skill or tool folder of its script
+- Script: `.claude/skills/ai-sdlc-gates/scripts/Check-ScriptAnalyzer.ps1`
+- Checks: It runs PSScriptAnalyzer with its own settings, without the `PSAvoidUsingWriteHost` rule, and reports the findings on the lines that the change adds. It never reads a settings file from the repository, and it skips installed files. Exit 2 means the module is missing or older than 1.21.0, or a script could not be read, and exit 3 means nothing to check.
+- Fix: Change the line as the PSScriptAnalyzer rule asks, or keep a form that `powershell-conventions` asks for and say so in the pull request.
+
+### The pull request stays within the size limit of the repository
+
+- Clause: C14
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Script: `.claude/skills/ai-sdlc-gates/scripts/Check-PrSize.ps1`
+- Checks: It counts the lines that the change adds and removes since the merge base, and warns above `pullRequest.sizeLimit`. It reads both size settings at the merge base, and skips installed files and the files that `pullRequest.sizeExclude` names. Exit 2 means the change, a setting or a binary file could not be read, and exit 3 means no limit is set.
+- Fix: Split the work into smaller stories with a pull request each, or say in the pull request why it cannot be split.
+
 ### Allow rules of the installed packages are in `.claude/settings.json`
 
 - Clause: AI-SDLC
@@ -213,6 +262,27 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1`
 - Checks: It builds the allow rules from the `allow` lists of the installed packages and fails when one is missing from `.claude/settings.json`. It does not remove a rule, and it does not check the local knowledge folder. Exit 2 means a package list or the settings file cannot be read, and exit 3 means there is no installed package to read.
 - Fix: Run `Sync-AllowRules.ps1` without `-Check` and commit `.claude/settings.json`.
+
+## bicep
+
+### Registry module calls are pinned to a tag other than latest
+
+- Clause: BICEP-01
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Runs locally when the change touches: `**/*.bicep`, `**/*.bicepparam`, or the skill or tool folder of its script
+- Script: `.claude/skills/bicep-conventions/scripts/Check-BicepConventions.ps1`
+- Checks: It reads the `.bicep` and `.bicepparam` files, where a comment or a plain string never counts. It reports a module, test, import, extension or using reference to the registry that ends in the tag `latest`. Exit 3 means no Bicep file, and it never exits 2.
+- Fix: Pin each registry module to a dated tag, such as `2026.01.01.1-main`, and never to `latest`.
+
+### Role IDs come from the lookup files that aisdlc.json names
+
+- Clause: BICEP-02
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Script: `.claude/skills/bicep-conventions/scripts/Check-BicepConventions.ps1`
+- Checks: It reads the `.bicep` and `.bicepparam` files and reports each line outside the lookup files that holds a GUID from them. A comment is not read. Exit 2 means a lookup file is missing or holds no GUID. Exit 3 means `bicep.roleLookupFiles` is not set or there is no Bicep file.
+- Fix: Read each role ID from the lookup file that `bicep.roleLookupFiles` names, and never type the GUID again.
 
 ## blazor
 
@@ -245,15 +315,6 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Checks: It compares what a reference page says about who uses a project, or what implements its contract, with the code graph. It warns when the graph is older than the working tree. Exit 3 means there is no code graph, and it never exits 2.
 - Fix: Correct the page so that it names the relationships the graph shows, or rebuild the graph when it is old.
 
-### The change adds no commented-out code, open TODO or AI tool name in a C# or Razor comment
-
-- Clause: C10
-- Mode: Blocking
-- Runs in: pre-push hook, pull request action, local run
-- Script: `.claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1`
-- Checks: It reads only the lines that the change adds to `.cs` and `.razor` files. It fails on commented-out code, on a TODO, FIXME or HACK with no issue key, and on a comment that names an AI tool. Exit 2 means the change could not be worked out, and it never exits 3.
-- Fix: Delete the commented-out code, add an issue key such as `#42` to the TODO, or remove the AI tool name from the comment.
-
 ### Added public C# types and members carry a doc comment
 
 - Clause: C10
@@ -272,6 +333,16 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Checks: It reads only the lines that the change adds, in the test files under `paths.testRoot`. It fails on a test class or method that the change adds with no Story trait, and on a malformed key on an added line. LEGACY-0 stays allowed on older code, but never covers code that the change adds. Exit 2 means `paths.testRoot` is not set or there is no merge base, and it never exits 3.
 - Fix: Add a Story trait with the story key, such as `#42`, to the test class, or correct the malformed key.
 
+### Test methods that the change adds or edits keep the Arrange, Act and Assert markers in order
+
+- Clause: C04
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Runs locally when the change touches: `**/*.cs`, or the skill or tool folder of its script
+- Script: `.claude/skills/dotnet-gates/scripts/Check-TestShape.ps1`
+- Checks: It reads the xUnit `[Fact]` and `[Theory]` methods that the change touches, and needs each marker once, in the order Arrange, Act, Assert. A merged marker such as `// Act & Assert` counts as both, and an edited older method fails only on what the added lines break. Exit 2 means the change could not be read, and exit 3 means no test method changed.
+- Fix: Add the missing marker, put the markers in the order Arrange, Act, Assert, or split a test that acts and asserts twice.
+
 ### JSON wire names in C# and in specs are PascalCase
 
 - Clause: DOTNET-01
@@ -280,6 +351,36 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Script: `.claude/skills/dotnet-gates/scripts/Check-ApiPascalCase.ps1`
 - Checks: It scans the `JsonPropertyName` attributes under the source root and the property names in the specs, and fails on a snake_case or camelCase name. It skips external contract paths and system fields. Exit 2 means `paths.sourceRoot` is not set or the specs could not be parsed, and it never exits 3.
 - Fix: Rename the wire name to PascalCase, or remove the attribute when it only repeats the property name.
+
+### A project reference that the change adds is used in the code of the project
+
+- Clause: DOTNET-03
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Runs locally when the change touches: `**/*.csproj`, `**/*.cs`, or the skill or tool folder of its script
+- Script: `.claude/skills/dotnet-gates/scripts/Check-ProjectReferenceUse.ps1`
+- Checks: It reads each `ProjectReference` that the change adds, and looks for a namespace of the target in the code of the referencing project. It reads text, so it misses a type that code finds at run time, and it skips analyzer references. Exit 2 means the change or a project file could not be read, and exit 3 means there is no added reference.
+- Fix: Remove the project reference, or keep it when code finds its types at run time and say so in the pull request.
+
+### A project reference that the change adds points to a lower layer of `dotnet.layers`
+
+- Clause: DOTNET-03
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Runs locally when the change touches: `**/*.csproj`, `aisdlc.json`, or the skill or tool folder of its script
+- Script: `.claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1`
+- Checks: It reads each `ProjectReference` that the change adds, and names a reference that does not point to a lower layer of `dotnet.layers`. A project in no layer, or in two, is named and not judged. Exit 2 means the setting has the wrong shape or the change could not be read, and exit 3 means nothing to check.
+- Fix: Point the reference at a project in a lower layer or remove it, or change `dotnet.layers` in `aisdlc.json` when the order itself is wrong.
+
+### C# code uses the shared options, HTTP client, credential and base exception, not its own copy
+
+- Clause: DOTNET-04
+- Mode: Advisory
+- Runs in: pull request action (as a warning), local run
+- Runs locally when the change touches: `**/*.cs`, `aisdlc.json`, or the skill or tool folder of its script
+- Script: `.claude/skills/dotnet-gates/scripts/Check-SharedParts.ps1`
+- Checks: It reads the `.cs` files under `paths.sourceRoot`. It warns about `IConfiguration` in a constructor, `new HttpClient()`, an own Azure credential, or an exception without the base exception. It skips tests, generated files, `Program.cs`, `Startup.cs` and service registration methods, and lists new breaks first. Exit 2 means a setting is missing or wrong, or the change could not be read, and exit 3 means there is no C# file.
+- Fix: Use the shared part that the finding names: an options class, the HTTP client factory, the credential helper or the base exception.
 
 ### A change to an endpoint that has a spec also changes that spec
 

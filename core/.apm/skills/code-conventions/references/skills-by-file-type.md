@@ -23,7 +23,7 @@ core.
 | `.css` | `css-conventions` | css | none in the build |
 | `.js` | `javascript-conventions` | javascript | none in the build |
 | `.bicep`, `.bicepparam` | `bicep-conventions` | bicep | the Bicep linter, which `bicep build` runs |
-| `.ps1`, `.psm1`, `.psd1` | `powershell-conventions` | core | none in the build |
+| `.ps1`, `.psm1`, `.psd1` | `powershell-conventions` | core | the advisory gates `Check-ScriptAnalyzer.ps1` and `Check-NativeExitCode.ps1`, on the added lines |
 | `.yml`, `.yaml` | `yaml-conventions` | core | none in the build |
 | `.yml`, `.yaml` under `.github/workflows/` | `yaml-conventions`, `github-actions-conventions` | core, github | none in the build |
 

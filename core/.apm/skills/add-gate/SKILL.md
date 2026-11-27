@@ -127,7 +127,7 @@ file-wide search lets through.
   `{ "name": "<what passes>", "script": "scripts/Check-<Name>.ps1", "clause": "<clause>", "mode": "Advisory", "checks": "<2 to 4 sentences>", "fix": "<1 sentence>" }`.
   The name is a short statement of what passes, such as "Docs hold no em-dash characters", unique
   among all gates, with no clause, owner prefix or note in brackets. The clause is a core clause
-  (C01 to C12), a pack clause such as DOTNET-01, or `AI-SDLC` when no clause holds the rule.
+  (C01 to C14), a pack clause such as DOTNET-01, or `AI-SDLC` when no clause holds the rule.
   `checks` says what the gate checks, the main thing it does not check, and what exit 2 and exit 3
   mean for it. `fix` is one instruction. The runner fails an entry without either text and does not
   run it. In AI.SDLC, run `pwsh tools/Build-GateCatalog.ps1` to update the gate list pages.

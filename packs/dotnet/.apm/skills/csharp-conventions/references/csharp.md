@@ -149,7 +149,8 @@ exception types.
 - **Test layout (AAA).** Every test has `// Arrange`, `// Act` and `// Assert` markers. Keep the inputs,
   the one call under test, and the checks clearly apart. A test with nothing to act on may merge
   `// Arrange` and `// Act`. Clause C10 keeps these markers, see
-  [comments](/.claude/skills/ai-sdlc-handbook/references/comments.md).
+  [comments](/.claude/skills/ai-sdlc-handbook/references/comments.md). The advisory gate
+  `Check-TestShape.ps1` checks the markers of each test method a change adds or edits.
 
 ## Test style
 

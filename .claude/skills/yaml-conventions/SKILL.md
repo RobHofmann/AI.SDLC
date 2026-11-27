@@ -34,6 +34,8 @@ The full rules, with an example and a source each, are on [yaml.md](references/y
 - **A comment says why (clause C10).** A `#` comment that a change adds gives a reason that the value
   cannot show, such as a hard limit or a workaround with its issue. It never says what the next line
   does, and it is never a block of config that is switched off. A comment that is already there stays.
+  The advisory YAML and PowerShell entry of `Check-CommentHygiene.ps1` reports an added comment that
+  holds dead config, a `TODO` without an issue key or an AI tool name.
 - **Spaces, never tabs, for the level of a line.** YAML does not allow a tab there. A tab inside
   a quoted value or a block scalar is content, and it may stay.
 - **One key once.** A key appears once in each mapping. A second copy is an error, or one copy

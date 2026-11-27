@@ -21,11 +21,15 @@ It covers:
 - Templates that describe the target state rather than the journey.
 - Modules from the registry alias in `bicepconfig.json`, pinned to a version tag, never a local path in production.
 - The deployment name cut to 64 characters, and the resource naming pattern.
+- A house style page, a security page and a page of points not decided. Two pack clauses: BICEP-01 pins a registry module to a tag other than `latest`, and BICEP-02 takes a role ID from a lookup file.
 
 The package also contains these files:
 
 - `packs/bicep/.apm/skills/bicep-conventions/references/bicep.md` defines Bicep property and decorator order.
 - `packs/bicep/.apm/skills/bicep-conventions/references/modules-and-naming.md` covers the module registry, the deployment name limit and the resource names.
+- `packs/bicep/.apm/skills/bicep-conventions/references/house-style.md`, `clauses.md`, `security.md` and `not-decided.md` hold the house style, the two pack clauses, the security rules and the open points.
+- `packs/bicep/.apm/skills/bicep-conventions/scripts/Check-BicepConventions.ps1` is the advisory gate for both clauses. `-Rule ModuleTag` reports a module or `using` line pinned to `latest`; `-Rule RoleId` reports a role ID typed by hand that a file of `bicep.roleLookupFiles` holds, and exits 3 without that setting.
+- `packs/bicep/tests/skills/bicep-conventions/scripts/Check-BicepConventions.Tests.ps1`
 - `packs/bicep/.apm/skills/bicep-conventions/scripts/Get-BicepFacts.ps1` reads a building block's scope, parameters, outputs, and resources.
 - `packs/bicep/tests/skills/bicep-conventions/scripts/Get-BicepFacts.Tests.ps1`
 - `packs/bicep/.apm/skills/bicep-conventions/scripts/Invoke-BicepPreflight.ps1` builds every Bicep template in the repository.

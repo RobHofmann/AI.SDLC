@@ -5,7 +5,7 @@ which says they live in this pack. The core clauses and the ID scheme are in the
 [core constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md). The short form of each clause
 sits in the `## Constitution (dotnet)` part of `AGENTS.md`.
 
-**Version:** 1.0
+**Version:** 1.1
 
 ## DOTNET-01: JSON wire format is PascalCase
 
@@ -30,6 +30,40 @@ sits in the `## Constitution (dotnet)` part of `AGENTS.md`.
   every client reliable, because a client can treat any non-200 answer as an error.
 - **Enforcement:** code review - active. The detail is in [api.md](api.md) and in the
   [api-contract-conventions skill](../SKILL.md).
+
+## DOTNET-03: A project reference is used in code and points to a lower layer
+
+- **Statement:** A project reference that a change adds has use in code: the referencing project uses a
+  namespace that the target project declares. Remove a reference that no code uses. A repository can set
+  its layer order in `dotnet.layers` in `aisdlc.json`. Then a reference that a change adds points to a
+  lower layer, never to its own layer or a higher one.
+- **Rationale:** An unused project reference still ties two projects together. It changes the build
+  order, makes a change reach more tests, and hides the real dependencies of the code. A reference
+  against the layer order mixes parts that the team keeps apart, so one change ships in more hosts than
+  it needs.
+- **Enforcement:** `.claude/skills/dotnet-gates/scripts/Check-ProjectReferenceUse.ps1` (advisory) -
+  active. It judges a `ProjectReference` that the change adds, and with `-All` every reference. It reads
+  text, not a compiler, so it cannot see code that finds its types at run time. It leaves out a
+  reference with `ReferenceOutputAssembly` set to false or `OutputItemType` set to `Analyzer`.
+  `.claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1` (advisory) - active. It judges the
+  same added references against `dotnet.layers`, and reports not applicable without that setting. With
+  `-From` and `-To` it judges one planned reference by path, so the `architect` agent checks a plan
+  before the project files exist. ADR 0028 of AI.SDLC records the layer setting.
+
+## DOTNET-04: Code uses the shared parts, not its own copy
+
+- **Statement:** A service takes its settings as an options class, not as `IConfiguration`. It gets an
+  `HttpClient` from the factory, not with `new`. It gets an Azure credential from one shared helper
+  (`dotnet.credentialHelper`). A custom exception derives from one shared base exception
+  (`dotnet.baseException`), not straight from `Exception`.
+- **Rationale:** One answer for these four parts keeps the services alike, and gives one place to change
+  when the answer changes. A new `HttpClient` for each call can use up the free connections of a host.
+  The wiring code of a host is the one place that creates these parts.
+- **Enforcement:** `.claude/skills/dotnet-gates/scripts/Check-SharedParts.ps1` (advisory) - active. It
+  reads the `.cs` files under `paths.sourceRoot`, and lists a finding on a line the change adds before
+  older debt. It skips tests, generated files, `Program.cs`, `Startup.cs` and a service registration
+  extension method. It skips the credential or the exception rule when its setting is empty. The
+  examples are on the [C# house style](/.claude/skills/csharp-conventions/references/house-style.md) page.
 
 ## Related
 

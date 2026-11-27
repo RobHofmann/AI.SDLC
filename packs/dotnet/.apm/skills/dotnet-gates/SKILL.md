@@ -22,16 +22,21 @@ except the C04 ratchet, which fails (exit 1) without a baseline.
 
 | Gate | Script | Mode | What it checks |
 |---|---|---|---|
-| C10 | `Check-CommentHygiene.ps1` | Blocking | An added comment in a `.cs` or `.razor` file holds no commented-out code, no `TODO`, `FIXME` or `HACK` without an issue key, and no AI tool name |
 | C10 docs | `Check-XmlDocs.ps1` | Advisory | Each added public or protected declaration in a `.cs` file outside the test root has a `///` doc comment |
 | Story traits | `Check-StoryTraits.ps1` | Blocking | Every test class carries a well-formed `[Trait("Story", ...)]`; the gate runs with `-Strict`, so an untagged class fails too |
 | DOTNET-01 | `Check-ApiPascalCase.ps1` | Blocking | Every `[JsonPropertyName]` under the source root is PascalCase and needed; the allowed exceptions are in `dotnet.wireNameAllowlist` and `dotnet.externalContractPaths` |
 | Doc drift | `Check-DocDrift.ps1` | Blocking | A reference page still names what the code has: constants, files, routes and services |
 | Spec drift | `Check-SpecDrift.ps1` | Advisory | A changed endpoint that a spec describes moved with its spec |
+| C04 shape | `Check-TestShape.ps1` | Advisory | Each xUnit test method the change adds or edits has the Arrange, Act and Assert markers once, in order |
+| DOTNET-03 | `Check-ProjectReferenceUse.ps1` | Advisory | An added project reference is used: the project uses a namespace of the target |
+| DOTNET-03 | `Check-ProjectLayerOrder.ps1` | Advisory | An added project reference points to a lower layer of `dotnet.layers`; `-From` and `-To` judge a planned one |
+| DOTNET-04 | `Check-SharedParts.ps1` | Advisory | No `IConfiguration` in a constructor, no `new HttpClient()`, no own credential, no exception that skips the base exception |
 | C04 | `Check-Coverage.ps1` | Blocking | Total line coverage does not drop below the baseline; runs only with a merged coverage file: in the pre-flight, and in the pull request workflow when it passes `coverage-file` to the `ai-sdlc-pr` action |
 
 `DocSurface.psm1` holds the rules the doc tools share for reading a page and the C# it cites. The code
-graph scripts import it from here. `CodeDiff.psm1` reads the lines a change adds for the two C10 gates.
+graph scripts import it from here. The C10 comment gate lives in core; `Check-XmlDocs.ps1` reads the
+added lines through `CodeDiff.psm1` there. `CSharpCodeView.psm1` reads C# as code only, and
+`DotnetTestScope.psm1` reads the project graph for the scoped pre-flight and the reference gates.
 
 ## Run them
 

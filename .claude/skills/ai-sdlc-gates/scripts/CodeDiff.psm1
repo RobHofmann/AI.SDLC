@@ -1,7 +1,7 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Reads the C# and Razor lines a change adds, for the comment gates of the dotnet pack.
+    Reads the lines a change adds, for the comment gates of core and the doc comment gate of the dotnet pack.
 .DESCRIPTION
     Check-CommentHygiene.ps1 and Check-XmlDocs.ps1 read the change, not the tree. This module holds the
     part they share: it asks git for the diff of the working tree against the merge base of a base ref
@@ -96,6 +96,9 @@ function Get-CodeDiffText {
     }
     $text = ($diff -join "`n")
     $untracked = git -C $RepoRoot -c core.quotepath=off ls-files --others --exclude-standard -- '*.cs' '*.razor' 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        return [pscustomobject]@{ Text = ''; Problem = 'git could not list the new files that are not committed yet' }
+    }
     foreach ($u in @($untracked | Where-Object { $_ })) {
         $content = @(Get-Content -LiteralPath (Join-Path $RepoRoot $u))
         $text += "`n--- /dev/null`n+++ b/$u`n@@ -0,0 +1,$($content.Count) @@`n" + (($content | ForEach-Object { "+$_" }) -join "`n")

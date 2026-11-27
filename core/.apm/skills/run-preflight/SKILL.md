@@ -47,7 +47,7 @@ Two rules hold in every run of every skill, and each is defined in one place:
      beside the gates, and its output follows theirs. It is the one full test run of a wrap-up, and `-SkipTests` leaves it out. When a pack pre-flight runs the
      tests itself, as the dotnet pack does, `commands.test` does not run, so the tests do not run twice;
    - the `preflight` step of each installed pack. For the dotnet pack that is `dotnet build`, then the tests
-     and coverage. SonarAnalyzer mirrors the SonarCloud rules, so the S-rule findings appear as build
+     and coverage. A scoped run builds and tests only the projects the change reaches, and skips coverage. SonarAnalyzer mirrors the SonarCloud rules, so the S-rule findings appear as build
      warnings on changed files. For the bicep pack it is `bicep build` of every template;
    - gitleaks over the branch's commits, and the security scanners when available. A gitleaks finding
      that `gitleaks-baseline.json` does not hold is a `FAIL` row, so it stops the receipt.
