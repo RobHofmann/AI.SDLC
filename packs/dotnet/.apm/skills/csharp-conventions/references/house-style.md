@@ -163,6 +163,30 @@ IDE0022, IDE0025, IDE0161, IDE0130 and IDE0019. The
 [code style rules page](https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/)
 lists each one.
 
+## Shared parts come from one place
+
+A service uses the shared form of four parts, so every service works the same way (clause DOTNET-04).
+The advisory gate `Check-SharedParts.ps1` reports a break. The wiring code of a host, such as
+`Program.cs` or a service registration method, is the one place that creates these parts.
+
+```csharp
+// Settings come through an options class, not IConfiguration.
+public class OrderService(IOptions<OrderOptions> options) { }
+
+// An HttpClient comes from the factory: services.AddHttpClient<ContosoClient>().
+public class ContosoClient(HttpClient client) { }
+
+// A credential comes from the type that dotnet.credentialHelper names.
+var credential = credentialFactory.Create();
+
+// An exception derives from the type that dotnet.baseException names.
+public class OrderNotFoundException : ContosoException { }
+```
+
+A new `HttpClient` for each call can use up the free connections of a host. The factory reuses them.
+Source: [IHttpClientFactory with .NET](https://learn.microsoft.com/en-us/dotnet/core/extensions/httpclient-factory)
+and [the options pattern in .NET](https://learn.microsoft.com/en-us/dotnet/core/extensions/options).
+
 ## Related
 
 - [The csharp-conventions skill](../SKILL.md) - the short rules a build and a review check.
