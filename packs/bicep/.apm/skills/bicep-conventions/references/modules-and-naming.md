@@ -30,7 +30,9 @@ deployment name and a resource group name can grow past that. So cut both parts:
 name: format('{0}-{1}', take('${deployment().name}', 45), take(resourceGroupName, 15))
 ```
 
-The two parts and the hyphen give at most 61 characters.
+The two parts and the hyphen give at most 61 characters. The deployment-name rule in
+[house-style.md](house-style.md) joins this one: a helper, or the inline form from `deployment().name`,
+must keep the name within the same 64 characters.
 
 ## Resource names follow one pattern
 
@@ -53,3 +55,4 @@ A storage account name allows no hyphen, so it joins the same parts without one.
 
 - [Bicep property and decorator order](bicep.md) - the order of the declarations and the properties.
 - [The bicep-conventions skill](../SKILL.md) - the short rules and when to load them.
+- [Bicep house style](house-style.md) - the other Bicep rules, with a source each.
