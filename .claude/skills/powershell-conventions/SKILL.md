@@ -36,12 +36,8 @@ The full rules, with an example and a source each, are on [house-style.md](refer
   -Version 3.0` and `$ErrorActionPreference = 'Stop'`. A parameter is `Mandatory` only without a good default.
 - **Check the exit code after each native call.** A native call is a program outside PowerShell, such
   as `git`, `gh` or `dotnet`. Right after it, `throw` when `$?` is false or `$LASTEXITCODE` is not 0,
-  so a tool that did not start also reads as failed (clause C13). A `||` or `&&` chain, or
-  `$PSNativeCommandUseErrorActionPreference = $true`, also counts as a check. The advisory gate
-  `Check-NativeExitCode.ps1` reports an added `git`, `az`, `dotnet` or `bicep` call with no check.
-- **PSScriptAnalyzer reads every change (clause C13).** The advisory gate `Check-ScriptAnalyzer.ps1`
-  runs it on the lines a change adds, with its own settings and without the `PSAvoidUsingWriteHost`
-  rule, because this skill asks for `Write-Host`. Leave a finding only on a form this skill asks for.
+  so a tool that did not start also reads as failed (clause C13, gate `Check-NativeExitCode.ps1`).
+- **PSScriptAnalyzer reads every change (C13, `Check-ScriptAnalyzer.ps1`)**, without `PSAvoidUsingWriteHost`.
 - **Every script that a workflow or a gate runs has a Pester test.** One test covers one case; merge
   copies of the same case. The test proves the script's own logic, not PowerShell or a module (clause C04).
 - **A main function calls helper functions.** A function of one line, or one that only wraps one
@@ -57,10 +53,8 @@ The full rules, with an example and a source each, are on [house-style.md](refer
   single quotes unless the string expands, camelCase locals and PascalCase parameters.
 - **Splat a long command** with a hashtable; never write a backtick line break.
 - **Put `$null` on the left** of a comparison: `$null -eq $value`.
-- **A comment says why, never what (clause C10).** The help block is the doc comment that C10 asks for.
-  Directives such as `#Requires` are not comments. The advisory YAML and PowerShell entry of
-  `Check-CommentHygiene.ps1` reports an added comment that holds dead code, a `TODO` without an issue
-  key or an AI tool name.
+- **A comment says why, never what (C10, `Check-CommentHygiene.ps1`).** The help block is the doc
+  comment that C10 asks for. Directives such as `#Requires` are not comments.
 
 ## Tests
 

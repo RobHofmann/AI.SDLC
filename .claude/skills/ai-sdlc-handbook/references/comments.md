@@ -72,8 +72,8 @@ Clause C10 in the [constitution](constitution.md). Two gates read only the lines
 both skip generated files:
 
 - `.claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1` is a core gate. On C# and Razor it
-  fails (blocking) on commented-out code, on a `TODO`, `FIXME` or `HACK` without an issue key, and on a
-  comment that names an AI tool. On YAML and PowerShell it reports the same three breaks (advisory). It
+  fails (blocking) on three breaks. They are commented-out code, a `TODO`, `FIXME` or `HACK` without an
+  issue key, and a comment that names an AI tool. On YAML and PowerShell it reports the same three breaks (advisory). It
   reads PowerShell comments with the PowerShell parser, and YAML comments outside quoted strings. The
   help block, `#Requires`, `#region`, a shebang and the `ai-sdlc:<package>` marker lines pass. It skips
   the files that `apm.lock.yaml` lists as installed.

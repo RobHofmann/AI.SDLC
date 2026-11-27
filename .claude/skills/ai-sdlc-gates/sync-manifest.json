@@ -2,7 +2,7 @@
   "packages": {
     "core": {
       "files": {
-        ".claude/agents/architect.md": "48298c0a0377715e55084c23217be75b8a8f6a72",
+        ".claude/agents/architect.md": "159e50caeae548e2e8e363f5ebaf01965e812301",
         ".claude/agents/blind-judge.md": "7c53ccd6a34f6e53d1bfed3e70a65325183b2a83",
         ".claude/agents/builder.md": "0e17b1037b4a0b798bfa21777bc23a96dbaac1dd",
         ".claude/agents/code-reviewer.md": "0fd9cf7acd2426b52885e16b86e19e2e72ada605",
@@ -77,8 +77,8 @@
         ".claude/skills/ai-sdlc-gates/SKILL.md": "cca2c699a4f28eb5866842d9384136777fdbad82",
         ".claude/skills/ai-sdlc-handbook/references/artifact-graph.md": "8e16413affc7aa745d6626d424f637113c9b31cf",
         ".claude/skills/ai-sdlc-handbook/references/autolearn.md": "c2b854cdc59a976d1fda98d61726a90460a8af17",
-        ".claude/skills/ai-sdlc-handbook/references/comments.md": "b9c9146cfd5158dbc14db1a2962f3f935610c00c",
-        ".claude/skills/ai-sdlc-handbook/references/constitution.md": "d62bbdde4b441da02db566ec18d1352b2a1fcfcf",
+        ".claude/skills/ai-sdlc-handbook/references/comments.md": "07698b9275459902b4fcfd19cc711391b1be263f",
+        ".claude/skills/ai-sdlc-handbook/references/constitution.md": "a8329bac7a58075ec421954cc22b2240d6500e5a",
         ".claude/skills/ai-sdlc-handbook/references/consumer-own.md": "3dd7f38e00b58f6d1c5b7c79a160a5ebfafdb3c1",
         ".claude/skills/ai-sdlc-handbook/references/context-management.md": "8602a5cf5cc51ff01f093ee95ef413c09dd22e10",
         ".claude/skills/ai-sdlc-handbook/references/docs-wiki.md": "ed10110d14907bc57b40c455d84c39ae646a742f",
@@ -136,7 +136,7 @@
         ".claude/skills/implement/SKILL.md": "1e753bf0d97443b64dcdaf0677f93c43bd7a9848",
         ".claude/skills/powershell-conventions/references/house-style.md": "32bd577e8966358c6849ead338082c476c6367b8",
         ".claude/skills/powershell-conventions/references/not-decided.md": "b92267dc6f6ad1a4890b87570ce63a09da08eb35",
-        ".claude/skills/powershell-conventions/SKILL.md": "5f073ca66aee1cb67315b9803aa932d07c85e0fd",
+        ".claude/skills/powershell-conventions/SKILL.md": "c6e530a6e9fcdcea5b75afc0405589e4a4606e1d",
         ".claude/skills/refactor/SKILL.md": "b2d5593b88cfa02ebb7e8cc71fbac49f2a9571a0",
         ".claude/skills/run-preflight/SKILL.md": "dc968e53d6826412309b996f89323970798bfc7f",
         ".claude/skills/summary/modes/accessible.md": "cfc66edf98223393228e5d4f8e10d24627d8e077",

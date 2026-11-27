@@ -195,7 +195,7 @@ dependencies:
   - .claude/skills/yaml-conventions/SKILL.md
   - .claude/skills/yaml-conventions/references/yaml.md
   deployed_file_hashes:
-    .claude/agents/architect.md: sha256:9eb9bbe354bb8bb96694a90771705b36a3a3545822a133a0ab7b68d462c15f64
+    .claude/agents/architect.md: sha256:e4cc3ee32a321ab5760429798d1372ba9a0ee1dfb335efcc7667ba7058844bc8
     .claude/agents/blind-judge.md: sha256:f6dbd5687dedbe41e9d247215314239db9b2325813740cd56aef251f61a7237b
     .claude/agents/builder.md: sha256:4e8270e6687465261124ee3d05c8a2d4780f35f57d5874d1705a71c1d0c83496
     .claude/agents/code-reviewer.md: sha256:84a84db605509ecf23385ea993bc696a22ffb621aa39f453cf99ba46adacf01a
@@ -268,13 +268,13 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:6d550cc9d045d2f3fb2a65562b654c3c1312c65325147d172c76e309af5309e2
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:0688cb02903c68ef7e6d5fd1476ef2f2729ddc4844cc29463055916e77416c1f
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:0d46902e983d604c44db676ef23e19301123cb1474e8b2428d01f0b8f212a7ba
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:6c837a132a83b06a42533324ce699e407ebcb8caea1dac41afde172534d1dae2
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:0c8e56a3c127d418018f868bc5979167ada00f448e975b3b40ff83713d5787d8
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
     .claude/skills/ai-sdlc-handbook/references/autolearn.md: sha256:f24e6f4bc651670e6ca4790a1db9ccb26a168d7b0ed178ffffdb80c06303a216
-    .claude/skills/ai-sdlc-handbook/references/comments.md: sha256:fe7173742f06eb71fa7eb623885cfd2133a5470ad0afeb07178e467906684bba
-    .claude/skills/ai-sdlc-handbook/references/constitution.md: sha256:2ad76a4dc499fb899a5dd36b7304ae3d141f3eaad70934b64e6c0c04249f84af
+    .claude/skills/ai-sdlc-handbook/references/comments.md: sha256:90cf34c1c4116e566fce2d1f6d00af5c4024c0544303639213812d18678735af
+    .claude/skills/ai-sdlc-handbook/references/constitution.md: sha256:8edd649a82ffd646eb46eb5ae73eef3996c72318c642fbe60e364960c5c53ec0
     .claude/skills/ai-sdlc-handbook/references/consumer-own.md: sha256:64321f5c9d8e5b43fcac9c48af14b8336e00cdce1c278aaa593249d084a0b6c8
     .claude/skills/ai-sdlc-handbook/references/context-management.md: sha256:258054a51cc67bed8238cd72bd0c094932e196fdc5d56889a20deec7b7bc525b
     .claude/skills/ai-sdlc-handbook/references/docs-wiki.md: sha256:cfc40d0266d143147a326963de5fd22af2956d0f3377a967d3b18b221b2cde96
@@ -328,7 +328,7 @@ dependencies:
     .claude/skills/handoff/SKILL.md: sha256:edffe7885f364ce968b59a712313679cdd61730e8f53eb81da2b8f34595fa33b
     .claude/skills/implement/SKILL.md: sha256:147dc984a584c379d0ec64c63fdb8e7c86ae3f44715887950c9cd77e7766a196
     .claude/skills/implement/references/story-context-template.md: sha256:8ff16c0668d10221aaadf91fd4261c92fb2a3dde723e38d3a56261718f7b9bac
-    .claude/skills/powershell-conventions/SKILL.md: sha256:e12376ea29c4ee10178a3916c22e498f55858ca8e10cc693553b4ba97922360e
+    .claude/skills/powershell-conventions/SKILL.md: sha256:b77fcf6de9c4df1fcbdd5787d26594e11b665d8996a1b9f218ccaaf8d27f57b3
     .claude/skills/powershell-conventions/references/house-style.md: sha256:1061fc409c437ce3c87935516edfa08007d50c4b6bf25f30cb749cf27e8e3a53
     .claude/skills/powershell-conventions/references/not-decided.md: sha256:b671d3ee16665b485760bf4b6ea6646f93a2da36e6e0e67ec3937edd6668fc83
     .claude/skills/refactor/SKILL.md: sha256:2c60709e4b21e81e0275af1eafa19efee80d768f172ed4aa395f137d25d68a34
@@ -501,7 +501,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:9eb9bbe354bb8bb96694a90771705b36a3a3545822a133a0ab7b68d462c15f64
+  content_hash: sha256:e4cc3ee32a321ab5760429798d1372ba9a0ee1dfb335efcc7667ba7058844bc8
 - kind: project-relative
   target: claude
   value: .claude/agents/blind-judge.md
@@ -1203,7 +1203,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:0688cb02903c68ef7e6d5fd1476ef2f2729ddc4844cc29463055916e77416c1f
+  content_hash: sha256:0d46902e983d604c44db676ef23e19301123cb1474e8b2428d01f0b8f212a7ba
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
@@ -1257,7 +1257,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:fe7173742f06eb71fa7eb623885cfd2133a5470ad0afeb07178e467906684bba
+  content_hash: sha256:90cf34c1c4116e566fce2d1f6d00af5c4024c0544303639213812d18678735af
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook/references/constitution.md
@@ -1266,7 +1266,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:2ad76a4dc499fb899a5dd36b7304ae3d141f3eaad70934b64e6c0c04249f84af
+  content_hash: sha256:8edd649a82ffd646eb46eb5ae73eef3996c72318c642fbe60e364960c5c53ec0
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook/references/consumer-own.md
@@ -2202,7 +2202,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:e12376ea29c4ee10178a3916c22e498f55858ca8e10cc693553b4ba97922360e
+  content_hash: sha256:b77fcf6de9c4df1fcbdd5787d26594e11b665d8996a1b9f218ccaaf8d27f57b3
 - kind: project-relative
   target: claude
   value: .claude/skills/powershell-conventions/references/house-style.md

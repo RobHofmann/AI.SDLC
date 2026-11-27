@@ -64,9 +64,9 @@ question it brings, with a source for each claim.
    - Answer each question in the `## Review checks` section of the architecture page for this plan,
      and name the rule behind a failed check.
    - A change to a shared library ships in every host that references it. Does the plan name them all?
-   - When the dotnet pack is installed and the plan adds a `ProjectReference`, run the layer check for
-     each one: `pwsh .claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1 -From <project> -To
-     <project>` ([DOTNET-03](/.claude/skills/api-contract-conventions/references/clauses.md)). Exit 1 is
+   - With the dotnet pack, run the layer check for each `ProjectReference` the plan adds
+     ([DOTNET-03](/.claude/skills/api-contract-conventions/references/clauses.md)). The command is
+     `pwsh .claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1 -From <project> -To <project>`. Exit 1 is
      a reference that does not point down: a `MEDIUM` `DESIGN` finding that names both layers. Exit 3
      means the layers are not set: write `not set` and raise no layer finding. Exit 2 names a project in
      no layer or a setting error: quote it, and raise no layer finding for that reference.

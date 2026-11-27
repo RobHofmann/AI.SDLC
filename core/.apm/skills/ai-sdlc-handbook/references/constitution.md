@@ -22,9 +22,9 @@ A clause ID says where a clause lives:
 - A **core clause** keeps its C number and holds in every repository that installs the core. This page
   holds them all.
 - A **pack clause** carries the prefix of its pack, such as `DOTNET-01`, and holds where that pack is
-  installed. The dotnet pack keeps DOTNET-01 (the JSON wire format is PascalCase), DOTNET-02 (thin
-  controllers, one domain each), DOTNET-03 (project references point down and are used) and DOTNET-04
-  (shared parts) in the `references/clauses.md` page of its `api-contract-conventions` skill. The bicep
+  installed. The dotnet pack keeps DOTNET-01 to DOTNET-04 in the `references/clauses.md` page of its
+  `api-contract-conventions` skill. They cover the JSON wire format, thin controllers, project
+  references and the shared parts. The bicep
   pack keeps BICEP-01 and BICEP-02 in the `references/clauses.md` page of its `bicep-conventions` skill.
 - A **repository clause** carries the prefix of the repository, for example `APP-01`, and holds in that
   repository only. It lives in the repository's own constitution page (`paths.constitution` in
