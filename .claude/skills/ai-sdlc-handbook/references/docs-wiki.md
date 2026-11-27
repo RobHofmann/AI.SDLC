@@ -96,7 +96,8 @@ Keep front-matter small and usable everywhere; do not add Dataview-only fields.
 - **Index drift:** the committed index does not match what the generator would emit (`Build-DocsIndex.ps1 -Check`).
 
 A sibling script, `.claude/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.ps1`, enforces the **no-em-dash
-house style**: it flags any em-dash (U+2014) character in `AGENTS.md` and in the doc roots. The house style
+house style**: it flags any em-dash (U+2014) character in `AGENTS.md` and in the doc roots. It also flags the
+HTML codes that draw it: the named entity mdash and the numeric forms 8212 and hexadecimal 2014. The house style
 uses a spaced hyphen ' - ', commas, colons, or parentheses instead.
 
 A third script, `.claude/skills/ai-sdlc-gates/scripts/Check-DocReadingLevel.ps1`, checks the reading

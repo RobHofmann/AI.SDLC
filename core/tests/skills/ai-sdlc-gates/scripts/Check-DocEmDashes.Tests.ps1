@@ -77,6 +77,49 @@ Describe 'Check-DocEmDashes' {
         $r.Output | Should -Match 'Em-dash OK'
     }
 
+    Context 'HTML codes that draw the em-dash' {
+        It 'fails on <Code> (exit 1)' -ForEach @(
+            @{ Code = '&mdash;' }
+            @{ Code = '&#8212;' }
+            @{ Code = '&#008212;' }
+            @{ Code = '&#x2014;' }
+            @{ Code = '&#X2014;' }
+            @{ Code = '&#x002014;' }
+        ) {
+            Set-Content -LiteralPath (Join-Path $script:Root 'docs/page.md') -Value "# Page`nThis $Code is a code.`n" -NoNewline
+            $r = Invoke-Gate -RepoRoot $script:Root
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match 'docs/page\.md:2'
+        }
+
+        It 'does not flag <Code> (exit 0)' -ForEach @(
+            @{ Code = '&ndash;' }
+            @{ Code = '&#8211;' }
+            @{ Code = '&#x2013;' }
+            @{ Code = '&#82120;' }
+        ) {
+            Set-Content -LiteralPath (Join-Path $script:Root 'docs/page.md') -Value "# Page`nThis $Code is fine.`n" -NoNewline
+            $r = Invoke-Gate -RepoRoot $script:Root
+            $r.ExitCode | Should -Be 0
+        }
+    }
+
+    Context 'nothing to read' {
+        It 'exits 3 when -Path names a folder with no markdown page' {
+            New-Item -ItemType Directory -Path (Join-Path $script:Root 'empty') -Force | Out-Null
+            $out = & $script:ScriptUnderTest -RepoRoot $script:Root -Path 'empty' *>&1 | Out-String
+            $LASTEXITCODE | Should -Be 3
+            $out | Should -Match 'Not applicable: no page to read in empty, so there is no em-dash to look for\.'
+        }
+
+        It 'exits 3 when there is no AGENTS.md and the doc layers hold no page' {
+            Remove-Item -LiteralPath (Join-Path $script:Root 'AGENTS.md')
+            $out = & $script:ScriptUnderTest -RepoRoot $script:Root *>&1 | Out-String
+            $LASTEXITCODE | Should -Be 3
+            $out | Should -Match 'Not applicable: no page to read'
+        }
+    }
+
     Context '-Path' {
         BeforeEach {
             $script:EmDash = [char]0x2014

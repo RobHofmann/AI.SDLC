@@ -67,13 +67,13 @@ dependencies:
         Set-AiSdlcTestConfig -Root $script:Root
     }
 
-    It 'passes a repository with no local package' {
+    It 'exits 3 for a repository with no local package, because there is nothing to check' {
         Set-ApmFile
 
         $r = Invoke-Gate -RepoRoot $script:Root
 
-        $r.ExitCode | Should -Be 0 -Because $r.Output
-        $r.Output | Should -Match 'Local packages OK: 0 local package path\(s\)'
+        $r.ExitCode | Should -Be 3 -Because $r.Output
+        $r.Output | Should -Match '(?m)^Not applicable: apm.yml and apm.lock.yaml name no local package'
     }
 
     It 'passes a local package whose folder git tracks, in apm.yml and in the lock' {

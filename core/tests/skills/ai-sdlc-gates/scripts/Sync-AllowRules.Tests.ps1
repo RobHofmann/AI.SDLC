@@ -59,14 +59,114 @@ Describe 'Sync-AllowRules' {
     It 'adds the rules of a pack that apm.yml installs, and none of a pack it does not install' {
         $root = New-AllowRepo -Packs @('github-issues') -Manifests @{
             'ai-sdlc-gates'     = @{ package = 'core'; allow = @('git status *') }
-            'check-pr-contract' = @{ package = 'github-issues'; allow = @('pwsh .claude/skills/check-pr-contract/scripts/Check-*') }
+            'check-pr-contract' = @{ package = 'github-issues'; allow = @('gh issue view *') }
             'dotnet-gates'      = @{ package = 'dotnet'; allow = @('dotnet test *') }
         }
 
         $allow = (Invoke-Sync -Root $root).Settings.permissions.allow
 
-        $allow | Should -Contain 'Bash(pwsh .claude/skills/check-pr-contract/scripts/Check-*)'
+        $allow | Should -Contain 'Bash(gh issue view *)'
         $allow | Should -Not -Contain 'Bash(dotnet test *)'
+    }
+
+    It 'writes a rule for each gate script by its exact name, in both shells and both pwsh forms' -Tag '#103' {
+        $root = New-AllowRepo -Manifests @{ 'ai-sdlc-gates' = @{ package = 'core'; gates = @(@{ name = 'A gate'; script = 'scripts/Check-Thing.ps1' }); allow = @() } }
+
+        $allow = (Invoke-Sync -Root $root).Settings.permissions.allow
+
+        $allow | Should -Be @(
+            'Bash(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Check-Thing.ps1)',
+            'PowerShell(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Check-Thing.ps1)',
+            'Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Check-Thing.ps1)',
+            'PowerShell(pwsh .claude/skills/ai-sdlc-gates/scripts/Check-Thing.ps1)')
+    }
+
+    It 'writes a gate rule with the exact arguments of the entry and no star, so the writing form still asks' -Tag '#103' {
+        $gate = @{ name = 'Allow rules'; script = 'scripts/Sync-AllowRules.ps1'; args = @{ Check = $true } }
+        $root = New-AllowRepo -Manifests @{ 'ai-sdlc-gates' = @{ package = 'core'; gates = @($gate); allow = @() } }
+
+        $allow = (Invoke-Sync -Root $root).Settings.permissions.allow
+
+        $allow | Should -Contain 'Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1 -Check)'
+        $allow | Should -Contain 'PowerShell(pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1 -Check)'
+        @($allow | Where-Object { $_ -match 'Sync-AllowRules\.ps1(\)| \*)' }).Count | Should -Be 0
+    }
+
+    It 'writes the arguments of a gate in a stable order, with a value and a list' -Tag '#103' {
+        $gate = @{ name = 'A gate'; script = 'scripts/Check-Thing.ps1'; args = @{ Path = @('core', 'docs'); Language = 'YamlPowerShell'; Strict = $true } }
+        $root = New-AllowRepo -Manifests @{ 'ai-sdlc-gates' = @{ package = 'core'; gates = @($gate); allow = @() } }
+
+        $allow = (Invoke-Sync -Root $root).Settings.permissions.allow
+
+        $allow | Should -Contain 'Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Check-Thing.ps1 -Language YamlPowerShell -Path core,docs -Strict)'
+    }
+
+    It 'writes no gate rule for an argument value with a shell character in it' -Tag '#103' {
+        $gate = @{ name = 'A gate'; script = 'scripts/Check-Thing.ps1'; args = @{ Path = 'a;b' } }
+        $root = New-AllowRepo -Manifests @{ 'ai-sdlc-gates' = @{ package = 'core'; gates = @($gate); allow = @('git status *') } }
+
+        $allow = (Invoke-Sync -Root $root).Settings.permissions.allow
+
+        @($allow | Where-Object { $_ -match 'Check-Thing' }).Count | Should -Be 0
+    }
+
+    It 'never writes a package rule that opens a whole shell (<Entry>)' -Tag '#103' -ForEach @(
+        @{ Entry = 'Bash(*)' }
+        @{ Entry = 'PowerShell(*)' }
+        @{ Entry = 'pwsh *' }
+        @{ Entry = 'Bash(bash *)' }
+    ) {
+        $root = New-AllowRepo -Manifests @{ 'ai-sdlc-gates' = @{ package = 'core'; allow = @('git status *', $Entry) } }
+
+        $result = Invoke-Sync -Root $root
+
+        $result.Settings.permissions.allow | Should -Be @('Bash(git status *)', 'PowerShell(git status *)')
+        $result.Output | Should -Match 'Allow rule not written'
+    }
+
+    It 'writes no rule for a gate script path that leaves the scripts folder' -Tag '#103' {
+        $root = New-AllowRepo -Manifests @{ 'ai-sdlc-gates' = @{ package = 'core'; gates = @(@{ name = 'A gate'; script = '../other/Check-Thing.ps1' }); allow = @('git status *') } }
+
+        $allow = (Invoke-Sync -Root $root).Settings.permissions.allow
+
+        @($allow | Where-Object { $_ -match 'Check-Thing' }).Count | Should -Be 0
+    }
+
+    It 'never writes a package rule that ends in a wildcard over a scripts folder (<Entry>)' -Tag '#103' -ForEach @(
+        @{ Entry = 'pwsh .claude/skills/check-pr-contract/scripts/Check-*' }
+        @{ Entry = 'pwsh .claude/skills/check-pr-contract/scripts/Run.ps1*' }
+        @{ Entry = 'Bash(pwsh .claude/skills/check-pr-contract/scripts/*)' }
+        @{ Entry = 'pwsh .claude/skills/*/scripts/Run.ps1 *' }
+        @{ Entry = 'pwsh .claude\skills\check-pr-contract\scripts\*' }
+    ) {
+        $root = New-AllowRepo -Manifests @{ 'ai-sdlc-gates' = @{ package = 'core'; allow = @('git status *', $Entry) } }
+
+        $result = Invoke-Sync -Root $root
+
+        $result.Settings.permissions.allow | Should -Be @('Bash(git status *)', 'PowerShell(git status *)')
+        $result.Output | Should -Match 'Allow rule not written'
+    }
+
+    It 'removes a wildcard rule over a scripts folder that an older release wrote, and keeps the rest' -Tag '#103' {
+        $settings = '{ "permissions": { "allow": [ "Bash(make *)", "Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Check-*)", "PowerShell(pwsh -NoProfile -File .claude/skills/dotnet-gates/scripts/Check-*)" ] } }'
+        $root = New-AllowRepo -Settings $settings
+
+        $result = Invoke-Sync -Root $root
+
+        $result.Code | Should -Be 0
+        $result.Settings.permissions.allow | Should -Be @('Bash(make *)', 'Bash(git status *)', 'PowerShell(git status *)')
+    }
+
+    It 'reports a wildcard rule over a scripts folder as drift under -Check, and writes nothing' -Tag '#103' {
+        $settings = '{ "permissions": { "allow": [ "Bash(git status *)", "PowerShell(git status *)", "Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Check-*)" ] } }'
+        $root = New-AllowRepo -Settings $settings
+
+        $result = Invoke-Sync -Root $root -Check
+
+        $result.Code | Should -Be 1
+        $result.Output | Should -Match 'wildcard over a scripts folder'
+        $result.Output | Should -Match ([regex]::Escape('Bash(pwsh .claude/skills/ai-sdlc-gates/scripts/Check-*)'))
+        $result.Settings.permissions.allow.Count | Should -Be 3
     }
 
     It 'keeps the rules the repository added and the rest of the settings, and adds no rule twice' {
@@ -253,5 +353,73 @@ Describe 'Sync-AllowRules' {
 
         $result.Code | Should -Be 3
         $result.Output | Should -Match 'not applicable'
+    }
+}
+
+Describe 'Allow rules of the shipped packages' {
+    BeforeAll {
+        $script:Script = Join-Path $script:ScriptFolder 'Sync-AllowRules.ps1'
+        Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
+        # The test lives at core/tests/skills/ai-sdlc-gates/scripts, five folders below the repository root.
+        $script:Source = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..' '..' '..' '..' '..')).Path
+        $script:Manifests = @(Get-ChildItem -Path (Join-Path $script:Source 'core'), (Join-Path $script:Source 'packs') -Recurse -Force -Filter gates.json -File |
+                Where-Object { $_.FullName -match '[\\/]\.apm[\\/]skills[\\/][^\\/]+[\\/]gates\.json$' })
+        $script:Wildcard = '\.claude[\\/]skills[\\/]\S*\*'
+    }
+
+    It 'finds the package manifests to check' -Tag '#103' {
+        $script:Manifests.Count | Should -BeGreaterThan 5
+    }
+
+    It 'has no allow entry in a package source that ends in a wildcard over a scripts folder' -Tag '#103' {
+        $bad = foreach ($manifest in $script:Manifests) {
+            $data = Get-Content -LiteralPath $manifest.FullName -Raw | ConvertFrom-Json -AsHashtable
+            foreach ($entry in @($data['allow'])) { if ([string]$entry -match $script:Wildcard) { "$($manifest.FullName): $entry" } }
+        }
+        @($bad) | Should -BeNullOrEmpty
+    }
+
+    It 'has no rule in the committed .claude/settings.json that ends in a wildcard over a scripts folder' -Tag '#103' {
+        $settings = Join-Path $script:Source '.claude' 'settings.json'
+        if (-not (Test-Path -LiteralPath $settings)) { Set-ItResult -Skipped -Because 'this copy has no .claude/settings.json'; return }
+        $allow = @((Get-Content -LiteralPath $settings -Raw | ConvertFrom-Json -AsHashtable)['permissions']['allow'])
+        @($allow | Where-Object { [string]$_ -match $script:Wildcard }) | Should -BeNullOrEmpty
+    }
+
+    It 'lets every gate of every package run without a prompt in a fresh consumer' -Tag '#103' {
+        $root = Join-Path ([IO.Path]::GetTempPath()) ('sar-fresh-' + [guid]::NewGuid().ToString('n'))
+        New-Item -ItemType Directory -Path $root -Force | Out-Null
+        try {
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "paths": { "knowledgeRoot": "knowledge-missing" } }' -Encoding utf8
+            $packs = @(Get-ChildItem -LiteralPath (Join-Path $script:Source 'packs') -Directory | ForEach-Object { "    - ../AI.SDLC/packs/$($_.Name)" })
+            Set-Content -LiteralPath (Join-Path $root 'apm.yml') -Value ((@('dependencies:', '  apm:', '    - ../AI.SDLC/core') + $packs) -join "`n")
+            $expected = foreach ($manifest in $script:Manifests) {
+                $skill = $manifest.Directory.Name
+                $folder = Join-Path $root '.claude' 'skills' $skill
+                New-Item -ItemType Directory -Path $folder -Force | Out-Null
+                Copy-Item -LiteralPath $manifest.FullName -Destination $folder
+                $data = Get-Content -LiteralPath $manifest.FullName -Raw | ConvertFrom-Json -AsHashtable
+                foreach ($gate in @($data['gates'])) {
+                    if ($gate) { [pscustomobject]@{ Path = ".claude/skills/$skill/$($gate['script'])"; HasArgs = [bool]$gate['args'] } }
+                }
+            }
+
+            $run = Invoke-ScriptInProcess -Path $script:Script -Arguments @('-RepoRoot', $root)
+            $run.ExitCode | Should -Be 0
+            $allow = @((Get-Content -LiteralPath (Join-Path $root '.claude' 'settings.json') -Raw | ConvertFrom-Json -AsHashtable)['permissions']['allow'])
+
+            @($expected).Count | Should -BeGreaterThan 20
+            foreach ($gate in $expected) {
+                # The rule holds the script and the arguments of the entry, and never a star.
+                $tail = if ($gate.HasArgs) { '( -[^*()]+)' } else { '' }
+                foreach ($shell in 'Bash', 'PowerShell') {
+                    foreach ($form in 'pwsh ', 'pwsh -NoProfile -File ') {
+                        $pattern = '^' + [regex]::Escape("$shell($form$($gate.Path)") + $tail + '\)$'
+                        @($allow | Where-Object { $_ -match $pattern }).Count | Should -BeGreaterThan 0 -Because "$shell $form$($gate.Path) must run without a prompt"
+                    }
+                }
+            }
+        }
+        finally { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
     }
 }

@@ -7,9 +7,7 @@
     { "name": "Docs match the relationships the code graph has", "script": "scripts/Check-DocGraphClaims.ps1", "clause": "C05", "mode": "Advisory", "args": { "FailOnFinding": true }, "checks": "It compares what a reference page says about who uses a project, or what implements its contract, with the code graph. It warns when the graph is older than the working tree. Exit 3 means there is no code graph, and it never exits 2.", "fix": "Correct the page so that it names the relationships the graph shows, or rebuild the graph when it is old." }
   ],
   "allow": [
-    "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Check-*",
-    "pwsh .claude/skills/dotnet-code-graph/scripts/Check-*",
-    "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1*",
-    "pwsh .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1*"
+    "pwsh -NoProfile -File .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1 *",
+    "pwsh .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1 *"
   ]
 }

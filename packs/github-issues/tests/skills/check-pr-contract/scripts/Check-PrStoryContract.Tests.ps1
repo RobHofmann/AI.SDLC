@@ -185,7 +185,7 @@ Describe 'Check-PrStoryContract' {
     It 'asks a domain-model change with a key of an accepted repository for an ADR with that same key' {
         $repo = New-TestRepo -Accepted 'contoso/ai-sdlc'
         Set-Content -LiteralPath (Join-Path $repo 'docs' 'adrs' '0099-x.md') -Value "---`nstory: `"#7`"`n---`n# ADR 0099`n" -NoNewline
-        $model = 'Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs'
+        $model = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`ndocs/adrs/0099-x.md"
         $r = Invoke-Gate @{ RepoRoot = $repo; PrDescription = 'Refs contoso/ai-sdlc#7'; IssueForTest = (New-Issue -Number 7); ChangedFiles = $model }
         $r.ExitCode | Should -Be 1 -Because 'issue #7 of this repository is another issue'
         $r.Output | Should -Match 'governing ADR'
@@ -294,14 +294,66 @@ Describe 'Check-PrStoryContract' {
         $r.Output | Should -Match 'governing ADR'
     }
 
-    It 'passes a domain-model change when an existing ADR has a matching quoted story' {
+    It 'does not count an older ADR of the same story that the PR leaves alone' {
+        $repo = New-TestRepo
+        Set-Content -LiteralPath (Join-Path $repo 'docs' 'adrs' '0050-older.md') -Value "---`nstory: `"#1234`"`n---`n# ADR 0050`n" -NoNewline
+        $r = Invoke-Gate @{
+            RepoRoot     = $repo
+            StoryKey     = '#1234'
+            IssueForTest = (New-Issue)
+            ChangedFiles = 'Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs'
+        }
+        $r.ExitCode | Should -Be 1
+        $r.Output | Should -Match 'governing ADR'
+        $r.Output | Should -Match 'older ADR of the same story does not govern this change'
+    }
+
+    It 'counts an ADR that the PR changes, also when the list uses backslashes' {
+        $repo = New-TestRepo
+        Set-Content -LiteralPath (Join-Path $repo 'docs' 'adrs' '0050-older.md') -Value "---`nstory: `"#1234`"`n---`n# ADR 0050`n" -NoNewline
+        $r = Invoke-Gate @{
+            RepoRoot     = $repo
+            StoryKey     = '#1234'
+            IssueForTest = (New-Issue)
+            ChangedFiles = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`r`ndocs\adrs\0050-older.md"
+        }
+        $r.ExitCode | Should -Be 0 -Because $r.Output
+        $r.Output | Should -Match 'governed by an ADR'
+    }
+
+    It 'does not count a changed ADR that the PR deletes' {
+        $repo = New-TestRepo
+        $r = Invoke-Gate @{
+            RepoRoot     = $repo
+            StoryKey     = '#1234'
+            IssueForTest = (New-Issue)
+            ChangedFiles = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`ndocs/adrs/0060-deleted.md"
+        }
+        $r.ExitCode | Should -Be 1
+        $r.Output | Should -Match 'governing ADR'
+    }
+
+    It 'does not count a changed file outside the ADR folder that carries the story' {
+        $repo = New-TestRepo
+        New-Item -ItemType Directory -Path (Join-Path $repo 'docs' 'other') -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $repo 'docs' 'other' '0070-x.md') -Value "---`nstory: `"#1234`"`n---`n# Not an ADR`n" -NoNewline
+        $r = Invoke-Gate @{
+            RepoRoot     = $repo
+            StoryKey     = '#1234'
+            IssueForTest = (New-Issue)
+            ChangedFiles = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`ndocs/other/0070-x.md"
+        }
+        $r.ExitCode | Should -Be 1
+    }
+
+    It 'passes a domain-model change when an ADR that the PR adds has a matching quoted story' {
         $repo = New-TestRepo
         Set-Content -LiteralPath (Join-Path $repo 'docs' 'adrs' '0099-x.md') -Value "---`nstory: `"#1234`"`nphase: governance`n---`n# ADR 0099`n" -NoNewline
         $r = Invoke-Gate @{
             RepoRoot     = $repo
             StoryKey     = '#1234'
             IssueForTest = (New-Issue)
-            ChangedFiles = 'Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs'
+            ChangedFiles = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`ndocs/adrs/0099-x.md"
         }
         $r.ExitCode | Should -Be 0
         $r.Output | Should -Match 'governed by an ADR'
@@ -314,7 +366,7 @@ Describe 'Check-PrStoryContract' {
             RepoRoot     = $repo
             StoryKey     = '#1234'
             IssueForTest = (New-Issue)
-            ChangedFiles = 'Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs'
+            ChangedFiles = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`ndocs/adrs/0099-x.md"
         }
         $r.ExitCode | Should -Be 0
     }
@@ -326,7 +378,7 @@ Describe 'Check-PrStoryContract' {
             RepoRoot     = $repo
             StoryKey     = '#1234'
             IssueForTest = (New-Issue)
-            ChangedFiles = 'Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs'
+            ChangedFiles = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`ndocs/adrs/0099-x.md"
         }
         $r.ExitCode | Should -Be 0
     }
@@ -338,7 +390,7 @@ Describe 'Check-PrStoryContract' {
             RepoRoot     = $repo
             StoryKey     = '#1234'
             IssueForTest = (New-Issue)
-            ChangedFiles = 'Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs'
+            ChangedFiles = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`ndocs/adrs/0099-x.md"
         }
         $r.ExitCode | Should -Be 1
         $r.Output | Should -Match "not a story key: 0099-x.md \('see #1234'\)"
@@ -351,7 +403,7 @@ Describe 'Check-PrStoryContract' {
             RepoRoot     = $repo
             StoryKey     = '#1234'
             IssueForTest = (New-Issue)
-            ChangedFiles = 'Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs'
+            ChangedFiles = "Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs`ndocs/adrs/0099-x.md"
         }
         $r.ExitCode | Should -Be 1
         $r.Output | Should -Match "empty 'story:' value: 0099-x.md"

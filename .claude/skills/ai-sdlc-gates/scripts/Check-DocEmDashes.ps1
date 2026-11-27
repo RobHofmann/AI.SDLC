@@ -5,9 +5,12 @@
 
 .DESCRIPTION
     Scans AGENTS.md and the documentation wiki layers (docs/ and docs-functional/) for the em-dash
-    character (U+2014). The house style uses a spaced hyphen ' - ', commas, colons, or parentheses
+    character (U+2014). It also finds the HTML codes that draw the same character: the named entity
+    mdash, the decimal form 8212 and the hexadecimal form 2014 (leading zeros and an upper or lower
+    case x are allowed). The house style uses a spaced hyphen ' - ', commas, colons, or parentheses
     instead. Em-dashes drift in from pasted or model-generated prose and are easy to miss by eye,
-    so they are caught mechanically. Exits non-zero (fails the build) when any em-dash is found.
+    so they are caught mechanically. Exits 1 (fails the build) when any em-dash is found. Exits 3
+    (not applicable) when no page is left to read.
 
     Sibling of Check-DocLineCitations.ps1 (clause C02) and Check-DocsWiki.ps1: the same shared
     script is run locally by Invoke-LocalGates.ps1 and the pre-push hook, and by the CI gate, so the
@@ -38,6 +41,8 @@ if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 $ErrorActionPreference = 'Stop'
 
 $emDash = [char]0x2014
+# The HTML codes for the em-dash: named entity, decimal 8212 and hexadecimal 2014.
+$emDashCode = '&mdash;|&#0*8212;|&#[xX]0*2014;'
 
 $targets = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
 $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
@@ -84,7 +89,7 @@ foreach ($file in $targets) {
     $n = 0
     foreach ($line in Get-Content -LiteralPath $file.FullName) {
         $n++
-        if ($line.Contains($emDash)) {
+        if ($line.Contains($emDash) -or $line -match $emDashCode) {
             $violations.Add([pscustomobject]@{ File = $rel; Line = $n; Text = $line.Trim() })
         }
     }
@@ -92,10 +97,15 @@ foreach ($file in $targets) {
 
 if ($violations.Count -gt 0) {
     Write-Host "Doc house-style violation: documentation must not contain the em-dash character (U+2014)." -ForegroundColor Red
-    Write-Host "FIX: Replace each em-dash with a spaced hyphen ' - ', a comma, a colon, or parentheses." -ForegroundColor Red
+    Write-Host "FIX: Replace each em-dash, and each HTML code for it, with a spaced hyphen ' - ', a comma, a colon, or parentheses." -ForegroundColor Red
     foreach ($v in $violations) { Write-Host ("  {0}:{1}  {2}" -f $v.File, $v.Line, $v.Text) }
     Write-Host ("Found {0} line(s) containing an em-dash." -f $violations.Count) -ForegroundColor Red
     exit 1
+}
+
+if ($targets.Count -eq 0) {
+    Write-Host ("Not applicable: no page to read in {0}, so there is no em-dash to look for." -f $scope)
+    exit 3
 }
 
 Write-Host ("Em-dash OK: no em-dash (U+2014) characters in {0}." -f $scope)

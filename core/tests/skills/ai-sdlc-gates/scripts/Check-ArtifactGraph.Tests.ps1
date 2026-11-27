@@ -64,7 +64,7 @@ relates:
         $result.Output | Should -Match 'Artifact graph OK:'
     }
 
-    It 'ignores artifacts without story front-matter (exit 0)' {
+    It 'exits 3 when no artifact declares a story, as with a page that has no story front-matter' {
         New-Artifact -RepoRoot $script:Root -RelativePath 'docs/plain.md' -FrontMatter @'
 ---
 title: No story here
@@ -75,16 +75,16 @@ phase: discovery
 '@
 
         $result = Invoke-Gate -RepoRoot $script:Root
-        $result.ExitCode | Should -Be 0
-        $result.Output | Should -Match 'Artifact graph OK:'
+        $result.ExitCode | Should -Be 3
+        $result.Output | Should -Match '(?m)^Not applicable: no page in the artifact roots declares a story'
     }
 
-    It 'skips an empty markdown file instead of crashing (exit 0)' {
+    It 'skips an empty markdown file instead of crashing, and exits 3 because nothing was checked' {
         Set-Content -LiteralPath (Join-Path $script:Root 'docs/empty.md') -Value '' -NoNewline
 
         $result = Invoke-Gate -RepoRoot $script:Root
-        $result.ExitCode | Should -Be 0
-        $result.Output | Should -Match 'Artifact graph OK:'
+        $result.ExitCode | Should -Be 3
+        $result.Output | Should -Match '(?m)^Not applicable: no page in the artifact roots declares a story'
     }
 
     It 'fails on an invalid story key (exit 1)' {
@@ -208,14 +208,14 @@ relates:
         $result.Output | Should -Match 'does not resolve to a file in the repo'
     }
 
-    It 'passes when no graph artifacts exist at all (exit 0)' {
+    It 'exits 3 when no graph artifacts exist at all' {
         New-Artifact -RepoRoot $script:Root -RelativePath 'docs/notes.md' -FrontMatter @'
 # Just a heading, no front-matter at all
 '@
 
         $result = Invoke-Gate -RepoRoot $script:Root
-        $result.ExitCode | Should -Be 0
-        $result.Output | Should -Match 'Artifact graph OK:'
+        $result.ExitCode | Should -Be 3
+        $result.Output | Should -Match '(?m)^Not applicable: no page in the artifact roots declares a story'
     }
 
     It 'rejects a story key with text after the number (exit 1)' {
@@ -388,6 +388,13 @@ relates:
         $result.Output | Should -Match 'Artifact graph OK:'
     }
 
+    It 'runs with -Strict in the gate run, so the because and assumption rules are enforced there' {
+        $manifest = Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+        $entry = @($manifest.gates | Where-Object { $_.script -eq 'scripts/Check-ArtifactGraph.ps1' })
+
+        $entry.Count | Should -Be 1
+        $entry[0].args.Strict | Should -BeTrue
+    }
     It 'requires a because reason on an intent edge under -Strict (exit 1)' {
         New-Artifact -RepoRoot $script:Root -RelativePath 'docs/adrtarget.md' -FrontMatter @'
 ---

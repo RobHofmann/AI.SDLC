@@ -560,13 +560,13 @@ Describe 'Check-DocDrift' {
         $r.Output | Should -Not -Match '\[missing\]'
     }
 
-    It 'ignores a directory that holds no documentation' {
+    It 'exits 3 for a directory that holds no documentation' {
         $root = New-Repo -Files @{ 'src/Policy.cs' = 'public static class Policy { }' }
 
         $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root }
 
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'No documentation pages matched'
+        $r.ExitCode | Should -Be 3 -Because $r.Output
+        $r.Output | Should -Match '(?m)^Not applicable: no documentation page matched'
     }
 
     Context 'it fails only on the drift that the change caused' {

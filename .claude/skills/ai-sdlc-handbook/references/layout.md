@@ -144,6 +144,7 @@ the sync check, but not for the gate runner. So it ships no gate (ADR 0025).
 | `docs.lastCheckedMaxAgeDays` | A positive whole number switches on a warning for every `Last checked: <date>` in `AGENTS.md` and the doc layers that is older than this many days. The local gate run and the pre-push hook show it, and it never fails a push. Any other value counts as off. | `0` (off) |
 | `docs.units` / `docs.unitExclude` | The units that need a page, when the list of the packs does not fit, and the unit paths left out on purpose | the packs' list / none |
 | `paths.solution`, `paths.sourceRoot`, `paths.testRoot`, `paths.runSettings`, `paths.coverageBaseline`, `paths.packagesProps` | The .NET solution, its code, its tests and its coverage setup, for the `dotnet` pack | none |
+| `paths.sourceRoots` | More source folders, as a list, for the change completeness gate. It reads them next to `paths.sourceRoot`. A package folder such as `core` or `packs` maps a script under `.apm/` to its test under `tests/` | none |
 | `commands.build` / `commands.test` / `commands.testChanged` | How to build and test the repository. The pre-flight runs `commands.test` from the repository root, unless a pack pre-flight runs the tests itself, as the dotnet pack does. A scoped pre-flight runs `commands.testChanged` in its place when it is set; a test command that exits 3 ran no test and shows `N/A` | none |
 | `tracker` | The issue repository (`tracker.repository`, `owner/name`; empty means the `origin` remote), an own key pattern (`tracker.keyPattern`), the `refined` and `to-refine` labels, the size label prefix (`size:`), the labels and the data model patterns, for the `github-issues` pack. `tracker.acceptedRepositories` lists other repositories, as `owner/name`, whose issues may anchor a pull request here, such as the AI.SDLC source for an update pull request | `refined`, `to-refine`, `size:`; no accepted repositories |
 | `github` | The repository (`github.repository`, `owner/name`; empty means the `origin` remote) and the main branch (`github.trunk`). It is the one setting for the main branch: the gates, the pre-flight and the test runner compare a change with `origin/<trunk>` through `Get-AiSdlcMainBranch` | `main` |
@@ -206,9 +207,13 @@ the gates and git, `github` the pull request scripts and the `gh` calls, and `do
 `.claude/settings.json`, as a `Bash(...)` and a `PowerShell(...)` rule. `Initialize-AiSdlc.ps1` and
 `Update-AiSdlc.ps1` run it, so a new clone and every new version get the rules of the installed
 packages; the repository commits the file. A repository gets no rule for a package it does not
-install. The script only adds: a rule the repository wrote itself stays. The advisory core gate
-runs it with `-Check` and names a missing rule. To change a shared rule, change the `gates.json` of
-the skill in AI.SDLC.
+install. Each gate also gets its own rule: its script with the exact arguments of its entry, and no
+star. So every gate runs without a prompt, but a form that writes files, such as `Sync-AllowRules.ps1`
+without `-Check`, still asks. A rule must name its script. A star glued to a file name in a scripts folder, such as
+`scripts/Check-*`, would let a new script run without a prompt. The script never writes
+such a rule, and it removes one that an older release wrote. Any other rule the repository wrote itself
+stays. The advisory core gate runs it with `-Check` and names a missing rule or a wildcard rule. To
+change a shared rule, change the `gates.json` of the skill in AI.SDLC.
 
 ## Developing against a local clone
 

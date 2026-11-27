@@ -20,6 +20,11 @@
     are downloaded to the temp folder, never into the repository. A finding that the baseline does not
     hold exits 1 and prints a FIX line.
 
+    In a local run, when files are staged and -LogOpts is not passed, a second scan reads the staged
+    files (gitleaks git --staged), with the same rules, baseline and --redact. A secret that is staged
+    but not committed is in no commit, so the commit scan misses it. A pipeline has no staged files, so
+    it skips this scan. A finding in either scan exits 1, and the output names which one found it.
+
     In GitHub Actions (GITHUB_ACTIONS is true), a missing git or gitleaks, or a failed download, exits
     1, so the build fails and never passes without a scan. In a local run they exit 2 (could not
     check), so a machine without gitleaks can still push. A -RepoRoot that is not an existing folder
@@ -50,7 +55,8 @@
     the commits the pull request adds, as the pre-flight scans <target>..HEAD. On any other workflow
     run it is the history of every branch and tag. In a local run it is <trunk>..HEAD, where the trunk is
     the first of origin/main, origin/master and origin/HEAD that exists, or the whole history when none
-    does. An empty value scans the whole history.
+    does. An empty value scans the whole history. Passing -LogOpts, also an empty value, turns off the
+    scan of the staged files.
 
 .PARAMETER RepoRoot
     The repository to scan, where the baseline file is. Defaults to the current folder.
@@ -130,6 +136,7 @@ param (
 
 $inPipeline = $env:GITHUB_ACTIONS -eq 'true'
 $notChecked = if ($inPipeline) { 1 } else { 2 }
+$logOptsGiven = $PSBoundParameters.ContainsKey('LogOpts')
 # Without this stop, Resolve-Path fails without ending the script, and gitleaks then scans the current
 # folder, so a pass would speak for another repository than the one named (#32).
 if ($PSBoundParameters.ContainsKey('RepoRoot') -and (-not $RepoRoot -or -not (Test-Path -LiteralPath $RepoRoot -PathType Container))) {
@@ -162,7 +169,7 @@ if ($LASTEXITCODE -ne 0) {
     exit $notChecked
 }
 
-if (-not $PSBoundParameters.ContainsKey('LogOpts')) {
+if (-not $logOptsGiven) {
     if ($inPipeline -and $env:PR_BASE_SHA) { $LogOpts = "$($env:PR_BASE_SHA)..HEAD" }
     elseif (-not $inPipeline) {
         # The trunk of the remote: github.trunk in aisdlc.json, else main, master or whatever origin/HEAD
@@ -221,9 +228,31 @@ else {
 }
 
 $scanExit = 1
+$stagedExit = 0
+$stagedCount = 0
 try {
     gitleaks @gitleaksArgs
     $scanExit = $LASTEXITCODE
+
+    # A secret that is staged but not committed is in no commit, so the range scan above cannot see it.
+    # A pipeline has no staged files, and -LogOpts asks for one exact range, so both skip this scan.
+    if (-not $inPipeline -and -not $logOptsGiven) {
+        $staged = @(git -C $currentDirectory diff --cached --name-only 2>$null)
+        if ($LASTEXITCODE -ne 0) {
+            # Without the list, a staged secret could pass unseen, so this is never a pass.
+            Write-Host 'git could not list the staged files, so the staged files were not scanned.'
+            Write-Host 'FIX: Run git diff --cached --name-only to see the git error, fix it, then run the gate again.'
+            exit $notChecked
+        }
+        if ($staged.Count -gt 0) {
+            $stagedCount = $staged.Count
+            Write-Host "Scanning the $stagedCount staged file(s)"
+            $stagedArgs = @('git', '--staged', '--config', $scanConfig, '--redact', '--exit-code=99')
+            if (Test-Path -LiteralPath $gitleaksBaselinePath -PathType Leaf) { $stagedArgs += @('--baseline-path', $gitleaksBaselinePath) }
+            gitleaks @stagedArgs $currentDirectory
+            $stagedExit = $LASTEXITCODE
+        }
+    }
 }
 catch {
     Write-Host "An error occurred: $_"
@@ -234,14 +263,16 @@ finally {
     Remove-Item -LiteralPath $scanConfig -ErrorAction SilentlyContinue
 }
 
-Write-Host "Gitleaks scan completed$(if (Test-Path -LiteralPath $gitleaksBaselinePath -PathType Leaf) { " using baseline file: $gitleaksBaselinePath" } else { ' without a baseline' })"
-if ($scanExit -eq 99) {
-    Write-Host "Gitleaks found a secret that the baseline does not hold."
-    Write-Host 'FIX: Remove the secret from the change and rotate it when it is real. Add a finding to the baseline (Create-GitleaksBaseline.ps1) only when it is a false positive.'
+$scanned = if ($stagedCount -gt 0) { "the commits and the $stagedCount staged file(s)" } else { 'the commits' }
+Write-Host "Gitleaks scan completed ($scanned)$(if (Test-Path -LiteralPath $gitleaksBaselinePath -PathType Leaf) { " using baseline file: $gitleaksBaselinePath" } else { ' without a baseline' })"
+if ($scanExit -eq 99 -or $stagedExit -eq 99) {
+    $where = @(if ($scanExit -eq 99) { 'the commits' }; if ($stagedExit -eq 99) { 'the staged files' }) -join ' and in '
+    Write-Host "Gitleaks found a secret that the baseline does not hold, in $where."
+    Write-Host 'FIX: Remove the secret from the change. When it is only staged, unstage it with git restore --staged <file> first. Rotate it when it is real. Add a finding to the baseline (Create-GitleaksBaseline.ps1) only when it is a false positive.'
     exit 1
 }
-if ($scanExit -ne 0) {
-    Write-Host "Gitleaks failed with exit code $scanExit, so the scan did not finish."
+if ($scanExit -ne 0 -or $stagedExit -ne 0) {
+    Write-Host "Gitleaks failed with exit code $(if ($scanExit -ne 0) { $scanExit } else { $stagedExit }), so the scan did not finish."
     exit 1
 }
 exit 0

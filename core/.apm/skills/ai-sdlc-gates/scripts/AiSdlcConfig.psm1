@@ -94,6 +94,7 @@ $script:Defaults = [ordered]@{
         agentsFile       = 'AGENTS.md'
         solution         = ''
         sourceRoot       = ''
+        sourceRoots      = @()
         testRoot         = ''
         runSettings      = ''
         coverageBaseline = ''

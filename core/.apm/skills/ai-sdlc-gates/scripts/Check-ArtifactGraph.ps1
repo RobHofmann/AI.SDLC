@@ -15,11 +15,13 @@
 
     The `intent:` block (hypothesis / assumption / decision-drivers) and the `because:` block (a one-line
     reason per relates edge) carry the why. `intent.assumption` and `intent.decision-drivers` are free text;
-    only -Strict asks for intent.assumption, and nothing checks decision-drivers. Under -Strict, every intent-bearing relates edge (adr, spec) must carry a non-empty
-    `because.<edge>` reason; without -Strict the gate does not check it and prints nothing, so the build stays green while
-    teams backfill reasons (the same advisory-then-blocking pattern the other gates use).
+    only -Strict asks for intent.assumption, and nothing checks decision-drivers. Under -Strict, every
+    intent-bearing relates edge (adr, spec) must carry a non-empty `because.<edge>` reason. The gate entry
+    in gates.json passes -Strict, so the gate run always enforces both rules. A direct run without -Strict
+    does not check them, which helps a team that backfills reasons.
 
-    Exits non-zero (fails the build) on any violation.
+    Exit codes: 0 clean, 1 on any violation (fails the build), 2 when none of the artifact roots exists,
+    3 when no page in the artifact roots declares a story, so there is no graph to check.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script. The roots come from paths.docsRoots and paths.specsRoot in aisdlc.json.
@@ -174,6 +176,11 @@ if ($violations.Count -gt 0) {
     Write-Host "FIX: Correct the front-matter link each finding names, so every relates/story edge points at an artifact that exists (.claude/skills/ai-sdlc-handbook/references/artifact-graph.md)." -ForegroundColor Red
     Write-Host ("Checked {0} graph artifact(s); {1} violation(s)." -f $checked, $violations.Count) -ForegroundColor Red
     exit 1
+}
+
+if ($checked -eq 0) {
+    Write-Host 'Not applicable: no page in the artifact roots declares a story, so there is no artifact graph to check.'
+    exit 3
 }
 
 $mode = if ($Strict) { ' (strict: edge reasons enforced)' } else { '' }

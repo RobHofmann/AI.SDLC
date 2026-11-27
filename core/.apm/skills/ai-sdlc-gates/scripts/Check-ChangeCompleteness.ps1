@@ -12,17 +12,36 @@
 
     Two checks, both computed from that changed-file set:
 
-      1. TESTS. If a changed file under the source root carries behaviour and not one file under
-         the test root changed, that is reported. This is deliberately NOT a mirrored-test-per-file
-         rule: a DTO, an interface, a record, generated code and application startup legitimately
-         have no test of their own, and a gate that demanded one would fire on dozens of correct
-         files and be answered with empty tests. Whether the tests that exist are good enough is a
-         coverage question, which Check-Coverage.ps1 (C04) and the SonarCloud quality gate already
-         answer.
+      1. TESTS. A changed file under a source root that carries behaviour needs a changed test file
+         in the test folder that mirrors it. A test change somewhere else does not count. The rule
+         holds per area: a change in two projects needs a test change in both test projects. It is
+         deliberately NOT a mirrored-test-per-file rule: a DTO, an interface, a record, generated code
+         and application startup legitimately have no test of their own, and a gate that demanded one
+         would fire on dozens of correct files and be answered with empty tests. Whether the tests that
+         exist are good enough is a coverage question, which Check-Coverage.ps1 (C04) and the
+         SonarCloud quality gate already answer.
+
+         How a source file maps to its test folder:
+           .NET layout      <sourceRoot>/<Project>/... maps to <testRoot>/<Project>.Tests/, or to a
+                            project with one word before Tests, such as <Project>.IntegrationTests. A
+                            file directly under the source root maps to any folder under the test root.
+           Package layout   <package>/.apm/<path>/<file> maps to <package>/tests/<path>/, where
+                            <package> is a source root or a folder right under one, such as core or
+                            packs/<name>. This is the layout of ADR 0015.
+         A test file is a file with a source extension in the mirror folder, outside bin and obj. A
+         file under a test folder never carries behaviour.
 
       2. DOCUMENTATION. If a source area changed and neither its mapped documentation area nor an
-         ADR moved, that is reported. An ADR counts for any area, because recording a decision is
-         the documentation for a change that rests on one.
+         ADR that names the area moved, that is reported. An ADR is a changed .md file in
+         paths.adrFolder, other than README.md and 0000-template.md, that exists on disk. It names an
+         area when a path in it overlaps the area: every token with a slash counts, in the front
+         matter and in the body. A named path overlaps an area when it starts with the source folder or
+         a doc path of the area, or when it is a parent folder of one of them. So an ADR clears the
+         areas it is about, and no other area.
+
+    A file that the change deleted needs no test, because nothing is left to test. It still needs its
+    documentation, because the page of its area may describe it. So a change that only deletes source
+    files gets a DOCS finding when the doc area did not move and no ADR names the area.
 
     WAIVERS. A commit since the base may end with a trailer that git's own trailer parser reads:
     No-Test: <reason>: <why> or No-Docs: <reason>: <why>. The key matches without regard to case, and the
@@ -51,13 +70,17 @@
     ADVISORY by default: it reports and returns 0. Pass -Strict to make it fail, which is what the
     pre-push hook and CI use once the team has seen the false-positive rate. Every finding waived gives 0.
 
-    Exit 3 (not applicable) when nothing under the source root changed, so a documentation-only or
-    pipeline-only change is never blocked by it.
+    Exit codes follow the gate contract: 0 checked and nothing found, or every finding waived; 1 a
+    finding under -Strict; 2 could not check: the change cannot be listed (no git, or no merge base
+    with the base ref), or CHANGED_FILES is set and git cannot run or HEAD cannot be read, so a deleted
+    file cannot be told from a changed one; 3 not applicable: no changed or deleted file carries
+    behaviour, so a documentation-only or pipeline-only change is never blocked by it.
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script. The source
-    root, the test root, the source file types and the map from source areas to doc areas come from
-    paths.sourceRoot, paths.testRoot, paths.sourceExtensions and paths.sourceDocMap in aisdlc.json.
-    With no source root configured, nothing counts as behaviour and the check is not applicable (exit 3).
+    roots, the test root, the source file types and the map from source areas to doc areas come from
+    paths.sourceRoots (a list) and paths.sourceRoot (one folder; both are read), paths.testRoot,
+    paths.sourceExtensions and paths.sourceDocMap in aisdlc.json. With no source root configured,
+    nothing counts as behaviour and the check is not applicable (exit 3).
 .PARAMETER BaseRef
     The ref the change is measured against. Defaults to origin/<github.trunk> from aisdlc.json (Get-AiSdlcMainBranch), origin/main unless the repository names another trunk.
 .PARAMETER ChangedFiles
@@ -85,16 +108,22 @@ param(
 $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'ChangedFiles.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
 
 $script:Config = Get-AiSdlcConfig -RepoRoot $RepoRoot
-$script:SourcePrefix = if ($script:Config.paths.sourceRoot) { $script:Config.paths.sourceRoot.TrimEnd('/') + '/' } else { $null }
+$script:SourceRoots = @(@($script:Config.paths['sourceRoots']) + @($script:Config.paths['sourceRoot']) | Where-Object { $_ } | ForEach-Object { ([string]$_).Replace('\', '/').Trim('/') } | Where-Object { $_ } | Select-Object -Unique)
 $script:TestPrefix = if ($script:Config.paths.testRoot) { $script:Config.paths.testRoot.TrimEnd('/') + '/' } else { $null }
 $script:SourceExtensions = @($script:Config.paths.sourceExtensions | Where-Object { $_ })
 $script:DocPrefixes = @($script:Config.paths.docsRoots | Where-Object { $_ } | ForEach-Object { $_.TrimEnd('/') + '/' })
 $script:AdrPrefix = $script:Config.paths.adrFolder.TrimEnd('/') + '/'
 $script:DocMap = @($script:Config.paths.sourceDocMap | Where-Object { $_ } | ForEach-Object { @{ Source = $_.source; Docs = @($_.docs) } })
+$script:RootPattern = ($script:SourceRoots | ForEach-Object { [regex]::Escape($_) }) -join '|'
+$script:PackageTestPattern = if ($script:RootPattern) { '^(?:' + $script:RootPattern + ')(?:/[^/]+)?/tests/' } else { $null }
+$script:PackageSourcePattern = if ($script:RootPattern) { '^(?<pkg>(?:' + $script:RootPattern + ')(?:/[^/]+)?)/\.apm/(?<rel>.+)/[^/]+$' } else { $null }
+# A path token: a run of name characters with at least one slash, not glued to a longer token.
+$script:PathToken = '(?<![\w/.:@-])(?:\.{1,2}/)*[\w.@-]+(?:/[\w.@-]*)+'
 
 $script:TestExempt = @(
     'Program.cs'
@@ -110,35 +139,6 @@ $script:TestExemptFolders = @(
     '/Dtos/'
     '/Migrations/'
 )
-
-function Get-ChangedFile {
-    param([string]$Root, [string]$Base, [string[]]$Explicit)
-
-    if ($Explicit) { return $Explicit }
-    if ($env:CHANGED_FILES) { return @($env:CHANGED_FILES -split "`r?`n" | Where-Object { $_.Trim() }) }
-
-    Push-Location $Root
-    try {
-        $mergeBase = & git merge-base $Base HEAD 2>$null
-        if ($LASTEXITCODE -ne 0 -or -not $mergeBase) { return @() }
-
-        $tracked = & git diff --name-only $mergeBase HEAD 2>$null
-        $staged = & git diff --name-only --cached 2>$null
-        $working = & git diff --name-only 2>$null
-        $untracked = & git ls-files --others --exclude-standard 2>$null
-
-        return @($tracked) + @($staged) + @($working) + @($untracked) | Where-Object { $_ } | Sort-Object -Unique
-    }
-    finally { Pop-Location }
-}
-
-function Get-MergeBase {
-    param([string]$Root, [string]$Base)
-
-    $found = & git -C $Root merge-base $Base HEAD 2>$null
-    if ($LASTEXITCODE -ne 0 -or -not $found) { $global:LASTEXITCODE = 0; return $null }
-    return ([string]@($found)[0]).Trim()
-}
 
 function Get-DirtyPath {
     param([string]$Root)
@@ -272,10 +272,18 @@ function Get-WaivedPath {
     }
 }
 
+function Test-InTestFolder {
+    param([string]$Path)
+
+    if ($script:TestPrefix -and $Path.StartsWith($script:TestPrefix)) { return $true }
+    return [bool]($script:PackageTestPattern -and $Path -cmatch $script:PackageTestPattern)
+}
+
 function Test-CarriesBehaviour {
     param([string]$Path)
 
-    if (-not $script:SourcePrefix -or -not $Path.StartsWith($script:SourcePrefix)) { return $false }
+    if (-not ($script:SourceRoots | Where-Object { $Path.StartsWith("$_/") })) { return $false }
+    if (Test-InTestFolder $Path) { return $false }
     if (-not ($script:SourceExtensions | Where-Object { $Path.EndsWith($_) })) { return $false }
 
     foreach ($suffix in $script:TestExempt) {
@@ -288,14 +296,61 @@ function Test-CarriesBehaviour {
     return $true
 }
 
+function Get-TestMirror {
+    param([string]$Path)
+
+    $package = if ($script:PackageSourcePattern) { [regex]::Match($Path, $script:PackageSourcePattern) } else { $null }
+    if ($package -and $package.Success) {
+        $area = "$($package.Groups['pkg'].Value)/tests/$($package.Groups['rel'].Value)/"
+        return [pscustomobject]@{ Area = $area; Pattern = '^' + [regex]::Escape($area) }
+    }
+    if (-not $script:TestPrefix) { return $null }
+
+    $root = $script:SourceRoots | Where-Object { $Path.StartsWith("$_/") } | Select-Object -First 1
+    $rest = $Path.Substring($root.Length + 1)
+    if (-not $rest.Contains('/')) {
+        return [pscustomobject]@{ Area = $script:TestPrefix; Pattern = '^' + [regex]::Escape($script:TestPrefix) }
+    }
+    $project = $rest.Substring(0, $rest.IndexOf('/'))
+    return [pscustomobject]@{
+        Area    = "$($script:TestPrefix)$project.Tests/"
+        Pattern = '^' + [regex]::Escape($script:TestPrefix) + [regex]::Escape($project) + '\.\w*Tests/'
+    }
+}
+
+function Test-TestFile {
+    param([string]$Path)
+
+    if (-not ($script:SourceExtensions | Where-Object { $Path.EndsWith($_) })) { return $false }
+    return $Path -notmatch '(^|/)(bin|obj)/'
+}
+
+function Test-PathOverlap {
+    param([string]$Named, [string]$Area)
+
+    if ($Named.StartsWith($Area, [StringComparison]::OrdinalIgnoreCase)) { return $true }
+    return $Area.StartsWith($Named.TrimEnd('/') + '/', [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Get-AdrNamedPath {
+    param([string[]]$Changed)
+
+    $adrs = @($Changed | Where-Object { $_.StartsWith($script:AdrPrefix) -and $_.EndsWith('.md') -and ($_.Substring($script:AdrPrefix.Length) -notmatch '^(?:README|0000-template)\.md$') })
+    foreach ($adr in $adrs) {
+        $full = Join-Path $RepoRoot $adr
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { continue }
+        foreach ($match in [regex]::Matches((Get-Content -LiteralPath $full -Raw), $script:PathToken)) {
+            $named = ($match.Value -replace '^(?:\.{1,2}/)+', '').TrimEnd('.')
+            if ($named.Contains('/')) { $named }
+        }
+    }
+}
+
 function Get-MissingDoc {
     param([string[]]$Changed)
 
     $docsMoved = @($Changed | Where-Object { $path = $_; $script:DocPrefixes | Where-Object { $path.StartsWith($_) } })
-    if ($docsMoved.Count -gt 0) {
-        $adr = @($docsMoved | Where-Object { $_.StartsWith($script:AdrPrefix) })
-        if ($adr.Count -gt 0) { return @() }
-    }
+    $named = @(Get-AdrNamedPath -Changed $Changed | Select-Object -Unique)
 
     $missing = @()
     foreach ($entry in $script:DocMap) {
@@ -305,6 +360,12 @@ function Get-MissingDoc {
         $covered = $false
         foreach ($docPrefix in $entry.Docs) {
             if ($docsMoved | Where-Object { $_.StartsWith($docPrefix) }) { $covered = $true; break }
+        }
+        if (-not $covered) {
+            $areaPaths = @($entry.Source) + @($entry.Docs)
+            foreach ($path in $named) {
+                if ($areaPaths | Where-Object { Test-PathOverlap -Named $path -Area $_ }) { $covered = $true; break }
+            }
         }
 
         if (-not $covered) {
@@ -323,13 +384,25 @@ function Get-MissingDoc {
 function Get-TestFinding {
     param([string[]]$Behaviour, [string[]]$Changed)
 
-    $testsMoved = @($Changed | Where-Object { $script:TestPrefix -and $_.StartsWith($script:TestPrefix) })
-    if ($Behaviour.Count -eq 0 -or $testsMoved.Count -gt 0) { return }
-    [pscustomobject]@{
-        Kind  = 'TESTS'
-        Key   = ''
-        Text  = "TESTS: $($Behaviour.Count) source file(s) carry behaviour and no file under $($script:Config.paths.testRoot) changed. Add the tests. Only wrap-up writes a No-Test commit trailer, after test-analyzer agrees with the reason."
-        Paths = $Behaviour
+    $groups = [ordered]@{}
+    foreach ($path in $Behaviour) {
+        $mirror = Get-TestMirror $path
+        $key = if ($mirror) { $mirror.Area } else { '' }
+        if (-not $groups.Contains($key)) { $groups[$key] = [pscustomobject]@{ Area = $key; Pattern = if ($mirror) { $mirror.Pattern } else { $null }; Paths = [System.Collections.Generic.List[string]]::new() } }
+        $groups[$key].Paths.Add($path)
+    }
+
+    foreach ($group in $groups.Values) {
+        $moved = if ($group.Pattern) { @($Changed | Where-Object { $_ -cmatch $group.Pattern -and (Test-TestFile $_) }) } else { @() }
+        if ($moved.Count -gt 0) { continue }
+        $text = if ($group.Area) {
+            "TESTS: $($group.Paths.Count) source file(s) carry behaviour and no test file changed under $($group.Area), the test folder that mirrors them. Add the tests. Only wrap-up writes a No-Test commit trailer, after test-analyzer agrees with the reason."
+        }
+        else {
+            "TESTS: $($group.Paths.Count) source file(s) carry behaviour, and aisdlc.json maps no test folder for them (paths.testRoot), so no test change can count. Map a test folder, or let wrap-up write a No-Test commit trailer after test-analyzer agrees with the reason."
+        }
+        # The key is the mirror area, so a waiver for one area never hides the finding of another.
+        [pscustomobject]@{ Kind = 'TESTS'; Key = [string]$group.Area; Text = $text; Paths = $group.Paths.ToArray() }
     }
 }
 
@@ -340,27 +413,31 @@ function Get-DocFinding {
         [pscustomobject]@{
             Kind  = 'DOCS'
             Key   = [string]$gap.Source
-            Text  = "DOCS: $($gap.Files) changed file(s) under $($gap.Source) with nothing moved under $($gap.Docs) and no ADR. Add the docs. Only wrap-up writes a No-Docs commit trailer, after docs-reviewer agrees with the reason."
+            Text  = "DOCS: $($gap.Files) changed file(s) under $($gap.Source) with nothing moved under $($gap.Docs) and no ADR in this change that names a path under them. Add the docs. Only wrap-up writes a No-Docs commit trailer, after docs-reviewer agrees with the reason."
             Paths = @($gap.Paths)
         }
     }
 }
 
 function Invoke-ChangeCompletenessCheck {
-    param([string[]]$Changed, [string]$Base, [string[]]$Dirty = @())
+    param([string[]]$Changed, [string]$Base, [string[]]$Dirty = @(), [string[]]$Deleted = @())
 
-    $behaviour = @($Changed | Where-Object { Test-CarriesBehaviour $_ })
+    $carriers = @($Changed | Where-Object { Test-CarriesBehaviour $_ })
+    # A deleted file has nothing left to test, but the page of its area may still describe it.
+    $behaviour = @($carriers | Where-Object { $_ -cnotin $Deleted })
     $waiver = Get-WaiverTrailer -Root $RepoRoot -Base $Base
 
-    if ($behaviour.Count -eq 0) {
+    if ($carriers.Count -eq 0) {
         return [pscustomobject]@{ NoOp = $true; Findings = @(); Waived = @(); Cleared = @{ 'No-Test' = @(); 'No-Docs' = @() }; Waiver = $waiver }
     }
 
     $noTest = @(Get-WaivedPath -Waiver $waiver -Kind 'No-Test' -Path $behaviour -Dirty $Dirty)
-    $noDocs = @(Get-WaivedPath -Waiver $waiver -Kind 'No-Docs' -Path $behaviour -Dirty $Dirty)
+    $noDocs = @(Get-WaivedPath -Waiver $waiver -Kind 'No-Docs' -Path $carriers -Dirty $Dirty)
 
-    $all = @(Get-TestFinding -Behaviour $behaviour -Changed $Changed) + @(Get-DocFinding -Changed $Changed)
-    $open = @(Get-TestFinding -Behaviour @($behaviour | Where-Object { $_ -cnotin $noTest }) -Changed $Changed) +
+    # A deleted test file is not a test change, so only the files that are still there count as tests.
+    $present = @($Changed | Where-Object { $_ -cnotin $Deleted })
+    $all = @(Get-TestFinding -Behaviour $behaviour -Changed $present) + @(Get-DocFinding -Changed $Changed)
+    $open = @(Get-TestFinding -Behaviour @($behaviour | Where-Object { $_ -cnotin $noTest }) -Changed $present) +
         @(Get-DocFinding -Changed @($Changed | Where-Object { $_ -cnotin $noDocs }))
     $openKeys = @($open | ForEach-Object { "$($_.Kind)|$($_.Key)" })
     $waived = @($all | Where-Object { "$($_.Kind)|$($_.Key)" -cnotin $openKeys })
@@ -376,15 +453,20 @@ function Invoke-ChangeCompletenessCheck {
 
 if ($MyInvocation.InvocationName -eq '.') { return }
 
-$changed = Get-ChangedFile -Root $RepoRoot -Base $BaseRef -Explicit $ChangedFiles
+$change = Get-AiSdlcChange -RepoRoot $RepoRoot -BaseRef $BaseRef -Explicit $ChangedFiles -IncludeWorkingTree
+if (-not $change.Readable) {
+    Write-Host "Could not check: $($change.Reason), so the change cannot be listed." -ForegroundColor Yellow
+    Write-Host 'FIX: Fetch the base branch, or pass -BaseRef with a ref that exists. When CHANGED_FILES is set, run the gate in a checkout that has git and its HEAD commit.' -ForegroundColor Yellow
+    exit 2
+}
 # A waiver reads commits, so it needs a base that git found. A list the caller passes has none.
 $base = $null
 $dirty = @()
 if (-not $ChangedFiles -and -not $env:CHANGED_FILES) {
-    $base = Get-MergeBase -Root $RepoRoot -Base $BaseRef
+    $base = $change.Base
     if ($base) { $dirty = Get-DirtyPath -Root $RepoRoot }
 }
-$result = Invoke-ChangeCompletenessCheck -Changed $changed -Base $base -Dirty $dirty
+$result = Invoke-ChangeCompletenessCheck -Changed $change.Files -Base $base -Dirty $dirty -Deleted $change.Deleted
 
 foreach ($item in $result.Waiver.Items) {
     if ($item.Problem) {
@@ -415,7 +497,7 @@ if ($result.Findings.Count -eq 0) {
         Write-Host "Change completeness: every finding is waived by a commit trailer. A reviewer judges each reason."
     }
     else {
-        Write-Host "Change completeness: tests and documentation moved with the code."
+        Write-Host "Change completeness: tests and documentation moved with the code. Each changed source file that carries behaviour has a changed test file in its mirrored test folder, and each changed area has a changed doc area or an ADR that names it."
     }
     exit 0
 }

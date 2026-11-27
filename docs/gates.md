@@ -21,7 +21,7 @@ The gates of the core and of the packs are on the [shared gate list](../core/.ap
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `tools/Check-RetiredSkillNames.ps1`
-- Checks: It reads every file except `CHANGELOG.md` and the sync manifest, and fails on an old skill name from `config/retired-skill-names.txt`. It does not check a name that is not on that list. Exit 2 means the list is missing or a line in it is not a pair of names, and it never exits 3.
+- Checks: It reads every file except `CHANGELOG.md` and the sync manifest, and fails on an old skill name from `config/retired-skill-names.txt`. It does not check a name that is not on that list. Exit 2 means the list is missing or a line in it is not a pair of names. Exit 3 means no file is left to read.
 - Fix: Replace the old skill name with its new name, as the retired list gives it.
 
 ### The skill list names every skill and agent of every package
@@ -66,7 +66,7 @@ The gates of the core and of the packs are on the [shared gate list](../core/.ap
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `core/.apm/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.ps1`
-- Checks: It scans the markdown in `core`, `packs`, `tools`, `test-consumers`, the docs, `README.md`, `AGENTS.md` and `CHANGELOG.md` for the em-dash character (U+2014). It does not check files outside that list. Exit 2 means a listed path is missing, and it never exits 3.
+- Checks: It scans the markdown in `core`, `packs`, `tools`, `test-consumers`, the docs, `README.md`, `AGENTS.md` and `CHANGELOG.md` for the em-dash character (U+2014). It also finds the HTML codes that draw it, and it does not check files outside that list. Exit 2 means a listed path is missing, and exit 3 means no page is left to read.
 - Fix: Replace each em-dash with a comma, a colon or a hyphen with a space on each side.
 
 ### Shared docs cite no source line numbers

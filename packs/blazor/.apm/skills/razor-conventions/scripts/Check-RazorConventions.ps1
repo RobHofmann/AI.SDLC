@@ -29,7 +29,8 @@
     here made its findings print into a green step where nobody saw them, so severities are one per
     gate.
 
-    Exits non-zero when any rule is violated.
+    Exit codes: 0 clean, 1 when a rule is violated, 2 when aisdlc.json names no paths.sourceRoot, 3 when the
+    source folder does not exist or holds no .razor and no .cs file.
 
 .PARAMETER RepoRoot
     Repository root that contains the source root. Defaults to the folder that holds aisdlc.json, found from this script.
@@ -60,6 +61,11 @@ $csharpFiles = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
 if (Test-Path $srcDir) {
     Get-ChildItem -Path $srcDir -Recurse -Filter *.razor -File | ForEach-Object { $razorFiles.Add($_) }
     Get-ChildItem -Path $srcDir -Recurse -Filter *.cs -File | ForEach-Object { $csharpFiles.Add($_) }
+}
+
+if ($razorFiles.Count -eq 0 -and $csharpFiles.Count -eq 0) {
+    Write-Host "Not applicable: $srcRel/ does not exist or holds no .razor and no .cs file, so there is no component to check."
+    exit 3
 }
 
 function Get-RelativePath {

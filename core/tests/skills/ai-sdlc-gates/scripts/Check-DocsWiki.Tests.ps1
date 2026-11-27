@@ -60,6 +60,15 @@ Back to the [index](index.md).
         $result.Output | Should -Match 'Docs-wiki OK:'
     }
 
+    It 'exits 3 when the doc layers exist but hold no markdown page' {
+        Get-ChildItem -Path $script:DocsDir, $script:FuncDir -Filter *.md -Recurse | Remove-Item -Force
+        New-Page -Path (Join-Path $script:DocsDir '.gitkeep')
+
+        $result = Invoke-Gate -RepoRoot $script:Root
+
+        $result.ExitCode | Should -Be 3 -Because $result.Output
+        $result.Output | Should -Match '(?m)^Not applicable: no markdown page in the doc layers'
+    }
     It 'fails on a broken relative link (exit 1)' {
         New-Page -Path (Join-Path $script:DocsDir 'architecture.md') -Content @'
 # Architecture

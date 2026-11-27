@@ -2,7 +2,7 @@
   "package": "core",
   "gates": [],
   "allow": [
-    "pwsh -NoProfile -File .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*",
-    "pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1*"
+    "pwsh -NoProfile -File .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1 *",
+    "pwsh .claude/skills/walk-substrate/scripts/Find-NearestExample.ps1 *"
   ]
 }

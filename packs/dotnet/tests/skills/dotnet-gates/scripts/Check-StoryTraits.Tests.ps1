@@ -518,4 +518,92 @@ $Extra}
             $result.Output | Should -Not -Match 'Missing Story trait'
         }
     }
+
+    Context 'it finds a test class inside a namespace' {
+        BeforeAll {
+            $script:Untagged = "    public class InsideTests`n    {`n        [Fact]`n        public void DoesSomething()`n        {`n        }`n    }`n"
+        }
+
+        It 'sees an untagged class in a block namespace with the brace on the same line (Strict exit 1)' {
+            $cs = "using Xunit;`n`nnamespace Contoso.Tests {`n$($script:Untagged)}`n"
+            New-TestFile -RepoRoot $script:Root -Name 'SameLine.cs' -Content $cs | Out-Null
+
+            $result = Invoke-Gate -RepoRoot $script:Root -Strict
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'class InsideTests'
+        }
+
+        It 'sees an untagged class in a block namespace with the brace on the next line (Strict exit 1)' {
+            $cs = "using Xunit;`n`nnamespace Contoso.Tests`n{`n$($script:Untagged)}`n"
+            New-TestFile -RepoRoot $script:Root -Name 'NextLine.cs' -Content $cs | Out-Null
+
+            $result = Invoke-Gate -RepoRoot $script:Root -Strict
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'class InsideTests'
+        }
+
+        It 'sees an untagged class in nested block namespaces (Strict exit 1)' {
+            $cs = "using Xunit;`n`nnamespace Contoso`n{`n    namespace Tests`n    {`n$($script:Untagged)    }`n}`n"
+            New-TestFile -RepoRoot $script:Root -Name 'Nested.cs' -Content $cs | Out-Null
+
+            $result = Invoke-Gate -RepoRoot $script:Root -Strict
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'Test classes found : 1'
+        }
+
+        It 'sees an untagged class in a file-scoped namespace (Strict exit 1)' {
+            $cs = "using Xunit;`n`nnamespace Contoso.Tests;`n`npublic class InsideTests`n{`n    [Fact]`n    public void DoesSomething()`n    {`n    }`n}`n"
+            New-TestFile -RepoRoot $script:Root -Name 'FileScoped.cs' -Content $cs | Out-Null
+
+            $result = Invoke-Gate -RepoRoot $script:Root -Strict
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'class InsideTests'
+        }
+
+        It 'passes a tagged class in a block namespace (exit 0)' {
+            $cs = "using Xunit;`n`nnamespace Contoso.Tests`n{`n    [Trait(`"Story`", `"#42`")]`n$($script:Untagged)}`n"
+            New-TestFile -RepoRoot $script:Root -Name 'Tagged.cs' -Content $cs | Out-Null
+
+            $result = Invoke-Gate -RepoRoot $script:Root -Strict
+
+            $result.ExitCode | Should -Be 0
+            $result.Output | Should -Match 'Test classes found : 1'
+        }
+
+        It 'does not count a class nested in a test class as a top-level class (Strict exit 0)' {
+            $cs = @'
+using Xunit;
+
+namespace Contoso.Tests
+{
+    [Trait("Story", "#42")]
+    public class OuterTests
+    {
+        [Fact]
+        public void DoesSomething()
+        {
+        }
+
+        public class InnerTests
+        {
+            [Fact]
+            public void Nested()
+            {
+            }
+        }
+    }
+}
+'@
+            New-TestFile -RepoRoot $script:Root -Name 'Inner.cs' -Content $cs | Out-Null
+
+            $result = Invoke-Gate -RepoRoot $script:Root -Strict
+
+            $result.ExitCode | Should -Be 0
+            $result.Output | Should -Match 'Test classes found : 1'
+        }
+    }
 }

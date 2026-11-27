@@ -51,7 +51,7 @@ The gate configuration lives at `packs/github-issues/.apm/skills/check-pr-contra
 
 `packs/github-issues/.apm/skills/check-pr-contract/scripts/Check-PrStoryContract.ps1` checks that a PR is anchored to a development-active issue: labelled `refined`, open or closed. A key of another repository, `owner/repo#42`, counts only when `tracker.acceptedRepositories` lists that repository; the gate then reads the issue there. An update pull request uses this for the release issue of AI.SDLC.
 
-A data-model change with no ADR also passes when a commit of the pull request ends with a `No-ADR: <why>` trailer. The gate prints the waiver, and only `wrap-up` writes it, after the `architect` agent agrees.
+A data-model change needs an ADR that the pull request adds or changes, with the story key in its `story:` line. An older ADR of the same story does not count, and neither does a deleted one. A data-model change with no ADR also passes when a commit of the pull request ends with a `No-ADR: <why>` trailer. The gate prints the waiver, and only `wrap-up` writes it, after the `architect` agent agrees.
 
 Its test is `packs/github-issues/tests/skills/check-pr-contract/scripts/Check-PrStoryContract.Tests.ps1`.
 

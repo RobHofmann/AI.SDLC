@@ -120,7 +120,10 @@ Blocking gates check:
 The advisory gates warn and never stop a push:
 
 - change completeness. It reads the commits since the base and the edits that are not committed yet. It
-  also reads the new files git does not ignore, because `wrap-up` runs it before it commits.
+  also reads the new files git does not ignore, because `wrap-up` runs it before it commits. A test
+  counts only in the test folder that mirrors the changed project or package, and a deleted file needs
+  no test. An ADR clears only the doc areas whose paths it names. It reads `paths.sourceRoots` as well
+  as `paths.sourceRoot`.
 - comments that the change adds to YAML and PowerShell: the same three breaks as the C# entry, from a
   second entry of `Check-CommentHygiene.ps1` with `-Language YamlPowerShell`. It reads PowerShell with the
   parser and YAML outside quoted strings.
@@ -254,7 +257,7 @@ GitHub Copilot ignores the `if` field of a hook and runs every hook entry in tur
 
 `Invoke-AutolearnHook.ps1` flags a correction and asks for `capture-learning`. When the user only asks the agent to update its advice, it adds a softer note with two lesson questions and no flag. Its phrase lists are tested with their "no" forms too. On the first prompt of a session it counts the open lesson proposals in `temp/autolearn/pending.md`, and never shows their text.
 
-`Sync-AllowRules.ps1` writes the commands that each installed package lists under `allow` in its `gates.json` into `.claude/settings.json`. It also writes the full path of the knowledge folder into `permissions.additionalDirectories` of `.claude/settings.local.json`, which stays on one machine. It does so only for a folder below the parent folder of the repository that no link leads to. Any other knowledge folder is skipped with a FIX line. `Initialize-AiSdlc.ps1` and `Update-AiSdlc.ps1` run it, and an advisory gate runs it with `-Check`.
+`Sync-AllowRules.ps1` writes the commands that each installed package lists under `allow` in its `gates.json` into `.claude/settings.json`. It also writes a rule for each gate with the exact script and arguments of its entry, and no star. So `Sync-AllowRules.ps1` runs without a prompt only with `-Check`. It never writes a rule with a star glued to a file name in a scripts folder, such as `scripts/Check-*`. Such a rule would also let a new script run without a prompt. It removes such a rule that an older release wrote, and `-Check` reports one. It also writes the full path of the knowledge folder into `permissions.additionalDirectories` of `.claude/settings.local.json`, which stays on one machine. It does so only for a folder below the parent folder of the repository that no link leads to. Any other knowledge folder is skipped with a FIX line. `Initialize-AiSdlc.ps1` and `Update-AiSdlc.ps1` run it, and an advisory gate runs it with `-Check`.
 
 `Sync-AgentsFile.ps1`, which `Update-AiSdlc.ps1` runs, moves a root `CLAUDE.md` that only imports `AGENTS.md` to `.claude/CLAUDE.md`. Copilot reads a root `CLAUDE.md` and its import, so it loaded `AGENTS.md` twice.
 
@@ -302,7 +305,7 @@ The git `pre-push` hook skips the blocking gates when a passing pre-flight recei
 
 `Install-Apm.ps1` installs a pinned APM release and checks its SHA-256 value.
 
-`Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and checks its SHA-256 value. The composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml` runs it before the gate step. `Test-GitleaksBaseline.ps1` is the blocking C03 gate of `gates.json`, a secret scan against `gitleaks-baseline.json`. So `Invoke-LocalGates.ps1` runs it in the composite action, in the pre-push hook and in a local run. On a pull request in GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, as the pre-flight does. In a local run it scans `<main branch>..HEAD`, where `Get-AiSdlcMainBranch` gives `origin/<github.trunk>` or a fallback. A repository without a baseline counts every finding. In GitHub Actions a missing gitleaks, or rules that could not be downloaded, fail the gate. In a local run the gate reports "could not check" (exit 2), so a push still goes out.
+`Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and checks its SHA-256 value. The composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml` runs it before the gate step. `Test-GitleaksBaseline.ps1` is the blocking C03 gate of `gates.json`, a secret scan against `gitleaks-baseline.json`. So `Invoke-LocalGates.ps1` runs it in the composite action, in the pre-push hook and in a local run. On a pull request in GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, as the pre-flight does. In a local run it scans `<main branch>..HEAD`, where `Get-AiSdlcMainBranch` gives `origin/<github.trunk>` or a fallback. A local run also scans the staged files in a second pass, because a staged secret is in no commit yet. `-LogOpts` turns that pass off. A repository without a baseline counts every finding. In GitHub Actions a missing gitleaks, or rules that could not be downloaded, fail the gate. In a local run the gate reports "could not check" (exit 2), so a push still goes out.
 
 `GitleaksConfig.psm1` writes the gitleaks configuration of each scan: the rule set plus an allowlist for `sync-manifest.json`, whose git blob hashes look like keys. A repository can add its own paths in `secretScan.allowPaths` of `aisdlc.json`, as a second allowlist. The composite action, the pre-flight and `Create-GitleaksBaseline.ps1` use it.
 

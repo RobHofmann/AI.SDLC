@@ -50,6 +50,28 @@ Describe 'Check-RazorConventions' {
         $r.Output | Should -Match 'Portal component conventions OK'
     }
 
+    It 'exits 3 when the source folder does not exist' {
+        $empty = Join-Path $TestDrive 'no-source'
+        New-Item -ItemType Directory -Path $empty -Force | Out-Null
+        Set-AiSdlcTestConfig -Root $empty -Paths @{ sourceRoot = 'missing-src' }
+
+        $r = Invoke-Gate -P @{ RepoRoot = $empty }
+
+        $r.ExitCode | Should -Be 3 -Because $r.Output
+        $r.Output | Should -Match '(?m)^Not applicable: .*holds no \.razor and no \.cs file'
+    }
+
+    It 'exits 3 when the source folder holds no .razor and no .cs file' {
+        $bare = Join-Path $TestDrive 'bare-source'
+        New-Item -ItemType Directory -Path (Join-Path $bare 'src') -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $bare 'src' 'notes.txt') -Value 'x'
+        Set-AiSdlcTestConfig -Root $bare -Paths @{ sourceRoot = 'src' }
+
+        $r = Invoke-Gate -P @{ RepoRoot = $bare }
+
+        $r.ExitCode | Should -Be 3 -Because $r.Output
+    }
+
     It 'keeps the document root exempt from the DOCTYPE rule' {
         $r = Invoke-Gate
         $r.Output | Should -Not -Match 'App\.razor'
