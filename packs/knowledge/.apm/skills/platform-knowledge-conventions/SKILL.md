@@ -3,13 +3,11 @@ name: platform-knowledge-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  How we keep and use the platform notes: short pages about how a platform or system really behaves
-  in production, such as self-service paths, defaults and limits. It covers where the notes live, how to
-  look one up, when a note is too old to trust, what never goes in a note, and the shape of a note.
-  Use when an issue, an incident or a question may already be a known platform behavior, for example a
-  request for access or rights, or when someone asks "do we know how the platform does X". Do NOT use to
-  write or change a note (write-platform-note), or for the technical and functional docs of the
-  repository (docs-wiki-conventions).
+  How we keep and use the platform notes, short pages on how a platform really behaves in production:
+  where they live, how to look one up, when a note is too old to trust, and the shape of a note. Use
+  when an issue, incident or question may be a known platform behaviour, such as a request for access,
+  or on "do we know how the platform does X". Do NOT use to write a note (write-platform-note) or for
+  repository docs (docs-wiki-conventions).
 ---
 
 # Platform knowledge conventions

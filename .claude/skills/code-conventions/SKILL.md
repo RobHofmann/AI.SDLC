@@ -4,17 +4,16 @@ kind: knowledge
 user-invocable: false
 description: >
   The code rules for every language, written once: reuse before you build, build only what the story
-  needs, two scope cases, documented code with comments that say why (C10), no new warning, the
-  convention skill of each file type, one severity scale for every reviewer, a point that is not
-  decided, and where team facts live. Use when writing, planning or reviewing code in any language, at
-  the plan, build and review steps of implement, refactor or fix-pr-feedback. Do NOT use for the rules
-  of one language (the convention skill of that file type) or to run the gates (run-preflight).
+  needs, two scope cases, comments that say why (C10), no new warning, the convention skill of each
+  file type and one severity scale for every reviewer. Use when writing, planning or reviewing code in
+  any language, at the plan, build and review steps. Do NOT use for the rules of one language (its
+  convention skill) or to run the gates (run-preflight).
 ---
 
 # Code conventions
 
 This is the one home of the code rules that hold in every language; the agents and build skills point
-here. A convention skill of one language, such as `csharp-generation-smells` in the dotnet pack, adds
+here. A convention skill of one language, such as `csharp-conventions` in the dotnet pack, adds
 the rules of that language only. When a language skill and this page disagree on a shared rule, this
 page wins.
 

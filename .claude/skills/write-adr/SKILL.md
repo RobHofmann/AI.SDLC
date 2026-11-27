@@ -4,12 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: Architect
 description: >
-  Suggest and author MADR-style Architecture Decision Records in docs/adrs/, and flag decisions
-  that ought to be recorded. Use when a load-bearing decision is being made or has just been made
-  ("we decided to...", "let's go with X over Y", "should this be an ADR?", "record this decision",
-  "write an ADR", "supersede ADR NNNN"), or when a plan or change implies an unrecorded
-  architectural choice. Do NOT use for the project-wide constitution (update-constitution), for
-  ordinary feature docs or for tracker work items.
+  Suggest and write MADR-style Architecture Decision Records in docs/adrs/, and flag decisions that
+  ought to be recorded. Use when a decision the architecture rests on is being or was just made: "we
+  decided to...", "let's go with X over Y", "should this be an ADR?", "record this decision", "write
+  an ADR", "supersede ADR 0007". Do NOT use for the constitution (update-constitution), for feature
+  docs (write-docs) or for work items.
 ---
 
 # Write an ADR

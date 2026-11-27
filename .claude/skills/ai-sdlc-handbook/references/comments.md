@@ -9,7 +9,7 @@ form of its own language. The rule holds for people and agents alike:
 |---|---|
 | C# | An XML doc comment (`/// <summary>`), with `<param>` and `<returns>` where they add something. |
 | Python | A docstring on the module, the class and the function. |
-| PowerShell | The comment-based help block, ALWAYS, on every script: `.SYNOPSIS`, a short `.DESCRIPTION`, a `.PARAMETER` per parameter, and an `.EXAMPLE`. |
+| PowerShell | The comment-based help block, ALWAYS, on every script: `.SYNOPSIS`, a short `.DESCRIPTION`, a `.PARAMETER` per parameter, and an `.EXAMPLE`. The form is in `powershell-conventions`. |
 | TypeScript | A JSDoc or TSDoc block (`/** ... */`). |
 | Razor | A summary at the top of a component that has parameters: what it shows and what each parameter does. |
 
@@ -89,3 +89,4 @@ the human checkpoints in [orchestration.md](orchestration.md) describe.
 - [Documentation wiki](docs-wiki.md) - the pages where the longer explanation goes.
 - [Skill patterns](pattern.md) - the shape of a skill, and where its scripts live.
 - [Code conventions](/.claude/skills/code-conventions/SKILL.md) - the code rules for every language, this one among them.
+- [PowerShell conventions](/.claude/skills/powershell-conventions/SKILL.md) - the help block of a script, and the other PowerShell rules.

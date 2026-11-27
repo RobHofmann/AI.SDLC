@@ -3,7 +3,7 @@
 We use Robert C. Martin's *Clean Code* in a practical way, not as a whole. No analyzer checks these
 rules well, so the plan, the build and the review check them, not the build tools. The analyzer rules
 of one language live in the convention skill of that language, such as the clean code page of
-`csharp-generation-smells` in the dotnet pack.
+`csharp-conventions` in the dotnet pack.
 
 ## Reuse before you build
 

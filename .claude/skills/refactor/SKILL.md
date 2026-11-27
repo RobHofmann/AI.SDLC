@@ -4,12 +4,11 @@ kind: workflow
 phase: create
 persona: Developer
 description: >
-  Improve the internal structure of existing code without changing its observable behaviour: the
-  tests pass before and after, and the public contract is unchanged. Use when the user says
-  "refactor this", "clean this up", "simplify this", "extract a method/class", "rename for
-  clarity", "reduce this duplication" or "tidy this without changing behaviour". Do NOT use to add
-  or change behaviour, fix a bug or build a feature (implement). Do NOT use to delete dead code as
-  the primary goal.
+  Improve the inside structure of existing code without changing what it does: the tests pass before
+  and after, and the public contract stays the same. Use when the user says "refactor this", "clean
+  this up", "simplify this", "extract a method", "rename for clarity" or "reduce this duplication". Do
+  NOT use to add or change behaviour, fix a bug or build a feature (implement), or to delete dead code
+  as the main goal.
 ---
 
 # Refactor

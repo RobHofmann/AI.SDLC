@@ -4,15 +4,11 @@ kind: workflow
 phase: elaboration
 persona: PM, QA
 description: >
-  Create GitHub issues (stories, tasks, bugs, epics, spikes) in the tracker repository named in aisdlc.json
-  with testable acceptance criteria, and make every change to an existing issue. Use when the user wants
-  a new work item: "write up a story", "make an issue", "log a bug", "create an epic", "put it in
-  GitHub", even when they only describe the work. Also use to write or sharpen acceptance criteria
-  ("define the ACs for #1234"), to bring an issue in line with what shipped ("update #1234 to
-  match reality") or to split an epic into stories. Other skills call its update mode to record a PR
-  link, an ADR backlink, a related issue or what shipped. Do NOT use to triage or fix an existing bug
-  (fix-bug), to read, review, search, close or reopen issues, or to implement or tag tests (implement).
-  Do NOT use for pull requests, discovery pages, PRDs (write-prd) or a bare estimate.
+  Create GitHub issues (stories, tasks, bugs, epics, spikes) with testable acceptance criteria in the
+  tracker repository of aisdlc.json, and make every change to an existing issue. Use when the user
+  wants a new work item ("write up a story", "make an issue", "log a bug", "create an epic"), new
+  criteria, an issue matched to what shipped, or an epic split. Do NOT use to triage or fix a bug
+  (fix-bug), for PRDs (write-prd) or to build code (implement).
 ---
 
 # Create or update a GitHub issue

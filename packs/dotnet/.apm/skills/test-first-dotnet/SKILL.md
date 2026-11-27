@@ -3,13 +3,11 @@ name: test-first-dotnet
 kind: knowledge
 user-invocable: false
 description: >
-  How tests are written first and coverage is measured in a .NET repository. It covers red, green,
-  refactor; xUnit with Moq and AutoFixture; tests that mirror src/; the Story trait. It also covers the Arrange,
-  Act, Assert markers, the coverage ratchet with the run settings, and 80% on new code in SonarCloud.
-  Use when writing or changing C# behaviour and its tests, or when mapping acceptance criteria to
-  tests. Also use when reading a coverage result, or when the test-analyzer agent reviews a diff. Do
-  NOT use to run the whole pipeline locally (run-preflight) or to decide the order of the build steps
-  (implement).
+  How tests are written first and coverage is measured in a .NET repository: red, green, refactor;
+  xUnit and Moq; tests that mirror src/; the Story trait; Arrange, Act and Assert markers; the
+  coverage ratchet and 80% on new code. Use when writing or changing C# behaviour and its tests,
+  mapping acceptance criteria to tests, reading a coverage result, or when test-analyzer reviews a
+  diff. Do NOT use to run the pipeline locally (run-preflight).
 ---
 
 # Test first in .NET
@@ -46,8 +44,13 @@ the seam that reaches the bug. The plan then names that seam.
 
 ## The shape of a test
 
-- **Framework.** xUnit, Moq for mocks, AutoFixture for data. Do not let AutoFixture pick the value the
-  test is about; set it by hand so the assertion reads.
+- **Framework.** xUnit and Moq. Test data is literals first; AutoFixture only where the test project
+  already uses it, and never for the value the test is about.
+- **Test style.** A new test and a refactored test class follow the
+  [test style](/.claude/skills/csharp-conventions/references/csharp.md#test-style): names, one Act, one
+  theory per path, mocks per test and exact inputs.
+- **Own logic only (clause C04).** Test a rule, a calculation or a branch the team wrote, not how a
+  framework runs it. A test that builds the container to see whether a service resolves stays out.
 - **One test class per type.** A new test goes into the existing test class of the type it tests.
   Look for it first; the context block names it under the nearest examples, and the plan names it
   under `Tests go in:`. Write a new test class only when the type has none. Never start a test class
@@ -69,9 +72,9 @@ the seam that reaches the bug. The plan then names that seam.
   members.
 - **Logging and nullable traps.** A logging extension that checks `IsEnabled` first needs `IsEnabled`
   stubbed in the test. In a nullable-enabled test project, use the annotated `Verify` form. Both
-  are in the Testing section of [the C# conventions page](/.claude/skills/csharp-generation-smells/references/csharp.md#testing).
-- **DI registration.** A new `Add*()` method joins the registration tests, when the repository has
-  a test that builds every `Add*()` method.
+  are in the Testing section of [the C# conventions page](/.claude/skills/csharp-conventions/references/csharp.md#testing).
+- **DI registration.** A new `Add*()` method joins the one registration test, when the repository has
+  one. That test reads a bare `ServiceCollection` and never calls `BuildServiceProvider()`.
 
 ## Coverage (clause C04)
 
@@ -99,7 +102,7 @@ mark a criterion done on your own judgement (C09); show the test and leave the s
 
 ## Sources
 
-- [C# conventions, Testing](/.claude/skills/csharp-generation-smells/references/csharp.md) - the full test style.
+- [C# conventions, Testing](/.claude/skills/csharp-conventions/references/csharp.md) - the full test style.
 - [Run pre-flight](/.claude/skills/run-preflight/SKILL.md) - running the PR checks locally.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - C04, C09, C10.
 - The seams rule and the anti-patterns come from `skills/engineering/tdd/SKILL.md` in

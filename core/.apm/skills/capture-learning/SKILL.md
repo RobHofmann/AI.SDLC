@@ -4,15 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: Lead
 description: >
-  Turn a lesson into a lasting rule, in the one place that owns it, from this session or from a pull
-  request. It applies the filter on the handbook autolearn page, names the one home for the lesson and
-  proposes the write behind a confirmation. Use whenever the user corrects the agent or rejects an
-  approach ("no, that is wrong", "not what I asked", "you keep doing that", "dat klopt niet"), when
-  the same avoidable failure happens twice, or when the user says "learn from this", "remember this"
-  or "make sure this does not happen again". Use when a pull request review shows a pattern of human
-  cleanup: "learn from this PR", "turn these review fixes into gates or conventions". Also use as the lessons step of wrap-up, or when the
-  autolearn hook asks for it by name. Do NOT use to judge a skill's own quality (test-skills) or to
-  write the artifact when its home is already known (call the owning skill directly).
+  Turn a lesson into a lasting rule in the one place that owns it, from this session or from a pull
+  request review, and propose the write behind a confirmation. Use whenever the user corrects the
+  agent ("no, that is wrong", "you keep doing that", "dat klopt niet"), says "learn from this" or
+  "make sure this does not happen again", when a review shows a pattern of cleanup, or as the lessons
+  step of wrap-up. Do NOT use to judge a skill (test-skills).
 ---
 
 # Capture a lesson

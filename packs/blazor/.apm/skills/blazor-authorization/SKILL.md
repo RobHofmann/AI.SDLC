@@ -3,13 +3,11 @@ name: blazor-authorization
 kind: knowledge
 user-invocable: false
 description: >
-  The checks to run before an authorization change in a Blazor portal. They keep closed the in-circuit
-  navigation gap that has come back more than once. They cover render mode, router composition, page
-  attributes, the three resource branches in a policy handler, the admin short-circuit, and the
-  six-cell test matrix. Use when about to read or edit Routes.razor, App.razor, a page with an
-  Authorize attribute, or an authorization requirement or its handler. Also use for a *PageState.cs
-  that calls IsAuthorizedFor or AuthorizeAsync. Do NOT use for API controller policies alone or for a
-  portal change that touches no authorization.
+  The checks to run before an authorization change in a Blazor portal, so the in-circuit navigation
+  gap stays closed: render mode, router composition, page attributes, the resource branches of a
+  policy handler, the admin short-circuit and the test matrix. Use when about to edit Routes.razor,
+  App.razor, a page with an Authorize attribute, an authorization handler, or a *PageState.cs that
+  checks access. Do NOT use for API controller policies alone.
 ---
 
 # Blazor authorization
@@ -83,7 +81,7 @@ in-circuit navigation.
 
 ## Sources
 
-- [Portal UI conventions](/.claude/skills/blazor-conventions/references/portal-ui.md) - the component rules the pages follow.
+- [Razor rules](/.claude/skills/razor-conventions/references/razor.md) - the component rules the pages follow.
 - [ADR conventions](/.claude/skills/adr-conventions/SKILL.md) - how the authorization ADR is amended when a case is not covered.
 
 ## Standing rules

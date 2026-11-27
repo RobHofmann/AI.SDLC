@@ -5,16 +5,11 @@ phase: cross-cutting
 persona: Lead
 user-invocable: false
 description: >
-  Check a pull request against the substrate contract before it is opened or merged. The PR
-  references a dev-active GitHub issue, and a data-model or load-bearing change carries an ADR that names the story. It reads
-  the PR and the substrate and reports a verdict; it never edits the PR, the story or the code.
-  It never passes blind: if the substrate cannot be reached it reports blocked in a session, and the CI form exits 2 (a warning). Use when
-  the intent is to verify the PR-to-substrate wiring: "check this PR references a story", "is my
-  PR wired to a dev-active story", "does this data-model change have an ADR", "verify the PR
-  contract before I open it", "pre-PR substrate check", or as the pre-open step of wrap-up, inside run-preflight.
-  Do NOT use to run the code-analysis gates locally (Invoke-LocalGates.ps1 or run-preflight). Do NOT
-  use to create or update the story (write-story) or to author an ADR
-  (write-adr).
+  Check a pull request against its substrate before it is opened or merged: it references a dev-active
+  GitHub issue, and a data-model change carries an ADR that names the story. It reports a verdict and
+  edits nothing. Use when the user asks "is my PR wired to a story", "does this data-model change have
+  an ADR" or "check the PR contract", or inside run-preflight. Do NOT use to run the gates
+  (run-preflight) or to change the story (write-story).
 ---
 
 # Check PR contract

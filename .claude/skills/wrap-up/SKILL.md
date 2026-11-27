@@ -4,15 +4,11 @@ kind: workflow
 phase: create
 persona: Developer
 description: >
-  Close the gap between working code and a finished change. Sweep the repository for anything that
-  still refers to what the change renamed, removed or inverted. Then bring the tests, both
-  documentation layers, the user story and the gates up to what the change actually did. Then commit
-  and run the pre-flight on that commit, so one command stands before the pull request. Use when the
-  user says "finalise this", "the feature works, finish it off", "are the docs and tests up to
-  date", "what else still refers to the old name", "I renamed a parameter, what else points at
-  it", "did anything get left behind", or when Check-ChangeCompleteness reports a gap before a
-  push. Do NOT use it as a second code-review pass; it is about what the change left behind, not
-  about the code itself.
+  Close the gap between working code and a finished change: sweep for anything that still names what
+  the change renamed or removed, bring the tests, both doc layers, the story and the gates up to date,
+  commit and run the pre-flight. Use when the user says "finalise this", "finish it off", "are the
+  docs and tests up to date", "what else still refers to the old name", or when
+  Check-ChangeCompleteness reports a gap. Do NOT use as a second code review.
 ---
 
 # Wrap up a change

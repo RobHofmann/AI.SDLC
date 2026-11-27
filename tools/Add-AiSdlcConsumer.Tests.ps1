@@ -133,6 +133,18 @@ Describe 'Add-AiSdlcConsumer' {
         $result.Output | Should -Match 'knowledge\.repository'
     }
 
+    It 'adds the <Pack> pack alone, without the blazor pack' -ForEach @(
+        @{ Pack = 'javascript' }
+        @{ Pack = 'css' }
+    ) {
+        $target = New-TargetRepo -Files @{ 'README.md' = 'x' }
+        $result = Invoke-Tool -Target $target -Extra @('-AddPacks', $Pack)
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        Get-ApmPack $target | Should -Be @($Pack, 'github', 'github-issues')
+        Get-Content (Join-Path $target 'apm.yml') -Raw | Should -Not -Match 'packs/blazor'
+    }
+
     It 'adds the sonarcloud pack only when asked, and names the token variable' {
         $target = New-TargetRepo -Files @{ 'README.md' = 'x' }
         $result = Invoke-Tool -Target $target -Extra @('-AddPacks', 'sonarcloud')

@@ -4,15 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: any
 description: >
-  Navigate the AI-SDLC workflow for a work item or artifact: report where it is in the lifecycle and
-  what to do next. It is READ-ONLY: it resolves the anchor, walks the artifact graph and reports the
-  current phase, the next skill and its persona, and the human checkpoint the work waits at. It never
-  creates, edits, links or transitions anything. On explicit request it hands the next step to the
-  owning skill, which runs up to its checkpoint. Use when the user asks "where are we on #42", "what
-  is the next step for this story", "run the sdlc on <key or path>", "what is missing before this can
-  ship", "which phase is this in", or hands over an issue key, a spec, a doc or an ADR and asks how to
-  go on. Also use with no work item: "which skill do I use for this", "where do I start", "what is
-  the command for". Do NOT use to author artifacts or to write to a GitHub issue.
+  Read-only guide through the AI-SDLC for a work item or artifact: where it is in the lifecycle, the
+  next skill, its persona and the checkpoint it waits at; on request it hands over to that skill. Use
+  when the user asks "where are we on #42", "what is the next step", "run the sdlc on #42", "what is
+  missing before this can ship", "which skill do I use" or "where do I start". Do NOT use to write
+  artifacts or to write to a GitHub issue.
 ---
 
 # Guide me (navigator)

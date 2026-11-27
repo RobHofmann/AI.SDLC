@@ -4,16 +4,11 @@ kind: workflow
 phase: create
 persona: Tech Writer
 description: >
-  Maintain BOTH documentation layers as one linked wiki after a change: technical docs in docs/
-  and functional docs in docs-functional/. It reads the layer index first, routes each change to
-  the right layer, cross-links related pages and flags stale sections. Use after implementing or
-  changing a feature, or as the documentation step of a development cycle. Use when a good answer to a
-  real question deserves to become a page, or when the user says "update the docs", "sync the
-  documentation", "the docs are out of date" or "document how this works". Use when a page from
-  your own change fails the reading level or another doc gate and needs a rewrite. Do NOT use for
-  the pages of a whole repository (adopt-docs), ADRs
-  (write-adr), the constitution (update-constitution) or API spec / OpenAPI generation
-  (write-api-spec).
+  Keep both documentation layers one linked wiki after a change: docs/ and docs-functional/, each
+  change in its layer and linked. Use after a feature changed, as the documentation step of a cycle,
+  when the user says "update the docs", "the docs are out of date" or "document how this works", or
+  when a page of your change fails a doc gate. Do NOT use for a whole repository (adopt-docs), ADRs
+  (write-adr) or an OpenAPI spec (write-api-spec).
 ---
 
 # Create documentation (dual-layer wiki)

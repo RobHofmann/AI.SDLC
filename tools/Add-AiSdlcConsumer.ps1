@@ -13,7 +13,8 @@
        or project file means dotnet, a .razor file means blazor, a .bicep file means bicep. The script
        never picks discovery, knowledge or sonarcloud itself, because only some repositories need them:
        add them with -AddPacks, for example -AddPacks sonarcloud for a repository with a SonarCloud
-       project. -Packs overrides the choice, and -AddPacks adds to it.
+       project. -Packs overrides the choice, and -AddPacks adds to it. The blazor pack brings the css and
+       javascript packs through APM; a repository without Blazor adds them with -AddPacks css,javascript.
     2. It writes aisdlc.json with the github settings: github.repository from the git remote (origin)
        and the trunk from config/defaults.json. It writes apm.yml with the core and the packs at one
        release tag of the AI.SDLC source (aiSdlc.repositoryUrl in config/defaults.json); apm.yml is the
@@ -121,7 +122,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $aiSdlcRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $aiSdlcRoot 'core' '.apm' 'skills' 'ai-sdlc-hooks' 'scripts' 'AiSdlcSetup.ps1')
-$packOrder = @('dotnet', 'blazor', 'bicep', 'github', 'github-issues', 'discovery', 'knowledge', 'sonarcloud')
+$packOrder = @('dotnet', 'blazor', 'css', 'javascript', 'bicep', 'github', 'github-issues', 'discovery', 'knowledge', 'sonarcloud')
 $alwaysPacks = @('github', 'github-issues')
 if (-not $DefaultsFile) { $DefaultsFile = Join-Path $aiSdlcRoot 'config' 'defaults.json' }
 $defaults = Get-Content -LiteralPath $DefaultsFile -Raw | ConvertFrom-Json

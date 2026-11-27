@@ -18,12 +18,16 @@ core.
 
 | File | Skills | Pack | Warning source |
 |---|---|---|---|
-| `.cs` | `csharp-generation-smells`, `test-first-dotnet` | dotnet | the .NET analyzers in the build, on the clean code page of `csharp-generation-smells` |
-| `.razor` | `blazor-conventions` | blazor | the .NET build, and the Razor gates of `blazor-conventions` |
+| `.cs` | `csharp-conventions`, `test-first-dotnet` | dotnet | the .NET analyzers in the build, on the clean code page of `csharp-conventions` |
+| `.razor` | `razor-conventions`; also `css-conventions` when the change adds layout classes in markup, and `javascript-conventions` when it adds a JavaScript call | blazor, css, javascript | the .NET build, and the Razor gates of `razor-conventions` |
+| `.css` | `css-conventions` | css | none in the build |
+| `.js` | `javascript-conventions` | javascript | none in the build |
 | `.bicep`, `.bicepparam` | `bicep-conventions` | bicep | the Bicep linter, which `bicep build` runs |
-| `.yml`, `.yaml` under `.github/workflows/` | `github-actions-conventions` | github | none in the build |
+| `.ps1`, `.psm1`, `.psd1` | `powershell-conventions` | core | none in the build |
+| `.yml`, `.yaml` | `yaml-conventions` | core | none in the build |
+| `.yml`, `.yaml` under `.github/workflows/` | `yaml-conventions`, `github-actions-conventions` | core, github | none in the build |
 
-A YAML file outside `.github/workflows/` matches no row, so it gets the shared rules only.
+A YAML file outside `.github/workflows/` gets `yaml-conventions` only.
 
 ## Skills that follow a topic
 

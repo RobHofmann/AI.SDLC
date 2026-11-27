@@ -11,15 +11,15 @@ The `dotnet` pack adds development rules, code graph tools, and gates for .NET r
 
 ### Rules the review agents read
 
-The review agents `code-reviewer`, `test-analyzer` and `security-reviewer` live in [core](core.md). Each one reads the convention skills of the changed files from the table of file types in `code-conventions`. For a `.cs` file that table names `csharp-generation-smells` and `test-first-dotnet`.
+The review agents `code-reviewer`, `test-analyzer` and `security-reviewer` live in [core](core.md). Each one reads the convention skills of the changed files from the table of file types in `code-conventions`. For a `.cs` file that table names `csharp-conventions` and `test-first-dotnet`.
 
-- `csharp-generation-smells` holds the C# review checks, such as async and resources, errors through the pipeline and closed sets. Its `## Security` section and its page `references/security.md` hold the C# security checks: access control, Graph and ARM scope, queries built from input, deserialization and error bodies.
-- `test-first-dotnet` holds the C# test rules that `test-analyzer` reads. Examples are one test class per type, the Story trait and real assertions. It also asks for a mock for every constructor dependency, and no controller test for an action that only forwards a call.
+- `csharp-conventions` holds the C# review checks, such as async and resources, errors through the pipeline and closed sets. Its `## Security` section and its page `references/security.md` hold the C# security checks: access control, Graph and ARM scope, queries built from input, deserialization and error bodies.
+- `test-first-dotnet` holds the C# test rules that `test-analyzer` reads. A new test follows the test style on `csharp-conventions/references/csharp.md`, and proves the team's own logic, not the framework's ([ADR 0026](../adrs/0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md)). Examples are one test class per type, the Story trait and real assertions. It also asks for a mock for every constructor dependency, and no controller test for an action that only forwards a call.
 
 ### Development skills
 
 - `api-contract-conventions` defines REST wire rules at `packs/dotnet/.apm/skills/api-contract-conventions/SKILL.md`.
-- `csharp-generation-smells` defines the C# and Razor rules at `packs/dotnet/.apm/skills/csharp-generation-smells/SKILL.md`. The rules for every language, such as reuse before you build, live once in `code-conventions` of core.
+- `csharp-conventions` defines the C# rules at `packs/dotnet/.apm/skills/csharp-conventions/SKILL.md`. Its page `references/house-style.md` holds the house rules, each with an example and two public sources. Its page `references/not-decided.md` lists the points of taste: a change follows the file it edits, and a new file takes the default. The folders for a new interface, exception and options class come from `dotnet.folders` in `aisdlc.json`. Its asset `assets/recommended.editorconfig` is an opt-in `[*.cs]` block that sets fifteen code style rules to warning, and `references/code-style-block.md` says how a repository takes it. The rules for every language, such as reuse before you build, live once in `code-conventions` of core.
 - `dotnet-code-graph` covers the local Graphify code graph at `packs/dotnet/.apm/skills/dotnet-code-graph/SKILL.md`.
 - `dotnet-gates` covers .NET gates and local run steps at `packs/dotnet/.apm/skills/dotnet-gates/SKILL.md`.
 - `nuget-vulnerability-remediation` covers vulnerable NuGet package fixes at `packs/dotnet/.apm/skills/nuget-vulnerability-remediation/SKILL.md`.
@@ -30,9 +30,9 @@ API reference material lives in `packs/dotnet/.apm/skills/api-contract-conventio
 
 The .NET constitution clauses live in `packs/dotnet/.apm/skills/api-contract-conventions/references/clauses.md`.
 
-C# conventions live in `packs/dotnet/.apm/skills/csharp-generation-smells/references/csharp.md`.
+C# conventions live in `packs/dotnet/.apm/skills/csharp-conventions/references/csharp.md`.
 
-Analyzer-backed clean code rules live in `packs/dotnet/.apm/skills/csharp-generation-smells/references/clean-code.md`.
+Analyzer-backed clean code rules live in `packs/dotnet/.apm/skills/csharp-conventions/references/clean-code.md`.
 
 The Graphify code graph reference lives in `packs/dotnet/.apm/skills/dotnet-code-graph/references/code-graph.md`.
 
@@ -102,7 +102,7 @@ Use `test-first-dotnet` when changing C# behavior or its tests. It uses red, gre
 
 Each acceptance criterion needs a story-tagged test that asserts the promised behavior. Cover changed behavior and its error paths.
 
-Use `csharp-generation-smells` when writing or reviewing C# or Razor. Check reuse, validation, logging, error flow, wire names, and test shape.
+Use `csharp-conventions` when writing or reviewing C# or Razor. Check reuse, validation, logging, error flow, wire names, and test shape.
 
 Use `api-contract-conventions` when a change affects a controller, route, request, or response.
 

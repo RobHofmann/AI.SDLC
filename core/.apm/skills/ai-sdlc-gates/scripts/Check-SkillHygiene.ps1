@@ -23,10 +23,12 @@
       - name=folder           the frontmatter `name:` matches the folder name (how skills are invoked).
       - name spec             the name has 1 to 64 characters: lowercase letters, digits and single
                               hyphens, with no hyphen at either end (the Agent Skills specification).
-      - description length    the description has 1 to 1024 characters once its YAML block is folded.
-                              GitHub Copilot and the Agent Skills specification refuse a longer one, and
-                              Copilot then does not load the skill at all. Claude Code accepts it, so
-                              without this rule the skill works in one tool and is missing in the other.
+      - description length    the description has 1 to 450 characters once its YAML block is folded, because
+                              every session loads it before the person types anything. A skill with
+                              `disable-model-invocation: true` is exempt from the 450 limit, because the
+                              model never loads it, but it keeps the 1024 limit: GitHub Copilot and the
+                              Agent Skills specification refuse a longer description, and Copilot then
+                              does not load the skill at all (ADR 0027).
       - phase + persona       the frontmatter carries `phase:` (discovery|elaboration|create|mature|
                               cross-cutting) and a non-empty `persona:`. Skill names are bare and no longer
                               encode the phase, so the lifecycle position and owner live in frontmatter.
@@ -112,7 +114,8 @@ $emDash = [char]0x2014
 $validPhases = @('discovery', 'elaboration', 'create', 'mature', 'cross-cutting')
 $validKinds = @('workflow', 'knowledge')
 $knowledgeMaxLines = 120
-$descriptionMaxChars = 1024
+$descriptionMaxChars = 450
+$personOnlyDescriptionMaxChars = 1024
 # Skill names are bare verb-noun, with the phase/persona in frontmatter. A name that starts with
 # one of the old phase/area prefixes is a regression to the superseded scheme. The list is explicit and
 # adjustable: if a legitimate verb-noun ever collides (e.g. a real 'create-*' action), drop that token here.
@@ -203,8 +206,13 @@ foreach ($dir in $skillDirs) {
 
     $description = Get-FrontmatterDescription -Frontmatter $fm
     if (-not $description) { Add-Violation $name 'description' 'missing or empty frontmatter description:' }
-    elseif ($description.Length -gt $descriptionMaxChars) {
-        Add-Violation $name 'description-length' "the description has $($description.Length) characters; GitHub Copilot does not load a skill whose description is over $descriptionMaxChars (the Agent Skills specification), so move the detail into the body"
+    else {
+        $personOnly = $fm -match '(?m)^disable-model-invocation:\s*true\s*$'
+        $limit = if ($personOnly) { $personOnlyDescriptionMaxChars } else { $descriptionMaxChars }
+        if ($description.Length -gt $limit) {
+            $why = if ($personOnly) { "GitHub Copilot does not load a skill whose description is over $limit (the Agent Skills specification)" } else { "every session loads a model-visible description, so it stays at $limit characters or fewer (pattern.md, Writing the description)" }
+            Add-Violation $name 'description-length' "the description has $($description.Length) characters, which is over $limit; $why, so move the detail into the body"
+        }
     }
 
     foreach ($pfx in $forbiddenNamePrefixes) {
@@ -248,7 +256,7 @@ foreach ($dir in $skillDirs) {
         if ($text -notmatch '(?m)^##\s*Next steps') { Add-Violation $name 'next-steps' 'no "## Next steps" section' }
     }
 
-    if ($text -notmatch 'Use (when|whenever|after|once|during|this)') { Add-Violation $name 'trigger-rich-desc' 'description lacks triggering language (Use when/whenever/after/...)' }
+    if ($description -notmatch 'Use (when|whenever|after|once|during|this)') { Add-Violation $name 'trigger-rich-desc' 'description lacks triggering language (Use when/whenever/after/...)' }
 
     # The pointers must sit INSIDE the Standing rules section, so read that section only: from its
     # heading to the next heading of the same level or the end of the file. A file-wide search would
@@ -307,7 +315,7 @@ if ($violations.Count -gt 0) {
     Write-Host "Skill hygiene violation: one or more skills under .claude/skills/ break a structure or house-style rule." -ForegroundColor Red
     foreach ($v in $violations) { Write-Host ("  {0}  [{1}]  {2}" -f $v.Skill, $v.Rule, $v.Detail) }
     $affected = ($violations | Select-Object -ExpandProperty Skill -Unique).Count
-    Write-Host "FIX: Give each skill named above the part its kind needs. Every skill has a lowercase hyphenated name that matches its folder and a description of at most $descriptionMaxChars characters. A workflow skill has a phase and persona, a trigger-rich description, a Standing rules section that links both standing-rule pages, and a Next steps section. A knowledge skill has user-invocable: false, a Sources section with links that resolve, and no phase, persona or Next steps (.claude/skills/ai-sdlc-handbook/references/pattern.md)." -ForegroundColor Red
+    Write-Host "FIX: Give each skill named above the part its kind needs. Every skill has a lowercase hyphenated name that matches its folder and a description of at most $descriptionMaxChars characters ($personOnlyDescriptionMaxChars when only a person can start the skill). A workflow skill has a phase and persona, a trigger-rich description, a Standing rules section that links both standing-rule pages, and a Next steps section. A knowledge skill has user-invocable: false, a Sources section with links that resolve, and no phase, persona or Next steps (.claude/skills/ai-sdlc-handbook/references/pattern.md)." -ForegroundColor Red
     Write-Host ("Found {0} violation(s) across {1} of {2} skill(s)." -f $violations.Count, $affected, $skillDirs.Count) -ForegroundColor Red
     exit 1
 }
@@ -318,5 +326,5 @@ if ($Strict -and $advisories.Count -gt 0) {
     exit 1
 }
 
-Write-Host ("Skill hygiene OK: {0} skill(s) pass, {1} workflow and {2} knowledge (kind, name=folder and the name spec, a description within $descriptionMaxChars characters, the shape of each kind, trigger-rich description, Standing rules, no em-dash, no line-citations, cross-refs resolve, no plugin refs)." -f $skillDirs.Count, $workflowCount, $knowledgeCount)
+Write-Host ("Skill hygiene OK: {0} skill(s) pass, {1} workflow and {2} knowledge (kind, name=folder and the name spec, a description within $descriptionMaxChars characters ($personOnlyDescriptionMaxChars for a person-only skill), the shape of each kind, trigger-rich description, Standing rules, no em-dash, no line-citations, cross-refs resolve, no plugin refs)." -f $skillDirs.Count, $workflowCount, $knowledgeCount)
 exit 0

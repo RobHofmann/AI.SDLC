@@ -3,12 +3,10 @@ name: github-actions-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  How a GitHub Actions workflow is laid out and written here: the files in .github/workflows, the
-  release workflow that builds once and deploys per environment, workflow_dispatch toggles with risky
-  work off by default, actions pinned to a full commit SHA, least-privilege permissions, concurrency,
-  environments with required reviewers for production, and the pull request workflow with the shared
-  AI-SDLC job. Use when writing, changing or reviewing workflow YAML, for example a new toggle, a new
-  deploy job or a new environment. Do NOT use to run or approve a workflow, or to set the branch
+  How a GitHub Actions workflow is laid out and written here: the files in .github/workflows, build
+  once and deploy per environment, workflow_dispatch toggles, actions pinned to a full commit SHA,
+  least-privilege permissions, concurrency, protected environments and the shared AI-SDLC job. Use
+  when writing, changing or reviewing workflow YAML. Do NOT use to run a workflow or to set the branch
   ruleset (github-pull-requests).
 ---
 
@@ -16,7 +14,9 @@ description: >
 
 How a workflow of a team repository is written. `write-pipeline` loads this for every new workflow,
 and any change to workflow YAML follows it. The starter workflows that the AI.SDLC setup script writes
-are the reference: when an example elsewhere differs, the starter layout wins.
+are the reference: when an example elsewhere differs, the starter layout wins. The rules for any
+YAML file are in [yaml-conventions](/.claude/skills/yaml-conventions/SKILL.md) of core. This skill
+adds the GitHub Actions side only.
 
 ## The layout
 

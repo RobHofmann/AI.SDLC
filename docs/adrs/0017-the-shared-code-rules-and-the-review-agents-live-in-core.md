@@ -27,7 +27,7 @@ because:
 
 ## Context
 
-The code rules that hold in every language lived inside `csharp-generation-smells` of the dotnet pack.
+The code rules that hold in every language lived inside the C# skill of the dotnet pack, called `csharp-conventions` since v2.0.0.
 Examples are reuse before you build, and build only what the story needs. The `code-reviewer`,
 `test-analyzer` and `security-reviewer` agents lived in the dotnet pack too, and checked C# and Razor
 only. A repository without that pack got no shared code rules and no review agents, so the build loop
@@ -46,7 +46,7 @@ a change touches, and skips a skill whose pack is not installed. A new language 
 
 **The three review agents live in core.** `code-reviewer`, `test-analyzer` and `security-reviewer`
 preload `code-conventions` and read the rules of each changed file type from the table. The C# checks
-of the old agents moved into `csharp-generation-smells`, and the Razor checks into `blazor-conventions`.
+of the old agents moved into `csharp-conventions`, and the Razor checks into the Razor convention skill of the blazor pack (`razor-conventions` since v2.0.0).
 Each language skill with security rules has a section named Security. The dotnet pack ships no agent.
 
 ## Consequences
@@ -60,7 +60,7 @@ Each language skill with security rules has a section named Security. The dotnet
 **Negative:**
 
 - A reviewer reads more pages per review: the table and each skill in its rows.
-- A consumer that linked to a moved section of `csharp-generation-smells` gets a broken link.
+- A consumer that linked to a moved section of `csharp-conventions` gets a broken link.
 
 **Neutral:**
 

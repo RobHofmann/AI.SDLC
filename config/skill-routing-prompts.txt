@@ -1,0 +1,84 @@
+# The routing prompt set of the test-skills harness, Layer 1.
+# One prompt per line: an ID, the skill that must win, then the prompt. Lines that start with # and blank lines are skipped.
+# The names are made up (Contoso, contoso/portal, #42). A prompt marked BAIT holds the words of another skill on purpose.
+# Run it before and after a change to a skill description; ADR 0027 records the numbers of the 450-character cut.
+P01 | add-gate | We keep merging pull requests that leave a TODO without an issue number in the scripts. Make the build fail on that.
+P02 | add-gate | Turn our rule "every ADR has a Status line" into a check that runs on each pull request.
+P03 | adopt-docs | The contoso/portal repository has twelve projects and almost no docs. Give every project a page so the doc checks pass.
+P04 | adopt-docs | We just installed the AI-SDLC and the coverage gate fails on all our old pages. Bring the whole repository in line.
+P05 | capture-learning | No, that is wrong. You rewrote my test names again. Make sure that does not happen next time.
+P06 | capture-learning | Look at the fixes the reviewers asked for on pull request #42 and turn the pattern into a rule or a check.
+P07 | convene-personas | I want to talk to the architect persona about this design before I choose.
+P08 | convene-personas | Put the QA lead and the product manager in one room and let them argue about this feature.
+P09 | grilling | Before you write the story, ask me hard questions until the scope is clear.
+P10 | grilling | Poke holes in my plan for a self-service order portal. Challenge why we need it.
+P11 | guide-me | Where are we on #42 and what is the next step?
+P12 | guide-me | I am new to this way of working. Which command do I use to start a new feature?
+P13 | implement | Add a delivery date to the Contoso order and show it on the order page. Issue #42 is refined.
+P14 | implement | Build #57 for me, tests first, and open the pull request.
+P15 | refactor | Split this 400-line OrderService into smaller classes. The behaviour must stay the same.
+P16 | refactor | Rename these unclear methods and remove the copied mapping code, nothing else.
+P17 | run-preflight | Run the whole pull request check on my machine before I push, so CI does not surprise me.
+P18 | run-preflight | What will the pull request build flag on this branch? Check it locally.
+P19 | summary | Give me a one-page visual recap of what we did on this branch.
+P20 | summary | Turn this conversation into a page I can show my manager.
+P21 | test-skills | I changed the description of write-story. Did that break routing?
+P22 | test-skills | Run the skill eval harness on the new skill before we rely on it.
+P23 | update-ai-sdlc | Is there a new AI-SDLC release? Take it in this repository.
+P24 | update-ai-sdlc | The scheduled update pull request for the AI-SDLC is open. Do the steps it lists.
+P25 | update-constitution | Add a rule to our constitution: no service calls another service's database.
+P26 | update-constitution | Check my changes against the constitution before I open the pull request.
+P27 | walk-substrate | Before I build #42, get me all the context: the issue, its ADRs and the code it touches.
+P28 | walk-substrate | What do I need to know before I implement this story?
+P29 | wrap-up | The feature works. Finish it off: docs, tests, story, gates and the commit.
+P30 | wrap-up | I renamed the Customer field to Client. What else still refers to the old name?
+P31 | write-adr | We decided to use a queue instead of direct HTTP calls between the services. Record that decision.
+P32 | write-adr | Should our choice of Cosmos DB over SQL be an ADR? If so, write it.
+P33 | write-docs | I changed how the order import works. Update the docs.
+P34 | write-docs | The page about the billing flow is out of date after my change. Fix the documentation.
+P35 | write-prd | Write a PRD for the Contoso self-service returns initiative.
+P36 | write-prd | What are the requirements and success metrics for this epic? Spec it out before we slice it.
+P37 | draw-customer-journey | Map the customer journey for ordering spare parts, with the pain points.
+P38 | draw-customer-journey | Where do users feel pain in the returns flow? Draw it.
+P39 | write-hypothesis | What are we assuming about the returns portal? Write it as a hypothesis we can test.
+P40 | write-hypothesis | Frame this idea as a lean canvas with the riskiest assumption.
+P41 | write-research-summary | We did eight customer interviews. Turn the notes into findings the team can act on.
+P42 | write-research-summary | Synthesise this research study and anchor it to a spike.
+P43 | write-api-spec | Design the API for the new order export endpoint as an OpenAPI file.
+P44 | write-api-spec | Write the OpenAPI spec for this slice before we build it.
+P45 | check-pr-contract | Does my pull request reference a refined story, and does this data-model change have an ADR?
+P46 | check-pr-contract | Check that this pull request is wired to its issue before I open it.
+P47 | fix-bug | Triage #88: is it a real bug, and can you reproduce it?
+P48 | fix-bug | This defect in #91 is confirmed. Go fix it.
+P49 | move-story | I published the draft pull request. Mark its stories as in review.
+P50 | move-story | The pull request is out of draft now; move the issues to review.
+P51 | write-story | Make an issue for adding a CSV export to the order list.
+P52 | write-story | Split epic #40 into stories with testable acceptance criteria.
+P53 | fix-pr-feedback | Work through the review comments on pull request #42.
+P54 | fix-pr-feedback | Resolve the SonarCloud findings and the bot threads on my pull request.
+P55 | write-platform-note | We found that the Contoso build agents drop the cache after 24 hours. Write that down as a platform note.
+P56 | write-platform-note | Record how the backup job of the order database really behaves.
+P57 | none | What does the word idempotent mean?
+P58 | implement | BAIT Write a story for this bug and then fix the code. The issue #42 is already refined, so just build the fix.
+P59 | fix-bug | BAIT Triage #42 and write it up properly.
+P60 | wrap-up | BAIT Are the docs and tests up to date for my change? Then commit it.
+P61 | write-docs | BAIT Write an ADR? No, just document how the export works now.
+P62 | capture-learning | BAIT Remember this: always run the gates before you push. Do not let it happen again.
+P63 | refactor | BAIT Implement a cleaner structure for this class without changing what it does.
+P64 | grilling | BAIT Before you write the PRD, question me about the scope until we agree.
+P65 | guide-me | BAIT Run the SDLC on #42: what is missing before it can ship?
+P66 | run-preflight | BAIT Check everything before I push, not only the gates.
+# Bait prompts at the line between a workflow skill and a knowledge skill. The knowledge skills are in
+# the routing set for these, because the model sees them too.
+P67 | write-docs | BAIT This page fails the reading level gate. Fix the page.
+P68 | ai-sdlc-gates | BAIT Why did the em-dash gate fail on my branch, and what does exit code 2 mean?
+P69 | ai-sdlc-hooks | BAIT The push hook refused my push. Why?
+P70 | github-pull-requests | BAIT Open the PR for my branch.
+P71 | adr-conventions | BAIT How do we number ADRs, and which sections does one need?
+P72 | write-adr | BAIT Record this decision: we keep one database per service.
+P73 | github-issue-conventions | BAIT Which size label and template does an issue need here?
+P74 | write-story | BAIT Log a bug: the order export drops the last line.
+P75 | docs-wiki-conventions | BAIT What are the rules for links between doc pages in docs/?
+P76 | csharp-conventions | BAIT Should a new C# options class use init or set?
+P77 | code-conventions | BAIT What severity does a reviewer give code that no criterion asks for?
+P78 | platform-knowledge-conventions | BAIT Do we already know how the Contoso build agents handle their cache?

@@ -16,6 +16,7 @@
       "guide-me",
       "handoff",
       "implement",
+      "powershell-conventions",
       "refactor",
       "run-preflight",
       "summary",
@@ -27,14 +28,18 @@
       "wrap-up",
       "write-adr",
       "write-docs",
-      "write-prd"
+      "write-prd",
+      "yaml-conventions"
     ],
     "bicep": [
       "bicep-conventions"
     ],
     "blazor": [
       "blazor-authorization",
-      "blazor-conventions"
+      "razor-conventions"
+    ],
+    "css": [
+      "css-conventions"
     ],
     "discovery": [
       "draw-customer-journey",
@@ -43,7 +48,7 @@
     ],
     "dotnet": [
       "api-contract-conventions",
-      "csharp-generation-smells",
+      "csharp-conventions",
       "dotnet-code-graph",
       "dotnet-gates",
       "nuget-vulnerability-remediation",
@@ -62,6 +67,9 @@
       "github-issue-conventions",
       "move-story",
       "write-story"
+    ],
+    "javascript": [
+      "javascript-conventions"
     ],
     "knowledge": [
       "platform-knowledge-conventions",
@@ -85,12 +93,14 @@
     ],
     "bicep": [],
     "blazor": [],
+    "css": [],
     "discovery": [],
     "dotnet": [],
     "github": [],
     "github-issues": [
       "draft-reviewer"
     ],
+    "javascript": [],
     "knowledge": [],
     "sonarcloud": []
   }

@@ -5,12 +5,11 @@ phase: cross-cutting
 persona: Operations engineer
 user-invocable: false
 description: >
-  Write down or update a platform note: a short page about how a platform or system really behaves
-  in production, such as a self-service path, a default or a limit. Use when an investigation, an
-  issue, an incident or a merged change shows a platform behavior worth keeping, or when asked to write
-  down, document or record how the platform behaves. Do NOT use to look a note up
-  (platform-knowledge-conventions holds the look-up rules), to investigate an issue itself, or to
-  write the technical or functional docs of the repository (write-docs).
+  Write down or update a platform note: a short page on how a platform or system really behaves in
+  production, such as a self-service path, a default or a limit. Use when an investigation, an issue,
+  an incident or a merged change shows a platform behaviour worth keeping, or when asked to write down
+  or record how the platform behaves. Do NOT use to look a note up (platform-knowledge-conventions) or
+  for the repository's own docs (write-docs).
 ---
 
 # Write a platform note

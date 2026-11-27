@@ -5,14 +5,10 @@ phase: cross-cutting
 persona: Lead
 description: >
   Turn a plain-English rule into a new deterministic gate: the validator, its Pester test and its
-  entry in gates.json or repoGates, which the shared composite action also runs. Then show the diff and how to trip it. It
-  hands the draft back for human review; a standalone run then goes to a pull request. Use when the intent is to
-  ENFORCE a rule mechanically: "add a gate for this", "make this a CI check", "scaffold a
-  validator that X", "enforce X on every PR", "turn this convention into a gate", "we keep getting
-  X wrong, gate it", or as the home for a learning that capture-learning classified as a new
-  gate. Do NOT use to RUN the existing gates (Invoke-LocalGates.ps1, or run-preflight for the
-  whole PR check set). Do NOT use to author an architecture decision (write-adr) or to evaluate a
-  skill's quality (test-skills).
+  entry in gates.json or repoGates, then show how to trip it. Use when a rule must be ENFORCED: "add a
+  gate for this", "make this a CI check", "enforce X on every PR", "we keep getting X wrong, gate it",
+  or for a learning capture-learning sends here. Do NOT use to run the gates (run-preflight) or to
+  evaluate a skill (test-skills).
 ---
 
 # Add a gate
@@ -66,7 +62,9 @@ The [layout page](/.claude/skills/ai-sdlc-handbook/references/layout.md) says ho
 
 Write `Check-<Name>.ps1` in the place Step 1 chose: the `scripts/` folder of the owning skill in
 AI.SDLC, or the tools folder. Use the shape every existing gate follows. Read `Check-DocEmDashes.ps1`
-or `Check-ArtifactGraph.ps1` as the model, and do not invent a new shape:
+or `Check-ArtifactGraph.ps1` as the model, and do not invent a new shape. The PowerShell rules for
+every script, such as the help block and the exit-code check after a native call, are in
+[powershell-conventions](/.claude/skills/powershell-conventions/SKILL.md). This step adds the gate shape:
 
 - `#Requires -Version 7`, and a comment-based `.SYNOPSIS` / `.DESCRIPTION` stating the rule and that
   it fails closed.

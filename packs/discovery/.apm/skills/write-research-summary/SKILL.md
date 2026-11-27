@@ -4,14 +4,11 @@ kind: workflow
 phase: discovery
 persona: Analyst
 description: >
-  Turn raw research into a synthesis anchored on a GitHub issue with the spike label; the entry point to
-  the discovery phase. Use when research has been gathered and needs to become navigable findings:
-  "synthesise this research", "write up the interview findings", "summarise the research study",
-  "what did the user research conclude", "turn this research into something the team can act on",
-  "anchor this study to a spike", or when discovery work is done and should feed elaboration.
-  Do NOT use to run or collect the research itself (that happens in the upstream tool). Do NOT use
-  to create an ordinary feature story (write-story), to author an ADR (write-adr) or to add
-  links to an already-synthesised work item (write-story).
+  Turn raw research into a synthesis anchored on a GitHub issue with the spike label; the entry to the
+  discovery phase. Use when research was gathered and must become findings: "synthesise this
+  research", "write up the interview findings", "summarise the research study", "turn this research
+  into something the team can act on". Do NOT use to run the research, or to create a feature story
+  (write-story) or an ADR (write-adr).
 ---
 
 # Discovery research synthesis

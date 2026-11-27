@@ -5,12 +5,11 @@ phase: cross-cutting
 persona: any
 user-invocable: false
 description: >
-  Grill the person about a plan, a decision or an idea until you share one understanding of it, from
-  the roles that matter, and record the answers and the why for the skill that writes the artifact.
-  Use when an authoring skill is about to draft a story, a hypothesis, a journey, a PRD or an ADR
-  whose scope, requirements or reason are not settled. Use when the person wants to stress-test their
-  thinking, or uses a "grill" phrase. Do NOT use to navigate the lifecycle (guide-me) or to write the
-  artifact itself (the authoring skill does that).
+  Question the person about a plan, a decision or an idea until you share one understanding, from the
+  roles that matter, and record the answers and the why for the skill that writes the artifact. Use
+  when a story, hypothesis, journey, PRD or ADR is about to be drafted and its scope or reason is not
+  settled, or when the person wants their thinking tested. Do NOT use to navigate the lifecycle
+  (guide-me) or to write the artifact itself.
 ---
 
 # Grilling

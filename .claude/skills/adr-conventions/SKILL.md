@@ -3,12 +3,11 @@ name: adr-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  How an Architecture Decision Record is written in this repository. It covers when a decision needs
-  one (clause C01), the next free number, and the MADR sections and status lines. It also covers the graph
-  frontmatter (story, phase, step, intent, relates, because), recording the decided state rather than
-  the process, and the README index row. Use when an ADR is drafted, superseded or reviewed, or when a
-  plan or a change may carry a decision the architecture rests on. Do NOT use to run the ADR step
-  itself (write-adr) or to change a constitution clause (update-constitution).
+  How an Architecture Decision Record is written here: when a decision needs one (clause C01), the
+  next free number, the MADR sections and status lines, the graph frontmatter and the README index
+  row. Use when an ADR is drafted, superseded or reviewed, or when a plan may carry a decision the
+  architecture rests on. Do NOT use to run the ADR step itself (write-adr) or to change a constitution
+  clause (update-constitution).
 ---
 
 # ADR conventions

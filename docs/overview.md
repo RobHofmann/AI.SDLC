@@ -49,7 +49,7 @@ The `gates.json` fields in use today, per skill: `dotnet-gates` carries `setup`,
 `postEdit` and `gates`; `dotnet-code-graph` carries `setup`, `docUnits`, `docFacts` and `gates`;
 `bicep-conventions` carries `preflight`, `docUnits`, `docFacts` and `gates`; `check-pr-contract` in
 `github-issues` carries `preflight` and `gates`; `github-pull-requests` carries `setup` and `gates`;
-`blazor-conventions` and `sonarcloud-mcp` carry `gates`. The `discovery` and `knowledge` packs ship skills only. The core
+`razor-conventions` and `sonarcloud-mcp` carry `gates`. The `discovery`, `knowledge`, `css` and `javascript` packs ship skills only. A pack may list another pack under `dependencies` in its `apm.yml`: the `blazor` pack brings `css` and `javascript` that way. The core
 reads every field through `AiSdlcConfig.psm1`. A pack holds nothing a consumer must edit:
 the values a repository sets live in its `aisdlc.json`, which
 [the layout page](../core/.apm/skills/ai-sdlc-handbook/references/layout.md) lists per field. The

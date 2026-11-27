@@ -3,12 +3,11 @@ name: ai-sdlc-handbook
 kind: knowledge
 user-invocable: false
 description: >
-  The handbook of the AI-SDLC. It says how work runs from idea to merged change. It covers the two
-  human checkpoints, the artifact graph, the skill and agent patterns, and the personas. It also holds the docs wiki rules,
-  the language rules, autolearn and context management, and the layout of the shared files. Use when
-  a skill or agent needs the full rule behind a step, or when a person asks how the way of working
-  fits together. Also use when deciding whether a file is shared or belongs to the repository. Do NOT use to find the next step for
-  a work item (guide-me) or to run a gate (ai-sdlc-gates).
+  The handbook of the AI-SDLC: how work runs from idea to merged change, the two human checkpoints,
+  the artifact graph, skill and agent patterns, personas, the docs wiki and language rules, autolearn
+  and the layout of shared files. Use when a skill or agent needs the full rule behind a step, or when
+  a person asks how the way of working fits together. Do NOT use to find the next step for a work item
+  (guide-me) or to run a gate (ai-sdlc-gates).
 ---
 
 # AI-SDLC handbook

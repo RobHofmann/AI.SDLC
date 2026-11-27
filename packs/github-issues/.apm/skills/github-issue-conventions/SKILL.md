@@ -3,14 +3,11 @@ name: github-issue-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  The house conventions for a GitHub issue in the tracker repository named in aisdlc.json. They cover the
-  repository, the parent issue of an epic and its sub-issues, the size label, the emoji template and AC-n
-  criteria. They also cover labels, priority, the size scale, the estimate as a comment, the duplicate
-  scan, the readiness check and the gh commands.
-  Use when drafting, sizing, reviewing or updating an issue in that repository. Also use when the
-  draft-reviewer agent checks a draft, or when a build checks that its story is refined. Do NOT use to
-  run the story workflow and its Checkpoint Alpha confirmation, or to write an existing issue (both
-  write-story).
+  The house conventions for a GitHub issue in the tracker repository of aisdlc.json: the epic and its
+  sub-issues, the emoji template and AC-n criteria, labels, priority, the size scale, the estimate
+  comment, the duplicate scan, the readiness check and the gh commands. Use when drafting, sizing,
+  reviewing or updating an issue, or when a build checks that its story is refined. Do NOT use to run
+  the story workflow or to write an issue (write-story).
 ---
 
 # GitHub issue conventions

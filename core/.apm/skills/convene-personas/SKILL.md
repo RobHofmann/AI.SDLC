@@ -4,14 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: any
 description: >
-  Talk to one of the framework's personas directly, or convene a panel of them, reading the shared
-  persona registry. The persona stays in character until dismissed and can reach the skills that
-  role owns. Use when the user wants a role's perspective rather than an artifact: "talk to the
-  architect", "what would the PM say about this", "get the QA's view", "bring in the security
-  lead", "convene a panel", "roundtable this", "party mode" or "let me think this through with the
-  personas". Do NOT use as the pre-draft interrogation before writing an artifact (grilling, which
-  the authoring skills call). Do NOT use to navigate the lifecycle (guide-me) or to author an ADR
-  (write-adr).
+  Talk to one persona of the framework, or convene a panel of them, from the shared persona registry;
+  the persona stays in character until dismissed. Use when the user wants a role's view rather than an
+  artifact: "talk to the architect", "what would the PM say", "get the QA view", "convene a panel". Do
+  NOT use as the questions before an artifact is drafted (grilling), to navigate the lifecycle
+  (guide-me) or to write an ADR (write-adr).
 ---
 
 # Agent persona

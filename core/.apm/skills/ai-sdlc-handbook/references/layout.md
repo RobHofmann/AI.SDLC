@@ -109,7 +109,10 @@ gets the default.
 
 The packs are not in `aisdlc.json`. `apm.yml` lists them, because that file decides what APM
 installs. `AiSdlcConfig.psm1` takes each dependency whose path ends in `packs/<name>` as a pack. A
-`packs` field in an older `aisdlc.json` is ignored, so remove it.
+`packs` field in an older `aisdlc.json` is ignored, so remove it. A pack that always needs another
+pack lists it under `dependencies` in its own `apm.yml`, as a path next to it (`- ../css`), so APM
+installs both. The `blazor` pack brings `css` and `javascript` that way. Such a pack counts as installed for
+the sync check, but not for the gate runner. So it ships no gate (ADR 0025).
 
 | Field | What it holds | Default |
 |---|---|---|
@@ -145,8 +148,10 @@ installs. `AiSdlcConfig.psm1` takes each dependency whose path ends in `packs/<n
 | `tracker` | The issue repository (`tracker.repository`, `owner/name`; empty means the `origin` remote), an own key pattern (`tracker.keyPattern`), the `refined` and `to-refine` labels, the size label prefix (`size:`), the labels and the data model patterns, for the `github-issues` pack. `tracker.acceptedRepositories` lists other repositories, as `owner/name`, whose issues may anchor a pull request here, such as the AI.SDLC source for an update pull request | `refined`, `to-refine`, `size:`; no accepted repositories |
 | `github` | The repository (`github.repository`, `owner/name`; empty means the `origin` remote) and the main branch (`github.trunk`). It is the one setting for the main branch: the gates, the pre-flight and the test runner compare a change with `origin/<trunk>` through `Get-AiSdlcMainBranch` | `main` |
 | `sonarcloud` | The SonarCloud organization and project key, for the `sonarcloud` pack | none |
+| `css` | The token prefix (`css.tokenPrefix`, such as `--brand-`) and the colour scheme files (`css.colourSchemeFiles`, a list of paths), read by `css-conventions`, for the `css` pack. A key that is not set means: use what the style sheets next to the change use | none |
+| `javascript` | The name of the cleanup helper that removes a listener when its element leaves the page (`javascript.cleanupHelper`), read by `javascript-conventions`, for the `javascript` pack. A key that is not set means: use the helper that the modules next to the change use | none |
 | `knowledge` | The knowledge repository (`knowledge.repository`, `owner/name`). The setup offers `gh repo clone` into `paths.knowledgeRoot` when the folder is missing | none |
-| `dotnet` | The code graph benchmark, the external contract paths, the wire name allow list, the portal app component and the API page folders, for the `dotnet` pack | none |
+| `dotnet` | The code graph benchmark, the external contract paths, the wire name allow list, the portal app component and the API page folders, for the `dotnet` pack. `dotnet.folders.contracts`, `.exceptions` and `.options` name the folders for a new interface, exception and options class, which `csharp-conventions` reads; a key that is not set means: follow the types next to the change | none |
 | `repoGates` | The repository's own gates, each with a name that says what passes, a script, a mode (Blocking, Advisory or Off), a clause (a core clause, a pack clause or `AI-SDLC`), a `checks` text and a `fix` text | none |
 | `gateModes` | An object of shared gate names and modes (Blocking, Advisory or Off), which sets the mode of a shared gate in this repository. A name that no shared gate that runs has fails the run. The secret scan, the private-terms gate and the sync manifest check always run Blocking. A weaker mode shows as a warning in every run | none |
 

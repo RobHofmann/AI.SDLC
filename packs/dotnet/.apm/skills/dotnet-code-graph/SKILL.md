@@ -3,13 +3,11 @@ name: dotnet-code-graph
 kind: knowledge
 user-invocable: false
 description: >
-  The local Graphify code graph of a .NET repository and how to use it. It answers what a text search
-  answers badly: what calls this, who consumes this project, is this relationship real. It also covers
-  the query and index scripts, the freshness check, the doc tools that read it, and the pinned
-  version. Use when a question is about callers, consumers or the path between two types, or before a
-  change to a shared library. Also use when a graph query was refused as stale, or when a page claims a
-  relationship. Do NOT use for a plain text search (use grep) or for the doc gates that need no graph
-  (dotnet-gates). Do NOT use to write the documentation itself (write-docs).
+  The local Graphify code graph of a .NET repository: what calls this, who consumes this project, is
+  this relationship real, with the query and index scripts and the freshness check. Use when a
+  question is about callers, consumers or the path between two types, before a change to a shared
+  library, or when a graph query was refused as stale. Do NOT use for a plain text search (grep), the
+  doc gates (dotnet-gates) or writing docs (write-docs).
 ---
 
 # .NET code graph

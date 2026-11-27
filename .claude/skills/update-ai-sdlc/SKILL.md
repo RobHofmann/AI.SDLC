@@ -4,13 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: Developer
 description: >
-  Take a new release of the shared AI-SDLC in this repository: one script moves the AI.SDLC refs in
-  apm.yml to the new tag, installs it on its own branch, commits, pushes and opens one pull request that
-  lists what the release asks of this repository. Then do those steps on the same branch. Use when the
-  user says "update the AI-SDLC", "take the new AI.SDLC release", "pull the latest AI-SDLC", "is there a
-  new AI-SDLC version", or when the scheduled update pull request needs its steps done. Do NOT use to
-  change a shared skill (that is a pull request on AI.SDLC), or to set up the AI-SDLC in a new repository
-  (tools/Add-AiSdlcConsumer.ps1 in AI.SDLC).
+  Take a new release of the shared AI-SDLC in this repository: one script moves the refs in apm.yml to
+  the new tag, installs it and opens a pull request that lists what the release asks; then do those
+  steps there. Use when the user says "update the AI-SDLC", "take the new release", "is there a new
+  AI-SDLC version", or when the update pull request needs its steps done. Do NOT use to change a
+  shared skill or to add the AI-SDLC to a new repository.
 ---
 
 # Update the AI-SDLC

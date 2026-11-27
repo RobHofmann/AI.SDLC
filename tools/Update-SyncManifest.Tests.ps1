@@ -55,6 +55,15 @@ Describe 'Update-SyncManifest' {
         @($m.packages.core.files.Keys | Where-Object { $_ -match 'apm\.yml' }).Count | Should -Be 0
     }
 
+    It 'writes the packs that a pack lists as dependencies in its apm.yml, and no list for a pack without one' {
+        Write-LfFile -Path (Join-Path $script:Root 'packs/css/.apm/skills/css-skill/SKILL.md') -Content "css`n"
+        Write-LfFile -Path (Join-Path $script:Root 'packs/github-issues/apm.yml') -Content "name: issues`ndependencies:`n  apm:`n    - ../css`n    - ../not-a-pack`n"
+        (Invoke-Tool -Root $script:Root).Code | Should -Be 0
+        $m = Get-Manifest -Root $script:Root
+        @($m.packages.'github-issues'.dependencies) | Should -Be @('css')
+        $m.packages.css.Contains('dependencies') | Should -BeFalse
+    }
+
     It 'writes the retired skill names from config/retired-skill-names.txt, each with its new name' {
         Write-LfFile -Path (Join-Path $script:Root 'config/retired-skill-names.txt') -Content "# v9.0.0`nold-skill new-skill`n`nother-old other-new`n"
         (Invoke-Tool -Root $script:Root).Code | Should -Be 0

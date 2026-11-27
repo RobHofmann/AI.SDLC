@@ -4,14 +4,11 @@ kind: workflow
 phase: discovery
 persona: Analyst
 description: >
-  Map the customer journey and opportunity landscape for a discovery theme as a diagram, exposing
-  pains and opportunities before any solutioning. Use when the work needs a visual of the
-  experience: "map the customer journey", "draw a journey map", "where do users feel pain in this
-  flow", "lay out the opportunity landscape", "visualise the as-is experience", "what are the
-  stages and pain points", or when a spike issue needs its journey made navigable.
-  Do NOT use to run or synthesise the research itself (write-research-summary), or to frame the riskiest
-  assumptions (write-hypothesis). Do NOT use to turn opportunities into user stories or epics
-  or to add links to an existing issue (both write-story).
+  Map the customer journey and opportunity landscape of a discovery theme as a diagram, with pains and
+  opportunities, before any solution. Use when the work needs a picture of the experience: "map the
+  customer journey", "draw a journey map", "where do users feel pain in this flow". Do NOT use to
+  synthesise research (write-research-summary), to frame assumptions (write-hypothesis) or to turn
+  opportunities into stories (write-story).
 ---
 
 # Discovery journey map

@@ -4,13 +4,11 @@ kind: workflow
 phase: discovery
 persona: Analyst
 description: >
-  Capture a product hypothesis (lean canvas) for a discovery theme so discovery stays
-  evidence-driven, not opinion-driven. Use when a discovery direction needs framing before work
-  proceeds: "what's our hypothesis here", "frame this as a hypothesis", "write a lean canvas",
-  "what are we assuming", "what's the riskiest assumption", "how would we validate this", "is this
-  a fact or a guess", or when research has surfaced a belief that should be stated and tested.
-  Do NOT use to synthesise raw research (write-research-summary), to write a full PRD or map stories
-  (write-prd / write-story) or to author an ADR (write-adr).
+  Capture a product hypothesis as a lean canvas for a discovery theme, so discovery runs on evidence,
+  not opinion. Use when a direction needs framing before work goes on: "what's our hypothesis here",
+  "frame this as a hypothesis", "write a lean canvas", "what are we assuming", "what's the riskiest
+  assumption". Do NOT use to synthesise research (write-research-summary), to write a PRD (write-prd)
+  or stories (write-story).
 ---
 
 # Discovery hypothesis canvas

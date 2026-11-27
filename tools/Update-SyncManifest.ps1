@@ -18,6 +18,10 @@
     *.Tests.ps1 or *TestHarness.psm1 under .apm/skills: the tests of a package sit under tests/ of the
     package, at the same path, and APM does not install them.
 
+    A pack that lists another pack under dependencies in its own apm.yml (- ../<pack>) gets that list as
+    dependencies in the manifest. APM installs such a pack with it, so Check-SyncManifest.ps1 counts it
+    as installed (ADR 0025).
+
     The manifest also lists the retired skill names from config/retired-skill-names.txt, each with its
     new name. Check-SyncManifest.ps1 uses that list to find the folder of a renamed skill that an older
     version left behind in a consumer, and the update script uses it to point at text that still uses
@@ -101,6 +105,13 @@ foreach ($name in $packages.Keys) {
         for ($i = 0; $i -lt $copied.Count; $i++) { $files[$copied[$i][1]] = $hashes[$i] }
     }
     $manifest.packages[$name] = [ordered]@{ files = $files; hooks = @($hooks) }
+    $packageFile = Join-Path $RepoRoot $packages[$name] 'apm.yml'
+    if ($name -ne 'core' -and (Test-Path -LiteralPath $packageFile -PathType Leaf)) {
+        $needed = @(Get-Content -LiteralPath $packageFile | ForEach-Object {
+                if ($_ -match '^\s*-\s+\.\./(?<pack>[A-Za-z0-9._-]+)\s*$' -and $packages.Contains($Matches.pack)) { $Matches.pack }
+            })
+        if ($needed.Count -gt 0) { $manifest.packages[$name]['dependencies'] = $needed }
+    }
 }
 
 $retiredPath = Join-Path $RepoRoot 'config' 'retired-skill-names.txt'

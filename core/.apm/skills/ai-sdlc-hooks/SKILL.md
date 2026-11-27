@@ -3,12 +3,11 @@ name: ai-sdlc-hooks
 kind: knowledge
 user-invocable: false
 description: >
-  What the AI-SDLC hooks do and why one refused or commented on a step. It covers the push check
-  that needs a finished change and a green pre-flight, and the reading-level and build check after an
-  edit. It also covers the compact suggestion, the autolearn prompt, and the git hooks with the
-  one-time setup that wires them. Use when a hook denied a push, when a hook message needs explaining,
-  or when a hook itself looks broken. Also use when a fresh clone needs its hooks wired. Do NOT use to run the pre-flight (run-preflight), to
-  finish a change (wrap-up) or to explain a gate result (ai-sdlc-gates).
+  What the AI-SDLC hooks do and why one refused or commented on a step: the push check, the
+  reading-level and build check after an edit, the compact suggestion, the autolearn prompt and the
+  git hooks. Use when a hook denied a push, when a hook message needs explaining or looks broken, or
+  when a fresh clone needs its hooks wired. Do NOT use to run the pre-flight (run-preflight), to
+  finish a change (wrap-up) or for a gate result (ai-sdlc-gates).
 ---
 
 # AI-SDLC hooks

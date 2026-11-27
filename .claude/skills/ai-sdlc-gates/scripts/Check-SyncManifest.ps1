@@ -11,7 +11,9 @@
 
     It reads the installed packages from apm.yml (core and each packs/<name>) from the source of the
     core: the same git URL, or the same prefix in the short or local form. A pack from another source
-    belongs to the repository, and the gate leaves it alone. Then it fails on:
+    belongs to the repository, and the gate leaves it alone. A pack that an installed pack lists as a
+    dependency in its own apm.yml counts as installed too: the manifest names it under dependencies, as
+    the blazor pack names css and javascript (ADR 0025). Then it fails on:
     - a package in apm.yml that the manifest does not know;
     - a file of the manifest that is missing, or whose content differs;
     - a hook of the manifest that is missing from .claude/settings.json (APM writes an empty matcher as
@@ -103,6 +105,12 @@ $installed = [System.Collections.Generic.List[string]]::new()
 foreach ($dependency in $dependencies) {
     if (-not $dependency.Package -or ($core -and $dependency.Source -ne $core.Source)) { continue }
     if ($dependency.Package -notin $installed) { $installed.Add($dependency.Package) }
+}
+for ($i = 0; $i -lt $installed.Count; $i++) {
+    if (-not $manifest.packages.Contains($installed[$i])) { continue }
+    foreach ($needed in @($manifest.packages[$installed[$i]].dependencies)) {
+        if ($needed -and $needed -notin $installed) { $installed.Add($needed) }
+    }
 }
 
 $findings = [System.Collections.Generic.List[string]]::new()

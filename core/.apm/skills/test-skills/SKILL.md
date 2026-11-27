@@ -4,12 +4,11 @@ kind: workflow
 phase: cross-cutting
 persona: Lead
 description: >
-  Validate the AI-SDLC skills under .claude/skills/ with the layered eval harness before relying
-  on a new or changed one. Use when a skill has just been added or edited and needs checking, or
-  when the user says "eval the skills", "validate this skill", "run the skill harness", "test the
-  skills", "did my skill change break routing" or "check skill discriminability". This is the
-  durable form of the draft-only eval harness. Do NOT use to validate the
-  artifact graph or docs wiki (Invoke-LocalGates.ps1), or to author or edit a skill's content.
+  Validate the AI-SDLC skills under .claude/skills/ with the layered eval harness: routing, value
+  against a baseline and the cross-tool check. Use when a skill was just added or edited, or when the
+  user says "eval the skills", "validate this skill", "run the skill harness", "did my skill change
+  break routing" or "check skill discriminability". Do NOT use to validate the artifact graph or the
+  docs wiki (the gates), or to write a skill's content.
 ---
 
 # Test the skills
@@ -54,8 +53,9 @@ There is no Layer 3 here; the layer numbers are kept as they are.
 The first exits non-zero and names the skill at fault and the rule on any violation. It checks the
 rules of each kind. A workflow skill needs its phase, persona, persona line and Next-steps section. A
 knowledge skill needs `user-invocable: false`, a Sources section whose links resolve, and at most 120
-lines. Both kinds need a name in the Agent Skills form and a trigger-rich description of at most 1024
-characters. GitHub Copilot does not load a skill with a longer one. They also need the Standing
+lines. Both kinds need a name in the Agent Skills form and a trigger-rich description of at most 450
+characters. A skill only a person starts may use 1024 (ADR 0027 of AI.SDLC). AI.SDLC keeps its
+Layer 1 prompt set in `config/skill-routing-prompts.txt`; a repository writes its own. They also need the Standing
 rules, no em-dash, no line-citations,
 cross-refs that resolve and no plugin-style reference. The second checks every agent in
 `.claude/agents/`. Each needs an explicit tool list, read-only except for the writer agent `builder`, and a known persona. A model line, when
