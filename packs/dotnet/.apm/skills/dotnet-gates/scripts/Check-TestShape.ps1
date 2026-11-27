@@ -210,6 +210,9 @@ if (-not $change.Readable) {
     Stop-CouldNotCheck -Reason "$($change.Reason) (base '$BaseRef')" -Fix 'Fetch the base branch (git fetch origin), or pass -BaseRef with a ref that exists.'
 }
 $untracked = @(git -C $RepoRoot -c core.quotepath=off ls-files --others --exclude-standard -- '*.cs' 2>$null | ForEach-Object { $_.Replace('\', '/') })
+if ($LASTEXITCODE -ne 0) {
+    Stop-CouldNotCheck -Reason 'git could not list the new files that are not committed yet' -Fix 'Run the gate inside a git clone of the repository.'
+}
 
 $findings = [System.Collections.Generic.List[object]]::new()
 $checked = 0

@@ -242,7 +242,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/Check-ScriptAnalyzer.ps1: sha256:1757b3d87907658f20171131e638b48f560b0d1d237ee1e86c40b16bfe56346b
     .claude/skills/ai-sdlc-gates/scripts/Check-SkillHygiene.ps1: sha256:4cc2ad39583e4d5e8134ab0b416a0866d3e35f8ba28907247cc0f8b5a2452e0b
     .claude/skills/ai-sdlc-gates/scripts/Check-SyncManifest.ps1: sha256:2c8530443c3db60aafa09a657f902a8c84c9324d56a7924db10ff6f6cfe248dc
-    .claude/skills/ai-sdlc-gates/scripts/CodeDiff.psm1: sha256:fdc40857375d2cfb0fbda00a5d9854c4939bdb27099f11b6371316a60a312bd7
+    .claude/skills/ai-sdlc-gates/scripts/CodeDiff.psm1: sha256:25d90708459bd094fd8fdcf8f89eec7024bb3661f518b68d891de1dc621567c5
     .claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.ps1: sha256:1f7ce301cf61f60c699a8596e1516de31fc9f77cbd508794cb2bb23ff693987f
     .claude/skills/ai-sdlc-gates/scripts/DocCoverage.psm1: sha256:48eddcb174858783e871b0f248a389af59c0aa4feec8ce60bd9640deb9f6a959
     .claude/skills/ai-sdlc-gates/scripts/GateAnnotation.psm1: sha256:c0420b4da486559a38cb074a8723f2010f220e677f3d3faea15dcaf337c5bcf4
@@ -268,7 +268,7 @@ dependencies:
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-rules.json: sha256:6a8a75c5dbcf2378a1c52d046e34ce275aac7ce08a0ae61408d25c18e1e27014
     .claude/skills/ai-sdlc-gates/scripts/gitleaks-version.json: sha256:c54acb854f87a1bbdf0e90c670b72b5de3cd37f7e460d82eca599c3c7af23a84
     .claude/skills/ai-sdlc-gates/skill-catalog.json: sha256:6d550cc9d045d2f3fb2a65562b654c3c1312c65325147d172c76e309af5309e2
-    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:0d46902e983d604c44db676ef23e19301123cb1474e8b2428d01f0b8f212a7ba
+    .claude/skills/ai-sdlc-gates/sync-manifest.json: sha256:52791c61102c9fa08aa8fbe31ee1e1f5a4785fa9649044dc7512f0767127b267
     .claude/skills/ai-sdlc-handbook/SKILL.md: sha256:6c837a132a83b06a42533324ce699e407ebcb8caea1dac41afde172534d1dae2
     .claude/skills/ai-sdlc-handbook/references/README.md: sha256:0c8e56a3c127d418018f868bc5979167ada00f448e975b3b40ff83713d5787d8
     .claude/skills/ai-sdlc-handbook/references/artifact-graph.md: sha256:d7ddfe20e5ee6565bcf25f9cef0f578da2a4ab1590033d791b8814d4688fd1f0
@@ -969,7 +969,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:fdc40857375d2cfb0fbda00a5d9854c4939bdb27099f11b6371316a60a312bd7
+  content_hash: sha256:25d90708459bd094fd8fdcf8f89eec7024bb3661f518b68d891de1dc621567c5
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-gates/scripts/Create-GitleaksBaseline.ps1
@@ -1203,7 +1203,7 @@ deployments:
   owners:
   - ./core
   active_owner: ./core
-  content_hash: sha256:0d46902e983d604c44db676ef23e19301123cb1474e8b2428d01f0b8f212a7ba
+  content_hash: sha256:52791c61102c9fa08aa8fbe31ee1e1f5a4785fa9649044dc7512f0767127b267
 - kind: project-relative
   target: claude
   value: .claude/skills/ai-sdlc-handbook
