@@ -270,8 +270,9 @@ function Get-AiSdlcLineChange {
 
     $full = Join-Path $RepoRoot $Path
     if (-not $Base) {
-        if (-not $AssumeNew -or -not (Test-Path -LiteralPath $full -PathType Leaf)) { return $null }
-        $count = @(Get-Content -LiteralPath $full).Count
+        # .NET reads the path as it is; a cmdlet takes the text before :: in a file name for a provider name.
+        if (-not $AssumeNew -or -not [IO.File]::Exists($full)) { return $null }
+        $count = @([IO.File]::ReadAllLines($full)).Count
         return [pscustomobject]@{ Added = @(if ($count -gt 0) { 1..$count }); Removed = @(); RemovedAt = @() }
     }
 
