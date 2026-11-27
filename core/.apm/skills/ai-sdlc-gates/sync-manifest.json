@@ -523,7 +523,6 @@
     "PrePushHook.Tests.ps1",
     "PullRequestDescription.Tests.ps1",
     "PullRequestFeedback.Tests.ps1",
-    "RecommendedEditorconfig.Tests.ps1",
     "Remove-AiCoAuthorTrailer.Tests.ps1",
     "Reorder-BicepPropertyOrder.Tests.ps1",
     "Repair-DocsWiki.Tests.ps1",

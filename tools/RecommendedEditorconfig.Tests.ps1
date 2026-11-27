@@ -1,8 +1,7 @@
 #requires -Version 7.4
 
 BeforeAll {
-    $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\/]skills[\\/][^\\/]+[\\/]scripts$)', '.apm'
-    $script:SkillFolder = Split-Path -Parent $script:ScriptFolder
+    $script:SkillFolder = Join-Path $PSScriptRoot '..' 'packs' 'dotnet' '.apm' 'skills' 'csharp-conventions'
     $script:BlockPath = Join-Path $script:SkillFolder 'assets' 'recommended.editorconfig'
     $script:PagePath = Join-Path $script:SkillFolder 'references' 'code-style-block.md'
 
