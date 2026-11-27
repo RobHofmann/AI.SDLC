@@ -43,10 +43,10 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
 
 ```json
 { "package": "dotnet",
-  "gates": [ { "name": "The change adds no commented-out code ...", "script": "scripts/Check-CommentHygiene.ps1",
-               "clause": "C10", "mode": "Blocking", "args": { }, "requires": "CoverageFile",
-               "checks": "It reads the C# lines the change adds. ... Exit 2 means ..., and exit 3 means ...",
-               "fix": "Remove the commented-out code." } ],
+  "gates": [ { "name": "Line coverage stays at the baseline ...", "script": "scripts/Check-Coverage.ps1",
+               "clause": "C04", "mode": "Blocking", "args": { }, "requires": "CoverageFile",
+               "checks": "It reads the coverage file of the test run. ... Exit 2 means ..., and exit 3 means ...",
+               "fix": "Add tests to bring coverage back up." } ],
   "setup": "scripts/Initialize-Dotnet.ps1",
   "preflight": "scripts/Invoke-DotnetPreflight.ps1",
   "postEdit": { "extensions": [".cs", ".razor"], "script": "scripts/Invoke-DotnetPostEdit.ps1" },

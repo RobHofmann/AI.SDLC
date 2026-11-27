@@ -13,7 +13,7 @@ code. A detailed convention belongs on a conventions page, and a single decision
 hook, skill, code review. The status is active, or deferred with the planned target. A deferred check
 is tracked debt, not a wish.
 
-**Version:** 1.1
+**Version:** 1.2
 
 ## Clause IDs
 
@@ -22,14 +22,15 @@ A clause ID says where a clause lives:
 - A **core clause** keeps its C number and holds in every repository that installs the core. This page
   holds them all.
 - A **pack clause** carries the prefix of its pack, such as `DOTNET-01`, and holds where that pack is
-  installed. The dotnet pack keeps DOTNET-01 (the JSON wire format is PascalCase) and DOTNET-02 (thin
-  controllers, one domain each) in the `references/clauses.md` page of its `api-contract-conventions`
-  skill.
+  installed. The dotnet pack keeps DOTNET-01 (the JSON wire format is PascalCase), DOTNET-02 (thin
+  controllers, one domain each), DOTNET-03 (project references point down and are used) and DOTNET-04
+  (shared parts) in the `references/clauses.md` page of its `api-contract-conventions` skill. The bicep
+  pack keeps BICEP-01 and BICEP-02 in the `references/clauses.md` page of its `bicep-conventions` skill.
 - A **repository clause** carries the prefix of the repository, for example `APP-01`, and holds in that
   repository only. It lives in the repository's own constitution page (`paths.constitution` in
   `aisdlc.json`).
 
-The core clauses are numbered in order, C01 to C12. A new core clause takes the next free number. When a
+The core clauses are numbered in order, C01 to C14. A new core clause takes the next free number. When a
 clause leaves the core, its number is never given to another clause. The next new clause then takes the
 number after the highest one. Old ADRs, merged pull requests and issues keep the IDs they used.
 
@@ -253,12 +254,13 @@ clause in each session.
   noticing, so it earns its place only when it says why. A comment that says what repeats the code,
   and dead code or an open `TODO` is noise that nobody owns. The ADR stays the home of a decision. The
   full rule is in [comments.md](comments.md).
-- **Enforcement:** where the dotnet pack is installed, two gates read the added C# and Razor lines.
-  `.claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1` blocks commented-out code, a `TODO`
-  without an issue key and a comment that names an AI tool - active.
+- **Enforcement:** the core gate `.claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1` reads
+  the lines a change adds. On C# and Razor it blocks commented-out code, a `TODO` without an issue key
+  and a comment that names an AI tool - active. On YAML and PowerShell a second entry of the same gate
+  reports the same three breaks as advisory - active. Where the dotnet pack is installed,
   `.claude/skills/dotnet-gates/scripts/Check-XmlDocs.ps1` (advisory) reports an added public or
-  protected declaration without a `///` doc comment - active. Both run in `Invoke-LocalGates.ps1` and in the
-  pull request workflow. Skill - active: the build and review skills state the rule. The
+  protected declaration without a `///` doc comment - active. They run in `Invoke-LocalGates.ps1` and
+  in the pull request workflow. Skill - active: the build and review skills state the rule. The
   `code-reviewer` agent of core flags missing doc comments and comments that say what, in every
   language. Code review - active for the languages no gate reads.
 - **Short form:** Code is documented: public types and members carry doc comments. A comment says why,
@@ -307,6 +309,40 @@ clause in each session.
   restated rule reliably.
 - **Short form:** Every rule and fact has one source; elsewhere, load it or link to it. Only where that
   is not possible, a script generates the copy and a gate checks it.
+
+## C13: A PowerShell script checks the exit code after every native call
+
+- **Statement:** A PowerShell script checks the exit code right after each call to a native tool, such
+  as `git`, `az`, `dotnet` or `bicep`. PSScriptAnalyzer reads the PowerShell lines a change adds, and
+  each finding is a warning. The clause governs what a change adds; older code is not changed all at
+  once. The forms the rule accepts are in the
+  [`powershell-conventions` skill](/.claude/skills/powershell-conventions/SKILL.md).
+- **Rationale:** PowerShell goes on after a failed native call, also with `$ErrorActionPreference =
+  'Stop'`. So a failed step can look like a good one, and the script goes on with a wrong result.
+  PSScriptAnalyzer is the standard checker for PowerShell, and it finds common faults that a reviewer
+  misses. Only the added lines count, so an old script gives no noise.
+- **Enforcement:** the core gate `.claude/skills/ai-sdlc-gates/scripts/Check-NativeExitCode.ps1`
+  reports an added native call with no check (advisory) - active. The core gate
+  `.claude/skills/ai-sdlc-gates/scripts/Check-ScriptAnalyzer.ps1` runs PSScriptAnalyzer on the added
+  lines, without its `Write-Host` rule, and reports each finding (advisory) - active. Skill - active:
+  `powershell-conventions` states the rule.
+- **Short form:** A PowerShell script checks the exit code after every native call, and PSScriptAnalyzer
+  reads the lines a change adds.
+
+## C14: A pull request carries one story and stays small
+
+- **Statement:** A pull request carries one story, and stays small enough to review well. A repository
+  sets that size in changed lines (`pullRequest.sizeLimit` in `aisdlc.json`), and the files that do not
+  count (`pullRequest.sizeExclude`). A pull request above the limit gets a warning, so the author can
+  split the work before review.
+- **Rationale:** A reviewer reads a big pull request less closely, and misses more in it. A warning at
+  build time shows a big change before the review starts, not during it. Each repository knows its own
+  code, so it picks its own limit.
+- **Enforcement:** the core gate `.claude/skills/ai-sdlc-gates/scripts/Check-PrSize.ps1` counts the
+  added and removed lines since the merge base, without the installed files and the files that `pullRequest.sizeExclude` names
+  (advisory) - active. It reads both settings at the merge base, so a change cannot raise its own
+  limit. Code review - active for the one-story part.
+- **Short form:** A pull request carries one story and stays below the size limit of the repository.
 
 ## Related
 

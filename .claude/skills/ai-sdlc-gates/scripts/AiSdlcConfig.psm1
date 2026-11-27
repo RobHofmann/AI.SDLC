@@ -225,6 +225,49 @@ function Get-AiSdlcApmPack {
     return @($names | Select-Object -Unique)
 }
 
+function Resolve-AiSdlcSourceRoot {
+    <#
+    .SYNOPSIS
+        The full path of a source folder from aisdlc.json, kept inside the repository.
+
+    .DESCRIPTION
+        A pull request can change aisdlc.json, so a gate that reads a source folder must not leave the
+        repository. This resolves the folder against the repository root and throws when it lies outside
+        it, or when an existing folder on the way is a link (a reparse point). It returns an empty string
+        when no folder is set, and the full path without a trailing separator otherwise.
+
+    .PARAMETER RepoRoot
+        The repository root.
+
+    .PARAMETER Path
+        The folder as aisdlc.json writes it, relative to the root or absolute.
+
+    .EXAMPLE
+        Resolve-AiSdlcSourceRoot -RepoRoot C:/src/repo -Path src
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [AllowEmptyString()][string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) { return '' }
+    $separators = [char[]]@([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $root = [IO.Path]::GetFullPath($RepoRoot).TrimEnd($separators)
+    $full = [IO.Path]::GetFullPath($Path, $root).TrimEnd($separators)
+    $comparison = if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+    $inside = $full.Equals($root, $comparison) -or $full.StartsWith($root + [IO.Path]::DirectorySeparatorChar, $comparison)
+    if (-not $inside) { throw "the folder '$Path' is outside the repository" }
+    $walk = $full
+    while ($walk.Length -gt $root.Length) {
+        $item = Get-Item -LiteralPath $walk -Force -ErrorAction SilentlyContinue
+        if ($item -and $item.Attributes.HasFlag([IO.FileAttributes]::ReparsePoint)) { throw "the folder '$Path' is a link, so it may point outside the repository" }
+        $walk = [IO.Path]::GetDirectoryName($walk)
+    }
+    return $full
+}
+
 function Get-AiSdlcConfig {
     [CmdletBinding()]
     param(
@@ -824,4 +867,4 @@ function Test-AiSdlcGateOff {
     return (Get-AiSdlcGateScriptMode @PSBoundParameters) -ceq 'Off'
 }
 
-Export-ModuleMember -Function Find-AiSdlcRepoRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPathExcluded, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed, Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage, Get-AiSdlcMainBranch, Get-AiSdlcGateMode, Get-AiSdlcGateModeSetting, Resolve-AiSdlcGateMode, Get-AiSdlcGateScriptMode, Test-AiSdlcGateOff
+Export-ModuleMember -Function Find-AiSdlcRepoRoot, Resolve-AiSdlcSourceRoot, Get-AiSdlcConfig, Get-AiSdlcPath, Get-AiSdlcKnowledgeRoot, Get-AiSdlcMainCheckoutRoot, Test-AiSdlcPathExcluded, Test-AiSdlcPack, Test-AiSdlcTrunkPushAllowed, Get-AiSdlcStoryPattern, Get-AiSdlcBranchStoryKey, Get-AiSdlcStoryKey, ConvertTo-AiSdlcStoryKey, Get-AiSdlcPackage, Get-AiSdlcMainBranch, Get-AiSdlcGateMode, Get-AiSdlcGateModeSetting, Resolve-AiSdlcGateMode, Get-AiSdlcGateScriptMode, Test-AiSdlcGateOff

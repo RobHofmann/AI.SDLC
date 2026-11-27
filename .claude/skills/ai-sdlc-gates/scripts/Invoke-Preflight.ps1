@@ -24,8 +24,10 @@
     (Invoke-IssuePreflight.ps1).
 
     A preflight script takes the parameters it needs from this set: -RepoRoot, -TargetBranch,
-    -ChangedFiles, -SkipTests, -IncludeSonar, -SkipScanners. It returns objects with Check, Status and
+    -ChangedFiles, -ScopeFiles, -Full, -SkipTests, -IncludeSonar, -SkipScanners. It returns objects with Check, Status and
     Detail. A FAIL row fails the run and writes no receipt, like a failing core check.
+    -ScopeFiles comes only on a scoped run: it lists every file the change touches, committed or not, so a
+    pack can build and test only what the change reaches. -Full is true on a run that checks everything.
 
     Attempted when its prerequisite is present, else reported with what it needs (never silently skipped):
       - SonarCloud quality gate: needs SONAR_TOKEN and uploads to SonarCloud (the gate is server-side, not
@@ -174,7 +176,9 @@ try {
         SkipTests    = [bool]$SkipTests
         IncludeSonar = [bool]$IncludeSonar
         SkipScanners = [bool]$SkipScanners
+        Full         = [bool]$Full
     }
+    if ($null -ne $scopeFiles) { $packageArgs['ScopeFiles'] = [string[]]$scopeFiles }
     foreach ($package in $packages) {
         Write-Host "`n[$step] $($package.Skill) pre-flight ($($package.Package))..." -ForegroundColor Cyan
         $step++

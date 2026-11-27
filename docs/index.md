@@ -33,6 +33,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0025: A pack that needs another pack lists it as an APM dependency](./adrs/0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md) - The Razor, CSS and JavaScript rules sat in one skill of the `blazor` pack.
 - [ADR 0026: A test proves the team's own logic, not the framework's](./adrs/0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md) - Clause C04 asked for tests of changed code, but did not say what a test should prove.
 - [ADR 0027: A model-visible skill description has at most 450 characters](./adrs/0027-a-model-visible-skill-description-has-at-most-450-characters.md) - Claude Code and GitHub Copilot load the name and description of every skill the model can pick into each session.
+- [ADR 0028: A repository sets its .NET layer order, and a new reference points down](./adrs/0028-a-repository-sets-its-dotnet-layer-order-and-a-new-reference-points-down.md) - A .NET solution often keeps its projects in layers: a kernel at the bottom, then the domain, then the hosts.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General
