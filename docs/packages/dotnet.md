@@ -40,13 +40,21 @@ The Graphify code graph reference lives in `packs/dotnet/.apm/skills/dotnet-code
 
 The `dotnet-gates` skill defines these blocking gates:
 
-- `The change adds no commented-out code, open TODO or AI tool name in a C# or Razor comment`
 - `Test classes and methods that the change adds carry a Story trait with a real key`
 - `JSON wire names in C# and in specs are PascalCase`
 - `Docs match the code they cite`
 - `Line coverage stays at the baseline, and a gain of a point is written to the baseline file`
 
-It also defines the advisory gates `Added public C# types and members carry a doc comment` and `A change to an endpoint that has a spec also changes that spec`.
+It also defines these advisory gates:
+
+- `Added public C# types and members carry a doc comment`
+- `A change to an endpoint that has a spec also changes that spec`
+- `Test methods that the change adds or edits keep the Arrange, Act and Assert markers in order` (C04)
+- `A project reference that the change adds is used in the code of the project` (DOTNET-03)
+- `A project reference that the change adds points to a lower layer of `dotnet.layers`` (DOTNET-03, [ADR 0028](../adrs/0028-a-repository-sets-its-dotnet-layer-order-and-a-new-reference-points-down.md))
+- `C# code uses the shared options, HTTP client, credential and base exception, not its own copy` (DOTNET-04)
+
+The comment gate for C# and Razor moved to core; see [core](core.md).
 
 The `dotnet-code-graph` skill defines the advisory gate `Docs match the relationships the code graph has`.
 
@@ -57,17 +65,22 @@ Gate definitions live in `packs/dotnet/.apm/skills/dotnet-gates/gates.json` and 
 The gate scripts live under `packs/dotnet/.apm/skills/dotnet-gates/scripts`.
 
 - `Check-ApiPascalCase.ps1` enforces `DOTNET-01`.
-- `Check-CommentHygiene.ps1` enforces `C10` on added C# and Razor comments: no commented-out code, no `TODO` without an issue key, no AI tool name.
 - `Check-Coverage.ps1` enforces the `C04` coverage baseline, in the pre-flight and in the shared pull request step when the workflow passes `coverage-file`. It also fails when coverage is a point or more above the baseline and the change did not raise the baseline file. So a gain is kept. A gain of less than a point passes and prints the new figure.
 - `Check-DocDrift.ps1` compares documentation claims with cited code. It judges only the lines the change adds, changes or removes. Drift that the change caused fails, and older drift is listed as not blocking.
 - `Check-SpecDrift.ps1` checks whether an existing spec moves with its endpoint. It reads only the routes and DTO types on the lines the change adds or removes.
 - `Check-StoryTraits.ps1` checks test classes for valid AI-SDLC Story traits, in xUnit, NUnit and MSTest. It judges only the lines the change adds or changes. A class or method that the change adds needs a real story key, and `LEGACY-0` stays allowed on older code.
 - `Check-XmlDocs.ps1` reports added public or protected C# declarations without a `///` doc comment (`C10`, advisory).
-- `CodeDiff.psm1` reads the C# and Razor lines a change adds, for the two `C10` gates.
+- `Check-TestShape.ps1` checks the Arrange, Act and Assert markers of the xUnit test methods a change adds or edits. An older method fails only on what the added lines break.
+- `Check-ProjectReferenceUse.ps1` warns about an added project reference that no code of the project uses. `-All` checks every reference.
+- `Check-ProjectLayerOrder.ps1` warns about an added project reference that does not point to a lower layer of `dotnet.layers`. `-From` and `-To` judge one planned reference by path, for the `architect` agent.
+- `Check-SharedParts.ps1` warns about `IConfiguration` in a constructor, `new HttpClient()`, a credential outside `dotnet.credentialHelper`, and an exception that does not derive from `dotnet.baseException`. It refuses a `paths.sourceRoot` outside the repository through `Resolve-AiSdlcSourceRoot`.
+- `CSharpCodeView.psm1` reads C# as code only: it blanks strings and block comments, for `Check-TestShape.ps1` and `Check-SharedParts.ps1`.
+- `DotnetTestScope.psm1` reads the project files into a graph, and finds the test projects that a change reaches through project references.
+- `Check-XmlDocs.ps1` reads the added lines through `CodeDiff.psm1` in core.
 - `DocSurface.psm1` provides shared page and cited-code rules for three documentation tools.
 - `Initialize-Dotnet.ps1` checks the .NET SDK the way dotnet reads `global.json`, installs the `dotnet-coverage` global tool when it is missing, and restores the solution.
 - `Invoke-DotnetPostEdit.ps1` builds the project that owns an edited C# or Razor file.
-- `Invoke-DotnetPreflight.ps1` runs the build with analyzers, tests, and coverage. No coverage file is a FAIL row that names the fix.
+- `Invoke-DotnetPreflight.ps1` runs the build with analyzers, tests, and coverage. No coverage file is a FAIL row that names the fix. A scoped local run builds and tests only the projects that the change reaches, through a temporary solution filter (`.slnf`). It then shows the coverage row as `N/A`. A change to a file that every project reads, such as `Directory.Build.props` or `global.json`, runs everything. `-Full`, GitHub Actions and `CI` run everything too.
 
 The tests of these scripts sit under `packs/dotnet/tests/skills/dotnet-gates/scripts`, at the same names ([ADR 0015](../adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md)).
 

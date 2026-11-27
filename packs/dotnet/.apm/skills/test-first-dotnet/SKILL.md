@@ -61,8 +61,8 @@ the seam that reaches the bug. The plan then names that seam.
   number of the issue (`owner/repo#42` for an issue in another repository). `LEGACY-0` marks a test
   class that predates the rule. `Check-StoryTraits.ps1` blocks a class without one.
   There is no per-criterion `AC` trait; the plan says which test proves each criterion. The `✅ Acceptance Criteria` section of the story, or `✅ Success Criteria` in an older story, holds the criteria.
-- **AAA markers.** Every test has `// Arrange`, `// Act` and `// Assert`; C10 keeps them. A test
-  project needs no doc comments. A pure construction test may merge `// Arrange` and `// Act`.
+- **AAA markers.** Every test has `// Arrange`, `// Act` and `// Assert`; C10 keeps them, and
+  `Check-TestShape.ps1` checks them. A test project needs no doc comments. A pure construction test may merge `// Arrange` and `// Act`.
 - **Real assertions.** Assert on behaviour. A test that only runs a Moq `Verify` on a call proves the
   call happened, not that the result is right.
 - **Constructors.** Mock every dependency; never pass `null`.

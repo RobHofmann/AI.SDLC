@@ -193,6 +193,36 @@ Each entry names its issue, as `#42`.
   in `config/skill-routing-prompts.txt` picked the same skill before and after
   ([ADR 0027](docs/adrs/0027-a-model-visible-skill-description-has-at-most-450-characters.md), #66).
 
+- The comment gate `Check-CommentHygiene.ps1` and its diff module `CodeDiff.psm1` move from the dotnet
+  pack to core, so a repository without .NET gets the C10 check too. The C# and Razor entry stays
+  Blocking. A second, Advisory entry with `-Language YamlPowerShell` reads the comments on the added
+  YAML and PowerShell lines, and reports the same three breaks of C10 (#73).
+- New core clause C13: a PowerShell script checks the exit code after each native call, and
+  PSScriptAnalyzer reads the lines a change adds. Two Advisory core gates enforce it:
+  `Check-NativeExitCode.ps1` (#71) and `Check-ScriptAnalyzer.ps1` (#72). `powershell-conventions`
+  states the rule. The constitution is at version 1.2.
+- New core clause C14: a pull request carries one story and stays small. The Advisory core gate
+  `Check-PrSize.ps1` warns above `pullRequest.sizeLimit`, without the files of
+  `pullRequest.sizeExclude` and the installed files. It reads both settings at the merge base (#61).
+- `ChangedFiles.psm1` gains `Get-AiSdlcInstalledPath`: the files that `apm.lock.yaml` lists at the base
+  commit, which the new change gates skip (#71).
+- The bicep pack gains a house style page, a security page, a page of open points and the pack clauses
+  BICEP-01 and BICEP-02. The Advisory gate `Check-BicepConventions.ps1` reports a registry module
+  pinned to `latest`, and a role ID typed by hand that a file of `bicep.roleLookupFiles` holds (#87).
+- The dotnet pack gains the Advisory gate `Check-TestShape.ps1`, which checks the Arrange, Act and
+  Assert markers of each xUnit test method a change adds or edits, and the module `CSharpCodeView.psm1` (#79).
+- A scoped local pre-flight of the dotnet pack builds and tests only the projects that a change reaches,
+  through a temporary solution filter, and skips coverage. `DotnetTestScope.psm1` reads the project
+  graph. A shared build file, `-Full` and CI run everything (#81).
+- New pack clause DOTNET-03 and two Advisory gates: `Check-ProjectReferenceUse.ps1` warns about an
+  added project reference that no code uses, and `Check-ProjectLayerOrder.ps1` about one that does
+  not point to a lower layer of the new setting `dotnet.layers`
+  ([ADR 0028](docs/adrs/0028-a-repository-sets-its-dotnet-layer-order-and-a-new-reference-points-down.md)).
+  The `architect` agent checks each planned reference and writes a `Layers:` line (#82).
+- New pack clause DOTNET-04 and the Advisory gate `Check-SharedParts.ps1`: settings through options,
+  `HttpClient` from the factory, the credential from `dotnet.credentialHelper` and exceptions from
+  `dotnet.baseException`. `AiSdlcConfig.psm1` gains `Resolve-AiSdlcSourceRoot` (#83).
+
 What a consumer does when it takes this release:
 
 - A Blocking gate that exits 2 in your pull request workflow now fails it. Read the first run after
@@ -243,6 +273,15 @@ What a consumer does when it takes this release:
   A repository without Blazor can add `packs/css` or `packs/javascript` on its own (#75).
 - With the dotnet pack, you may set `dotnet.folders` in `aisdlc.json`, and copy the recommended
   `.editorconfig` block. Read step 3 of its page first when your build turns warnings into errors (#76, #77).
+- The comment gate moved: `.claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1` is now
+  `.claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1`. Change any doc, allow rule or
+  `gateModes` entry of your own that names the old path or the old gate name (#73).
+- Every repository now runs the C# and Razor comment gate, also without the dotnet pack (#73).
+- With the dotnet pack, `Check-SharedParts.ps1` exits 2 when `paths.sourceRoot` lies outside the
+  repository. Point it at a folder inside the repository (#83).
+- You may set `pullRequest.sizeLimit`, `dotnet.layers`, `dotnet.credentialHelper`,
+  `dotnet.baseException` and `bicep.roleLookupFiles` in `aisdlc.json`; without them the new gates
+  report not applicable. The new gates are Advisory, so none of them stops a push.
 
 
 ## v1.5.1 - 2026-11-26

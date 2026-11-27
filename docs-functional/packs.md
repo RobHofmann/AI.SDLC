@@ -29,11 +29,11 @@ Each pack can bring any of these, and the core picks them up by itself:
 
 | Pack | Install it when | What it adds, in short |
 |---|---|---|
-| `dotnet` | the repository has a .NET solution | C# rules and their security checks, an opt-in `.editorconfig` block that lets the build warn on a style break, test-first, seven gates, the code graph, a page per project |
+| `dotnet` | the repository has a .NET solution | C# rules and their security checks, an opt-in `.editorconfig` block that lets the build warn on a style break, test-first, ten gates, the code graph, a page per project. A local pre-flight builds and tests only the projects a change reaches; the gates also warn about a test without its Arrange, Act and Assert markers, a project reference that is unused or points the wrong way, and code that builds its own copy of a shared part |
 | `blazor` | the repository has a Blazor app | the Razor and authorization conventions, and two gates on the components; it brings `css` and `javascript` with it |
 | `css` | the repository has style sheets, also without Blazor | the CSS conventions |
 | `javascript` | the repository has browser JavaScript, also without Blazor | the JavaScript conventions |
-| `bicep` | the repository has Bicep templates | the Bicep conventions, the Bicep pre-flight, a page per building block |
+| `bicep` | the repository has Bicep templates | the Bicep conventions and house style, the Bicep pre-flight, a page per building block, and two warnings: a module pinned to `latest` and a role ID typed by hand |
 | `github` | the repository lives on GitHub | the pull request helpers, the feedback loop on a pull request, the workflow conventions, and the ruleset on the main branch |
 | `github-issues` | the repository tracks its work in GitHub Issues | the story and bug skills, the in-review label on a published pull request, the story contract gate, the backlink check and the issue pre-flight |
 | `discovery` | the team does discovery work | the journey map, research synthesis and hypothesis canvas skills, which write pages in the repository |
