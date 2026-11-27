@@ -9,7 +9,7 @@
   ],
   "allow": [
     "az bicep build *",
-    "pwsh -NoProfile -File .claude/skills/bicep-conventions/scripts/Check-*",
-    "pwsh .claude/skills/bicep-conventions/scripts/Check-*"
+    "pwsh -NoProfile -File .claude/skills/bicep-conventions/scripts/Check-BicepConventions.ps1 *",
+    "pwsh .claude/skills/bicep-conventions/scripts/Check-BicepConventions.ps1 *"
   ]
 }
