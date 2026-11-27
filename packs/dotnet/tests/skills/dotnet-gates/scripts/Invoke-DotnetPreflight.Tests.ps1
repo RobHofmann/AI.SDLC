@@ -45,9 +45,11 @@ Describe 'Invoke-DotnetPreflight' {
             TestExit    = 0
             Coverage    = 90
             WriteCov    = $true
+            Filters     = [System.Collections.Generic.List[object]]::new()
         }
         Mock dotnet {
             $global:DotnetTest.Calls.Add(($args -join ' '))
+            if ("$($args[1])" -like '*.slnf') { $global:DotnetTest.Filters.Add(@($args[0]) + @((Get-Content -LiteralPath $args[1] -Raw | ConvertFrom-Json).solution.projects | ForEach-Object { $_.Replace([string][char]92, '/') })) }
             $global:LASTEXITCODE = 0
             if ($args[0] -eq 'build') {
                 $global:LASTEXITCODE = $global:DotnetTest.BuildExit
@@ -55,7 +57,7 @@ Describe 'Invoke-DotnetPreflight' {
             }
             if ($args[0] -eq 'test') {
                 $index = [array]::IndexOf($args, '--results-directory')
-                if ($global:DotnetTest.WriteCov) {
+                if ($global:DotnetTest.WriteCov -and $index -ge 0) {
                     $dir = Join-Path $args[$index + 1] 'run'
                     New-Item -ItemType Directory -Path $dir -Force | Out-Null
                     Set-Content -LiteralPath (Join-Path $dir 'a.coverage') -Value 'binary'
@@ -313,6 +315,117 @@ Describe 'Invoke-DotnetPreflight' {
                 $row.Status | Should -Be 'NEEDS-TOKEN'
                 $row.Detail | Should -Match 'Set-SonarMcpToken\.ps1'
             }
+        }
+    }
+
+    Context 'a scoped run, with -ScopeFiles' -Tag '#81' {
+        BeforeAll {
+            function New-ScopedRepo {
+                $root = New-DotnetRepo
+                foreach ($project in @(
+                        @{ Path = 'src/Lib/Lib.csproj'; Refs = '' }
+                        @{ Path = 'src/App/App.csproj'; Refs = '<ProjectReference Include="..\Lib\Lib.csproj" />' }
+                        @{ Path = 'tests/Lib.Tests/Lib.Tests.csproj'; Refs = '<ProjectReference Include="..\..\src\Lib\Lib.csproj" />' }
+                        @{ Path = 'tests/App.Tests/App.Tests.csproj'; Refs = '<ProjectReference Include="..\..\src\App\App.csproj" />' }
+                    )) {
+                    $full = Join-Path $root $project.Path
+                    New-Item -ItemType Directory -Path (Split-Path $full -Parent) -Force | Out-Null
+                    Set-Content -LiteralPath $full -Value "<Project Sdk=`"Microsoft.NET.Sdk`"><ItemGroup>$($project.Refs)</ItemGroup></Project>"
+                }
+                return $root
+            }
+        }
+
+        BeforeEach {
+            # A pull request build runs everything, so the scope is switched off there; these tests need it on.
+            $script:SavedPipeline = @{ GITHUB_ACTIONS = $env:GITHUB_ACTIONS; CI = $env:CI }
+            $env:GITHUB_ACTIONS = $null
+            $env:CI = $null
+        }
+
+        AfterEach {
+            $env:GITHUB_ACTIONS = $script:SavedPipeline.GITHUB_ACTIONS
+            $env:CI = $script:SavedPipeline.CI
+        }
+
+        It 'builds and tests nothing for a change that touches no .NET project, and says N/A' {
+            $root = New-ScopedRepo
+
+            $rows = Invoke-Preflight -Root $root -Extra @{ ScopeFiles = @('docs/page.md', 'infra/main.bicep') }
+
+            (Get-Row -Rows $rows -Like 'Build*').Status | Should -Be 'N/A'
+            (Get-Row -Rows $rows -Like 'Tests*').Status | Should -Be 'N/A'
+            (Get-Row -Rows $rows -Like 'Coverage ratchet*').Status | Should -Be 'N/A'
+            $global:DotnetTest.Calls | Should -BeNullOrEmpty
+        }
+
+        It 'builds the changed project with its test projects, runs only those tests, and leaves the ratchet to -Full' {
+            $root = New-ScopedRepo
+
+            $rows = Invoke-Preflight -Root $root -Extra @{ ScopeFiles = @('src/App/Page.cs') }
+
+            $global:DotnetTest.Filters[0] | Should -Be @('build', 'src/App/App.csproj', 'tests/App.Tests/App.Tests.csproj')
+            $global:DotnetTest.Filters[1] | Should -Be @('test', 'tests/App.Tests/App.Tests.csproj')
+            @($global:DotnetTest.Calls | Where-Object { $_ -match '--collect' -or $_ -match '^dotnet-coverage' }) | Should -BeNullOrEmpty
+            (Get-Row -Rows $rows -Like 'Tests (the change only)').Status | Should -Be 'PASS'
+            (Get-Row -Rows $rows -Like 'Coverage ratchet (C04)').Status | Should -Be 'N/A'
+        }
+
+        It 'removes the temporary solution filters after the run' {
+            $root = New-ScopedRepo
+            $before = @(Get-ChildItem -LiteralPath ([System.IO.Path]::GetTempPath()) -Filter 'preflight-*.slnf').Count
+
+            $null = Invoke-Preflight -Root $root -Extra @{ ScopeFiles = @('src/App/Page.cs') }
+
+            @(Get-ChildItem -LiteralPath ([System.IO.Path]::GetTempPath()) -Filter 'preflight-*.slnf').Count | Should -Be $before
+        }
+
+        It 'shows a FAIL row when a test that the change reaches fails' {
+            $root = New-ScopedRepo
+            $global:DotnetTest.TestExit = 1
+
+            $rows = Invoke-Preflight -Root $root -Extra @{ ScopeFiles = @('src/Lib/Service.cs') }
+
+            $global:DotnetTest.Filters[1] | Should -Be @('test', 'tests/App.Tests/App.Tests.csproj', 'tests/Lib.Tests/Lib.Tests.csproj')
+            (Get-Row -Rows $rows -Like 'Tests (the change only)').Status | Should -Be 'FAIL'
+        }
+
+        It 'builds and tests the whole solution with coverage when the change touches a file every project reads' {
+            $root = New-ScopedRepo
+
+            $rows = Invoke-Preflight -Root $root -Extra @{ ScopeFiles = @('src/App/Page.cs', 'Directory.Packages.props') }
+
+            $global:DotnetTest.Filters | Should -BeNullOrEmpty
+            @($global:DotnetTest.Calls | Where-Object { $_ -match '^test .*App\.sln .*--collect' }) | Should -HaveCount 1
+            (Get-Row -Rows $rows -Like 'Tests + coverage (C04)').Status | Should -Be 'PASS'
+        }
+
+        It 'runs everything with -Full, also when -ScopeFiles is given' {
+            $root = New-ScopedRepo
+
+            $rows = Invoke-Preflight -Root $root -Extra @{ ScopeFiles = @('src/App/Page.cs'); Full = $true }
+
+            $global:DotnetTest.Filters | Should -BeNullOrEmpty
+            (Get-Row -Rows $rows -Like 'Tests + coverage (C04)').Status | Should -Be 'PASS'
+        }
+
+        It 'runs everything in a GitHub Actions run, also when -ScopeFiles is given' {
+            $root = New-ScopedRepo
+            $env:GITHUB_ACTIONS = 'true'
+
+            $rows = Invoke-Preflight -Root $root -Extra @{ ScopeFiles = @('src/App/Page.cs') }
+
+            $global:DotnetTest.Filters | Should -BeNullOrEmpty
+            (Get-Row -Rows $rows -Like 'Tests + coverage (C04)').Status | Should -Be 'PASS'
+        }
+
+        It 'runs everything when no -ScopeFiles is given' {
+            $root = New-ScopedRepo
+
+            $rows = Invoke-Preflight -Root $root
+
+            $global:DotnetTest.Filters | Should -BeNullOrEmpty
+            (Get-Row -Rows $rows -Like 'Tests + coverage (C04)').Status | Should -Be 'PASS'
         }
     }
 }

@@ -161,6 +161,25 @@ Describe 'Invoke-Preflight' {
             Get-Content -LiteralPath $seen | Should -Be 'RepoRoot,SkipTests'
         }
 
+        It 'gives a pack the files of the change as ScopeFiles on a scoped run, and Full with -Full' -Tag '#81' -ForEach @(
+            @{ Options = @{}; Expected = '^False[|].*src/Page[.]cs' }
+            @{ Options = @{ Full = $true }; Expected = '^True[|]$' }
+        ) {
+            $seen = Join-Path $TestDrive "scope-args-$([guid]::NewGuid().ToString('n')).txt"
+            $root = New-PreflightRepo -Packs '["demo"]' -Extra @{
+                '.claude/skills/demo/gates.json'                     = $script:PackManifest
+                '.claude/skills/demo/scripts/Invoke-DemoPreflight.ps1' = "param([string]`$RepoRoot, [string[]]`$ScopeFiles, [switch]`$Full) Set-Content -LiteralPath '$seen' -Value ([string]`$Full + '|' + (@(`$ScopeFiles) -join ',')); [pscustomobject]@{ Check = 'demo'; Status = 'PASS'; Detail = '' }"
+            }
+            git -C $root update-ref refs/remotes/origin/main HEAD
+            New-Item -ItemType Directory -Path (Join-Path $root 'src') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $root 'src' 'Page.cs') -Value 'class Page { }'
+
+            $r = Invoke-Preflight -Root $root -Options $Options
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            Get-Content -LiteralPath $seen | Should -Match $Expected
+        }
+
         It 'does not run the preflight of a pack that apm.yml does not list' {
             $root = New-PreflightRepo -Extra @{
                 '.claude/skills/demo/gates.json'                     = $script:PackManifest
