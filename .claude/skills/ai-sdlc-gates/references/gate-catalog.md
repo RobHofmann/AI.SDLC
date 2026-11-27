@@ -221,7 +221,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: AI-SDLC
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
-- Script: `.claude/skills/blazor-conventions/scripts/Check-RazorConventions.ps1`
+- Script: `.claude/skills/razor-conventions/scripts/Check-RazorConventions.ps1`
 - Checks: It scans the source root for an `I*State` interface, an inline `<style>` block in a `.razor` file and a `<!DOCTYPE` outside the app component. It does not check attribute placement, which has its own gate. Exit 2 means `paths.sourceRoot` is not set, and it never exits 3.
 - Fix: Use the state class itself, move the styles into a `.razor.css` file, and keep the document type only in the app component.
 
@@ -230,7 +230,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Clause: AI-SDLC
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
-- Script: `.claude/skills/blazor-conventions/scripts/Check-RazorAttributePlacement.ps1`
+- Script: `.claude/skills/razor-conventions/scripts/Check-RazorAttributePlacement.ps1`
 - Checks: It scans the source root for a component attribute that shares a line with the member below it. It does not check the other rules of `Check-RazorConventions.ps1`. Exit 2 means `paths.sourceRoot` is not set, and it never exits 3.
 - Fix: Move the attribute onto its own line above its member.
 
