@@ -12,7 +12,7 @@
     The setting is off by default. Only a positive whole number in aisdlc.json switches it on; any
     other value, such as "30" as a string, counts as off.
 
-    Exit 0 when the setting is off or no date is too old, and 1 when one is. The gate is Advisory, so
+    Exit 0 when no date is too old, 1 when one is, and 3 (not applicable) when the setting is off. The gate is Advisory, so
     the runner shows a finding as a warning. The pre-push hook runs this script itself with -Quiet, so
     the warning also shows on a push, which never fails on it.
 
@@ -41,8 +41,8 @@ if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
 $maxAge = $config.docs['lastCheckedMaxAgeDays']
 if (-not (($maxAge -is [int] -or $maxAge -is [long]) -and $maxAge -gt 0)) {
-    if (-not $Quiet) { Write-Host 'Last checked: off. Set docs.lastCheckedMaxAgeDays in aisdlc.json to a number of days to switch it on.' }
-    exit 0
+    if (-not $Quiet) { Write-Host 'Last checked: not applicable, the check is off. Set docs.lastCheckedMaxAgeDays in aisdlc.json to a number of days to switch it on.' }
+    exit 3
 }
 
 $files = [System.Collections.Generic.List[string]]::new()

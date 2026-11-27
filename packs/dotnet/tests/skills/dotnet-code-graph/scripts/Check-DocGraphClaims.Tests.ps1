@@ -56,13 +56,13 @@ Describe 'Check-DocGraphClaims' {
             Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    It 'says so and exits clean when there is no graph, because this is the optional half' {
+    It 'is not applicable when there is no graph, because this is the optional half' -Tag '#46' {
         $root = New-Repo -Files @{ 'docs/libraries/thing.md' = '# Thing' }
 
         $r = Invoke-Claims -ScriptArgs @{ RepoRoot = $root; GraphPath = (Join-Path $root 'absent.json') }
 
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'No code graph at'
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'no code graph at'
         $r.Output | Should -Match 'needs no graph'
     }
 

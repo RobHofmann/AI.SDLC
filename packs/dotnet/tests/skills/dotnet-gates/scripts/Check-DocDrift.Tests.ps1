@@ -15,6 +15,8 @@ Describe 'Check-DocDrift' {
             $root = New-DocToolRepo -Files $Files -Prefix 'ddr' -InitialiseGit
             Set-AiSdlcTestConfig -Root $root -Paths @{ sourceDocMap = @(@{ source = 'Demo/src/Shared.'; docs = @('docs/libraries/') }, @{ source = 'Demo/src/Workers.'; docs = @('docs/handlers/') }) }
             git -C $root commit -qam 'project families' *> $null
+            # The gate judges the change since origin/main. Everything a test writes here is older code, and a test that needs drift the change caused commits it afterwards.
+            git -C $root update-ref refs/remotes/origin/main HEAD
             return $root
         }
 
@@ -520,9 +522,11 @@ Describe 'Check-DocDrift' {
 
     It 'stays advisory by default and fails only when asked' {
         $root = New-Repo -Files @{
-            'src/Policy.cs' = 'public static class Policy { public const string Beta = "b"; }'
-            'docs/p.md'     = "# Policy`n`nSee ``Policy.cs``."
+            'src/Policy.cs' = 'public static class Policy { public const string Alpha = "a"; }'
+            'docs/p.md'     = "# Policy`n`n``Alpha`` is documented. See ``Policy.cs``."
         }
+        Set-Content -LiteralPath (Join-Path $root 'src/Policy.cs') -Value 'public static class Policy { public const string Alpha = "a"; public const string Beta = "b"; }' -Encoding utf8
+        git -C $root commit -qam 'add a constant' *> $null
 
         $advisory = Invoke-Drift -ScriptArgs @{ RepoRoot = $root }
         $gating = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
@@ -563,5 +567,170 @@ Describe 'Check-DocDrift' {
 
         $r.ExitCode | Should -Be 0
         $r.Output | Should -Match 'No documentation pages matched'
+    }
+
+    Context 'it fails only on the drift that the change caused' {
+        BeforeAll {
+            function Save-Change {
+                param([string]$Root)
+                git -C $Root add -A *> $null
+                git -C $Root commit -qm change --no-verify *> $null
+            }
+
+            function Set-RepoFile {
+                param([string]$Root, [string]$Relative, [string]$Content)
+                $full = Join-Path $Root $Relative
+                New-Item -ItemType Directory -Path (Split-Path $full -Parent) -Force | Out-Null
+                Set-Content -LiteralPath $full -Value $Content -Encoding utf8
+            }
+        }
+
+        AfterEach { $env:CHANGED_FILES = $null }
+
+        It 'fails on a constant the change adds that the page does not name' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'src/Policy.cs' = 'public static class Policy { public const string Alpha = "a"; }'
+                'docs/p.md'     = "# Policy`n`n``Alpha`` is documented. See ``Policy.cs``."
+            }
+            Set-RepoFile -Root $root -Relative 'src/Policy.cs' -Content "public static class Policy { public const string Alpha = `"a`";`n public const string Beta = `"b`"; }"
+            Save-Change -Root $root
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match '\[missing\].*Beta'
+            $r.Output | Should -Not -Match 'not blocking'
+        }
+
+        It 'lists older drift as not blocking and exits 0 when that is all there is' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'src/Policy.cs' = 'public static class Policy { public const string Alpha = "a"; public const string Beta = "b"; }'
+                'docs/p.md'     = "# Policy`n`n``Alpha`` is documented. See ``Policy.cs``."
+                'docs/other.md' = "# Other`n`nNothing to see.`n"
+            }
+            Set-RepoFile -Root $root -Relative 'docs/other.md' -Content "# Other`n`nNothing to see, still.`n"
+            Save-Change -Root $root
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 0
+            $r.Output | Should -Match 'not blocking'
+            $r.Output | Should -Match '\[missing\].*Beta'
+        }
+
+        It 'fails on a service the change adds that the page does not name' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'Demo/src/Shared.Thing/Services/AlphaService.cs' = "namespace X;`npublic class AlphaService`n{`n}"
+                'docs/libraries/thing.md'                             = "# Thing`n`nSee ``AlphaService.cs``."
+            }
+            Set-RepoFile -Root $root -Relative 'Demo/src/Shared.Thing/Services/BetaService.cs' -Content "namespace X;`npublic class BetaService`n{`n}"
+            Save-Change -Root $root
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match '\[service\].*BetaService'
+        }
+
+        It 'fails on a cited file that the change deletes or renames, and not on one that was gone before' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'src/Policy.cs' = 'public static class Policy { }'
+                'src/Other.cs'  = 'public static class Other { }'
+                'docs/p.md'     = "# Policy`n`nSee ``Policy.cs``, ``Other.cs`` and the long gone ``Never.cs``."
+            }
+            git -C $root mv src/Policy.cs src/Policy2.cs *> $null
+            Remove-Item -LiteralPath (Join-Path $root 'src/Other.cs')
+            Save-Change -Root $root
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 1
+            $blocking = ($r.Output -split 'not blocking')[0]
+            $blocking | Should -Match '\[stale\].*Policy\.cs'
+            $blocking | Should -Match '\[stale\].*Other\.cs'
+            $blocking | Should -Not -Match 'Never\.cs'
+            $r.Output | Should -Match 'Never\.cs'
+        }
+
+        It 'fails on a name cited on a page line the change adds, and not on the same name on an older line' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'src/Policy.cs' = 'public static class Policy { }'
+                'docs/p.md'     = "# Policy`n`nSee ``Policy.cs`` and the long gone ``Never.cs``.`n"
+            }
+            Set-RepoFile -Root $root -Relative 'docs/p.md' -Content "# Policy`n`nSee ``Policy.cs`` and the long gone ``Never.cs``.`n`nAnd ``Ghost.cs``.`n"
+            Save-Change -Root $root
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 1
+            $blocking = ($r.Output -split 'not blocking')[0]
+            $blocking | Should -Match '\[stale\].*Ghost\.cs'
+            $blocking | Should -Not -Match 'Never\.cs'
+        }
+
+        It 'fails on a symbol that the change removed from the code, and on one added to a page line' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'Demo/src/Shared.Thing/Services/AlphaService.cs' = 'namespace X; public class AlphaService { }'
+                'Demo/src/Shared.Thing/Services/OldService.cs'   = 'namespace X; public class OldService { }'
+                'docs/libraries/thing.md'                             = "# Thing`n`nWire ``AlphaService`` and ``OldService``.`n"
+                'docs/libraries/ghost.md'                             = "# Ghost`n`nWire ``GhostService``.`n"
+            }
+            Remove-Item -LiteralPath (Join-Path $root 'Demo/src/Shared.Thing/Services/OldService.cs')
+            Set-RepoFile -Root $root -Relative 'docs/libraries/new.md' -Content "# New`n`nWire ``BrandNewService``.`n"
+            Save-Change -Root $root
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 1
+            $blocking = ($r.Output -split 'not blocking')[0]
+            $blocking | Should -Match '\[phantom\].*OldService'
+            $blocking | Should -Match '\[phantom\].*BrandNewService'
+            $blocking | Should -Not -Match 'GhostService'
+            $r.Output | Should -Match 'GhostService'
+        }
+
+        It 'fails on a documented route that the change removed from the code' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'Demo/src/Api.Demo/Controllers/ThingController.cs' = 'namespace X; [Route("things")] [HttpGet("drain-queue")] public class ThingController { }'
+                'docs/api/thing.md'                                    = "# Thing API`n`n### ``GET /things/drain-queue`` - drain`n"
+            }
+            Set-RepoFile -Root $root -Relative 'Demo/src/Api.Demo/Controllers/ThingController.cs' -Content 'namespace X; [Route("things")] public class ThingController { }'
+            Save-Change -Root $root
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match '\[route\].*drain-queue'
+            $r.Output | Should -Not -Match 'not blocking'
+        }
+
+        It 'exits 2 with a FIX line when CHANGED_FILES is set and there is no merge base' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'src/Policy.cs' = 'public static class Policy { public const string Beta = "b"; }'
+                'docs/p.md'     = "# Policy`n`nSee ``Policy.cs``."
+            }
+            git -C $root update-ref -d refs/remotes/origin/main
+            $env:CHANGED_FILES = 'src/Policy.cs'
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 2
+            $r.Output | Should -Match '(?m)^FIX: '
+            $r.Output | Should -Not -Match '\[missing\]'
+        }
+
+        It 'exits 2 with a FIX line in a local run with no merge base, and does not judge every page' -Tag '#80' {
+            $root = New-Repo -Files @{
+                'src/Policy.cs' = 'public static class Policy { public const string Beta = "b"; }'
+                'docs/p.md'     = "# Policy`n`nSee ``Policy.cs``."
+            }
+            git -C $root update-ref -d refs/remotes/origin/main
+
+            $r = Invoke-Drift -ScriptArgs @{ RepoRoot = $root; FailOnDrift = $true }
+
+            $r.ExitCode | Should -Be 2
+            $r.Output | Should -Match '(?m)^FIX: '
+            $r.Output | Should -Not -Match '\[missing\]'
+        }
     }
 }

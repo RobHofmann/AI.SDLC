@@ -81,10 +81,12 @@ Describe 'Check-RetiredSkillNames' {
         $r.Code | Should -Be 0 -Because $r.Output
     }
 
-    It 'says it could not check when the retired list is missing or malformed, and passes when it holds no names' {
+    It 'says it could not check, with a FIX line, when the retired list is missing or malformed, and passes when it holds no names' -Tag '#46' {
         $root = New-SharedRepo -Files @{ 'core/x.md' = "text`n" }
         Remove-Item -LiteralPath (Join-Path $root 'config' 'retired-skill-names.txt')
-        (Invoke-Gate -Root $root).Code | Should -Be 2
+        $missing = Invoke-Gate -Root $root
+        $missing.Code | Should -Be 2
+        $missing.Output | Should -Match '(?m)^FIX: \S'
 
         $root = New-SharedRepo -Files @{ 'core/x.md' = "text`n" } -Retired "# nothing`n"
         (Invoke-Gate -Root $root).Code | Should -Be 0

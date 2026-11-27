@@ -17,12 +17,27 @@
     A test of a shared script that the page names is not [stale] when its name is in sharedTests of the
     installed sync manifest: AI.SDLC keeps those tests and does not install them.
 
+    It judges only the lines the change adds or changes (Get-AiSdlcLineChange in ChangedFiles.psm1), measured
+    against the base ref. Drift the change caused fails: a public constant or a service that the change adds
+    and the page does not name; a cited file, symbol or route that the change removed or renamed; and a name
+    cited on a page line that the change adds or changes. Older drift is printed under a not blocking heading
+    and never fails the run. [thin] is informational as before.
+
+    Exit 0 clean, or only older drift; 1 drift the change caused, with -FailOnDrift; 2 could not check
+    (aisdlc.json names no paths.sourceRoot, or the change cannot be told because there is no merge base,
+    also in a local run; the output has a FIX: line). It never judges every page instead. Exit 3 is not used.
+
     Advisory by default; -FailOnDrift exits non-zero. What it checks, what it deliberately does not, the
     measured coverage and the alternatives that were tried and rejected are all in
     .claude/skills/dotnet-code-graph/references/code-graph.md, under "Finding documentation that has fallen behind".
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script.
+
+.PARAMETER BaseRef
+    The ref the change is measured against. Defaults to origin/<github.trunk> from aisdlc.json
+    (Get-AiSdlcMainBranch), origin/main unless the repository names another trunk. In a pull request
+    build the shared action sets CHANGED_FILES and PR_TARGET_BRANCH, which Get-AiSdlcChange reads.
 
 .PARAMETER DocRoots
     Directories to scan for documentation. Defaults to paths.docsRoots in aisdlc.json.
@@ -77,6 +92,7 @@
 [CmdletBinding()]
 param(
     [string]$RepoRoot,
+    [string]$BaseRef,
     [string[]]$DocRoots,
     [string]$Doc,
     [string[]]$RecordPattern,
@@ -93,7 +109,9 @@ param(
 $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
 if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
 Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
+Import-Module (Join-Path $aiSdlcGates 'ChangedFiles.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
+if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
 
 $ErrorActionPreference = 'Stop'
 
@@ -108,6 +126,7 @@ $script:SourceRel = ([string]$script:AiSdlc.paths.sourceRoot).TrimEnd('/')
 $script:TestRel = ([string]$script:AiSdlc.paths.testRoot).TrimEnd('/')
 if (-not $script:SourceRel) {
     Write-Host 'Could not check: aisdlc.json names no paths.sourceRoot, so there is no code to hold the pages against.' -ForegroundColor Yellow
+    Write-Host 'FIX: Set paths.sourceRoot in aisdlc.json to the folder that holds the source code.' -ForegroundColor Yellow
     exit 2
 }
 
@@ -170,6 +189,51 @@ try {
     }
 }
 finally { Pop-Location }
+
+$change = Get-AiSdlcChange -RepoRoot $RepoRoot -BaseRef $BaseRef
+if (-not $change.Readable -or -not $change.Base) {
+    $why = if ($change.Reason) { $change.Reason } else { "no merge base between $BaseRef and HEAD" }
+    Write-Host "Could not check: the lines that the change adds or removes are unknown ($why)." -ForegroundColor Yellow
+    Write-Host 'FIX: Fetch the target branch with full history (for example fetch-depth: 0 in the checkout step), then run the gate again.' -ForegroundColor Yellow
+    exit 2
+}
+
+$script:ChangedPath = [System.Collections.Generic.HashSet[string]]::new([string[]]@($change.Files))
+$script:ChangeTextCache = @{}
+
+# The text a change added to one file, as it is on disk, and the text it removed. Empty for a file the change did not touch.
+function Get-ChangeText {
+    param([Parameter(Mandatory)][string]$Path)
+
+    if ($script:ChangeTextCache.ContainsKey($Path)) { return $script:ChangeTextCache[$Path] }
+    $result = [pscustomobject]@{ Added = ''; Removed = '' }
+    if ($script:ChangedPath.Contains($Path)) {
+        $lineChange = Get-AiSdlcLineChange -RepoRoot $RepoRoot -Base $change.Base -Path $Path
+        if ($lineChange) {
+            $full = Join-Path $RepoRoot $Path
+            if ($lineChange.Added.Count -gt 0 -and (Test-Path -LiteralPath $full -PathType Leaf)) {
+                $fileLines = @(Get-Content -LiteralPath $full -Encoding utf8)
+                $result.Added = (@($lineChange.Added | Where-Object { $_ -ge 1 -and $_ -le $fileLines.Count } | ForEach-Object { $fileLines[$_ - 1] })) -join "`n"
+            }
+            $result.Removed = @($lineChange.Removed) -join "`n"
+        }
+    }
+    $script:ChangeTextCache[$Path] = $result
+    return $result
+}
+
+function Test-NameInText {
+    param([string]$Name, [string]$Text)
+
+    if (-not $Text) { return $false }
+    return [bool]($Text -match ('\b' + [regex]::Escape($Name) + '\b'))
+}
+
+# The file names the repository held at the base: a cited name that was here then and is gone now was removed or renamed by the change.
+$script:BaseNames = [System.Collections.Generic.HashSet[string]]::new()
+foreach ($path in @(& git -C $RepoRoot -c core.quotepath=off ls-tree -r --name-only $change.Base 2>$null)) {
+    if ($path) { [void]$script:BaseNames.Add([System.IO.Path]::GetFileName(([string]$path).Replace('\', '/'))) }
+}
 
 $trackedNames = [System.Collections.Generic.HashSet[string]]::new()
 $syncManifest = Join-Path $RepoRoot '.claude' 'skills' 'ai-sdlc-gates' 'sync-manifest.json'
@@ -247,6 +311,7 @@ if ($filesByDoc.Count -eq 0) {
 }
 
 $findings = [System.Collections.Generic.List[object]]::new()
+$olderFindings = [System.Collections.Generic.List[object]]::new()
 function Test-RouteCarrier {
     param(
         [Parameter(Mandatory)][string]$FileName,
@@ -287,6 +352,15 @@ if (-not ($SkipSymbolCheck -and $SkipRouteCheck)) {
     $script:RouteCarrierSource = $routeParts -join "`n"
 }
 
+$script:RemovedCorpus = ''
+$removedParts = foreach ($path in @($change.Files)) {
+    if ([System.IO.Path]::GetExtension($path).ToLowerInvariant() -notin @('.cs', '.razor', '.csproj')) { continue }
+    $inArea = $false
+    foreach ($area in @($script:SourceRel, $script:TestRel | Where-Object { $_ })) { if ($path.StartsWith("$area/")) { $inArea = $true } }
+    if ($inArea) { (Get-ChangeText -Path $path).Removed }
+}
+$script:RemovedCorpus = @($removedParts | Where-Object { $_ }) -join "`n"
+
 $checkedDocs = 0
 $checkedRecords = 0
 $script:DeclaredMembers = 0
@@ -308,6 +382,8 @@ foreach ($docPath in ($filesByDoc.Keys | Sort-Object)) {
     $isRecord = [bool]$isRecordByDoc[$docPath]
     if ($isRecord) { $checkedRecords++ }
 
+    $causedItem = [System.Collections.Generic.HashSet[string]]::new()
+    $pageAdded = (Get-ChangeText -Path $docPath).Added
     $missing = [System.Collections.Generic.List[string]]::new()
     foreach ($sourceFile in ($filesByDoc[$docPath] | Sort-Object)) {
         if ([System.IO.Path]::GetExtension($sourceFile).ToLowerInvariant() -ne '.cs') { continue }
@@ -316,11 +392,15 @@ foreach ($docPath in ($filesByDoc.Keys | Sort-Object)) {
         $source = Get-Content -LiteralPath $sourceFull -Raw -Encoding utf8
         if (-not $source) { continue }
 
+        $addedSource = (Get-ChangeText -Path $sourceFile).Added
+        $addedMember = if ($addedSource) { @(Get-PublicMemberName -Source $addedSource) } else { @() }
         foreach ($member in (Get-PublicMemberName -Source $source)) {
             $script:DeclaredMembers++
             if ($docText -match ('\b' + [regex]::Escape($member) + '\b')) { $script:NamedMembers++ }
             elseif (-not $isRecord) {
-                $missing.Add("$member ($([System.IO.Path]::GetFileName($sourceFile)))")
+                $item = "$member ($([System.IO.Path]::GetFileName($sourceFile)))"
+                $missing.Add($item)
+                if ($addedMember -contains $member) { [void]$causedItem.Add("missing|$item") }
             }
         }
         foreach ($method in (Get-PublicMethodName -Source $source)) {
@@ -332,7 +412,10 @@ foreach ($docPath in ($filesByDoc.Keys | Sort-Object)) {
     $stale = [System.Collections.Generic.List[string]]::new()
     if ($docText -notmatch '(?s)^.{0,400}\*\*Removed\.\*\*') {
         foreach ($name in (Get-NamedSourceFile -Text $docText)) {
-            if (-not $trackedNames.Contains($name)) { $stale.Add($name) }
+            if (-not $trackedNames.Contains($name)) {
+                $stale.Add($name)
+                if ($script:BaseNames.Contains($name) -or (Test-NameInText -Name $name -Text $pageAdded)) { [void]$causedItem.Add("stale|$name") }
+            }
         }
     }
 
@@ -345,6 +428,8 @@ foreach ($docPath in ($filesByDoc.Keys | Sort-Object)) {
             $last = $literals[-1]
             if ($script:RouteCarrierSource -match ('\b' + [regex]::Escape($last) + '\b')) { continue }
             $badRoutes.Add($route)
+            $routePath = ($route -split '\s+', 2)[1]
+            if (($pageAdded -and $pageAdded.Contains($routePath)) -or (Test-NameInText -Name $last -Text $script:RemovedCorpus)) { [void]$causedItem.Add("route|$route") }
         }
     }
 
@@ -355,6 +440,7 @@ foreach ($docPath in ($filesByDoc.Keys | Sort-Object)) {
             $script:DocumentedSymbols++
             if ($script:SourceCorpus -match ('\b' + [regex]::Escape($symbol) + '\b')) { continue }
             $phantoms.Add($symbol)
+            if ((Test-NameInText -Name $symbol -Text $pageAdded) -or (Test-NameInText -Name $symbol -Text $script:RemovedCorpus)) { [void]$causedItem.Add("phantom|$symbol") }
         }
     }
 
@@ -386,11 +472,16 @@ foreach ($docPath in ($filesByDoc.Keys | Sort-Object)) {
                     $pageDeclaredMethods++
                     if ($docText -match ('\b' + [regex]::Escape($method) + '\b')) { $pageNamedMethods++ }
                 }
+                $addedSource = (Get-ChangeText -Path $sourceFile).Added
+                $addedType = if ($addedSource) { @(Get-PublicTypeName -Source $addedSource) } else { @() }
                 foreach ($type in (Get-PublicTypeName -Source $source)) {
                     if (-not (Test-ServiceShaped -TypeName $type -SourceFile $sourceFile)) { continue }
                     $script:DeclaredServices++
                     if ($docText -match ('\b' + [regex]::Escape($type) + '\b')) { $script:NamedServices++ }
-                    else { $undocumented.Add("$type ($project)") }
+                    else {
+                        $undocumented.Add("$type ($project)")
+                        if ($addedType -contains $type) { [void]$causedItem.Add("service|$type ($project)") }
+                    }
                 }
             }
         }
@@ -404,17 +495,24 @@ foreach ($docPath in ($filesByDoc.Keys | Sort-Object)) {
         }
     }
 
-    if ($missing.Count -gt 0 -or $stale.Count -gt 0 -or $undocumented.Count -gt 0 -or $badRoutes.Count -gt 0 -or $phantoms.Count -gt 0 -or $thin) {
-        $findings.Add([pscustomobject]@{
-                Doc          = $docPath
-                IsRecord     = $isRecord
-                Missing      = @($missing | Sort-Object -Unique)
-                Stale        = @($stale | Sort-Object -Unique)
-                Undocumented = @($undocumented | Sort-Object -Unique)
-                BadRoutes    = @($badRoutes | Sort-Object -Unique)
-                Phantoms     = @($phantoms | Sort-Object -Unique)
-                Thin         = $thin
-            })
+    foreach ($side in @($true, $false)) {
+        $pick = {
+            param($items, $tag)
+            @($items | Where-Object { $causedItem.Contains("$tag|$_") -eq $side } | Sort-Object -Unique)
+        }
+        $part = [pscustomobject]@{
+            Doc          = $docPath
+            IsRecord     = $isRecord
+            Missing      = & $pick $missing 'missing'
+            Stale        = & $pick $stale 'stale'
+            Undocumented = & $pick $undocumented 'service'
+            BadRoutes    = & $pick $badRoutes 'route'
+            Phantoms     = & $pick $phantoms 'phantom'
+            Thin         = if ($side) { $thin } else { $null }
+        }
+        if ($part.Missing.Count -gt 0 -or $part.Stale.Count -gt 0 -or $part.Undocumented.Count -gt 0 -or $part.BadRoutes.Count -gt 0 -or $part.Phantoms.Count -gt 0 -or $part.Thin) {
+            if ($side) { $findings.Add($part) } else { $olderFindings.Add($part) }
+        }
     }
 }
 
@@ -433,13 +531,15 @@ if (-not $SkipServiceCheck -and -not $Doc) {
 Write-Invariant -Template 'Pages checked: {0:N0} ({1:N0} of them point-in-time records, checked for broken references only; {2:N0} cite no source file and are read for routes and named symbols only)' -Values @($checkedDocs, $checkedRecords, $uncitedDocs)
 Write-Host ''
 
-if ($findings.Count -eq 0) {
+if ($findings.Count -eq 0 -and $olderFindings.Count -eq 0) {
     Write-Host 'No drift found: every cited member is named, and every cited file still exists.' -ForegroundColor Green
     Show-Coverage
     exit 0
 }
 
-foreach ($finding in ($findings | Sort-Object { -($_.Missing.Count + $_.Stale.Count) })) {
+function Show-Finding {
+    param([Parameter(Mandatory)][object]$finding)
+
     Write-Invariant -Template '{0}' -Values @($finding.Doc) -ForegroundColor Yellow
     foreach ($item in $finding.Missing) {
         Write-Invariant -Template '   [missing] declared in code, absent from the page: {0}' -Values @($item)
@@ -461,12 +561,24 @@ foreach ($finding in ($findings | Sort-Object { -($_.Missing.Count + $_.Stale.Co
     }
 }
 
+foreach ($finding in ($findings | Sort-Object { -($_.Missing.Count + $_.Stale.Count) })) { Show-Finding -finding $finding }
+
 $thinOnly = @($findings | Where-Object { $_.Thin -and $_.Missing.Count -eq 0 -and $_.Stale.Count -eq 0 -and $_.Undocumented.Count -eq 0 -and $_.BadRoutes.Count -eq 0 -and $_.Phantoms.Count -eq 0 }).Count
 $totalMissing = ($findings | ForEach-Object { $_.Missing.Count } | Measure-Object -Sum).Sum
 $totalStale = ($findings | ForEach-Object { $_.Stale.Count } | Measure-Object -Sum).Sum
 
 Write-Host ''
-Write-Invariant -Template '{0:N0} page(s) have drifted: {1:N0} missing member(s), {2:N0} stale file reference(s). {3:N0} more are thin but not wrong.' -Values @(($findings.Count - $thinOnly), $totalMissing, $totalStale, $thinOnly) -ForegroundColor Yellow
+if ($findings.Count -gt 0) {
+    Write-Invariant -Template '{0:N0} page(s) have drifted: {1:N0} missing member(s), {2:N0} stale file reference(s). {3:N0} more are thin but not wrong.' -Values @(($findings.Count - $thinOnly), $totalMissing, $totalStale, $thinOnly) -ForegroundColor Yellow
+}
+else {
+    Write-Host 'The change caused no drift.' -ForegroundColor Green
+}
+if ($olderFindings.Count -gt 0) {
+    Write-Host ''
+    Write-Invariant -Template 'Older drift, not blocking: {0:N0} page(s) hold drift that the change did not cause. It is listed so it can be fixed, and it never fails the run.' -Values @($olderFindings.Count) -ForegroundColor Yellow
+    foreach ($finding in ($olderFindings | Sort-Object { -($_.Missing.Count + $_.Stale.Count) })) { Show-Finding -finding $finding }
+}
 
 Show-Coverage
 if ($FailOnDrift -and ($findings.Count - $thinOnly) -gt 0) {

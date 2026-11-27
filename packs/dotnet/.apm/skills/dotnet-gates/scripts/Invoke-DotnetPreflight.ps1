@@ -104,8 +104,13 @@ elseif (-not $SkipTests) {
         else {
             $merged = Join-Path $covDir 'coverage.opencover.xml'
             & dotnet-coverage merge --output $merged --output-format xml @($covFiles.FullName) *> $null
-            & (Join-Path $PSScriptRoot 'Check-Coverage.ps1') -CoverageFile $merged -RepoRoot $RepoRoot | Out-Host
-            New-Row 'Tests + coverage (C04)' ($(if ($LASTEXITCODE -eq 0) { 'PASS' } else { 'FAIL' })) 'tests passed; C04 ratchet against the recorded baseline (blocking)'
+            if (Test-AiSdlcGateOff -RepoRoot $RepoRoot -Script 'Check-Coverage.ps1') {
+                New-Row 'Tests + coverage (C04)' 'SKIP' 'tests passed; the coverage gate is Off, so Check-Coverage.ps1 did not run'
+            }
+            else {
+                & (Join-Path $PSScriptRoot 'Check-Coverage.ps1') -CoverageFile $merged -RepoRoot $RepoRoot | Out-Host
+                New-Row 'Tests + coverage (C04)' ($(if ($LASTEXITCODE -eq 0) { 'PASS' } else { 'FAIL' })) 'tests passed; C04 ratchet against the recorded baseline (blocking)'
+            }
         }
     }
     Remove-Item -LiteralPath $covDir -Recurse -Force -ErrorAction SilentlyContinue

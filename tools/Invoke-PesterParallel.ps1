@@ -58,16 +58,27 @@
     the order never moves a file to another share.
 
 .PARAMETER Changed
-    Run only the test files of the scripts that changed against -Base, with the working tree and new
-    files included. This is the quick run of a build loop; the pre-flight still runs every file once.
+    Run only the test files that the change can reach, against -Base, with the working tree and new
+    files included. This is the quick run of a build loop; the pull request build runs every file.
     A changed <Name>.Tests.ps1 runs itself. A changed <Name>.ps1 under <package>/.apm/skills/<skill>/scripts
     runs the <Name>.Tests.ps1 in <package>/tests/skills/<skill>/scripts, and any other changed <Name>.ps1
-    runs the <Name>.Tests.ps1 next to it. Every test file runs when a changed script has no such test
-    file, when a module (.psm1) changed, or when this runner changed. A file that is not a script, such as a page or a JSON file,
-    maps to no test. When nothing maps, no test runs and the run passes.
+    runs the <Name>.Tests.ps1 next to it; a changed script with no such test file runs every test file.
+    A changed module (.psm1) or data file (such as JSON or YAML) runs the tests of every script and test
+    that names it, and a module follows on through the scripts and modules that import it. A change
+    under core/ or packs/ also runs SharedWiring.Tests.ps1. A page, a file a tool writes (apm.lock.yaml,
+    sync-manifest.json, skill-catalog.json, gate-catalog.md), a copy under .claude/ and an apm.yml that
+    changes only its version map to no test. When nothing maps, no test runs and the run exits 3 (not
+    applicable). Every test file runs when this runner changed or git cannot read the change.
+
+.PARAMETER ChangedOutsideCi
+    Act as -Changed outside GitHub Actions, and run every test file inside it (GITHUB_ACTIONS is true).
+    commands.testChanged in aisdlc.json uses it, so a scoped pre-flight runs only the reached tests.
 
 .PARAMETER Base
-    The ref that -Changed compares with, through the merge base. Defaults to origin/main.
+    The ref that -Changed compares with, through the merge base. Defaults to AISDLC_CHANGE_BASE when it is
+    a commit in the history of HEAD (the last green pre-flight), else to origin/<github.trunk> from
+    aisdlc.json (Get-AiSdlcMainBranch in AiSdlcConfig.psm1), which is origin/main unless the repository
+    names another trunk.
 
 .PARAMETER ListOnly
     Print the test files the run would start, in the order it would start them, one "Would run:" line
@@ -102,12 +113,14 @@ param(
     [string]$CoverageFile,
     [string]$TimingFile,
     [switch]$Changed,
-    [string]$Base = 'origin/main',
+    [switch]$ChangedOutsideCi,
+    [string]$Base,
     [switch]$ListOnly,
     [switch]$Ci
 )
 
 $ErrorActionPreference = 'Stop'
+if ($ChangedOutsideCi -and $env:GITHUB_ACTIONS -ne 'true') { $Changed = [switch]$true }
 if (-not $Path) { $Path = @('core', 'packs', 'tools') }
 $coverageModule = Join-Path $PSScriptRoot 'PesterCoverage.psm1'
 Import-Module $coverageModule -Force
@@ -118,28 +131,98 @@ if ($missing) { Write-Host "No such folder: $($missing -join ', ')" -ForegroundC
 if ($Shard -gt $Shards) { Write-Host "-Shard $Shard is above -Shards $Shards." -ForegroundColor Red; exit 1 }
 $all = @($folders | ForEach-Object { Get-ChildItem -LiteralPath $_ -Recurse -Force -File -Filter '*.Tests.ps1' } | ForEach-Object FullName | Sort-Object -Unique)
 if ($Changed) {
+    if (-not $Base -and $env:AISDLC_CHANGE_BASE) {
+        $candidate = [string]$env:AISDLC_CHANGE_BASE
+        git -C $RepoRoot merge-base --is-ancestor $candidate HEAD *>$null
+        if ($candidate -match '^[0-9a-f]{40}$' -and $LASTEXITCODE -eq 0) { $Base = $candidate }
+        else { Write-Host 'AISDLC_CHANGE_BASE is not a commit in the history of HEAD, so -Changed starts at the merge base.' -ForegroundColor DarkGray }
+    }
+    if (-not $Base) {
+        Import-Module (Join-Path $PSScriptRoot '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' 'AiSdlcConfig.psm1') -Force
+        $Base = Get-AiSdlcMainBranch -RepoRoot $RepoRoot
+    }
     $runAll = $null
     $picked = [System.Collections.Generic.List[string]]::new()
+    $wiringTest = [IO.Path]::GetFullPath((Join-Path $RepoRoot 'core/tests/skills/ai-sdlc-gates/scripts/SharedWiring.Tests.ps1'))
+    $packageScope = (Test-Path -LiteralPath $wiringTest) -and [bool]@($folders | Where-Object { (Split-Path -Leaf ([IO.Path]::GetFullPath($_).TrimEnd([char]92, [char]47))) -in 'core', 'packs' })
     $mergeBase = [string](git -C $RepoRoot merge-base $Base HEAD 2>$null)
     if ($LASTEXITCODE -ne 0 -or -not $mergeBase.Trim()) { $runAll = "git finds no merge base with $Base" }
     else {
-        $changedPaths = @(git -C $RepoRoot diff --name-only $mergeBase.Trim()) + @(git -C $RepoRoot ls-files --others --exclude-standard)
+        $mergeBase = $mergeBase.Trim()
+        $changedPaths = @(git -C $RepoRoot diff --name-only $mergeBase)
+        if ($LASTEXITCODE -ne 0) { $runAll = 'git cannot list the changed files' }
+        $changedPaths += @(git -C $RepoRoot ls-files --others --exclude-standard)
+        if ($LASTEXITCODE -ne 0) { $runAll = 'git cannot list the untracked files' }
         $roots = @($folders | ForEach-Object { [IO.Path]::GetFullPath($_).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar })
-        foreach ($rel in ($changedPaths | Where-Object { $_ } | Sort-Object -Unique)) {
-            $full = [IO.Path]::GetFullPath((Join-Path $RepoRoot $rel))
-            if (-not @($roots | Where-Object { $full.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) })) { continue }
-            $name = Split-Path -Leaf $full
-            if ($name -like '*.Tests.ps1') { if (Test-Path -LiteralPath $full) { $picked.Add($full) }; continue }
-            if ($name -in 'Invoke-PesterParallel.ps1', 'PesterCoverage.psm1' -or $name -like '*.psm1') { $runAll = "$rel is a module or the test runner"; break }
-            if ($name -notlike '*.ps1') { continue }
-            $test = Get-TestFileOfScript -ScriptFile $full
-            if (Test-Path -LiteralPath $test) { $picked.Add($test) } else { $runAll = "$rel has no test file next to it"; break }
+        # The scripts and tests that name a file read it: a module, a data file or another script.
+        # The map follows a module to the scripts that import it, and on to their tests.
+        $script:sources = $null
+        $script:sourcesFailed = $false
+        $readers = {
+            param([string]$Name)
+            if ($null -eq $script:sources) {
+                $script:sources = @(git -C $RepoRoot ls-files --cached --others --exclude-standard -- '*.ps1' '*.psm1' | Where-Object { $_ -and -not $_.StartsWith('.claude/') } |
+                    ForEach-Object { [IO.Path]::GetFullPath((Join-Path $RepoRoot $_)) } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+                    ForEach-Object { [pscustomobject]@{ Full = $_; Text = [IO.File]::ReadAllText($_) } })
+                if ($LASTEXITCODE -ne 0) { $script:sourcesFailed = $true }
+            }
+            @($script:sources | Where-Object { $_.Text.Contains($Name, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object Full)
         }
+        $addReader = {
+            param([string]$Full)
+            $leaf = Split-Path -Leaf $Full
+            if ($leaf -like '*.Tests.ps1') { $picked.Add($Full); return }
+            if ($leaf -like '*.psm1' -and -not $seenModules.Contains($leaf)) { $modules.Enqueue($leaf) }
+            $test = Get-TestFileOfScript -ScriptFile ($Full -replace '\.psm1$', '.ps1')
+            if (Test-Path -LiteralPath $test) { $picked.Add($test) }
+        }
+        $modules = [System.Collections.Generic.Queue[string]]::new()
+        $seenModules = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+        $generated = @('apm.lock.yaml', 'sync-manifest.json', 'skill-catalog.json', 'gate-catalog.md')
+        foreach ($rel in ($changedPaths | Where-Object { $_ } | Sort-Object -Unique)) {
+            if ($rel -match '^(core|packs)/' -and $packageScope) { $picked.Add($wiringTest) }
+            $full = [IO.Path]::GetFullPath((Join-Path $RepoRoot $rel))
+            $name = Split-Path -Leaf $full
+            $inRoot = [bool]@($roots | Where-Object { $full.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) })
+            if ($name -in 'Invoke-PesterParallel.ps1', 'PesterCoverage.psm1') { $runAll = "$rel is the test runner"; break }
+            if ($name -like '*.psm1') {
+                if (-not $rel.StartsWith('.claude/')) { & $addReader $full }
+                continue
+            }
+            if ($name -like '*.ps1') {
+                if (-not $inRoot) { continue }
+                if ($name -like '*.Tests.ps1') { if (Test-Path -LiteralPath $full) { $picked.Add($full) }; continue }
+                $test = Get-TestFileOfScript -ScriptFile $full
+                if (Test-Path -LiteralPath $test) { $picked.Add($test) } else { $runAll = "$rel has no test file next to it"; break }
+                continue
+            }
+            if ($name -like '*.md' -or $name -in $generated -or $rel.StartsWith('.claude/')) { continue }
+            if ($name -eq 'apm.yml') {
+                $diff = @(git -C $RepoRoot diff --unified=0 --no-color $mergeBase -- $rel)
+                if ($LASTEXITCODE -ne 0) { $runAll = "git cannot read the change of $rel"; break }
+                $lines = @($diff | Where-Object { $_ -match '^[+-]' -and $_ -notmatch '^(\+\+\+|---)' })
+                if ($lines.Count -and -not @($lines | Where-Object { $_ -notmatch '^[+-]\s*version:' })) { continue }
+            }
+            foreach ($reader in (& $readers $name)) { & $addReader $reader }
+        }
+        while (-not $runAll -and $modules.Count -gt 0) {
+            $module = $modules.Dequeue()
+            if (-not $seenModules.Add($module)) { continue }
+            foreach ($reader in (& $readers $module)) { & $addReader $reader }
+        }
+        if ($script:sourcesFailed) { $runAll = 'git cannot list the scripts that may read the change' }
+        $inScope = { param($f) [bool]@($roots | Where-Object { $f.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) }) }
+        $kept = @($picked | Where-Object { (& $inScope $_) -or $_ -eq $wiringTest })
+        $picked.Clear()
+        foreach ($f in $kept) { $picked.Add($f) }
     }
-    if ($runAll) { Write-Host "Running every test file, because $runAll." }
+    if ($runAll) {
+        Write-Host "Running every test file, because $runAll."
+        if ($packageScope) { $all = @(@($all) + $wiringTest | Sort-Object -Unique) }
+    }
     else {
         $all = @($picked | ForEach-Object { [IO.Path]::GetFullPath($_) } | Sort-Object -Unique)
-        if ($all.Count -eq 0) { Write-Host "No changed script maps to a test file against $Base, so no test runs."; exit 0 }
+        if ($all.Count -eq 0) { Write-Host "Not applicable: no changed script maps to a test file against $Base, so no test runs."; exit 3 }
         Write-Host "Running the $($all.Count) test file(s) of the changed scripts against $Base."
     }
 }

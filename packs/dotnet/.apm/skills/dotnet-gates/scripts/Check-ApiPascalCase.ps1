@@ -207,6 +207,7 @@ function Get-FileWireNameRecords {
 $srcRel = ([string]$aiSdlc.paths.sourceRoot).TrimEnd('/')
 if (-not $srcRel) {
     Write-Host 'Could not check: aisdlc.json names no paths.sourceRoot.' -ForegroundColor Yellow
+    Write-Host 'FIX: Set paths.sourceRoot in aisdlc.json to the folder that holds the source code.' -ForegroundColor Yellow
     exit 2
 }
 $srcDir = Join-Path $RepoRoot $srcRel
@@ -344,6 +345,7 @@ if ($failed) { exit 1 }
 
 if ($specUnchecked) {
     Write-Host "DOTNET-01: Part A passed; Part B could not run without a YAML parser, so the specs were not checked."
+    Write-Host 'FIX: Install a YAML parser with Install-Module powershell-yaml -Scope CurrentUser, then run the gate again.' -ForegroundColor Yellow
     exit 2
 }
 

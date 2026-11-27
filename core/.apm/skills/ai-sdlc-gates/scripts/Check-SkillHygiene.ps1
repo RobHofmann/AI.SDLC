@@ -62,6 +62,7 @@
     This is the deterministic, CI-gateable layer; the routing (Layer 1) and value (Layer 2) layers
     are subagent-driven and documented in the test-skills skill, which calls this
     script for Layer 0. Exits non-zero (fails the build) when any skill violates a blocking rule.
+    Exit 3 (not applicable) when the repository has no skills directory.
 
     The pattern.md section findings do not fail the default run. gates.json registers this script once,
     with -Strict and Blocking, the way it registers Check-DocsWiki.ps1 and Check-StoryTraits.ps1: a
@@ -125,8 +126,8 @@ $lineCitationPatterns = @(
 )
 
 if (-not (Test-Path $SkillsRoot)) {
-    Write-Host "Skill hygiene: skills directory not found at $SkillsRoot." -ForegroundColor Red
-    exit 1
+    Write-Host "Skill hygiene: not applicable, the skills directory was not found at $SkillsRoot."
+    exit 3
 }
 
 $skillDirs = Get-ChildItem -Path $SkillsRoot -Directory | Sort-Object Name

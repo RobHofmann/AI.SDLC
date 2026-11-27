@@ -134,8 +134,8 @@ the correction, but the reason is easier to read while it is open.
    - **Rule exists, no gate, checkable by a script**: add or extend a gate through `add-gate`, advisory first.
    - **Rule exists, but it needs judgement**: no gate. Strengthen the code-smell skill of the stack pack
      and the review step.
-   - **No rule yet**: write the convention; an ADR when it rests on a key decision; a clause when it
-     must never bend.
+   - **No rule yet**: write the convention; an ADR only when the decision passes the three tests of
+     `adr-conventions`; a clause when it must never bend.
 5. **Run the gate-coverage experiment.** Run the existing gates on the tree before the change, in a
    separate worktree: `git worktree add <temp folder> <base commit>`, then remove it with
    `git worktree remove <temp folder>`. Never check out over the working tree, because inside `wrap-up`

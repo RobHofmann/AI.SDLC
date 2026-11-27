@@ -2,6 +2,6 @@
   "package": "sonarcloud",
   "setup": "scripts/Initialize-SonarCloud.ps1",
   "gates": [
-    { "name": "SonarCloud MCP: the token and the organization stay placeholders, never values", "script": "scripts/Check-McpToken.ps1", "clause": "AI-SDLC", "mode": "Blocking" }
+    { "name": "MCP files hold the SonarQube token and organization as placeholders, never as values", "script": "scripts/Check-McpToken.ps1", "clause": "C03", "mode": "Blocking", "checks": "It reads `.mcp.json`, `.github/mcp.json` and `.vscode/mcp.json`, and fails when the `sonarqube` server sends a token value, an organization value or another variable name. It skips files that git ignores. Exit 2 means a file cannot be read or parsed, and exit 3 means there is no MCP file.", "fix": "Replace the value with `${AISDLC_SONAR_MCP_TOKEN}` or `${AISDLC_SONAR_ORG}`, and replace a token that was committed." }
   ]
 }

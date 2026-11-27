@@ -61,10 +61,17 @@ Describe 'Check-AgentHygiene' {
         $r.Output | Should -Match 'Agent hygiene OK: 1 agent'
     }
 
-    It 'passes when there is no agents folder at all' {
+    It 'is not applicable when there is no agents folder at all' -Tag '#46' {
         $r = Invoke-AgentHygiene -Ws $script:Ws -AgentsRoot (Join-Path $script:Ws.Agents 'missing')
-        $r.ExitCode | Should -Be 0
+        $r.ExitCode | Should -Be 3
         $r.Output | Should -Match '0 agents'
+    }
+
+    It 'could not check when the persona registry is missing, and says how to fix it' -Tag '#46' {
+        New-Agent -Ws $script:Ws
+        $r = Invoke-AgentHygiene -Ws ([pscustomobject]@{ Agents = $script:Ws.Agents; Skills = $script:Ws.Skills; Personas = (Join-Path $script:Ws.Skills 'no-personas.md') })
+        $r.ExitCode | Should -Be 2
+        $r.Output | Should -Match '(?m)^FIX: \S'
     }
 
     It 'fails when the name does not match the file' {

@@ -35,6 +35,9 @@ person reviews and merges it.
 
 ## What to know
 
+- Version 2.0.0 changes how the pull request build reads a gate. A blocking gate that could not check
+  now fails the build, so the first update can turn a green pull request red. Read the `FIX:` line of
+  each such gate, or set the gate softer in `gateModes` and say why ([how a gate answers](gate-results.md)).
 - A tag with a suffix, such as `v1.1.0-rc.1`, is a pre-release. A consumer can pin it to test a
   change, and the update workflow skips it.
 - A tag whose message names no issue gives an update pull request without an issue key. The script says so, and the story check then fails it.
@@ -66,4 +69,5 @@ person reviews and merges it.
 - [Adding the AI-SDLC to a repository](joining.md) - the first install that this updates.
 - [How AI.SDLC is built](../docs/overview.md) - the workflow and the release behind this.
 - [Glossary](glossary.md) - what an update pull request and a pre-release are.
+- [How a gate answers](gate-results.md) - what changed for the gates in version 2.0.0.
 - [Index](index.md) - every page of this layer.

@@ -22,9 +22,18 @@
          added in the same PR counts only when its story matches; merely touching some unrelated ADR file does
          not. This half is repo-side and needs no GitHub read.
 
+    WAIVER. Not every data-model change rests on a decision that needs an ADR. So a data-model change with
+    no governing ADR passes when a commit of the pull request, after the base, ends with the trailer
+    No-ADR: <why>. Git's own trailer parser reads it, and the key matches without regard to case. An empty
+    why or a control character in the value clears nothing, and the output says "Waiver not used" with the
+    cause. A used waiver prints "Waiver used" with the commit and the why, which stops at 200 characters and
+    shows a control character as ?, because the reviewer judges the why and the check only reads its shape.
+    Only wrap-up writes the trailer, after the architect agent agrees. With no readable base, no trailer
+    applies and the change still fails.
+
     NEVER PASSES BLIND. If a story key is present but the issue cannot be read (gh is missing, the token is
     missing, or the repository cannot be reached), the gate exits 2: it could not check. The workflow shows
-    that as a warning, never as a pass. An issue that does not exist is exit 1. It is a NO-OP only when there
+    that as a warning, never as a pass. An issue that does not exist is exit 1. It is not applicable (exit 3) only when there
     is no PR context at all (no story key, source branch, title, body or PR number), so a normal local
     `Invoke-LocalGates` run does not trip it; the live local check is the check-pr-contract skill.
 
@@ -55,6 +64,11 @@
 .PARAMETER ChangedFiles
     Newline-separated list of changed file paths (the PR diff). Used for the domain-model -> ADR check.
 
+.PARAMETER BaseRef
+    The ref whose commits the No-ADR waiver skips. Defaults to PR_BASE_SHA, else origin/ plus
+    PR_TARGET_BRANCH, else the trunk of aisdlc.json (github.trunk). The commits after the merge base of
+    this ref and HEAD are the commits of the pull request.
+
 .PARAMETER GhCommand
     The GitHub CLI command. Defaults to gh.
 
@@ -84,6 +98,7 @@ param(
     [string]$PrDescription = $env:PR_DESCRIPTION,
     [string]$PrNumber = $env:PR_ID,
     [string]$ChangedFiles = $env:CHANGED_FILES,
+    [string]$BaseRef,
     [string]$GhCommand = 'gh',
     [string]$GhToken = $env:GH_TOKEN,
     [bool]$InCi = ($env:GITHUB_ACTIONS -eq 'true'),
@@ -95,6 +110,7 @@ param(
 $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
 if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
 Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
+Import-Module (Join-Path $aiSdlcGates 'ChangedFiles.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 
 $ErrorActionPreference = 'Stop'
@@ -106,11 +122,16 @@ $refinedLabel = if ($tracker -and $tracker.refinedLabel) { [string]$tracker.refi
 $modelPatterns = @($tracker.dataModelPatterns | Where-Object { $_ })
 
 function Fail([string]$msg) {
-    Write-Output "::error::$msg"
+    Write-Output $msg
     Write-Output "FIX: Put the issue key (#NNN) in the branch name (42-short-name), the pull request title, or its body (Fixes #42), and make sure that issue is labelled '$refinedLabel'. A key of another repository (owner/repo#NNN) needs that repository in tracker.acceptedRepositories. A data-model change also needs an ADR whose story matches."
     exit 1
 }
-function Unknown([string]$msg) { Write-Output "::warning::$msg"; exit 2 }
+function Unknown([string]$msg) {
+    Write-Output $msg
+    Write-Output "FIX: Give the gate a way to read the issue: install gh and set GH_TOKEN with read access to the tracker repository (the composite action sets it to github.token), then run the gate again."
+    exit 2
+}
+function NotApplicable([string]$msg) { Write-Output $msg; exit 3 }
 function Ok([string]$msg) { Write-Output $msg; exit 0 }
 
 function Get-TrackerRepository {
@@ -266,12 +287,78 @@ function Find-AdrGovernance([string]$key) {
     return [pscustomobject]@{ Governed = $false; Traps = $traps.ToArray(); Invalid = $invalid.ToArray() }
 }
 
+function ConvertTo-PrintableText([string]$Text, [int]$Max = 200) {
+    $clean = [regex]::Replace($Text, '[\x00-\x1F\x7F-\x9F  ]', '?')
+    if ($clean.Length -gt $Max) { return $clean.Substring(0, $Max) + '...' }
+    return $clean
+}
+
+function Get-GitRaw([string[]]$Argument) {
+    $info = [System.Diagnostics.ProcessStartInfo]::new('git')
+    $info.RedirectStandardOutput = $true
+    $info.RedirectStandardError = $true
+    $info.UseShellExecute = $false
+    $info.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+    foreach ($item in (@('-C', $RepoRoot) + $Argument)) { $info.ArgumentList.Add($item) }
+    $process = [System.Diagnostics.Process]::Start($info)
+    $errors = $process.StandardError.ReadToEndAsync()
+    $text = $process.StandardOutput.ReadToEnd()
+    $process.WaitForExit()
+    [void]$errors.Result
+    if ($process.ExitCode -ne 0) { return $null }
+    return $text
+}
+
+function Get-NoAdrWaiver([string]$changed) {
+    # The base is the pull request base commit (PR_BASE_SHA) when the action sets it. Otherwise
+    # ChangedFiles.psm1 takes origin/PR_TARGET_BRANCH, and without that the trunk of aisdlc.json.
+    $base = $BaseRef
+    if (-not $base) { $base = $env:PR_BASE_SHA }
+    if (-not $base -and -not $env:PR_TARGET_BRANCH) { $base = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
+    $change = Get-AiSdlcChange -RepoRoot $RepoRoot -BaseRef $base -Explicit @($changed -split '\r?\n')
+    $result = [pscustomobject]@{ Used = $null; Rejected = @(); Reason = $null }
+    if (-not $change.Base) {
+        $result.Reason = 'the base commit cannot be read'
+        return $result
+    }
+    $listed = @(& git -C $RepoRoot rev-list "$($change.Base)..HEAD" 2>$null)
+    if ($LASTEXITCODE -ne 0) {
+        $global:LASTEXITCODE = 0
+        $result.Reason = 'git cannot list the commits since the base'
+        return $result
+    }
+    $known = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($hash in $listed) { [void]$known.Add(([string]$hash).Trim()) }
+    $raw = Get-GitRaw @('log', "$($change.Base)..HEAD", '--encoding=UTF-8', '--format=%x00%H%x00%(trailers:key=No-ADR,unfold)')
+    if ($null -eq $raw) {
+        $result.Reason = 'git cannot list the commits since the base'
+        return $result
+    }
+    $parts = $raw -split [string][char]0
+    $rejected = [System.Collections.Generic.List[string]]::new()
+    for ($i = 1; $i + 1 -lt $parts.Count; $i += 2) {
+        $hash = $parts[$i]
+        if ($hash -cnotmatch '^[0-9a-f]{40}$' -or -not $known.Contains($hash)) { continue }
+        foreach ($line in ($parts[$i + 1] -split '\r?\n')) {
+            if ($line -notmatch '^No-ADR\s*:(?<value>.*)$') { continue }
+            $value = $Matches.value
+            $why = $value.Trim()
+            $shown = "No-ADR: $(ConvertTo-PrintableText -Text $why) (commit $($hash.Substring(0, 12)))"
+            if ($value -match '[\x00-\x08\x0A-\x1F\x7F-\x9F  ]') { $rejected.Add("$shown because it holds a control character"); continue }
+            if (-not $why) { $rejected.Add("$shown because it gives no why, as in No-ADR: <why>"); continue }
+            if (-not $result.Used) { $result.Used = $shown }
+        }
+    }
+    $result.Rejected = $rejected.ToArray()
+    return $result
+}
+
 function Invoke-PrStoryContractGate {
     $found = Resolve-StoryKey
 
     if (-not $found) {
         if (-not $StoryKey -and -not $SourceBranch -and -not $PrTitle -and -not $PrDescription -and -not $PrNumber) {
-            Ok "PR-story contract gate: no PR context (no story key, source branch, title, body or PR number); no-op."
+            NotApplicable "PR-story contract gate: not applicable, no PR context (no story key, source branch, title, body or PR number)."
         }
         Fail "No story key (#NNN) found. Looked in the story key passed in, the PR source branch '$SourceBranch', the PR title, the PR body and the issues the PR closes, in that order. Name the branch for its issue (e.g. 1234-short-name), or write the key in the PR title or body (Fixes #1234)."
     }
@@ -304,14 +391,20 @@ function Invoke-PrStoryContractGate {
         $governance = Find-AdrGovernance $key
         if (-not $governance.Governed) {
             if ($governance.Traps.Count -gt 0) {
-                Write-Output ("::error::ADR front matter with an empty 'story:' value: {0}. An unquoted # starts a YAML comment, so the key is lost." -f ($governance.Traps -join ', '))
+                Write-Output ("ADR front matter with an empty 'story:' value: {0}. An unquoted # starts a YAML comment, so the key is lost." -f ($governance.Traps -join ', '))
                 Write-Output "FIX: Quote the key in the ADR front matter: story: `"$key`"."
             }
             if ($governance.Invalid.Count -gt 0) {
-                Write-Output ("::error::ADR front matter with a 'story:' value that is not a story key: {0}." -f ($governance.Invalid -join ', '))
+                Write-Output ("ADR front matter with a 'story:' value that is not a story key: {0}." -f ($governance.Invalid -join ', '))
                 Write-Output "FIX: Write the key as #<number> or owner/repo#<number>, in quotes: story: `"$key`"."
             }
-            Fail "This PR changes domain-model files (tracker.dataModelPatterns in aisdlc.json) but no governing ADR was found: no ADR under $($aiSdlc.paths.adrFolder)/ has front-matter 'story: `"$key`"' (a new ADR added in this PR counts only when its story matches). A data-model change requires an ADR (constitution C01)."
+            $waiver = Get-NoAdrWaiver $ChangedFiles
+            foreach ($item in $waiver.Rejected) { Write-Output "Waiver not used: $item." }
+            if ($waiver.Used) {
+                Ok "PR-story contract OK: $key (read from $from, '$refinedLabel', dev-active). Waiver used: $($waiver.Used). The domain-model change has no ADR; the reviewer judges the why."
+            }
+            $noTrailer = if ($waiver.Reason) { "No No-ADR trailer applies, because $($waiver.Reason)." } else { 'No commit of this pull request carries a valid No-ADR trailer.' }
+            Fail "This PR changes domain-model files (tracker.dataModelPatterns in aisdlc.json) but no governing ADR was found: no ADR under $($aiSdlc.paths.adrFolder)/ has front-matter 'story: `"$key`"' (a new ADR added in this PR counts only when its story matches). $noTrailer A data-model change requires an ADR (constitution C01), or a No-ADR: <why> commit trailer when the decision needs no ADR. Only wrap-up writes that trailer, after the architect agent agrees."
         }
         Ok "PR-story contract OK: $key (read from $from, '$refinedLabel', dev-active); domain-model change governed by an ADR."
     }

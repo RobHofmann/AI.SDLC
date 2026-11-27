@@ -51,6 +51,7 @@ $docTypeAllowList = @((Get-AiSdlcConfig -RepoRoot $RepoRoot).dotnet.portalAppCom
 $srcRel = ([string](Get-AiSdlcConfig -RepoRoot $RepoRoot).paths.sourceRoot).TrimEnd('/')
 if (-not $srcRel) {
     Write-Host 'Could not check: aisdlc.json names no paths.sourceRoot.' -ForegroundColor Yellow
+    Write-Host 'FIX: Set paths.sourceRoot in aisdlc.json to the folder that holds the source code.' -ForegroundColor Yellow
     exit 2
 }
 $srcDir = Join-Path $RepoRoot $srcRel

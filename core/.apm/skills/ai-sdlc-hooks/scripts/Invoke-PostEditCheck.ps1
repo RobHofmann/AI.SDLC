@@ -10,7 +10,8 @@
     gap for the checks that are cheap enough to run on every edit:
 
       - a markdown file gets the reading-level gate (Check-DocReadingLevel.ps1, on that one file) and
-        the em-dash gate (Check-DocEmDashes.ps1), both from the ai-sdlc-gates skill;
+        the em-dash gate (Check-DocEmDashes.ps1), both from the ai-sdlc-gates skill. A gate that is
+        Off (Test-AiSdlcGateOff in AiSdlcConfig.psm1) is skipped;
       - any other file type is handed to the pack that claims it. A gates.json of an installed pack
         can name a postEdit script with the extensions it takes, for example the dotnet pack builds
         the project that owns an edited C# or Razor file (Invoke-DotnetPostEdit.ps1). The script runs
@@ -92,13 +93,13 @@ function Get-MarkdownFeedback {
     $ErrorActionPreference = 'Continue'
     $parts = [System.Collections.Generic.List[string]]::new()
 
-    if (Test-Path -LiteralPath $ReadingLevelScript) {
+    if ((Test-Path -LiteralPath $ReadingLevelScript) -and -not (Test-AiSdlcGateOff -RepoRoot $RepoRoot -Script (Split-Path -Leaf $ReadingLevelScript))) {
         $sharedList = if ($SharedAllowListPath) { @('-SharedAllowListPath', $SharedAllowListPath) } else { @() }
         $report = & pwsh -NoProfile -File $ReadingLevelScript -RepoRoot $RepoRoot -Path $Relative @sharedList 2>&1 | Out-String
         if ($LASTEXITCODE -eq 1) { $parts.Add("Reading level (C11) on ${Relative}:`n$($report.Trim())") }
     }
 
-    if (Test-Path -LiteralPath $EmDashScript) {
+    if ((Test-Path -LiteralPath $EmDashScript) -and -not (Test-AiSdlcGateOff -RepoRoot $RepoRoot -Script (Split-Path -Leaf $EmDashScript))) {
         $report = & pwsh -NoProfile -File $EmDashScript -RepoRoot $RepoRoot -Path $Relative 2>&1 | Out-String
         if ($LASTEXITCODE -eq 1) { $parts.Add("Em-dash (C06) on ${Relative}:`n$($report.Trim())") }
     }

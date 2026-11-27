@@ -75,9 +75,11 @@ question it brings, with a source for each claim.
    - Each claim the plan rests on meets [C07](/.claude/skills/ai-sdlc-handbook/references/constitution.md).
    - Each step traces to an acceptance criterion or a governing ADR. A step that traces to neither is
      HIGH; an abstraction that may be needed later is MEDIUM (the severity scale of `code-conventions`).
-3. **Check the decision.** When the plan makes a lasting choice, the ADR shows the gains, the costs, the
-   alternatives and why one won. A new ADR that follows an existing pattern is fine. A departure from
-   an ADR, a convention or a clause is a `DESIGN` finding.
+3. **Check the decision.** A choice gets an ADR only when it passes the three tests of
+   `adr-conventions`. When it does, the ADR shows the gains, the costs, the alternatives and why one
+   won. A new ADR that follows an existing pattern is fine. A departure from an ADR, a convention or a
+   clause is a `DESIGN` finding. When `wrap-up` asks about a `No-ADR: <why>` trailer, agree only when
+   the decision misses one of the three tests.
 4. **Check the files-to-change table.** Every file the plan must touch is on it: tests, both doc
    layers, the spec when an endpoint moves, and the DI registration.
 

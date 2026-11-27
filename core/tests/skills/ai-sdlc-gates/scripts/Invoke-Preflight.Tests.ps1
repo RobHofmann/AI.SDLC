@@ -4,6 +4,10 @@ BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\
 
 Describe 'Invoke-Preflight' {
     BeforeAll {
+        # These tests describe a local run. The pull request workflow sets GITHUB_ACTIONS, which turns on the
+        # pipeline behaviour, so it is cleared here and put back after the file.
+        $script:SavedGithubActions = $env:GITHUB_ACTIONS
+        $env:GITHUB_ACTIONS = $null
         $script:Made = [System.Collections.Generic.List[string]]::new()
 
         function New-PreflightRepo {
@@ -21,7 +25,7 @@ Describe 'Invoke-Preflight' {
             git -C $root init --quiet
             git -C $root config user.email probe@example.invalid
             git -C $root config user.name probe
-            foreach ($name in 'Invoke-Preflight.ps1', 'AiSdlcConfig.psm1', 'PreflightReceipt.psm1', 'GitleaksConfig.psm1') {
+            foreach ($name in 'Invoke-Preflight.ps1', 'AiSdlcConfig.psm1', 'PreflightReceipt.psm1', 'GitleaksConfig.psm1', 'ChangedFiles.psm1') {
                 Copy-Item -LiteralPath (Join-Path $script:ScriptFolder $name) -Destination $scripts
             }
             Set-Content -LiteralPath (Join-Path $scripts 'gitleaks-rules.json') -Value $script:RulesPin
@@ -81,6 +85,7 @@ Describe 'Invoke-Preflight' {
 
     AfterAll {
         Remove-Variable -Name PreflightTest -Scope Global -ErrorAction SilentlyContinue
+        $env:GITHUB_ACTIONS = $script:SavedGithubActions
         foreach ($dir in $script:Made) { Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
@@ -214,14 +219,36 @@ Describe 'Invoke-Preflight' {
         }
 
         It 'shows a FAIL row, fails and writes no receipt when commands.test exits non-zero' {
-            $repo = New-TestCommandRepo -Exit 3
+            $repo = New-TestCommandRepo -Exit 5
 
             $r = Invoke-Preflight -Root $repo.Root
 
             $r.Code | Should -Be 1
             $r.Output | Should -Match 'Tests \(commands\.test\)\s+FAIL'
-            $r.Output | Should -Match 'exit 3'
+            $r.Output | Should -Match 'exit 5'
             $r.Receipts | Should -HaveCount 0
+        }
+
+        It 'shows an N/A row and still writes the receipt when the test command exits 3' -Tag '#48' {
+            $repo = New-TestCommandRepo -Exit 3
+
+            $r = Invoke-Preflight -Root $repo.Root
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Output | Should -Match 'Tests \(commands\.test\)\s+N/A'
+            $r.Receipts | Should -HaveCount 1
+        }
+
+        It 'runs commands.testChanged in place of commands.test on a scoped run, and commands.test with -Full' -Tag '#48' {
+            $root = New-PreflightRepo -Config (@{ commands = @{ test = "Write-Host 'the full tests ran'; exit 0"; testChanged = "Write-Host 'the changed tests ran'; exit 0" } } | ConvertTo-Json -Depth 3)
+            git -C $root update-ref refs/remotes/origin/main HEAD
+
+            $scoped = Invoke-Preflight -Root $root
+            $full = Invoke-Preflight -Root $root -Options @{ Full = $true }
+
+            $scoped.Output | Should -Match 'the changed tests ran'
+            $scoped.Output | Should -Match 'Tests \(commands\.testChanged\)\s+PASS'
+            $full.Output | Should -Match 'the full tests ran'
         }
 
         It 'runs commands.test at the same time as the gates, and prints its output after them' {

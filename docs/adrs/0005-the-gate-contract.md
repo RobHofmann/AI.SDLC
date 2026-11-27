@@ -28,7 +28,7 @@ because:
 **Status:** Accepted
 **Date:** 2026-10-24
 **Supersedes:** none
-**Superseded by:** none
+**Superseded by:** point 1 only, by [ADR 0019](0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md)
 
 ## Context
 
@@ -47,7 +47,9 @@ pre-flight and CI. Four lessons shape how they report.
 
 ## Decision
 
-**1. A gate reports three results through its exit code.**
+**1. A gate reports three results through its exit code.** Superseded on 2026-11-26 by
+[ADR 0019](0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md): exit 2 of a Blocking
+gate now fails the pull request build, and exit 3 means not applicable.
 
 | Exit | Meaning | What the run does |
 |---|---|---|
@@ -143,4 +145,5 @@ blocking failed consumers on findings they did not cause.
 
 - [ADR 0006](0006-hooks-enforce-what-must-happen-every-time.md) - the hooks that run the same gates earlier.
 - [ADR 0012](0012-ci-is-a-composite-action-inside-the-installed-core.md) - the CI that sets the change environment.
+- [ADR 0019](0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md) - the four exit codes that replace point 1.
 - [ADR index](README.md) - the list of decisions in this repository.

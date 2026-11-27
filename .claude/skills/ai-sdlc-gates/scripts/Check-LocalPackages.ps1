@@ -36,7 +36,11 @@ $ErrorActionPreference = 'Stop'
 
 $apmFile = Join-Path $RepoRoot 'apm.yml'
 $lockFile = Join-Path $RepoRoot 'apm.lock.yaml'
-if (-not (Test-Path -LiteralPath $apmFile)) { Write-Output "::warning::Local packages could not be checked: $apmFile does not exist."; exit 2 }
+if (-not (Test-Path -LiteralPath $apmFile)) {
+    Write-Host "Local packages could not be checked: $apmFile does not exist."
+    Write-Host 'FIX: Run the gate in a repository that installs packages with APM (an apm.yml in its root), or run apm init.'
+    exit 2
+}
 
 function ConvertFrom-YamlScalar {
     param([string]$Value)
@@ -90,7 +94,11 @@ foreach ($package in $packages) {
         continue
     }
     $tracked = @(git -C $rootFull ls-files -- $rel 2>$null)
-    if ($LASTEXITCODE -ne 0) { Write-Output "::warning::Local packages could not be checked: git ls-files failed in $rootFull."; exit 2 }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Local packages could not be checked: git ls-files failed in $rootFull."
+        Write-Host 'FIX: Run the gate inside a git repository that git can read (check for a "dubious ownership" error).'
+        exit 2
+    }
     if ($tracked.Count -eq 0) { $findings.Add("$what, and git does not track that path") }
 }
 

@@ -48,11 +48,48 @@ Describe 'GateAnnotation' {
         $r.Written | Should -Not -Match '::error'
     }
 
-    It 'treats exit 2 as could-not-check: a warning, never a failure, in either mode' {
+    It 'treats exit 2 of a Blocking gate as could-not-check that fails the build: an error and Failed' -Tag '#46' {
         $r = Invoke-Annotation -Lines @('No token, so NOTHING WAS CHECKED.') -ExitCode 2
+
+        $r.Outcome.Result | Should -Be 'Failed'
+        $r.Written | Should -Match '::error title=a test rule::C99: a test rule COULD NOT BE CHECKED'
+        $r.Written | Should -Match 'a blocking gate that could not check blocks the build'
+    }
+
+    It 'treats exit 2 of an Advisory gate as a warning and SucceededWithIssues' -Tag '#46' {
+        $r = Invoke-Annotation -Lines @('No token, so NOTHING WAS CHECKED.') -ExitCode 2 -Mode Advisory
 
         $r.Outcome.Result | Should -Be 'SucceededWithIssues'
         $r.Written | Should -Match '::warning title=a test rule::C99: a test rule COULD NOT BE CHECKED'
+        $r.Written | Should -Not -Match '::error'
+    }
+
+    It 'writes no annotation for exit 3 and reports Succeeded, in either mode' -Tag '#46' {
+        foreach ($mode in 'Blocking', 'Advisory') {
+            $r = Invoke-Annotation -Lines @('No pull request here, so there is nothing to check.') -ExitCode 3 -Mode $mode
+
+            $r.Outcome.Result | Should -Be 'Succeeded'
+            $r.Outcome.Summary | Should -Match 'not applicable'
+            $r.Written | Should -Not -Match '::(error|warning)'
+        }
+    }
+
+    It 'counts an exit code other than 0, 1, 2 or 3 as a finding' -Tag '#46' {
+        $r = Invoke-Annotation -Lines $script:Findings -ExitCode 7
+
+        $r.Outcome.Result | Should -Be 'Failed'
+        $r.Written | Should -Match '::error file=docs/a\.md'
+    }
+
+    It 'reports a crash of an Advisory gate as a warning, and of a Blocking gate as an error' -Tag '#46' {
+        $record = try { throw 'gate bug' } catch { $_ }
+
+        $advisory = & { Write-GateCrashAnnotation -Clause 'C99' -Script 'Check-X.ps1' -ErrorRecord $record -HowToRepeat 'pwsh x' -Mode Advisory } 6>&1 | Out-String
+        $blocking = & { Write-GateCrashAnnotation -Clause 'C99' -Script 'Check-X.ps1' -ErrorRecord $record -HowToRepeat 'pwsh x' } 6>&1 | Out-String
+
+        $advisory | Should -Match '(?m)^::warning title=Check-X\.ps1::'
+        $advisory | Should -Not -Match '::error'
+        $blocking | Should -Match '(?m)^::error title=Check-X\.ps1::'
     }
 
     It 'writes no Azure DevOps logging command, only GitHub workflow commands' {

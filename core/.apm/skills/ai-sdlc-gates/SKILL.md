@@ -5,7 +5,7 @@ user-invocable: false
 description: >
   The deterministic gates of the AI-SDLC and how to run them. It covers the core gates every
   repository runs, the gates each pack adds, and the repository's own gates from aisdlc.json. It also covers the exit
-  codes 0, 1 and 2, and the runner that runs only the gates of the installed packs. Use when a gate failed and needs
+  codes 0, 1, 2 and 3, and the runner that runs only the gates of the installed packs. Use when a gate failed and needs
   explaining, when checking a change before a push, when adding a gate, or when reading aisdlc.json.
   Do NOT use to run the full pull request workflow locally (run-preflight), to write a new gate
   (add-gate) or to explain a hook (ai-sdlc-hooks).
@@ -23,6 +23,7 @@ push, in a local run and in the pull request workflow. The core gates, the runne
 pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1             # every gate, side by side, one summary
 pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -BlockingOnly # or -SkipTests: no Pester test gates
 pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -List       # what would run, its clause and mode, and where it runs
+pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 -SkipScript Check-LocalPackages.ps1 # leave one gate out, shown as SKIP
 pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # the whole pull request workflow, locally
 ```
 
@@ -43,16 +44,32 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
 
 ```json
 { "package": "dotnet",
-  "gates": [ { "name": "C10 ...", "script": "scripts/Check-CommentHygiene.ps1", "clause": "C10",
-               "mode": "Blocking", "args": { }, "requires": "CoverageFile" } ],
+  "gates": [ { "name": "The change adds no commented-out code ...", "script": "scripts/Check-CommentHygiene.ps1",
+               "clause": "C10", "mode": "Blocking", "args": { }, "requires": "CoverageFile",
+               "checks": "It reads the C# lines the change adds. ... Exit 2 means ..., and exit 3 means ...",
+               "fix": "Remove the commented-out code." } ],
   "setup": "scripts/Initialize-Dotnet.ps1",
   "preflight": "scripts/Invoke-DotnetPreflight.ps1",
   "postEdit": { "extensions": [".cs", ".razor"], "script": "scripts/Invoke-DotnetPostEdit.ps1" },
   "allow": [ "dotnet test *", "PowerShell(./build.ps1 *)" ] }
 ```
 
-- `gates` may be empty. `requires: CoverageFile` runs the gate only when the runner gets `-CoverageFile`.
-  The shared composite action passes it when the workflow gives it the `coverage-file` input.
+- `gates` may be empty. Each entry needs a unique `name` that says what passes, a `clause` (a core
+  clause, a pack clause or `AI-SDLC`), a `checks` text and a `fix` text. The runner fails an entry
+  without them, or with a name used twice, and does not run it. It prints `checks` before the output
+  of a gate that failed, and under each gate with `-List`. The [gate list](references/gate-catalog.md)
+  shows every gate with both texts.
+- `requires: CoverageFile` runs the gate only when the runner gets `-CoverageFile`. The shared
+  composite action passes it when the workflow gives it the `coverage-file` input.
+- `inputs` is an optional list of path globs, such as `**/*.md`. A local run starts the gate only when
+  the change touches a file that matches, or the skill folder of its script; otherwise it shows
+  `NOT TOUCHED`. Every gate runs on a delete, a change to the gate setup, an unreadable change, with
+  `-All` and in GitHub Actions.
+- `mode` is Blocking, Advisory or Off. No run, hook or pre-flight starts an Off gate. A repository
+  sets the mode of a shared gate in `gateModes` of its own `aisdlc.json`, in any letter case. The
+  summary shows where the mode comes from in its Source column. The secret scan, the private-terms gate
+  and the sync manifest check always run Blocking. In a push hook a gate counts as Off only once the setting is in
+  every pushed commit.
 - `setup` runs from `Initialize-AiSdlc.ps1` in `ai-sdlc-hooks`, for each package that runs.
 - `preflight` runs from `Invoke-Preflight.ps1`. It returns rows with Check, Status and Detail, and a
   FAIL row fails the pre-flight and writes no receipt.
@@ -66,44 +83,25 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
 
 ## Exit codes
 
-| Code | Meaning | What CI does |
-|---|---|---|
-| 0 | Checked, nothing found | Pass |
-| 1 | Checked, and found a violation | Blocking: fail the build. Advisory: warn |
-| 2 | Could not check, for example a configured path is missing | Warn, never pass |
+| Code | Meaning | What the pull request build does | What a local run does |
+|---|---|---|---|
+| 0 | Checked, nothing found | Pass | Pass |
+| 1 | Checked, and found a violation | Blocking: fail. Advisory: warn | The same |
+| 2 | Could not check, for example a configured path is missing | Blocking: fail. Advisory: warn | Warn (UNVERIFIED), never pass |
+| 3 | Not applicable: nothing here to check | `N/A`, no annotation, never blocks | The same |
+
+Any other code counts as 1. A crashed gate fails the run when it is Blocking and warns when it is
+Advisory. The agent push hook denies only on 1; after 2 it shows a note. ADR 0019 in the AI.SDLC
+repository records the contract.
 
 A gate prints each finding with two spaces in front, as `path:line  what`, and one line that starts
 with `FIX: `. `Invoke-Gate.ps1` lifts both into a GitHub Actions annotation (`::error` or `::warning`), and names the command to
 repeat the gate locally with the path of the script it ran.
 
-## The shared part of AGENTS.md
-
-`Sync-AgentsFile.ps1` writes the core part of `AGENTS.md`, and the part of each listed pack, between
-`ai-sdlc:<package>:start` and `ai-sdlc:<package>:end` markers. Its `-Check` mode is a core gate: a
-hand edit between the markers fails it. Change the shared text in AI.SDLC, then run the script:
-`pwsh .claude/skills/ai-sdlc-gates/scripts/Sync-AgentsFile.ps1`.
-
 ## Helper scripts and modules
 
-These sit in the same `scripts/` folder but are not gates:
-
-- `Install-Apm.ps1` installs the pinned APM release for this machine (Linux, macOS or Windows) and
-  refuses it on a SHA-256 mismatch. `-AddToPath` keeps it on the PATH.
-- `GateAnnotation.psm1` turns a gate result into GitHub Actions annotations when `GITHUB_ACTIONS` is `true`, for `Invoke-Gate.ps1` and the runner.
-- `Invoke-PesterGate.ps1` is a repository gate that runs the Pester tests under `args.Path`.
-- `PreflightReceipt.psm1` writes and reads the pre-flight receipt that the push hook asks for.
-- `Test-PushReceipt.ps1` and `Test-PushSendsNothingNew.ps1` tell the pre-push hook whether a receipt or the remote already covers each pushed commit.
-- `ToolOutput.psm1` prints numbers the same way on every machine, whatever its culture settings.
-- `DocToolTestHarness.psm1` builds the throwaway repository that the tests of the doc tools share. Its `Invoke-ScriptInProcess` runs a script in the test process, so the coverage of the Pester run measures it.
-- `Create-GitleaksBaseline.ps1` makes a gitleaks baseline with the rule sets pinned in
-  `gitleaks-rules.json`. `Test-GitleaksBaseline.ps1` runs gitleaks against that baseline, or without
-  one when the repository has none. It is the blocking C03 gate of `gates.json`. On a pull request in
-  GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, and in a local run `<trunk>..HEAD` (`origin/main`, `origin/master` or `origin/HEAD`). When git cannot read the folder, for example as "dubious ownership", it scans nothing and exits 2 locally and 1 in GitHub Actions, never 0.
-- `Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and refuses
-  it on a SHA-256 mismatch, as `Install-Apm.ps1` does for APM.
-- `GitleaksConfig.psm1` writes the gitleaks configuration of a scan: the rules plus an allowlist for
-  `sync-manifest.json`, whose git blob hashes look like keys.
-- `DocCoverage.psm1` finds the units that need a page.
+The modules and helper scripts next to the gates, such as `ChangedFiles.psm1`, `PreflightReceipt.psm1`,
+`Sync-AgentsFile.ps1` and the gitleaks scripts, are listed on the [helper scripts page](references/helper-scripts.md).
 
 ## Sources
 

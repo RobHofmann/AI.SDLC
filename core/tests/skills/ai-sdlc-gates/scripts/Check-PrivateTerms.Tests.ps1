@@ -111,13 +111,13 @@ Describe 'Check-PrivateTerms' {
         $r.Output | Should -Match 'is not an existing folder'
     }
 
-    It 'skips a private repository' {
+    It 'is not applicable to a private repository' -Tag '#46' {
         $root = New-TermsRepo -Visibility private
 
         $r = Invoke-Check -Root $root -Options @{ TermsFile = (New-TermsFile -Lines 'Fabrikam') }
 
-        $r.Code | Should -Be 0
-        $r.Output | Should -Match 'skipped: the repository is private'
+        $r.Code | Should -Be 3
+        $r.Output | Should -Match 'not applicable, the repository is private'
     }
 
     It 'checks a private repository with -Force' {
@@ -295,7 +295,7 @@ Describe 'Check-PrivateTerms' {
         $r = Invoke-Check -Root $root -Options @{ TermsFile = (New-TermsFile -Lines 'Fabrikam') }
 
         $r.Code | Should -Be 1 -Because $r.Output
-        $r.Output | Should -Not -Match 'skipped'
+        $r.Output | Should -Not -Match 'not applicable'
         $r.Output | Should -Match 'visibility'
         $r.Output | Should -Match '(?m)^FIX: .*"visibility": "public"'
     }
@@ -344,8 +344,8 @@ Describe 'Check-PrivateTerms' {
 
         $r = Invoke-Check -Root $root
 
-        $r.Code | Should -Be 0
-        $r.Output | Should -Match 'skipped: the repository is private'
+        $r.Code | Should -Be 3
+        $r.Output | Should -Match 'not applicable, the repository is private'
     }
 
     It 'ignores the event file for a folder other than the checked-out repository' {
@@ -353,7 +353,7 @@ Describe 'Check-PrivateTerms' {
         $public = New-TermsRepo
         Set-GitHubRun -Workspace (Join-Path $TestDrive 'other-checkout') -Private $false -PullRequest
 
-        (Invoke-Check -Root $private).Code | Should -Be 0
+        (Invoke-Check -Root $private).Code | Should -Be 3
         (Invoke-Check -Root $public).Code | Should -Be 2
     }
 

@@ -73,11 +73,13 @@ Describe 'Check-AgentsFileSize' {
         $r.Output | Should -Match 'size OK: 2 lines'
     }
 
-    It 'reports that it could not check when AGENTS.md is missing (exit 2)' {
+    It 'reports that it could not check when AGENTS.md is missing (exit 2)' -Tag '#46' {
         $r = Invoke-Gate -RepoRoot $script:Root
 
         $r.ExitCode | Should -Be 2
         $r.Output | Should -Match 'could not be checked'
+        $r.Output | Should -Match '(?m)^FIX: \S'
+        $r.Output | Should -Not -Match '::warning::'
     }
 
     It 'holds the real AGENTS.md within the default limits' -Skip:$script:NotInstalled {

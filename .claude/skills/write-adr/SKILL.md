@@ -45,17 +45,12 @@ Link to artefacts; do not paste them in.
 
 ## What counts as "key" (when to suggest an ADR)
 
-Suggest an ADR when a change does any of these, and there is no existing ADR covering it:
-- introduces, replaces, or splits an architectural pattern or boundary (e.g. a new
-  handler/service split, a storage choice, an auth model);
-- makes a cross-cutting tradeoff a future reader would ask "why" about;
-- **deviates from an existing convention or a constitution clause** (this especially
-  needs a record, or a constitution amendment);
-- chooses one technology/approach over a viable alternative with lasting consequences.
-
-Do not propose ADRs for routine, reversible, or local choices. Noise erodes the set of pages.
-When not sure, ask: "would someone six months from now be confused or annoyed if this
-choice were undocumented?"
+Suggest an ADR only when no existing ADR covers the decision, and it passes the three tests in
+[adr-conventions](/.claude/skills/adr-conventions/SKILL.md). The tests are: hard to undo, surprising
+without context, and a real trade-off. A change to a decision that an ADR already records updates or
+supersedes that ADR. A new gate gets no ADR when it fails one of the three tests. A departure from a
+convention or a clause goes to that convention or to `update-constitution`. It gets an ADR as well
+only when the three tests hold. Noise erodes the set of pages.
 
 ## Modes
 

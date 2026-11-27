@@ -111,9 +111,10 @@ Describe 'Check-PackageVersion' {
         $r.Output | Should -Match '\./core has no version'
     }
 
-    It 'cannot check without a version heading in CHANGELOG.md (exit 2)' {
+    It 'cannot check without a version heading in CHANGELOG.md, and says how to fix it (exit 2)' -Tag '#46' {
         $r = Invoke-Gate (New-Repo -Changelog "# Changelog`n`nNothing yet.`n")
         $r.Code | Should -Be 2
+        $r.Output | Should -Match '(?m)^FIX: \S'
     }
 
     It 'passes on this repository' {

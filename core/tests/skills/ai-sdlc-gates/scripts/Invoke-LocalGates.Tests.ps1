@@ -4,19 +4,41 @@ BeforeAll { $script:ScriptFolder = $PSScriptRoot -replace '(?<=[\\/])tests(?=[\\
 
 Describe 'Invoke-LocalGates' {
     BeforeAll {
+        # These tests describe a local run. The pull request workflow sets GITHUB_ACTIONS, which turns on the
+        # pipeline behaviour, so it is cleared here and put back after the file.
+        $script:SavedGithubActions = $env:GITHUB_ACTIONS
+        $env:GITHUB_ACTIONS = $null
         $script:Runner = Join-Path $script:ScriptFolder 'Invoke-LocalGates.ps1'
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
 
+        # Every gate entry needs a checks and a fix text (#47). A fixture that does not test those texts
+        # gets plain ones here, so each test keeps its JSON short. -RawText leaves the entries as written.
+        function Add-GateText {
+            param([string]$Json)
+            if (-not $Json) { return $Json }
+            $data = $Json | ConvertFrom-Json -AsHashtable
+            foreach ($list in @($data['gates'], $data['repoGates'])) {
+                foreach ($entry in @($list | Where-Object { $_ -is [System.Collections.IDictionary] })) {
+                    if (-not $entry.Contains('checks')) { $entry['checks'] = 'It checks the fixture. Exit 2 means it could not check, and exit 3 means nothing to check.' }
+                    if (-not $entry.Contains('fix')) { $entry['fix'] = 'Fix the fixture.' }
+                }
+            }
+            return ($data | ConvertTo-Json -Depth 10)
+        }
+
         function New-GateRepo {
-            param([string]$Config, [hashtable]$Files, [string]$Packs = '[]')
+            param([string]$Config, [hashtable]$Files, [string]$Packs = '[]', [switch]$RawText)
             $root = Join-Path ([System.IO.Path]::GetTempPath()) ('ilg-' + [guid]::NewGuid().ToString('n'))
             New-Item -ItemType Directory -Path $root -Force | Out-Null
+            if (-not $RawText) { $Config = Add-GateText -Json $Config }
             Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value $Config -Encoding utf8
             Set-Content -LiteralPath (Join-Path $root 'apm.yml') -Value ((@('dependencies:', '  apm:') + @($Packs | ConvertFrom-Json | ForEach-Object { "    - ../AI.SDLC/packs/$_" })) -join "`n")
             foreach ($rel in $Files.Keys) {
                 $full = Join-Path $root $rel
                 New-Item -ItemType Directory -Path (Split-Path $full -Parent) -Force | Out-Null
-                Set-Content -LiteralPath $full -Value $Files[$rel] -Encoding utf8
+                $text = $Files[$rel]
+                if (-not $RawText -and (Split-Path -Leaf $rel) -eq 'gates.json') { $text = Add-GateText -Json $text }
+                Set-Content -LiteralPath $full -Value $text -Encoding utf8
             }
             return $root
         }
@@ -40,6 +62,11 @@ Describe 'Invoke-LocalGates' {
             $run = Invoke-ScriptInProcess -Path $script:Runner -Arguments (@('-RepoRoot', $Root) + $Extra)
             return [pscustomobject]@{ Code = $run.ExitCode; Output = $run.Output }
         }
+    }
+
+
+    AfterAll {
+        $env:GITHUB_ACTIONS = $script:SavedGithubActions
     }
 
     It 'runs the core gates and skips the gates of a pack that apm.yml does not list' {
@@ -123,6 +150,231 @@ Describe 'Invoke-LocalGates' {
         $result.Output | Should -Match 'repo tests\s+Blocking\s+SKIP'
     }
 
+    It 'leaves out a gate by its script file name with -SkipScript, in any case, and lists it as SKIP' -Tag '#90' {
+        $root = New-StandardRepo -RepoGates '[ { "name": "repo gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking" } ]'
+
+        $result = Invoke-Runner -Root $root -Extra @('-SkipScript', 'check-core.ps1')
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Not -Match 'ran Check-Core'
+        $result.Output | Should -Match 'ran Check-Repo\.ps1'
+        $result.Output | Should -Match 'core gate\s+Blocking\s+SKIP'
+    }
+
+    It 'fails a gate entry with no <Field> text, names the field, and does not run that gate' -Tag '#47' -ForEach @(@{ Field = 'checks' }, @{ Field = 'fix' }) {
+        $other = if ($Field -eq 'checks') { '"fix": "Fix it."' } else { '"checks": "It checks. Exit 2 means x, and exit 3 means y."' }
+        $root = New-GateRepo -RawText -Config '{}' -Files @{
+            '.claude/skills/ai-sdlc-gates/gates.json'             = "{ `"package`": `"core`", `"gates`": [ { `"name`": `"core gate`", `"script`": `"scripts/Check-Core.ps1`", `"mode`": `"Advisory`", $other } ] }"
+            '.claude/skills/ai-sdlc-gates/scripts/Check-Core.ps1' = $script:PassGate
+        }
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 1 -Because $result.Output
+        $result.Output | Should -Match "Invalid gate entry 'core gate': $Field is missing or empty"
+        $result.Output | Should -Not -Match 'ran Check-Core'
+        $result.Output | Should -Match 'core gate\s+Blocking\s+FAIL'
+    }
+
+    It 'keeps an Advisory entry that is not valid in a -BlockingOnly run, so the push fails on it' -Tag '#47' {
+        $root = New-GateRepo -RawText -Config '{}' -Files @{
+            '.claude/skills/ai-sdlc-gates/gates.json'             = '{ "package": "core", "gates": [ { "name": "core gate", "script": "scripts/Check-Core.ps1", "mode": "Advisory" } ] }'
+            '.claude/skills/ai-sdlc-gates/scripts/Check-Core.ps1' = $script:PassGate
+        }
+
+        $result = Invoke-Runner -Root $root -Extra @('-BlockingOnly')
+
+        $result.Code | Should -Be 1 -Because $result.Output
+        $result.Output | Should -Match 'Invalid gate entry'
+    }
+
+    It 'fails both entries when two gates share a name' -Tag '#47' {
+        $root = New-StandardRepo -RepoGates '[ { "name": "core gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking" } ]'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 1 -Because $result.Output
+        ([regex]::Matches($result.Output, 'the name is used by 2 gates')).Count | Should -Be 2
+        $result.Output | Should -Not -Match 'ran Check-Core'
+        $result.Output | Should -Not -Match 'ran Check-Repo'
+    }
+
+    It 'prints the checks text before the output of a gate that failed, and not for a gate that passed' -Tag '#47' {
+        $root = New-StandardRepo -CoreScript $script:FailGate -RepoGates '[ { "name": "repo gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking", "checks": "Repo checks text. Exit 2 means x, and exit 3 means y." } ]'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Output | Should -Match '(?s)What this gate checks: It checks the fixture\..*ran failing gate'
+        $result.Output | Should -Not -Match 'What this gate checks: Repo checks text'
+    }
+
+    It 'prints the checks text under each gate with -List' -Tag '#47' {
+        $root = New-StandardRepo
+
+        $result = Invoke-Runner -Root $root -Extra @('-List')
+
+        $result.Output | Should -Match 'checks: It checks the fixture\.'
+    }
+
+    Context 'a local run checks only the gates the change touches (#48)' {
+        BeforeAll {
+            function New-ScopedRepo {
+                $root = New-StandardRepo -RepoGates '[ { "name": "repo gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking", "inputs": [ "**/*.md" ] } ]'
+                New-Item -ItemType Directory -Path (Join-Path $root 'src') -Force | Out-Null
+                Set-Content -LiteralPath (Join-Path $root 'src' 'app.cs') -Value 'class A {}'
+                Set-Content -LiteralPath (Join-Path $root 'README.md') -Value '# Readme'
+                git -C $root init --quiet -b main
+                git -C $root config user.email probe@example.invalid
+                git -C $root config user.name probe
+                git -C $root add -A
+                git -C $root commit --quiet -m base --no-verify
+                git -C $root update-ref refs/remotes/origin/main HEAD
+                return $root
+            }
+        }
+
+        It 'does not run a gate whose inputs the change does not touch, and shows it as NOT TOUCHED' -Tag '#48' {
+            $root = New-ScopedRepo
+            Add-Content -LiteralPath (Join-Path $root 'src' 'app.cs') -Value '// more'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Not -Match 'ran Check-Repo'
+            $result.Output | Should -Match 'repo gate\s+Blocking\s+NOT TOUCHED'
+            $result.Output | Should -Match 'ran Check-Core\.ps1' -Because 'a gate without inputs always runs'
+        }
+
+        It 'runs the gate when the change touches one of its inputs' -Tag '#48' {
+            $root = New-ScopedRepo
+            Add-Content -LiteralPath (Join-Path $root 'README.md') -Value 'more'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Output | Should -Match 'ran Check-Repo\.ps1'
+        }
+
+        It 'runs every gate when the change <Case>' -Tag '#48' -ForEach @(
+            @{ Case = 'deletes a file'; Act = { param($r) Remove-Item -LiteralPath (Join-Path $r 'src' 'app.cs') } }
+            @{ Case = 'touches aisdlc.json'; Act = { param($r) Add-Content -LiteralPath (Join-Path $r 'aisdlc.json') -Value ' ' } }
+        ) {
+            $root = New-ScopedRepo
+            & $Act $root
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Output | Should -Match 'ran Check-Repo\.ps1'
+            $result.Output | Should -Match 'Every gate runs, because'
+        }
+
+        It 'runs every gate when the change cannot be read' -Tag '#48' {
+            $root = New-ScopedRepo
+            git -C $root update-ref -d refs/remotes/origin/main
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Output | Should -Match 'ran Check-Repo\.ps1'
+            $result.Output | Should -Match 'the change cannot be read'
+        }
+
+        It 'runs every gate with -All and in GitHub Actions' -Tag '#48' {
+            $root = New-ScopedRepo
+            Add-Content -LiteralPath (Join-Path $root 'src' 'app.cs') -Value '// more'
+
+            $all = Invoke-Runner -Root $root -Extra @('-All')
+            $saved = $env:GITHUB_ACTIONS; $savedSummary = $env:GITHUB_STEP_SUMMARY
+            $env:GITHUB_ACTIONS = 'true'; $env:GITHUB_STEP_SUMMARY = Join-Path $TestDrive 'scoped-summary.md'
+            try { $ci = Invoke-Runner -Root $root }
+            finally { $env:GITHUB_ACTIONS = $saved; $env:GITHUB_STEP_SUMMARY = $savedSummary }
+
+            $all.Output | Should -Match 'ran Check-Repo\.ps1'
+            $ci.Output | Should -Match 'ran Check-Repo\.ps1'
+        }
+
+        It 'fails a gate whose inputs is not a list of path globs' -Tag '#48' {
+            $root = New-StandardRepo -RepoGates '[ { "name": "repo gate", "script": "tools/Check-Repo.ps1", "mode": "Blocking", "inputs": "**/*.md" } ]'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 1
+            $result.Output | Should -Match 'it must be a list of one or more path globs'
+        }
+    }
+
+    Context 'gate modes and gateModes (#49)' {
+        It 'does not run an Off gate, shows it as OFF, and does not fail on its missing script' -Tag '#49' {
+            $root = New-StandardRepo -CoreMode 'off'
+            Remove-Item -LiteralPath (Join-Path $root '.claude/skills/ai-sdlc-gates/scripts/Check-Core.ps1')
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Match 'core gate\s+Off\s+OFF\s+package'
+            $result.Output | Should -Match '1 gate\(s\) are Off'
+        }
+
+        It 'lets gateModes in aisdlc.json set the mode of a shared gate, in any case, with aisdlc.json as the source' -Tag '#49' {
+            $root = New-StandardRepo -CoreScript $script:FailGate
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "CORE GATE": "advisory" } }'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Match 'core gate\s+Advisory\s+ADVISORY\s+aisdlc\.json'
+            $result.Output | Should -Match "AI-SDLC: the gate 'core gate' has the package mode Blocking, but gateModes in aisdlc\.json sets it to Advisory"
+        }
+
+        It 'prints the mode source on a mode from: line with -List' -Tag '#49' {
+            $root = New-StandardRepo
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "core gate": "Off" } }'
+
+            $result = Invoke-Runner -Root $root -Extra @('-List')
+
+            $result.Output | Should -Match 'mode from: aisdlc\.json \(gateModes\), package mode Blocking'
+            $result.Output | Should -Match 'runs in: OFF'
+        }
+
+        It 'fails the run on a gateModes name that no shared gate has, and uses no key of gateModes, also with -BlockingOnly' -Tag '#49' {
+            $root = New-StandardRepo
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "core gate": "Off", "no such gate": "Off" } }'
+
+            $result = Invoke-Runner -Root $root -Extra @('-BlockingOnly')
+
+            $result.Code | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match "Invalid gateModes in aisdlc\.json: gateModes sets 'no such gate' to 'Off', but no shared gate that runs has this name"
+            $result.Output | Should -Match 'ran Check-Core\.ps1'
+        }
+
+        It 'fails a gate whose mode is not allowed, and does not run it' -Tag '#49' {
+            $root = New-StandardRepo -CoreMode 'Silent'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match "the mode is 'Silent', and the allowed values are Blocking, Advisory and Off"
+            $result.Output | Should -Not -Match 'ran Check-Core'
+        }
+
+        It 'runs an Off gate in a push whose commits do not hold the Off setting' -Tag '#49' {
+            $root = New-StandardRepo
+            git -C $root init --quiet -b main
+            git -C $root config user.email probe@example.invalid
+            git -C $root config user.name probe
+            git -C $root add -A
+            git -C $root commit --quiet -m base --no-verify
+            $pushed = (git -C $root rev-parse HEAD).Trim()
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "gateModes": { "core gate": "Off" } }'
+
+            $saved = $env:AISDLC_PUSHED_COMMITS
+            $env:AISDLC_PUSHED_COMMITS = $pushed
+            try { $result = Invoke-Runner -Root $root -Extra @('-BlockingOnly') }
+            finally { $env:AISDLC_PUSHED_COMMITS = $saved }
+
+            $result.Output | Should -Match 'ran Check-Core\.ps1'
+            $result.Output | Should -Match 'is Off in the working tree, but not in every pushed commit'
+        }
+    }
+
     It 'leaves out the advisory gates with -BlockingOnly' {
         $root = New-StandardRepo -CoreMode 'Advisory'
 
@@ -190,6 +442,45 @@ Describe 'Invoke-LocalGates' {
         $result.Output | Should -Match 'CRASHED'
     }
 
+    It 'keeps exit 2 of a Blocking gate a warning in a local run, and the run exits 0' -Tag '#46' {
+        $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "No token, so NOTHING WAS CHECKED."; exit 2'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Match 'core gate\s+Blocking\s+UNVERIFIED'
+        $result.Output | Should -Match 'Run locally they are warnings'
+    }
+
+    It 'shows a gate that exits 3 as N/A, and never fails the run on it' -Tag '#46' {
+        $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "No pull request here, so there is nothing to check."; exit 3'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Match 'core gate\s+Blocking\s+N/A'
+        $result.Output | Should -Match '1 gate\(s\) not applicable here \(exit 3\)'
+    }
+
+    It 'counts an exit code other than 0, 1, 2 or 3 as a finding' -Tag '#46' {
+        $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) exit 5'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 1
+        $result.Output | Should -Match 'core gate\s+Blocking\s+FAIL'
+    }
+
+    It 'reports a crashed Advisory gate as a warning, and the run exits 0' -Tag '#46' {
+        $root = New-StandardRepo -CoreMode 'Advisory' -CoreScript 'param([string]$RepoRoot, [switch]$Strict) throw "gate bug"'
+
+        $result = Invoke-Runner -Root $root
+
+        $result.Code | Should -Be 0 -Because $result.Output
+        $result.Output | Should -Match 'CRASHED'
+        $result.Output | Should -Match '1 advisory gate\(s\) stopped before they could report'
+    }
+
     Context 'in GitHub Actions' {
         BeforeEach {
             $script:SavedActions = $env:GITHUB_ACTIONS
@@ -223,13 +514,43 @@ Describe 'Invoke-LocalGates' {
             $result.Output | Should -Not -Match '::error'
         }
 
-        It 'raises a warning, never an error, for a Blocking gate that could not check' {
+        It 'raises an error and fails the job for a Blocking gate that could not check' -Tag '#46' {
             $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "No token, so NOTHING WAS CHECKED."; exit 2'
 
             $result = Invoke-Runner -Root $root
 
-            $result.Code | Should -Be 0
+            $result.Code | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match '::error title=core gate::.*COULD NOT BE CHECKED'
+            $result.Output | Should -Match '1 of them could not check \(exit 2\)'
+        }
+
+        It 'raises a warning and passes the job for an Advisory gate that could not check' -Tag '#46' {
+            $root = New-StandardRepo -CoreMode 'Advisory' -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "No token."; exit 2'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
             $result.Output | Should -Match '::warning title=core gate::.*COULD NOT BE CHECKED'
+        }
+
+        It 'writes no annotation for a gate that exits 3, and lists it as N/A in the job summary' -Tag '#46' {
+            $root = New-StandardRepo -CoreScript 'param([string]$RepoRoot, [switch]$Strict) Write-Host "nothing to check"; exit 3'
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 0 -Because $result.Output
+            $result.Output | Should -Not -Match '::(error|warning)'
+            Get-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Raw | Should -Match '\| core gate \| Blocking \| N/A \|'
+        }
+
+        It 'fails the job for a Blocking gate whose script is missing' -Tag '#46' {
+            $root = New-StandardRepo
+            Remove-Item -LiteralPath (Join-Path $root '.claude/skills/ai-sdlc-gates/scripts/Check-Core.ps1')
+
+            $result = Invoke-Runner -Root $root
+
+            $result.Code | Should -Be 1 -Because $result.Output
+            $result.Output | Should -Match '::error title=core gate::.*COULD NOT BE CHECKED'
         }
 
         It 'writes no annotation when every gate passes, and adds the summary table to the job summary' {

@@ -57,10 +57,10 @@ Describe 'Check-PrStoryContract' {
         }
     }
 
-    It 'is a no-op when there is no PR context (exit 0)' {
+    It 'is not applicable when there is no PR context (exit 3)' -Tag '#46' {
         $r = Invoke-Gate @{ StoryKey = ''; SourceBranch = '' }
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'no-op'
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
     }
 
     It 'passes an open issue with the refined label' {
@@ -221,10 +221,10 @@ Describe 'Check-PrStoryContract' {
         $r.Output | Should -Match 'No story key'
     }
 
-    It 'stays a no-op when there is no PR context at all, title and body included' {
+    It 'stays not applicable when there is no PR context at all, title and body included' {
         $r = Invoke-Gate @{ StoryKey = ''; SourceBranch = ''; PrTitle = ''; PrDescription = ''; PrNumber = '' }
-        $r.ExitCode | Should -Be 0
-        $r.Output | Should -Match 'no-op'
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
     }
 
     It 'blocks (exit 1) when GitHub says no issue has that number' {
@@ -257,6 +257,8 @@ Describe 'Check-PrStoryContract' {
         $r = Invoke-Gate @{ StoryKey = '#1234'; GhCommand = 'pwsh'; InCi = $true; GhToken = '' }
         $r.ExitCode | Should -Be 2
         $r.Output | Should -Match 'GH_TOKEN is not set'
+        $r.Output | Should -Match '(?m)^FIX: \S'
+        $r.Output | Should -Not -Match '::warning::'
     }
 
     It 'fails a domain-model change with no governing ADR' {
@@ -354,5 +356,112 @@ Describe 'Check-PrStoryContract' {
         $r.ExitCode | Should -Be 1
         $r.Output | Should -Match "empty 'story:' value: 0099-x.md"
         $r.Output | Should -Match 'FIX: Quote the key'
+    }
+
+    Context 'No-ADR waiver' {
+        BeforeAll {
+            $script:ModelFile = 'Demo/src/Shared.Demo.Domain/Common/Models/Core/OrderLine.cs'
+
+            function New-WaiverRepo {
+                $repo = New-TestRepo
+                & git -C $repo init --quiet -b main
+                & git -C $repo add .
+                & git -C $repo -c user.name=Test -c user.email=test@example.com commit --quiet -m 'base'
+                & git -C $repo tag base
+                return $repo
+            }
+
+            function Add-WaiverCommit {
+                param([string]$Repo, [string]$Trailer, [string]$Name = $script:ModelFile)
+                $path = Join-Path $Repo $Name
+                New-Item -ItemType Directory -Path (Split-Path $path) -Force | Out-Null
+                [IO.File]::WriteAllText($path, [guid]::NewGuid().ToString(), [Text.UTF8Encoding]::new($false))
+                $message = "change`n`nBody paragraph.`n"
+                if ($Trailer) { $message += "`n$Trailer`n" }
+                $messageFile = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '.txt')
+                [IO.File]::WriteAllText($messageFile, $message, [Text.UTF8Encoding]::new($false))
+                & git -C $Repo add -A
+                & git -C $Repo -c user.name=Test -c user.email=test@example.com commit --quiet --cleanup=verbatim -F $messageFile
+            }
+
+            function Invoke-WaiverGate([string]$Repo, [hashtable]$Extra = @{}) {
+                $p = @{ RepoRoot = $Repo; StoryKey = '#1234'; IssueForTest = (New-Issue); ChangedFiles = $script:ModelFile; BaseRef = 'base' }
+                foreach ($name in $Extra.Keys) { $p[$name] = $Extra[$name] }
+                return Invoke-Gate $p
+            }
+        }
+
+        It 'passes a data-model change with no ADR when a commit carries a No-ADR trailer, and prints the waiver' -Tag '#60' {
+            $repo = New-WaiverRepo
+            Add-WaiverCommit -Repo $repo -Trailer 'No-ADR: a field rename that no reader sees'
+            $sha = (& git -C $repo rev-parse HEAD).Substring(0, 12)
+            $r = Invoke-WaiverGate $repo
+            $r.ExitCode | Should -Be 0
+            $r.Output | Should -Match ([regex]::Escape("Waiver used: No-ADR: a field rename that no reader sees (commit $sha)"))
+        }
+
+        It 'reads the trailer key in any case and from an earlier commit of the pull request' -Tag '#60' {
+            $repo = New-WaiverRepo
+            Add-WaiverCommit -Repo $repo -Trailer 'no-adr: easy to undo'
+            Add-WaiverCommit -Repo $repo -Name 'README.md'
+            (Invoke-WaiverGate $repo).ExitCode | Should -Be 0
+        }
+
+        It 'fails a data-model change when no commit carries a No-ADR trailer' -Tag '#60' {
+            $repo = New-WaiverRepo
+            Add-WaiverCommit -Repo $repo
+            $r = Invoke-WaiverGate $repo
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match 'governing ADR'
+            $r.Output | Should -Match 'No-ADR'
+        }
+
+        It 'clears nothing for a trailer with <Name>' -Tag '#60' -ForEach @(
+            @{ Name = 'an empty why'; Trailer = 'No-ADR:'; Cause = 'gives no why' }
+            @{ Name = 'a control character'; Trailer = "No-ADR: bad$([char]1)text"; Cause = 'control character' }
+            @{ Name = 'a unicode line separator'; Trailer = "No-ADR: bad$([char]0x2028)text"; Cause = 'control character' }
+        ) {
+            $repo = New-WaiverRepo
+            Add-WaiverCommit -Repo $repo -Trailer $Trailer
+            $r = Invoke-WaiverGate $repo
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match 'governing ADR'
+            $r.Output | Should -Match 'Waiver not used: '
+            $r.Output | Should -Match ([regex]::Escape($Cause))
+        }
+
+        It 'does not read a trailer of a commit before the base' -Tag '#60' {
+            $repo = New-TestRepo
+            & git -C $repo init --quiet -b main
+            & git -C $repo add .
+            & git -C $repo -c user.name=Test -c user.email=test@example.com commit --quiet -m 'base'
+            Add-WaiverCommit -Repo $repo -Trailer 'No-ADR: an old reason'
+            & git -C $repo tag base
+            Add-WaiverCommit -Repo $repo
+            $r = Invoke-WaiverGate $repo
+            $r.ExitCode | Should -Be 1
+        }
+
+        It 'takes the base from PR_BASE_SHA when it is set' -Tag '#60' {
+            $repo = New-WaiverRepo
+            $baseSha = (& git -C $repo rev-parse HEAD)
+            Add-WaiverCommit -Repo $repo -Trailer 'No-ADR: easy to undo'
+            $saved = $env:PR_BASE_SHA
+            try {
+                $env:PR_BASE_SHA = $baseSha
+                $r = Invoke-WaiverGate $repo @{ BaseRef = '' }
+            }
+            finally { $env:PR_BASE_SHA = $saved }
+            $r.ExitCode | Should -Be 0
+            $r.Output | Should -Match 'Waiver used: No-ADR: easy to undo'
+        }
+
+        It 'applies no waiver when git cannot read a base' -Tag '#60' {
+            $repo = New-WaiverRepo
+            Add-WaiverCommit -Repo $repo -Trailer 'No-ADR: easy to undo'
+            $r = Invoke-WaiverGate $repo @{ BaseRef = 'no-such-ref' }
+            $r.ExitCode | Should -Be 1
+            $r.Output | Should -Match 'governing ADR'
+        }
     }
 }

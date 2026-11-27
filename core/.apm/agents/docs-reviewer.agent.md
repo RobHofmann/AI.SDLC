@@ -37,11 +37,16 @@ reader who will open these pages next month without the pull request next to the
    behaviour. Search for the old names and the old numbers, not only the file names.
 3. **Check the functional layer.** A change a user can see needs a line in the functional layer. A change
    with nothing to see says so in the pull request; that is a valid answer.
+   Judge any `No-Docs` waiver that the calling skill hands you in step 6.
 4. **Check the decision.** A lasting choice in the change has an ADR, and the ADR index lists it.
 5. **Check for a restated rule.** A changed page that restates a rule or a fact in free text breaks
    clause C12 of the [constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md).
    Name the source it should link instead.
-6. **Run the doc gates in check mode** and report what they print:
+6. **Judge each No-Docs waiver** the calling skill hands you, as `No-Docs: <reason>: <why>`. For
+   `no-behaviour-change` or `no-doc-reader-affected`, check that no page in either layer describes
+   what the diff changes. A reason the pages do not support is a HIGH finding. Only `wrap-up` writes
+   the trailer, and only after you agree.
+7. **Run the doc gates in check mode** and report what they print:
    - `pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Check-DocsWiki.ps1 -Strict`
    - `pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Build-DocsIndex.ps1 -Check`
    - `pwsh -NoProfile -File .claude/skills/ai-sdlc-gates/scripts/Check-DocReadingLevel.ps1`
@@ -62,7 +67,8 @@ commits, pushes, restores, deletes or installs. Never call an outside system tha
 
 - **Pre-Report Gate.** Name the page and the sentence that is wrong or missing, and the code it should
   match (file and symbol).
-- **HIGH needs proof.** A HIGH finding quotes a page sentence that the code now proves wrong.
+- **HIGH needs proof.** A HIGH finding quotes a page sentence that the code now proves wrong. For a weak
+  waiver, it quotes the page sentence that describes what the diff changes.
 - **Zero findings is a valid result.**
 - **Do not report** what the gates already print as a finding of your own; list the gate output once
   under `Gates`. Do not report wording taste.
@@ -74,6 +80,8 @@ commits, pushes, restores, deletes or installs. Never call an outside system tha
 AGENT: docs-reviewer
 Scope: <changed areas>
 Gates: <gate> PASS | FAIL <first finding>
+Waivers: <n>
+- No-Docs: <reason>: <why> - holds | weak, because <why not>
 Findings: <n>
 - [HIGH|MEDIUM|LOW] <page> - <what is missing or stale>. Code: <file> :: <symbol>. Fix: <the page change>.
 Functional layer: <page changed | no user-visible change, stated in the PR | MISSING>

@@ -62,6 +62,10 @@ caller for the diff if that file is missing.
      the same unit, and name it;
    - a new test double or test helper when one in the same test project does the same job. Name the
      existing one.
+7. **Judge each No-Test waiver** the caller hands you, as `No-Test: <reason>: <why>`. For
+   `no-behaviour-change`, check that the diff changes no behaviour a test could see. For
+   `existing-tests-cover-it`, check that the named test exists and runs the changed code. A reason the
+   diff does not support is a weak waiver. Only `wrap-up` writes the trailer, and only after you agree.
 
 ## Severity
 
@@ -74,6 +78,7 @@ Rate on the one severity scale of `code-conventions`.
   It breaks "Reuse before you build" of `code-conventions`, and a broken convention is HIGH.
 - **MEDIUM:** a new test that repeats what another test already asserts (`SURPLUS`). Also a gap
   without the proof above.
+- A weak No-Test waiver is HIGH, so the build loop adds the test.
 - A broken test rule of a language skill takes the severity that "One severity scale" of
   `code-conventions` gives.
 
@@ -96,6 +101,8 @@ Story: <KEY>
 Skills: <the skills whose test rules you read from the table>
 Criteria: <n covered> of <n>
 - AC-<n>: asserted by <test file> :: <test> | NOT COVERED
+Waivers: <n>
+- No-Test: <reason>: <why> - holds | weak, because <why not>
 Findings: <n>
 - [HIGH|MEDIUM] <test or code file> :: <symbol> - <gap>. Why: <what could break unseen>. Fix: <the test to add or change>.
 - [HIGH][NOT ASKED] <test file> :: <test> - <the test no criterion needs>. Criterion: "<AC-n: quoted text>", the nearest one. Fix: <remove it | ask the person>.

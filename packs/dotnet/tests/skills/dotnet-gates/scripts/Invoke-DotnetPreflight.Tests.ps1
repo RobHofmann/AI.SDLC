@@ -15,7 +15,7 @@ Describe 'Invoke-DotnetPreflight' {
             $root = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
             New-Item -ItemType Directory -Path $root -Force | Out-Null
             Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value (@{ paths = $Paths; sonarcloud = $SonarCloud } | ConvertTo-Json -Depth 4)
-            Set-Content -LiteralPath (Join-Path $root 'coverage-baseline.json') -Value '{ "lineCoveragePercent": 50 }'
+            Set-Content -LiteralPath (Join-Path $root 'coverage-baseline.json') -Value '{ "lineCoveragePercent": 90 }'
             return $root
         }
 

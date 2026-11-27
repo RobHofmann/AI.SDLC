@@ -354,6 +354,15 @@ Describe 'The pre-push git hook' {
             $r.Output | Should -Match 'blocking gate\(s\) failed'
         }
 
+        It 'tells an agent to stop and ask when a blocking gate fails, and says that only a person pushes with --no-verify' -Tag '#52' -Skip:($script:NoSh -or $script:NoPwsh) {
+            $r = Invoke-PrePushWithGates -RunnerExit 1
+
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'an agent stops and asks the person, and gives the push command in a code block the person can run'
+            $r.Output | Should -Match 'Only a person pushes with --no-verify'
+            $r.Output | Should -Not -Match 'to bypass|or push with --no-verify'
+        }
+
         It 'runs the gates without the GIT_DIR and GIT_INDEX_FILE that git sets for a hook, so a test that makes its own repository cannot change this one' -Skip:($script:NoSh -or $script:NoPwsh) {
             $r = Invoke-PrePushWithGates -AsGitDoes
 

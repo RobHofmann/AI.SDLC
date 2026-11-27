@@ -20,10 +20,10 @@ Describe 'Check-PrHygiene' {
     }
 
     Context 'when there is no pull request' {
-        It 'passes and says so, so a local gate run does not trip on it' {
+        It 'is not applicable and says so, so a local gate run does not trip on it' -Tag '#46' {
             $r = Invoke-Gate
 
-            $r.ExitCode | Should -Be 0
+            $r.ExitCode | Should -Be 3
             $r.Output | Should -Match 'no pull request context'
         }
     }
@@ -120,6 +120,8 @@ Describe 'Check-PrHygiene' {
             $r.ExitCode | Should -Be 2
             $r.Output | Should -Match 'could not be checked'
             $r.Output | Should -Match 'request 17 '
+            $r.Output | Should -Match '(?m)^FIX: \S'
+            $r.Output | Should -Not -Match '::warning::'
         }
     }
 

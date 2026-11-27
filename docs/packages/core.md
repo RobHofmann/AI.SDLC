@@ -111,12 +111,44 @@ Blocking gates check:
 - documentation coverage: both layers and a page per unit
 - the installed files against the sync manifest, including a skill folder or an agent file left behind under a retired name. When `apm.yml` installs the core from inside the repository (`- ./core`, as in AI.SDLC), it reads the source manifest there
 - every local package that `apm.yml` or `apm.lock.yaml` names is a folder in git (`Check-LocalPackages.ps1`)
-- no private term in a public repository: `Check-PrivateTerms.ps1` runs when `visibility` is `public` in `aisdlc.json`, or when GitHub Actions says the repository is public. In a public repository in CI, a missing list fails, except on a pull request from a fork. It reads the private list from outside the repository. It scans every tracked file, the commit messages, the branch name and the pull request text. It prints only the file, the line and the rule number
+- no private term in a public repository: `Check-PrivateTerms.ps1` runs when `visibility` is `public` in `aisdlc.json`, or when GitHub Actions says the repository is public. In a public repository in CI, a missing list fails. A pull request from a fork gets no secrets, so the gate cannot check there (exit 2), and that fails the build too. Run `Check-PrivateTerms.ps1 -Required` on its branch before the merge. It reads the private list from outside the repository. It scans every tracked file, the commit messages, the branch name and the pull request text. It prints only the file, the line and the rule number
 
 The one advisory gate checks change completeness. It reads the commits since the base and the edits that
 are not committed yet. It also reads the new files git does not ignore, because `wrap-up` runs it before it commits.
 
+A commit can carry a `No-Test` or `No-Docs` trailer with a listed reason and a why. Git reads the trailer, and it clears the finding for the files of that commit only. The check prints each waiver it used, did not use or did not need. Only `wrap-up` writes a trailer, after `test-analyzer` or `docs-reviewer` agrees with the reason.
+
 `Invoke-LocalGates.ps1` runs gates from installed AI-SDLC packages and the repository.
+
+A gate reports through its exit code: 0 pass, 1 finding, 2 could not check, 3 not applicable. Any other
+code counts as 1. In the pull request action a Blocking gate that exits 2 fails the job. In a local run
+and in the pre-push hook it is a warning (`UNVERIFIED`). A gate that exits 3 shows as `N/A` and never
+blocks. A crashed Advisory gate is a warning. `GateContract.Tests.ps1` runs every gate in an empty
+repository and checks its code. [ADR 0019](../adrs/0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md)
+records the contract.
+
+Every gate entry has a name that says what passes, one clause, a `checks` text and a `fix` text. The
+runner fails an entry without a text, or with a name used twice, and prints `checks` before the
+output of a gate that failed. `references/gate-catalog.md` in the `ai-sdlc-gates` skill lists every
+gate; `tools/Build-GateCatalog.ps1` writes it from the `gates.json` files.
+
+A gate has the mode Blocking, Advisory or Off. A repository sets the mode of a shared gate in
+`gateModes` of its own `aisdlc.json`, read by `Get-AiSdlcGateModeSetting` in `AiSdlcConfig.psm1`. An
+Off gate runs in no hook, pre-flight or run, and shows as `OFF`. The secret scan, the private-terms gate
+and the sync manifest check always run Blocking. A push hook counts a gate as Off only when every
+pushed commit holds the same gate settings.
+
+A gate may name its `inputs`, a list of path globs. A local run then starts it only when the change
+touches one of them, and shows it as `NOT TOUCHED` otherwise; GitHub Actions and `-All` run every gate.
+`Invoke-Preflight.ps1` measures a scoped run from the last green pre-flight (`Find-PreflightBase` in
+`PreflightReceipt.psm1`) and runs `commands.testChanged` when it is set; `-Full` runs everything.
+[ADR 0020](../adrs/0020-a-local-run-checks-what-the-change-touches.md) records the choice.
+
+`Invoke-LocalGates.ps1 -SkipScript <file name>` leaves out the gates of that script and lists them as `SKIP`.
+The gates, the pre-flight and `tools/Invoke-PesterParallel.ps1` compare a change with `origin/<github.trunk>`
+through `Get-AiSdlcMainBranch` in `AiSdlcConfig.psm1`. It falls back to `origin/main`, `origin/master` or
+`origin/HEAD` when that ref is not in the clone. `ChangedFiles.psm1` lists the files a change touched, for
+every gate that judges the change.
 
 `Invoke-Gate.ps1` runs one gate script in GitHub Actions or locally and produces a clear result.
 
@@ -184,7 +216,9 @@ Setup and hook scripts include:
 
 `Deny-SharedFileEdit.ps1` stops edits to files installed by APM from AI.SDLC. It also stops an edit through `apply_patch`, the edit tool of a GPT model in GitHub Copilot, when it names an installed file. In AI.SDLC itself it names the source file in the same repository, and says to run `apm install` again.
 
-`Deny-IncompletePush.ps1` refuses a push that leaves tests or documentation behind. A push that names no folder is judged on the repository of the `cwd` field of the hook payload. In a session that works in a git worktree, that is the worktree, even though the hook runs from the main checkout. The hook also reads a folder in quotes after `cd`, `pushd` or `Set-Location`, so a folder with a space works.
+`Deny-IncompletePush.ps1` refuses a push that leaves tests or documentation behind, a push to `main`,
+and a push it cannot check. It looks up the receipt for the tree of each pushed ref, and shows a note
+when the completeness check could not check. The `ai-sdlc-hooks` skill lists the refused forms. A push that names no folder is judged on the repository of the `cwd` field of the hook payload. In a session that works in a git worktree, that is the worktree, even though the hook runs from the main checkout. The hook also reads a folder in quotes after `cd`, `pushd` or `Set-Location`, so a folder with a space works.
 
 A `cwd` or a repository on a network share (a UNC path) works too, because the hook gives git the plain file path.
 
@@ -248,7 +282,7 @@ The git `pre-push` hook skips the blocking gates when a passing pre-flight recei
 
 `Install-Apm.ps1` installs a pinned APM release and checks its SHA-256 value.
 
-`Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and checks its SHA-256 value. The composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml` runs it before the gate step. `Test-GitleaksBaseline.ps1` is the blocking C03 gate of `gates.json`, a secret scan against `gitleaks-baseline.json`. So `Invoke-LocalGates.ps1` runs it in the composite action, in the pre-push hook and in a local run. On a pull request in GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, as the pre-flight does. In a local run it scans `origin/main..HEAD`. A repository without a baseline counts every finding. In GitHub Actions a missing gitleaks, or rules that could not be downloaded, fail the gate. In a local run the gate reports "could not check" (exit 2), so a push still goes out.
+`Install-Gitleaks.ps1` installs the gitleaks release pinned in `gitleaks-version.json` and checks its SHA-256 value. The composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr/action.yml` runs it before the gate step. `Test-GitleaksBaseline.ps1` is the blocking C03 gate of `gates.json`, a secret scan against `gitleaks-baseline.json`. So `Invoke-LocalGates.ps1` runs it in the composite action, in the pre-push hook and in a local run. On a pull request in GitHub Actions it scans `PR_BASE_SHA..HEAD`, the commits of the pull request, as the pre-flight does. In a local run it scans `<main branch>..HEAD`, where `Get-AiSdlcMainBranch` gives `origin/<github.trunk>` or a fallback. A repository without a baseline counts every finding. In GitHub Actions a missing gitleaks, or rules that could not be downloaded, fail the gate. In a local run the gate reports "could not check" (exit 2), so a push still goes out.
 
 `GitleaksConfig.psm1` writes the gitleaks configuration of each scan: the rule set plus an allowlist for `sync-manifest.json`, whose git blob hashes look like keys. A repository can add its own paths in `secretScan.allowPaths` of `aisdlc.json`, as a second allowlist. The composite action, the pre-flight and `Create-GitleaksBaseline.ps1` use it.
 

@@ -24,6 +24,9 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0016: A spec review runs next to the code review](./adrs/0016-a-spec-review-runs-next-to-the-code-review.md) - The review step of `implement` asks whether a change is built right.
 - [ADR 0017: The shared code rules and the review agents live in core](./adrs/0017-the-shared-code-rules-and-the-review-agents-live-in-core.md) - The code rules that hold in every language lived inside `csharp-generation-smells` of the dotnet pack.
 - [ADR 0018: The SonarCloud MCP token lives in a user store](./adrs/0018-the-sonarcloud-mcp-token-lives-in-a-user-store.md) - The `sonarqube` MCP server of the sonarcloud pack sends the header `Bearer ${AISDLC_SONAR_MCP_TOKEN}`.
+- [ADR 0019: A gate reports pass, finding, could not check or not applicable](./adrs/0019-a-gate-reports-pass-finding-could-not-check-or-not-applicable.md) - A gate is a script that checks one rule and reports through its exit code.
+- [ADR 0020: A local run checks what the change touches](./adrs/0020-a-local-run-checks-what-the-change-touches.md) - A local gate run and the pre-flight ran every gate, also for a change to one page.
+- [ADR 0021: A stated waiver clears a test, doc or ADR finding](./adrs/0021-a-stated-waiver-clears-a-test-doc-or-adr-finding.md) - The completeness check refused an agent push when code changed but no test or doc moved.
 - [ADR 0022: A published pull request puts its stories in review with a label](./adrs/0022-a-published-pull-request-puts-its-stories-in-review-with-a-label.md) - A GitHub issue has two states, open and closed.
 - [ADR 0023: A story has six sections with budgets, at most 5 plain criteria, and follows ASD-STE100](./adrs/0023-a-story-has-six-sections-with-budgets-at-most-5-criteria-and-ste100.md) - An issue had seven sections with no size limit, and a dev-ready story could add an eighth.
 - [ADR 0024: The agent opens a draft pull request, and the person publishes it](./adrs/0024-the-agent-opens-a-draft-pull-request-and-the-person-publishes-it.md) - The agent opened every pull request as ready for review.
@@ -31,6 +34,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 
 ## General
 
+- [Repository gates](./gates.md) - The gates that only AI.SDLC runs, from `repoGates` in `aisdlc.json`.
 - [How AI.SDLC is built](./overview.md) - AI.SDLC holds the shared AI-SDLC as APM packages: one core and one pack per technology, tool or purpose.
 - [tools](./tools.md) - The `tools` unit provides scripts, tests, and workflow templates for shared AI-SDLC maintenance and consumer repository workflows.
 

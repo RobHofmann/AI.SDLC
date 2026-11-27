@@ -62,6 +62,16 @@ Describe 'Update-SkillCatalog' {
         $result.Output | Should -Match 'FIX: Run pwsh tools/Update-SkillCatalog\.ps1'
     }
 
+    It 'could not check a folder with no core or packs, and says how to fix it (exit 2)' -Tag '#46' {
+        $empty = Join-Path $TestDrive 'no-packages'
+        New-Item -ItemType Directory -Path $empty -Force | Out-Null
+
+        $result = Invoke-Tool -Root $empty -Check
+
+        $result.Code | Should -Be 2
+        $result.Output | Should -Match '(?m)^FIX: \S'
+    }
+
     It 'fails when two packages ship a skill with the same name' {
         $root = New-PackageRepo -Skills @('core:ai-sdlc-gates', 'core:same', 'github-issues:same')
 

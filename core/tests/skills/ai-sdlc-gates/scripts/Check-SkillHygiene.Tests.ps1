@@ -257,10 +257,10 @@ Describe 'Check-SkillHygiene' {
         $r.Output | Should -Match 'skill-md'
     }
 
-    It 'fails when the skills directory does not exist' {
+    It 'is not applicable when the skills directory does not exist' -Tag '#46' {
         $missing = Join-Path $script:Skills 'nope'
         $r = Invoke-Hygiene -SkillsRoot $missing
-        $r.ExitCode | Should -Be 1
+        $r.ExitCode | Should -Be 3
         $r.Output | Should -Match 'not found'
     }
 

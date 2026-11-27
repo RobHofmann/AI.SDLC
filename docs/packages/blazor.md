@@ -51,8 +51,8 @@ The gate configuration lives at `packs/blazor/.apm/skills/blazor-conventions/gat
 
 It defines these blocking gates:
 
-- `Portal component conventions (razor)`
-- `Portal: component attribute placement`
+- `Razor components have no interface over a state class, no inline style block and no document type`
+- `Component attributes sit on their own line above the member they mark`
 
 ### Scripts and tests
 

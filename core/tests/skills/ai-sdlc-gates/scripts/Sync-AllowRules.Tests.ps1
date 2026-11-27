@@ -243,5 +243,15 @@ Describe 'Sync-AllowRules' {
 
         $result.Code | Should -Be 2
         $result.Output | Should -Match 'not valid JSON'
+        $result.Output | Should -Match '(?m)^FIX: \S'
+    }
+
+    It 'is not applicable when no package part is installed' -Tag '#46' {
+        $root = New-AllowRepo -Manifests @{}
+
+        $result = Invoke-Sync -Root $root -Check
+
+        $result.Code | Should -Be 3
+        $result.Output | Should -Match 'not applicable'
     }
 }

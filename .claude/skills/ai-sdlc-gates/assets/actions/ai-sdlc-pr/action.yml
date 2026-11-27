@@ -23,7 +23,8 @@
 #
 # The action runs every gate that a local run of Invoke-LocalGates.ps1 runs: the gates of the core, of
 # each pack that apm.yml lists, and the repoGates of aisdlc.json. A Blocking gate that fails fails the
-# job; an Advisory gate that finds issues, or a gate that could not check, is a warning annotation.
+# job, and so does a Blocking gate that could not check (exit 2). An Advisory gate that finds issues or
+# could not check is a warning annotation. A gate with nothing to check (exit 3) shows as N/A.
 # So a repository that uses this action needs no hand-listed gate steps. The pre-gate-command input
 # never holds a gate: a gate goes in gates.json or in the repoGates of aisdlc.json.
 #

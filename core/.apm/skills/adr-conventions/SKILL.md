@@ -19,15 +19,23 @@ rule; this is the short list of what goes wrong.
 
 ## When a decision needs an ADR (C01)
 
-- It adds, replaces or splits a pattern or a boundary: a new service split, a storage choice, an auth
-  model.
-- It departs from a convention or a constitution clause. That always needs a record, or an amendment
-  of the clause.
-- It picks one approach over a real alternative, and the choice has lasting effects.
-- A new gate, a governance method or a repo-wide contract counts as key, even when it was built
-  outside `implement`. Write its ADR in the same change.
-- Not for a routine, local choice that is easy to undo. Ask: would someone in six months be confused
-  if this were not written down?
+A decision needs an ADR only when it passes all three tests. When one test fails, there is no ADR.
+
+1. **Hard to undo.** Undoing it later costs real work: a storage choice, a boundary, a contract that
+   other repositories read.
+2. **Surprising without context.** A reader in six months would ask "why this way?", and the code does
+   not answer it.
+3. **A real trade-off.** There was a real alternative, and the choice gave something up for it.
+
+- A new gate, a setting or a routine, local choice does not count as key by itself. It gets an ADR
+  only when it passes the three tests. When it fails one, its reason lives in the skill or the page
+  that lists it.
+- A change to a decision that an existing ADR records updates or supersedes that ADR, whatever the
+  three tests say.
+- A departure from a convention or a constitution clause goes to that convention, or to
+  `update-constitution` for a clause. It gets an ADR as well only when the three tests also hold.
+- A data-model change (`tracker.dataModelPatterns`) whose decision misses a test carries a
+  `No-ADR: <why>` commit trailer instead. Only `wrap-up` writes it, after the `architect` agent agrees.
 
 ## The file
 

@@ -38,6 +38,7 @@ $parts = @('core', 'packs') | ForEach-Object { Join-Path $RepoRoot $_ } | Where-
     Where-Object { $_.DirectoryName -match '[\\/]assets$' }
 if (-not $parts) {
     Write-Host 'Could not check: no agents-*.md part under core/ or packs/.' -ForegroundColor Yellow
+    Write-Host 'FIX: Run the gate in the AI.SDLC repository, or pass -RepoRoot with the folder that holds core and packs.' -ForegroundColor Yellow
     exit 2
 }
 

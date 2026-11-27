@@ -4,20 +4,25 @@
     Runs a constitution / AI-SDLC gate script in a GitHub Actions workflow with a readable result.
 
 .DESCRIPTION
-    A gate script reports through its exit code, and three values are distinguished:
+    A gate script reports through its exit code, and four values are distinguished. Any other code
+    counts as 1:
 
       0  checked, nothing found.
       1  checked, and found a violation. Advisory mode warns; Blocking mode fails the build.
-      2  COULD NOT check. Always a warning and never a pass, whatever the mode, because a gate that
-         could not reach its source has proved nothing. It is not a violation either: nobody on the
-         pull request can fix a missing credential or an unreachable service by editing the code.
+      2  COULD NOT check. Never a pass. It is not a violation either: nobody on the pull request can
+         fix a missing credential or an unreachable service by editing the code. Blocking mode fails
+         the build, because a blocking gate that could not check proved nothing and must not let a
+         change through. Advisory mode warns. A local run of Invoke-LocalGates.ps1 keeps exit 2 a
+         warning in both modes; this wrapper runs only in a workflow.
+      3  not applicable: the gate has nothing to check here, such as a pull request rule on a push.
+         It writes no annotation, and it never blocks.
 
     The gate scripts (Check-*.ps1) signal "issues found" with a non-zero exit code. Run directly in a
     workflow step, that surfaces as the opaque "Process completed with exit code 1", which reads like
     the script crashed rather than the validation simply finding issues.
 
     This wrapper runs the gate, lets its own output (the human-readable violation list) flow to the
-    log, and then translates a non-zero exit into GitHub annotations (GateAnnotation.psm1):
+    log, and then translates an exit other than 0 or 3 into GitHub annotations (GateAnnotation.psm1):
 
       - Advisory mode: a warning, and the wrapper exits 0 (the gate does not block the build yet).
       - Blocking mode: an error, and the wrapper exits 1 (the gate fails the step, with a clean
@@ -46,9 +51,9 @@
     with an advisory note. For the count it takes the last line. It also prints the command to repeat
     the same check locally.
 
-    A crash in the gate (a thrown, terminating error rather than a clean non-zero exit) also fails the
-    step, but it is reported as its own case: nothing was checked, so it is a bug in the gate rather
-    than a finding in what the gate reads. The reason, the script and the line are named, because a
+    A crash in the gate (a thrown, terminating error rather than a clean non-zero exit) is reported as
+    its own case: nothing was checked, so it is a bug in the gate rather than a finding in what the
+    gate reads. It fails the step in Blocking mode and is a warning in Advisory mode. The reason, the script and the line are named, because a
     raw PowerShell stack trace in a build log tells a reader nothing about which of the two happened.
 
 .PARAMETER Script
@@ -61,7 +66,8 @@
     Short human label used in the message (e.g. "no em-dash characters").
 
 .PARAMETER Mode
-    Advisory (default) emits a warning and exits 0. Blocking emits an error and exits 1.
+    Advisory (default) emits a warning and exits 0. Blocking emits an error and exits 1, also for exit 2
+    of the gate and for a crash.
 
 .PARAMETER GateArgs
     Remaining arguments are passed through verbatim to the gate script (e.g. -RepoRoot <path>, or
@@ -113,9 +119,10 @@ try {
 }
 catch {
     $lines | ForEach-Object { Write-Host $_ }
-    $outcome = Write-GateCrashAnnotation -Clause $Clause -Script $Script -ErrorRecord $_ -HowToRepeat $howToRepeat
+    $outcome = Write-GateCrashAnnotation -Clause $Clause -Script $Script -ErrorRecord $_ -HowToRepeat $howToRepeat -Mode $Mode
     Write-Host $outcome.Summary
-    exit 1
+    if ($outcome.Result -eq 'Failed') { exit 1 }
+    exit 0
 }
 
 $lines | ForEach-Object { Write-Host $_ }

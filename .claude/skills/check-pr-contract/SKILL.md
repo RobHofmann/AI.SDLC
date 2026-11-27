@@ -49,7 +49,8 @@ Two rules hold in every run of every skill, and each is defined in one place:
    request that takes an AI.SDLC release names the release issue of AI.SDLC this way. Any other repository is BLOCKED.
 2. **A data-model or key change carries an ADR.** The domain model is the paths that match
    `tracker.dataModelPatterns` in aisdlc.json, such as domain entities or the storage model. If the change
-   touches it, or makes a key architectural decision, it needs an ADR. An ADR in the ADR folder
+   touches it, or makes a decision that passes the three tests of `adr-conventions`, it needs an ADR.
+   When the decision misses a test, a `No-ADR: <why>` commit trailer takes its place. An ADR in the ADR folder
    (`paths.adrFolder`) has `story: "<key>"` in its front matter, in quotes, because a bare `#` starts a
    YAML comment. A link from the story to an ADR alone is not enough, because the CI gate reads only the ADR files. Whether a change is key is not always mechanical: where it is unclear, this
    skill asks rather than guessing (surface, don't decide).

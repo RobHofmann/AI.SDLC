@@ -44,16 +44,18 @@ The package configuration lives at `packs/github-issues/apm.yml`.
 
 The gate configuration lives at `packs/github-issues/.apm/skills/check-pr-contract/gates.json`.
 
-- `PR-story contract` is blocking in CI and PR runs. It is a no-op locally.
-- `Graph: stories backlink their anchoring ADRs` is advisory in CI. It is a no-op locally.
+- `The pull request is tied to a refined issue, and a data-model change has an ADR for that story` is blocking in the pull request build. Locally it is not applicable (exit 3).
+- `Each issue that an ADR names points back at that ADR` is advisory in the pull request build. Locally it is not applicable (exit 3).
 
 ### Scripts and tests
 
 `packs/github-issues/.apm/skills/check-pr-contract/scripts/Check-PrStoryContract.ps1` checks that a PR is anchored to a development-active issue: labelled `refined`, open or closed. A key of another repository, `owner/repo#42`, counts only when `tracker.acceptedRepositories` lists that repository; the gate then reads the issue there. An update pull request uses this for the release issue of AI.SDLC.
 
+A data-model change with no ADR also passes when a commit of the pull request ends with a `No-ADR: <why>` trailer. The gate prints the waiver, and only `wrap-up` writes it, after the `architect` agent agrees.
+
 Its test is `packs/github-issues/tests/skills/check-pr-contract/scripts/Check-PrStoryContract.Tests.ps1`.
 
-`packs/github-issues/.apm/skills/check-pr-contract/scripts/Check-StoryBackEdges.ps1` checks whether an anchoring repository artifact has a backlink from its issue.
+`packs/github-issues/.apm/skills/check-pr-contract/scripts/Check-StoryBackEdges.ps1` checks whether an anchoring repository artifact has a backlink from its issue. It reads an ADR only when the change adds or changes the `story:` line of that ADR.
 
 Its test is `packs/github-issues/tests/skills/check-pr-contract/scripts/Check-StoryBackEdges.Tests.ps1`.
 

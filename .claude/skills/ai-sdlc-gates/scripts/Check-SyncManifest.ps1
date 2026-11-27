@@ -61,8 +61,16 @@ if (-not $ManifestPath) { $ManifestPath = Join-Path (Split-Path $PSScriptRoot -P
 $ErrorActionPreference = 'Stop'
 
 $apmFile = Join-Path $RepoRoot 'apm.yml'
-if (-not (Test-Path -LiteralPath $apmFile)) { Write-Output "::warning::The AI.SDLC sync could not be checked: $apmFile does not exist."; exit 2 }
-if (-not (Test-Path -LiteralPath $ManifestPath)) { Write-Output "::warning::The AI.SDLC sync could not be checked: $ManifestPath does not exist."; exit 2 }
+if (-not (Test-Path -LiteralPath $apmFile)) {
+    Write-Host "The AI.SDLC sync could not be checked: $apmFile does not exist."
+    Write-Host 'FIX: Run the gate in a repository that installs the AI.SDLC packages with APM (an apm.yml in its root).'
+    exit 2
+}
+if (-not (Test-Path -LiteralPath $ManifestPath)) {
+    Write-Host "The AI.SDLC sync could not be checked: $ManifestPath does not exist."
+    Write-Host 'FIX: Run apm install to install the core package, which ships sync-manifest.json.'
+    exit 2
+}
 
 $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json -AsHashtable
 # A dependency is "- git: <url>" with "path: core" or "path: packs/<name>" below it, or one value such as
@@ -112,7 +120,11 @@ if ($present.Count -gt 0) {
     Push-Location $RepoRoot
     try { $actual = @($present | git hash-object --stdin-paths) }
     finally { Pop-Location }
-    if ($LASTEXITCODE -ne 0 -or $actual.Count -ne $present.Count) { Write-Output '::warning::The AI.SDLC sync could not be checked: git hash-object failed.'; exit 2 }
+    if ($LASTEXITCODE -ne 0 -or $actual.Count -ne $present.Count) {
+        Write-Host 'The AI.SDLC sync could not be checked: git hash-object failed.'
+        Write-Host 'FIX: Run the gate where git works and can read the repository (check for a "dubious ownership" error).'
+        exit 2
+    }
     for ($i = 0; $i -lt $present.Count; $i++) {
         if ($actual[$i] -ne $expected[$present[$i]]) { $findings.Add("changed: $($present[$i])") }
     }

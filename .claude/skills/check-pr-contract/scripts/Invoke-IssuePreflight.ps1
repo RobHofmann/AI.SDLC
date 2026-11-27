@@ -57,7 +57,10 @@ $branch = [string](git -C $RepoRoot rev-parse --abbrev-ref HEAD 2>$null)
 # The story key needs no GitHub read, so a branch without one fails before the gh check. The branch rule
 # is the one Check-PrStoryContract.ps1 uses, so both forms agree on what a key is.
 # A repository that sets git.allowTrunkPush changes main or master directly, with no story or pull request.
-if ($branch -in 'main', 'master' -and -not $env:PR_STORY_KEY -and (Test-AiSdlcTrunkPushAllowed -RepoRoot $RepoRoot)) {
+if (Test-AiSdlcGateOff -RepoRoot $RepoRoot -Script 'Check-PrStoryContract.ps1') {
+    [pscustomobject]@{ Check = 'IssueContract (story + ADR)'; Status = 'SKIP'; Detail = 'the gate of Check-PrStoryContract.ps1 is Off, so the issue contract did not run' }
+}
+elseif ($branch -in 'main', 'master' -and -not $env:PR_STORY_KEY -and (Test-AiSdlcTrunkPushAllowed -RepoRoot $RepoRoot)) {
     [pscustomobject]@{ Check = 'IssueContract (story + ADR)'; Status = 'SKIP'; Detail = "branch '$branch' is the main branch, and git.allowTrunkPush in aisdlc.json lets a change go there without a story or pull request" }
 }
 elseif ($branch -and -not ($env:PR_STORY_KEY -or (Get-AiSdlcBranchStoryKey -Branch $branch))) {
@@ -65,7 +68,7 @@ elseif ($branch -and -not ($env:PR_STORY_KEY -or (Get-AiSdlcBranchStoryKey -Bran
 }
 elseif (Test-GhReady) {
     & (Join-Path $PSScriptRoot 'Check-PrStoryContract.ps1') -SourceBranch $branch -ChangedFiles ($ChangedFiles -join "`n") -RepoRoot $RepoRoot -GhCommand $GhCommand | Out-Host
-    $status = switch ($LASTEXITCODE) { 0 { 'PASS' } 1 { 'FAIL' } default { 'REVIEW' } }
+    $status = switch ($LASTEXITCODE) { 0 { 'PASS' } 1 { 'FAIL' } 3 { 'SKIP' } default { 'REVIEW' } }
     [pscustomobject]@{ Check = 'IssueContract (story + ADR)'; Status = $status; Detail = 'gh form (gh issue view)' }
 }
 else {

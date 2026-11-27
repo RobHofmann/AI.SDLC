@@ -28,6 +28,14 @@ Describe 'Check-DocLineCitations' {
         $r.Output | Should -Match 'C02 OK'
     }
 
+    It 'is not applicable when there is no markdown file to scan (exit 3)' -Tag '#46' {
+        Remove-Item -LiteralPath (Join-Path $script:Root 'AGENTS.md')
+        Remove-Item -LiteralPath (Join-Path $script:Root 'docs') -Recurse
+        $r = Invoke-Gate -RepoRoot $script:Root
+        $r.ExitCode | Should -Be 3
+        $r.Output | Should -Match 'not applicable'
+    }
+
     It 'fails on a file.ext:NN citation (exit 1)' {
         Set-Content -LiteralPath (Join-Path $script:Root 'docs/page.md') -Value "# Page`nSee Program.cs:42 for the bug.`n" -NoNewline
         $r = Invoke-Gate -RepoRoot $script:Root
@@ -132,6 +140,7 @@ Describe 'Check-DocLineCitations' {
             $out = & $script:ScriptUnderTest -RepoRoot $script:Root -Path 'core,missing' *>&1 | Out-String
             $LASTEXITCODE | Should -Be 2
             $out | Should -Match 'Could not check: the path\(s\) missing do not exist'
+            $out | Should -Match '(?m)^FIX: \S'
         }
     }
 }

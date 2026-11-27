@@ -6,10 +6,20 @@
 
 .DESCRIPTION
     This gate is a RATCHET, not a fixed bar. It reads a coverage XML, computes overall line coverage,
-    and fails when that figure has dropped below the baseline recorded in the repository. A run that
-    beats the baseline passes and prints the new figure so the baseline can be raised in a reviewed
-    commit. The ratchet exists because overall coverage is a debt figure that takes years to move: a
-    fixed 80% on the total could never pass, so it was set to advisory and stopped being read.
+    and fails when that figure has dropped below the baseline recorded in the repository. It also fails
+    when coverage is one point or more above the baseline file and the change did not raise that file.
+    A gain of less than a point passes and prints the new figure, so the baseline can be raised later.
+    The ratchet exists because overall coverage is a debt figure that takes years to move: a fixed 80%
+    on the total could never pass, so it was set to advisory and stopped being read. The rise rule keeps
+    a gain from being given back: without it, the baseline stays low and a later change can lose the
+    coverage that this one added.
+
+    The baseline file counts as raised when the change touches it and its value is above the value at
+    the base, or the file is new there. The change comes from ChangedFiles.psm1 in the ai-sdlc-gates
+    skill: CHANGED_FILES in the pull request action, else the commits since the merge base with
+    origin/<github.trunk>. A baseline given with -Baseline has no file to raise, so the rise rule does
+    not apply to it. To raise the baseline, set lineCoveragePercent in the baseline file to the figure
+    the gate prints, and commit the file with the change.
 
     The 80% ambition lives where it is achievable: SonarCloud's "coverage on new code" condition,
     which judges only the lines a pull request changed. This script reports the distance to that
@@ -37,6 +47,10 @@
     Sibling of Check-DocLineCitations.ps1 (C02) and Check-DocEmDashes.ps1 (C06): same house style, one
     rule per script, run locally and in CI.
 
+    Exit codes: 0 at or above the baseline, 1 below it or a gain of a point or more that the change left
+    out of the baseline file, 2 when the coverage file is missing or when a gain of a point or more
+    meets a change that cannot be listed (could not check, with a FIX line).
+
 .PARAMETER CoverageFile
     Path to a coverage XML in OpenCover format (<CoverageSession> root) or dotnet-coverage XML format
     (<results> root). In the pull request workflow this is the file that the coverage-file input of
@@ -61,6 +75,14 @@
     Optional repository root, used to resolve the default BaselineFile and to render the coverage file
     path relative to the repository in output. Defaults to the folder that holds aisdlc.json, found from this script.
 
+.PARAMETER BaseRef
+    The ref the change is measured against, to see whether the baseline file was raised. Defaults to
+    origin/<github.trunk> from aisdlc.json (Get-AiSdlcMainBranch).
+
+.PARAMETER ChangedFiles
+    Explicit repo-relative paths of the change, bypassing git. Falls back to the CHANGED_FILES
+    environment variable that the shared pull request action sets.
+
 .EXAMPLE
     ./Check-Coverage.ps1 -CoverageFile "$(Agent.TempDirectory)/coverage.opencover.xml"
 
@@ -80,7 +102,11 @@ param(
 
     [double]$Target = 80,
 
-    [string]$RepoRoot
+    [string]$RepoRoot,
+
+    [string]$BaseRef,
+
+    [string[]]$ChangedFiles
 )
 
 $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
@@ -162,10 +188,10 @@ function Resolve-Baseline {
 }
 
 if (-not (Test-Path -LiteralPath $CoverageFile)) {
-    Write-Host "C04 coverage gate: coverage file not found at '$CoverageFile'." -ForegroundColor Red
-    Write-Host "A missing coverage report means tests or coverage collection did not run; treating as a failure." -ForegroundColor Red
-    Write-Host "Expected the merged coverage XML of the test run: from the dotnet pre-flight, or from the coverage-file input of the ai-sdlc-pr action in the pull request workflow." -ForegroundColor Red
-    exit 1
+    Write-Host "C04 coverage gate: coverage file not found at '$CoverageFile', so nothing was checked." -ForegroundColor Yellow
+    Write-Host "A missing coverage report means tests or coverage collection did not run." -ForegroundColor Yellow
+    Write-Host "FIX: Run the tests with coverage collection first (the dotnet pre-flight does this), or pass -CoverageFile with the merged coverage XML of the test run (the coverage-file input of the ai-sdlc-pr action in the pull request workflow)." -ForegroundColor Yellow
+    exit 2
 }
 
 $aiSdlc = Get-AiSdlcConfig -RepoRoot $RepoRoot
@@ -280,6 +306,37 @@ if ($overall -lt ($floor - $Tolerance)) {
     Write-Host "FIX: Add tests for what this change touched until coverage is back at the baseline. If the drop is meant, lower $baselineName in the same commit and say why in the pull request (clause C04)." -ForegroundColor Red
     Write-Host "If the drop is deliberate, say so in the pull request and lower the baseline in the same commit so the decision is reviewed." -ForegroundColor Red
     exit 1
+}
+
+if ($null -eq $Baseline -and ($overall - $floor) -ge 1) {
+    Import-Module (Join-Path $aiSdlcGates 'ChangedFiles.psm1') -Force
+    if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
+    $change = Get-AiSdlcChange -RepoRoot $RepoRoot -BaseRef $BaseRef -Explicit $ChangedFiles
+    $gain = [string]::Format($script:Invariant, '{0:N2}', ($overall - $floor))
+    if (-not $change.Readable) {
+        Write-Host "Could not check: C04 coverage is $gain points above the baseline, and $($change.Reason), so the gate cannot tell whether this change raised the baseline." -ForegroundColor Yellow
+        Write-Host "FIX: Fetch the base branch, or pass -BaseRef with a ref that exists, then run the gate again." -ForegroundColor Yellow
+        exit 2
+    }
+    $baselineRel = [IO.Path]::GetRelativePath($RepoRoot, [IO.Path]::GetFullPath($resolved.Source)).Replace('\', '/')
+    $raised = $false
+    if ($change.Files -contains $baselineRel) {
+        $raised = $true
+        if ($change.Base) {
+            $old = (& git -C $RepoRoot show "$($change.Base):$baselineRel" 2>$null) -join "`n"
+            if ($LASTEXITCODE -eq 0) {
+                $oldPercent = $null
+                try { $oldPercent = [double]((ConvertFrom-Json $old).lineCoveragePercent) } catch { $oldPercent = $null }
+                if ($null -ne $oldPercent) { $raised = $floor -gt $oldPercent }
+            }
+            $global:LASTEXITCODE = 0
+        }
+    }
+    if (-not $raised) {
+        Write-Invariant -Template 'C04 coverage gate FAILED: {0:N2}% is {1} points above the {2:N2}% baseline, and this change did not raise the baseline file.' -Values @($overall, $gain, $floor) -ForegroundColor Red
+        Write-Invariant -Template 'FIX: Set lineCoveragePercent to {0:N2} in {1} and commit the file with this change, so the gain is kept.' -Values @($overall, $baselineRel) -ForegroundColor Red
+        exit 1
+    }
 }
 
 if ($overall -gt ($floor + $Tolerance)) {

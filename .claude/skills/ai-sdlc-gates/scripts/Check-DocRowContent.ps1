@@ -62,6 +62,7 @@ if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 if (-not $DocRoots) { $DocRoots = @(Get-AiSdlcPath -Name docsRoots -RepoRoot $RepoRoot -Relative) }
 if (-not @($DocRoots | Where-Object { Test-Path (Join-Path $RepoRoot $_) })) {
     Write-Host ("Could not check: none of the doc roots exists ({0})." -f ($DocRoots -join ', ')) -ForegroundColor Yellow
+    Write-Host 'FIX: Create a doc root folder that aisdlc.json names (paths.docsRoots), or pass -DocRoots with a folder that exists.' -ForegroundColor Yellow
     exit 2
 }
 

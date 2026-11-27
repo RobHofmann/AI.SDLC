@@ -74,18 +74,35 @@ Describe 'Invoke-Gate' {
         $r.Output | Should -Match 'a test rule'
     }
 
-    It 'treats exit 2 as could-not-check in Blocking mode: a warning, never a failure' {
+    It 'treats exit 2 as could-not-check in Blocking mode: an error, and the wrapper exits 1' -Tag '#46' {
         $gate = Join-Path $script:Root 'UnknownGate.ps1'
         Set-Content -LiteralPath $gate -Value "Write-Host 'the credentials do not work (HTTP 401)'; exit 2" -NoNewline
         $r = Invoke-Wrapper -Gate $gate -Mode 'Blocking'
-        $r.ExitCode | Should -Be 0
+        $r.ExitCode | Should -Be 1
         $r.Output | Should -Match 'COULD NOT BE CHECKED'
         $r.Output | Should -Match 'HTTP 401'
-        $r.Output | Should -Match '(?m)^::warning '
-        $r.Output | Should -Not -Match '::error'
+        $r.Output | Should -Match '(?m)^::error '
     }
 
-    It 'treats exit 2 the same way in Advisory mode' {
+    It 'treats exit 3 as not applicable: no annotation, and the wrapper exits 0 in either mode' -Tag '#46' {
+        $gate = New-FakeGate -Root $script:Root -ExitCode 3 -Message 'no pull request here'
+        foreach ($mode in 'Blocking', 'Advisory') {
+            $r = Invoke-Wrapper -Gate $gate -Mode $mode
+            $r.ExitCode | Should -Be 0
+            $r.Output | Should -Match 'no pull request here'
+            $r.Output | Should -Not -Match '::(error|warning)'
+        }
+    }
+
+    It 'reports a crashing Advisory gate as a warning, and the wrapper exits 0' -Tag '#46' {
+        $gate = Join-Path $script:Root 'CrashAdvisory.ps1'
+        Set-Content -LiteralPath $gate -Value "throw 'gate bug'" -NoNewline
+        $r = Invoke-Wrapper -Gate $gate -Mode 'Advisory'
+        $r.ExitCode | Should -Be 0
+        $r.Output | Should -Match '(?m)^::warning title=CrashAdvisory\.ps1::.*NOTHING WAS CHECKED'
+    }
+
+    It 'treats exit 2 as a warning in Advisory mode' {
         $gate = Join-Path $script:Root 'UnknownGate2.ps1'
         Set-Content -LiteralPath $gate -Value "Write-Host 'the tracker was unreachable'; exit 2" -NoNewline
         $r = Invoke-Wrapper -Gate $gate -Mode 'Advisory'

@@ -82,7 +82,7 @@ structurally rather than lost in the conversation.
   - What are the realistic approaches, and what forces decide between them?
   - What does this constrain or commit us to later, and is that acceptable?
   - Which constitution clause or existing convention does this touch?
-  - Is this a key decision that needs an ADR?
+  - Does this decision pass the three ADR tests of `adr-conventions`?
 - **Voice:** weighs tradeoffs out loud, names the alternative not taken and why.
 - **Owns:** elaboration architecture, `write-api-spec` (dotnet pack), `write-adr`.
 - **Agent:** `architect`: the plan and the plan review in the build loop, the `grilling` and `convene-personas` panels, and the review of an ADR or an API contract.

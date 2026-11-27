@@ -29,7 +29,8 @@
 
     The hash is the git blob hash (git hash-object), so CRLF in a Windows working copy does not count as
     a change. The manifest is written to core/.apm/skills/ai-sdlc-gates/sync-manifest.json and leaves
-    itself out, because it cannot hold its own hash.
+    itself out, because it cannot hold its own hash. The script exits 2 when the folder has no core or
+    packs folder, so there is nothing to list.
 
 .PARAMETER RepoRoot
     The AI.SDLC repository root. Defaults to the folder above this script.
@@ -52,6 +53,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $manifestRelative = 'core/.apm/skills/ai-sdlc-gates/sync-manifest.json'
 $target = Join-Path $RepoRoot $manifestRelative
+
+if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot 'core') -PathType Container) -or -not (Test-Path -LiteralPath (Join-Path $RepoRoot 'packs') -PathType Container)) {
+    Write-Host "Could not check: there is no core or packs folder under $RepoRoot, so there is no package to list." -ForegroundColor Yellow
+    Write-Host 'FIX: Run the script in the AI.SDLC repository, or pass -RepoRoot with the folder that holds core and packs.' -ForegroundColor Yellow
+    exit 2
+}
 
 $packages = [ordered]@{ core = 'core' }
 foreach ($pack in Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'packs') -Directory | Sort-Object Name) {

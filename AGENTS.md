@@ -89,6 +89,7 @@ pwsh tools/Invoke-PesterParallel.ps1                    # every test file in its
 pwsh core/.apm/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1 -Required   # no private term anywhere
 pwsh tools/Check-RetiredSkillNames.ps1                  # no shared file names a retired skill
 pwsh tools/Update-SkillCatalog.ps1 -Check               # the skill catalog is current
+pwsh tools/Build-GateCatalog.ps1 -Check                 # the gate list pages match the gates
 pwsh tools/Update-SyncManifest.ps1 -Check               # the sync manifest is current
 pwsh tools/Check-SharedAgentsPartSize.ps1               # the shared AGENTS.md parts stay within budget
 pwsh tools/Check-PackageVersion.ps1                     # every apm.yml has the newest CHANGELOG version
@@ -97,8 +98,9 @@ pwsh tools/Add-AiSdlcConsumer.ps1 -TargetRepo <path>    # set up the AI-SDLC in 
 ```
 
 `repoGates` in `aisdlc.json` lists the gates above but the Pester runner and `Test-Consumers.ps1`, so the
-pre-push hook runs them, unless a passing pre-flight receipt covers the push. `commands.test` runs the
-tests of `core/`, `packs/` and `tools/` in the pre-flight. The pull request workflow,
+pre-push hook runs them, unless a passing pre-flight receipt covers the push. `commands.testChanged`
+runs only the tests a change reaches in a scoped pre-flight, and `commands.test` runs them all with
+`-Full`. The pull request workflow,
 `.github/workflows/pr.yml`, runs them all: the Pester shares, the test consumers and the shared AI-SDLC
 step. That step runs every core, pack and repo gate once. `Test-Consumers.ps1` needs APM, gitleaks and, on Windows, long paths.
 

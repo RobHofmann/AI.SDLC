@@ -17,12 +17,11 @@
          MinDescription characters is reported. A real incident cut a 2209-character body down to the
          10 characters of "## Summary", and nothing noticed until a reader opened the pull request.
 
-    NO-OP with no pull request context at all (no title, no description, no source branch), so a local
-    Invoke-LocalGates run does not trip it.
+    Exit 3 (not applicable) with no pull request context at all (no title, no description, no source
+    branch), so a local Invoke-LocalGates run does not trip it.
 
     Exit 0 clean, 1 a violation a person fixes by editing the pull request, 2 when the pull request
-    could not be read at all. The
-    gate is Blocking, because every finding it reports takes seconds to fix and needs nobody else.
+    could not be read at all. The gate is Blocking, because every finding it reports takes seconds to fix and needs nobody else.
 
 .PARAMETER PrTitle
     The pull request title. The workflow fills it from the GitHub event.
@@ -70,13 +69,18 @@ $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
 $keyHint = if ($config.tracker.keyPattern) { 'story key (tracker.keyPattern)' } else { 'story key (#42)' }
 $keyExample = if ($config.tracker.keyPattern) { '' } else { ' (Fixes #42)' }
 
-function Fail([string]$msg) { Write-Output "::error::$msg"; exit 1 }
-function Unknown([string]$msg) { Write-Output "::warning::$msg"; exit 2 }
+function Fail([string]$msg) { Write-Output $msg; exit 1 }
+function Unknown([string]$msg) {
+    Write-Output $msg
+    Write-Output 'FIX: Make the step before this gate pass the pull request title and description (PR_TITLE and PR_DESCRIPTION) from the GitHub event. The log of that step says why it did not.'
+    exit 2
+}
+function NotApplicable([string]$msg) { Write-Output $msg; exit 3 }
 function Ok([string]$msg) { Write-Output $msg; exit 0 }
 
 $hasContext = @($PrTitle, $PrDescription, $SourceBranch, $PrId | Where-Object { $_ -and "$_".Trim() }).Count -gt 0
 if (-not $hasContext) {
-    Ok "PR hygiene: no pull request context (no id, title, description or source branch), so there is nothing to check here. This gate runs on a pull request build."
+    NotApplicable "PR hygiene: not applicable, no pull request context (no id, title, description or source branch), so there is nothing to check here. This gate runs on a pull request build."
 }
 
 if ($PrId -and -not $PrTitle) {
@@ -108,10 +112,9 @@ elseif ($description.Length -lt $MinDescription) {
 }
 
 if ($findings.Count -gt 0) {
-    Write-Host "PR hygiene: the pull request does not carry what a reader needs." -ForegroundColor Red
+    Write-Host "PR hygiene: the pull request does not carry what a reader needs; it failed on $($findings.Count) point(s)." -ForegroundColor Red
     foreach ($finding in $findings) { Write-Host "  $finding" }
     Write-Host "FIX: Edit the pull request itself: put the $keyHint in the title or the description$keyExample, and give it a body that says what the change does. No code change is needed."
-    Write-Output "::error::PR hygiene failed on $($findings.Count) point(s): $(($findings | ForEach-Object { ($_ -split ':')[0] }) -join ', '). Fix the pull request itself; no code change is needed."
     exit 1
 }
 

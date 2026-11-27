@@ -24,7 +24,8 @@
     those files. The SonarCloud scanner reads SONAR_TOKEN, and a person often holds the same token in both.
 
     The output never shows a token value. Exit 0 when every file is clean, 1 on a finding, 2 when a
-    file could not be read, or could not be parsed as JSON, so nothing could be checked.
+    file could not be read, or could not be parsed as JSON, so nothing could be checked, and 3 (not
+    applicable) when the repository has no MCP file to check.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script.
@@ -167,7 +168,7 @@ foreach ($relative in $mcpFiles) {
 }
 
 foreach ($reason in $unreadable) {
-    Write-Output "::warning::$reason"
+    Write-Host $reason -ForegroundColor Yellow
 }
 
 if ($findings.Count -gt 0) {
@@ -182,8 +183,14 @@ if ($findings.Count -gt 0) {
     Write-Host 'If a token was committed or pushed, revoke it in SonarCloud (My Account, Security) and make a new one.' -ForegroundColor Red
     exit 1
 }
-if ($unreadable.Count -gt 0) { exit 2 }
+if ($unreadable.Count -gt 0) {
+    Write-Host 'FIX: Make each MCP file named above readable and valid JSON, then run the gate again.' -ForegroundColor Yellow
+    exit 2
+}
 
-if ($checked -eq 0) { Write-Host 'SonarCloud MCP token OK: no MCP file in the repository to check.' }
-else { Write-Host "SonarCloud MCP token OK: $checked MCP file(s) send $placeholder or no $serverName server." }
+if ($checked -eq 0) {
+    Write-Host 'SonarCloud MCP token: not applicable, there is no MCP file in the repository to check.'
+    exit 3
+}
+Write-Host "SonarCloud MCP token OK: $checked MCP file(s) send $placeholder or no $serverName server."
 exit 0
