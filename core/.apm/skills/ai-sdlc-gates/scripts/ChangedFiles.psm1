@@ -49,6 +49,14 @@
     folder, and a double star stands for any number of folders, also none. The match ignores case only
     on Windows, like the file system there.
 
+    Get-AiSdlcInstalledPath gives the files that apm.lock.yaml lists under deployed_files, read at the base
+    commit. A gate skips those files, because the install wrote them. It reads the base, not the working
+    tree, so a change cannot add its own files to the skip list. Without a base, or when the base holds
+    no apm.lock.yaml, the list is empty, so nothing is skipped. With -WithHeadInstall the list also holds
+    a path under .claude/ that the lock lists at HEAD, but only when deployed_file_hashes at HEAD gives
+    the SHA-256 of the file as it is at HEAD. So a change that installs a new release can skip the files
+    the install wrote, and a lock line without the right hash cannot hide a script of its own.
+
 .PARAMETER RepoRoot
     The repository root.
 
@@ -314,4 +322,111 @@ function Get-AiSdlcChangeBase {
     return [pscustomobject]@{ Base = $value; Reason = $null }
 }
 
-Export-ModuleMember -Function Get-AiSdlcChange, Get-AiSdlcChangeBase, Get-AiSdlcChangedLine, Get-AiSdlcLineChange, Test-AiSdlcPathGlob
+function Get-BlobSha256 {
+    param([string]$RepoRoot, [string]$Ref, [string[]]$Path)
+
+    $result = [System.Collections.Generic.Dictionary[string, string]]::new([StringComparer]::Ordinal)
+    if ($Path.Count -eq 0) { return $result }
+    $info = [System.Diagnostics.ProcessStartInfo]::new('git')
+    foreach ($argument in '-C', $RepoRoot, 'cat-file', '--batch') { $info.ArgumentList.Add($argument) }
+    $info.RedirectStandardInput = $true
+    $info.RedirectStandardOutput = $true
+    $info.RedirectStandardError = $true
+    $info.UseShellExecute = $false
+    $info.StandardInputEncoding = [System.Text.UTF8Encoding]::new($false)
+    try { $process = [System.Diagnostics.Process]::Start($info) } catch [System.ComponentModel.Win32Exception] { return $null }
+    try {
+        $null = $process.StandardError.ReadToEndAsync()
+        $stream = $process.StandardOutput.BaseStream
+        foreach ($item in $Path) {
+            $process.StandardInput.Write("${Ref}:$item`n")
+            $process.StandardInput.Flush()
+            $header = [System.Text.StringBuilder]::new()
+            while (($byte = $stream.ReadByte()) -ge 0 -and $byte -ne 10) { [void]$header.Append([char]$byte) }
+            if ($byte -lt 0) { return $null }
+            if ($header.ToString() -match ' missing$') { continue }
+            if ($header.ToString() -notmatch '^[0-9a-f]+ blob (?<size>\d+)$') { return $null }
+            $content = [byte[]]::new([int]$Matches.size)
+            $read = 0
+            while ($read -lt $content.Length) {
+                $count = $stream.Read($content, $read, $content.Length - $read)
+                if ($count -le 0) { return $null }
+                $read += $count
+            }
+            if ($stream.ReadByte() -ne 10) { return $null }
+            $result[$item] = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($content)).ToLowerInvariant()
+        }
+        $process.StandardInput.Close()
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) { return $null }
+        return $result
+    }
+    catch [System.IO.IOException] {
+        return $null
+    }
+    finally {
+        if (-not $process.HasExited) { $process.Kill() }
+        $process.Dispose()
+    }
+}
+
+function Read-InstalledPathAt {
+    param([string]$RepoRoot, [string]$Ref, $Paths, [switch]$HeadInstall)
+
+    $listed = & git -C $RepoRoot ls-tree --name-only $Ref -- apm.lock.yaml 2>$null
+    if ($LASTEXITCODE -ne 0) { $global:LASTEXITCODE = 0; return "git cannot read apm.lock.yaml at $Ref" }
+    if (-not $listed) { return $null }
+    $lock = & git -C $RepoRoot show "${Ref}:apm.lock.yaml" 2>$null
+    if ($LASTEXITCODE -ne 0) { $global:LASTEXITCODE = 0; return "git cannot read apm.lock.yaml at $Ref" }
+    $deployed = [System.Collections.Generic.List[string]]::new()
+    $hashes = @{}
+    $section = ''
+    foreach ($lockLine in @($lock)) {
+        $text = ([string]$lockLine).TrimEnd("`r")
+        if ($text -match '^  deployed_files:\s*$') { $section = 'files'; continue }
+        if ($text -match '^  deployed_file_hashes:\s*$') { $section = 'hashes'; continue }
+        if ($section -eq 'files' -and $text -match '^  - (?<path>.+)$') { $deployed.Add($Matches.path.Trim().Replace('\', '/')) }
+        elseif ($section -eq 'hashes' -and $text -match '^    (?<path>.+?):\s+sha256:(?<hash>[0-9a-fA-F]{64})\s*$') { $hashes[$Matches.path.Trim().Replace('\', '/')] = $Matches.hash.ToLowerInvariant() }
+        elseif (-not ($section -eq 'files' -and $text -match '^  - ') -and -not ($section -eq 'hashes' -and $text -match '^    ')) { $section = '' }
+    }
+    if (-not $HeadInstall) {
+        foreach ($path in $deployed) { [void]$Paths.Add($path) }
+        return $null
+    }
+    $candidates = @($deployed | Where-Object { $_.StartsWith('.claude/', [StringComparison]::Ordinal) -and -not $Paths.Contains($_) -and $hashes.ContainsKey($_) } | Select-Object -Unique)
+    $actual = Get-BlobSha256 -RepoRoot $RepoRoot -Ref $Ref -Path $candidates
+    if ($null -eq $actual) { return "git cannot read the files that apm.lock.yaml lists at $Ref" }
+    foreach ($path in $candidates) {
+        if ($actual.ContainsKey($path) -and $actual[$path] -ceq $hashes[$path]) { [void]$Paths.Add($path) }
+    }
+    return $null
+}
+
+function Get-AiSdlcInstalledPath {
+    <#
+    .SYNOPSIS
+        The files that apm.lock.yaml lists as installed at the base commit, which a gate skips.
+    .PARAMETER RepoRoot
+        The repository root.
+    .PARAMETER Base
+        The base commit that Get-AiSdlcChange returned. Without it, the list is empty.
+    .PARAMETER WithHeadInstall
+        Also add a path under .claude/ that the lock lists at HEAD, when its hash at HEAD matches the file.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$Base,
+        [switch]$WithHeadInstall
+    )
+
+    $pathComparer = if ($IsWindows) { [StringComparer]::OrdinalIgnoreCase } else { [StringComparer]::Ordinal }
+    $paths = [System.Collections.Generic.HashSet[string]]::new($pathComparer)
+    if (-not $Base) { return [pscustomobject]@{ Readable = $true; Paths = $paths; Reason = $null } }
+    $reason = Read-InstalledPathAt -RepoRoot $RepoRoot -Ref $Base -Paths $paths
+    if (-not $reason -and $WithHeadInstall) { $reason = Read-InstalledPathAt -RepoRoot $RepoRoot -Ref HEAD -Paths $paths -HeadInstall }
+    if ($reason) { return [pscustomobject]@{ Readable = $false; Paths = $paths; Reason = $reason } }
+    return [pscustomobject]@{ Readable = $true; Paths = $paths; Reason = $null }
+}
+
+Export-ModuleMember -Function Get-AiSdlcChange, Get-AiSdlcChangeBase, Get-AiSdlcChangedLine, Get-AiSdlcInstalledPath, Get-AiSdlcLineChange, Test-AiSdlcPathGlob

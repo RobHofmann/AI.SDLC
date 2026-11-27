@@ -37,9 +37,9 @@
 .PARAMETER DiffText
     A unified diff to read instead of asking git. Used by the tests.
 .EXAMPLE
-    pwsh .claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1
+    pwsh .claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1
 .EXAMPLE
-    pwsh .claude/skills/dotnet-gates/scripts/Check-CommentHygiene.ps1 -BaseRef HEAD^1
+    pwsh .claude/skills/ai-sdlc-gates/scripts/Check-CommentHygiene.ps1 -BaseRef HEAD^1
 #>
 [CmdletBinding()]
 param(
@@ -48,9 +48,7 @@ param(
     [string]$DiffText
 )
 
-$aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
-if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
-Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'AiSdlcConfig.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'CodeDiff.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }

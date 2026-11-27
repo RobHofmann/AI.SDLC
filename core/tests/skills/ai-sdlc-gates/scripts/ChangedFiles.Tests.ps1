@@ -224,4 +224,116 @@ Describe 'ChangedFiles' {
             $change.Removed | Should -BeNullOrEmpty
         }
     }
+
+    Context 'Get-AiSdlcInstalledPath' {
+        BeforeAll {
+            function Set-Lock {
+                param([string]$Repo, [string[]]$Deployed, [hashtable]$Hash = @{})
+                $lines = @("lockfile_version: '1'", 'dependencies:', '- repo_url: _local/core', '  deployed_files:') + @($Deployed | ForEach-Object { "  - $_" })
+                if ($Hash.Count -gt 0) { $lines += @('  deployed_file_hashes:') + @($Hash.Keys | ForEach-Object { "    $($_): sha256:$($Hash[$_])" }) }
+                $lines += '  package_type: apm_package'
+                Set-Content -LiteralPath (Join-Path $Repo 'apm.lock.yaml') -Value $lines
+            }
+
+            function New-InstallRepo {
+                param([ValidateSet('Right', 'Wrong', 'None')][string]$Hash, [switch]$NoFile, [switch]$RawBytes)
+                $repo = New-ChangeRepo
+                Set-Lock -Repo $repo -Deployed '.claude/skills/demo/scripts/Shared.ps1'
+                git -C $repo add -A
+                git -C $repo commit --quiet -m lock --no-verify
+                $base = (git -C $repo rev-parse HEAD).Trim()
+                $fresh = Join-Path $repo '.claude/skills/demo/scripts/Fresh.ps1'
+                $bytes = if ($RawBytes) { [byte[]](0xFF, 0x0D, 0x0A, 0x80, 0x00, 0x0A) } else { [Text.UTF8Encoding]::new($false).GetBytes("Write-Output 'fresh'`n") }
+                if (-not $NoFile) {
+                    New-Item -ItemType Directory -Path (Split-Path $fresh) -Force | Out-Null
+                    [IO.File]::WriteAllBytes($fresh, $bytes)
+                }
+                $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+                $hashes = switch ($Hash) { 'Right' { @{ '.claude/skills/demo/scripts/Fresh.ps1' = $sha } } 'Wrong' { @{ '.claude/skills/demo/scripts/Fresh.ps1' = ('0' * 64) } } default { @{} } }
+                Set-Lock -Repo $repo -Deployed '.claude/skills/demo/scripts/Shared.ps1', '.claude/skills/demo/scripts/Fresh.ps1', 'tools/Own.ps1' -Hash $hashes
+                git -C $repo add -A
+                git -C $repo commit --quiet -m 'install a new version' --no-verify
+                return [pscustomobject]@{ Path = $repo; Base = $base }
+            }
+        }
+
+        It 'reads the lock at the base, not at HEAD, so a change cannot add its own file to the skip list' -Tag '#71' {
+            $repo = New-ChangeRepo
+            Set-Lock -Repo $repo -Deployed '.claude/skills/demo/scripts/Shared.ps1'
+            git -C $repo add -A
+            git -C $repo commit --quiet -m lock --no-verify
+            $base = (git -C $repo rev-parse HEAD).Trim()
+            Set-Lock -Repo $repo -Deployed '.claude/skills/demo/scripts/Shared.ps1', 'tools/Own.ps1'
+            git -C $repo add -A
+            git -C $repo commit --quiet -m 'widen the lock' --no-verify
+
+            $result = Get-AiSdlcInstalledPath -RepoRoot $repo -Base $base
+
+            $result.Readable | Should -BeTrue
+            $result.Paths.Contains('.claude/skills/demo/scripts/Shared.ps1') | Should -BeTrue
+            $result.Paths.Contains('tools/Own.ps1') | Should -BeFalse
+        }
+
+        It 'gives an empty list when the base holds no lock, and when there is no base' -Tag '#71' {
+            $repo = New-ChangeRepo
+            $base = (git -C $repo rev-parse HEAD).Trim()
+            Set-Lock -Repo $repo -Deployed 'tools/Own.ps1'
+
+            (Get-AiSdlcInstalledPath -RepoRoot $repo -Base $base).Paths.Count | Should -Be 0
+            (Get-AiSdlcInstalledPath -RepoRoot $repo).Paths.Count | Should -Be 0
+        }
+
+        It 'adds a .claude/ path from the lock at HEAD only when its hash matches, with -WithHeadInstall' -Tag '#71' {
+            $repo = New-InstallRepo -Hash Right
+
+            $result = Get-AiSdlcInstalledPath -RepoRoot $repo.Path -Base $repo.Base -WithHeadInstall
+            $baseOnly = Get-AiSdlcInstalledPath -RepoRoot $repo.Path -Base $repo.Base
+
+            $result.Readable | Should -BeTrue
+            $result.Paths.Contains('.claude/skills/demo/scripts/Fresh.ps1') | Should -BeTrue
+            $result.Paths.Contains('tools/Own.ps1') | Should -BeFalse
+            $baseOnly.Paths.Contains('.claude/skills/demo/scripts/Fresh.ps1') | Should -BeFalse
+        }
+
+        It 'hashes the raw bytes of the file at HEAD, also bytes that are not text' -Tag '#71' {
+            $repo = New-InstallRepo -Hash Right -RawBytes
+
+            (Get-AiSdlcInstalledPath -RepoRoot $repo.Path -Base $repo.Base -WithHeadInstall).Paths.Contains('.claude/skills/demo/scripts/Fresh.ps1') | Should -BeTrue
+        }
+
+        It 'does not add a HEAD path with <Case>, and stays readable' -Tag '#71' -ForEach @(
+            @{ Case = 'no hash'; Hash = 'None'; NoFile = $false }
+            @{ Case = 'a wrong hash'; Hash = 'Wrong'; NoFile = $false }
+            @{ Case = 'no file at HEAD'; Hash = 'Right'; NoFile = $true }
+        ) {
+            $repo = New-InstallRepo -Hash $Hash -NoFile:$NoFile
+
+            $result = Get-AiSdlcInstalledPath -RepoRoot $repo.Path -Base $repo.Base -WithHeadInstall
+
+            $result.Readable | Should -BeTrue
+            $result.Paths.Contains('.claude/skills/demo/scripts/Fresh.ps1') | Should -BeFalse
+            $result.Paths.Contains('.claude/skills/demo/scripts/Shared.ps1') | Should -BeTrue
+        }
+
+        It 'says it cannot read the list when the base is not a commit' -Tag '#71' {
+            $repo = New-ChangeRepo
+
+            $result = Get-AiSdlcInstalledPath -RepoRoot $repo -Base ('0' * 40)
+
+            $result.Readable | Should -BeFalse
+            $result.Reason | Should -Match 'apm\.lock\.yaml'
+        }
+
+        It 'ignores case only on Windows' -Tag '#71' {
+            $repo = New-ChangeRepo
+            Set-Lock -Repo $repo -Deployed 'tools/run.ps1'
+            git -C $repo add -A
+            git -C $repo commit --quiet -m lock --no-verify
+            $base = (git -C $repo rev-parse HEAD).Trim()
+
+            $result = Get-AiSdlcInstalledPath -RepoRoot $repo -Base $base
+
+            $result.Paths.Contains('tools/Run.ps1') | Should -Be ([bool]$IsWindows)
+        }
+    }
 }

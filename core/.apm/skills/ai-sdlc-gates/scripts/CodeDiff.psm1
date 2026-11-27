@@ -1,7 +1,7 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Reads the C# and Razor lines a change adds, for the comment gates of the dotnet pack.
+    Reads the lines a change adds, for the comment gates of core and the doc comment gate of the dotnet pack.
 .DESCRIPTION
     Check-CommentHygiene.ps1 and Check-XmlDocs.ps1 read the change, not the tree. This module holds the
     part they share: it asks git for the diff of the working tree against the merge base of a base ref

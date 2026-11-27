@@ -47,7 +47,7 @@ param(
 $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' 'ai-sdlc-gates' 'scripts'
 if (-not (Test-Path -LiteralPath $aiSdlcGates)) { $aiSdlcGates = Join-Path $PSScriptRoot '..' '..' '..' '..' '..' '..' 'core' '.apm' 'skills' 'ai-sdlc-gates' 'scripts' }
 Import-Module (Join-Path $aiSdlcGates 'AiSdlcConfig.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'CodeDiff.psm1') -Force
+Import-Module (Join-Path $aiSdlcGates 'CodeDiff.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
 if (-not $PSBoundParameters.ContainsKey('TestRoot')) { $TestRoot = [string](Get-AiSdlcConfig -RepoRoot $RepoRoot).paths.testRoot }
