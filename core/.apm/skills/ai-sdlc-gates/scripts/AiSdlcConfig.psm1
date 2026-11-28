@@ -45,7 +45,7 @@
     next to the main checkout, so ../Knowledge is found from .claude/worktrees/<name> too.
 
 .EXAMPLE
-    'Fixes #42' -match (Get-AiSdlcStoryPattern)
+    '#42' -match (Get-AiSdlcStoryPattern)
     The story key pattern comes from tracker.keyPattern. Without one, a GitHub issue key matches:
     #42, or owner/repo#42 for an issue in another repository.
 

@@ -24,7 +24,8 @@ page or a decision record is not needed. The technical detail is on the [core pa
   what it names, such as a setting in `aisdlc.json`.
 - A shared gate does not fit your repository: set its mode in `gateModes` of your own `aisdlc.json` to
   `Advisory` or `Off`, and say why in the pull request. Every run shows the choice, and a weaker mode
-  gives a warning, so a reviewer sees it. The secret scan always stays on.
+  gives a warning, so a reviewer sees it. Three gates always run Blocking, whatever you set: the secret
+  scan, the private-terms gate and the sync manifest check.
 - You see `No-Test:`, `No-Docs:` or `No-ADR:` at the end of a commit message: that is a waiver. The agent
   states why the change needs no new test, no page or no decision record. Only `wrap-up` writes it,
   after a reviewer agent agrees with the reason. The gate prints each waiver it used.

@@ -140,7 +140,7 @@ the plan may be a few lines in this thread. Only the story file depends on size 
     number; any other push asks a person. Open the pull
     request through the pull request skill of the installed pack (`New-PullRequest.ps1` in
     `github-pull-requests`), or update the one that is open (`Update-PullRequest.ps1`). The script
-    opens it as a draft with your own `gh` login, asks Copilot for the first review, and its body says `Fixes #42`. No
+    opens it as a draft with your own `gh` login, asks Copilot for the first review, and its body says `Fixes #n`. No
     confirmation: Checkpoint Bravo is the review, not the push. Never push to `main` or `master`; the push hook
     refuses it. Check the read-back. Then add the PR URL for the story to the run's list of issue
     updates (`write-story` in update mode, github-issues pack), which the person confirms once.

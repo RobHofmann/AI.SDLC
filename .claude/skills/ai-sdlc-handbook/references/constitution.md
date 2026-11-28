@@ -80,6 +80,8 @@ clause in each session.
   `Create-GitleaksBaseline.ps1` makes a baseline for old findings that are not secrets. The scripts
   are in `.claude/skills/ai-sdlc-gates/scripts/`. The pre-flight (`run-preflight`) scans the commits of
   the branch, and a finding outside the baseline is a FAIL row, so it writes no receipt - active.
+  Where the sonarcloud pack is installed, `Check-McpToken.ps1` (blocking) fails an MCP file that holds
+  the SonarQube token or organization as a value - active.
 - **Short form:** No hardcoded secrets; use a secret store, configuration or the environment.
 
 ## C04: Test changed code, mirroring the test layout
@@ -130,10 +132,13 @@ clause in each session.
   shared composite action runs it, blocking, when the workflow passes the `coverage-file` input: an
   earlier test step writes the merged coverage file. The starter workflow of a new .NET
   repository does that. When the pre-flight has no coverage file, or no `dotnet-coverage` tool, its row is
-  a FAIL that names the fix, so it writes no receipt. Always pass the run settings when you collect coverage. The code-quality service reports the
+  a FAIL that names the fix, so it writes no receipt. A scoped local pre-flight shows the row as `N/A`;
+  `-Full` runs the ratchet. Always pass the run settings when you collect coverage. The code-quality service reports the
   >= 80% on new code; whether that blocks a merge is a setting of the repository and a team decision.
-  Where the dotnet pack is installed, `Check-StoryTraits.ps1 -Strict` (blocking) fails a test class with
-  no Story trait or with a malformed story key - active. Code review - active for "tests exist". The
+  Where the dotnet pack is installed, `Check-StoryTraits.ps1 -Strict` (blocking) fails an added test
+  class or method with no Story trait or with a malformed story key - active.
+  `Check-TestShape.ps1` (advisory) reports an xUnit test method that the change adds or edits without
+  its Arrange, Act and Assert markers in order - active. Code review - active for "tests exist". The
   line between own logic and framework behaviour is upheld in code review and by the `test-analyzer`
   and `code-reviewer` agents - active. No gate can tell own logic from wiring, so none is planned.
 - **Short form:** Changed code ships with mirrored tests that prove the team's own logic, not the
@@ -157,10 +162,14 @@ clause in each session.
   `Invoke-LocalGates.ps1`, by the pre-push hook and in the pull request workflow. It blocks a page
   that nothing links to, an isolated page (no links in and none out), a broken link, and index drift.
   A page with links in but none out is reported as advice. The local run and the
-  CI run the same checks, because a local run that differs hides a failure until merge.
+  CI run the same gate scripts, because a local run that differs hides a failure until merge. A local
+  run starts only the gates whose inputs the change touches; the pull request build runs them all.
   `Check-DocSectionRefs.ps1` blocks as well: a pointer at a section of another page, and a link anchor,
   must name a heading that is there. A decision record that a script names must exist.
   `Check-DocCoverage.ps1` blocks a missing technical or functional layer, and a unit with no page - active.
+  `Check-DocRowContent.ps1` blocks an empty doc line or table row and a template leftover, and
+  `Check-DocLastChecked.ps1` (advisory) reports a page last checked longer ago than
+  `docs.lastCheckedMaxAgeDays` - active.
   Where the dotnet pack is installed, `Check-DocDrift.ps1 -FailOnDrift` (blocking) fails a page that has
   fallen behind the code it cites. `Check-SpecDrift.ps1` (advisory) reports an endpoint that moved
   while its spec stood still. `Check-DocGraphClaims.ps1` (advisory, needs the code graph) reports a

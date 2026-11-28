@@ -14,7 +14,7 @@
 # Runs only the fast BLOCKING gates of the installed packages. That run includes Check-DocDrift.ps1
 # when the dotnet pack is installed, because its gates.json registers it as Blocking. Advisory scans
 # are left to the full local run (`pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1`) and
-# to the pull request pipeline; coverage (C09) is left to the pre-flight.
+# to the pull request pipeline; coverage (C04) is left to the pre-flight.
 # The runner reads the exit code of each gate: 1 fails the push, 2 (could not check) is a warning here,
 # because the pull request build is where it blocks, and 3 (not applicable) is shown as N/A.
 

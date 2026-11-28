@@ -66,7 +66,7 @@ is the section "A Pester test per script" of [house-style.md](references/house-s
   repository uses.
 - **One test covers one case.** Merge copies of the same case into one test, or one `It` with
   `-ForEach`.
-- **Each `It` asserts with `Should`.** An `It` with no `Should` checks nothing.
+- **Each `It` asserts with `Should`**, and a new one carries its story key as a tag (`-Tag '#42'`).
 - **Replace a cmdlet or a native tool with Pester `Mock`**, not with a new wrapper function in the
   script that exists only for the test.
 - **Test the script's own logic** (clause C04), not PowerShell, a module or the tool it calls.

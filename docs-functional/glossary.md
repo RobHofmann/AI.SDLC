@@ -21,7 +21,7 @@ The words the AI-SDLC uses, each with one plain sentence.
 - **Grilling**: the questions an agent asks, in rounds and each with a recommended answer, before it writes a story or another document. An open decision always gets a round.
 - **Handoff**: a short document that lets a fresh session go on with the work after a compact.
 - **Internal step**: a skill that other skills call and that a person does not type, such as the pre-flight.
-- **Issue key**: the number of a GitHub issue, such as `#42`, or `owner/repo#42` for an issue of another repository. A branch starts with it (`42-short-name`) and a pull request says `Fixes #42`.
+- **Issue key**: the number of a GitHub issue, such as `#42`, or `owner/repo#42` for an issue of another repository. A branch starts with it (`42-short-name`) and a pull request says `Fixes #n`.
 - **Knowledge repository**: a private repository next to the others that holds the facts about what you run, such as servers and notes. A shared file never holds such a fact.
 - **Pack**: a package for one technology, such as .NET or Bicep, that a consumer installs when it needs it.
 - **Pre-flight**: the local run of the pull request checks before a push.

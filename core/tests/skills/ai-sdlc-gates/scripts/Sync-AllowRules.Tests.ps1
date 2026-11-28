@@ -435,32 +435,59 @@ Describe 'Sync-AllowRules' {
         Test-Path -LiteralPath (Join-Path $root '.claude' 'settings.local.json') | Should -BeFalse
     }
 
-    It 'keeps settings.local.json out of git through .git/info/exclude, once' {
-        $root = New-AllowRepo -Config '{ "paths": { "knowledgeRoot": "Knowledge" } }' -Settings '{}'
-        New-Item -ItemType Directory -Path (Join-Path $root 'Knowledge') -Force | Out-Null
-        git -C $root init -q
-        git -C $root check-ignore -q --no-index -- .claude/settings.local.json
-        $LASTEXITCODE | Should -Be 1
+    Context 'the ignore rules of git, without the global or system git config of this machine' {
+        BeforeAll {
+            # A global ignore file that already covers settings.local.json would hide the exclude line, so
+            # git reads an empty global config and no system config here (#106).
+            $script:SavedGitEnv = @{}
+            foreach ($name in 'GIT_CONFIG_GLOBAL', 'XDG_CONFIG_HOME', 'GIT_CONFIG_NOSYSTEM') {
+                $script:SavedGitEnv[$name] = [Environment]::GetEnvironmentVariable($name)
+            }
+            $isolated = Join-Path ([System.IO.Path]::GetTempPath()) ('sar-git-' + [guid]::NewGuid().ToString('n'))
+            New-Item -ItemType Directory -Path (Join-Path $isolated 'xdg') -Force | Out-Null
+            $emptyConfig = Join-Path $isolated 'gitconfig'
+            New-Item -ItemType File -Path $emptyConfig -Force | Out-Null
+            $script:IsolatedGitFolder = $isolated
+            $env:GIT_CONFIG_GLOBAL = $emptyConfig
+            $env:XDG_CONFIG_HOME = Join-Path $isolated 'xdg'
+            $env:GIT_CONFIG_NOSYSTEM = '1'
+        }
+        AfterAll {
+            foreach ($name in $script:SavedGitEnv.Keys) {
+                [Environment]::SetEnvironmentVariable($name, $script:SavedGitEnv[$name])
+            }
+            Remove-Item -LiteralPath $script:IsolatedGitFolder -Recurse -Force -ErrorAction SilentlyContinue
+        }
 
-        Invoke-Sync -Root $root | Out-Null
-        Invoke-Sync -Root $root | Out-Null
+        It 'keeps settings.local.json out of git through .git/info/exclude, once' {
+            $root = New-AllowRepo -Config '{ "paths": { "knowledgeRoot": "Knowledge" } }' -Settings '{}'
+            New-Item -ItemType Directory -Path (Join-Path $root 'Knowledge') -Force | Out-Null
+            git -C $root init -q
+            $LASTEXITCODE | Should -Be 0
+            git -C $root check-ignore -q --no-index -- .claude/settings.local.json
+            $LASTEXITCODE | Should -Be 1
 
-        git -C $root check-ignore -q --no-index -- .claude/settings.local.json
-        $LASTEXITCODE | Should -Be 0
-        $exclude = Get-Content -LiteralPath (Join-Path $root '.git' 'info' 'exclude')
-        @($exclude | Where-Object { $_ -eq '/.claude/settings.local.json' }).Count | Should -Be 1
-    }
+            Invoke-Sync -Root $root | Out-Null
+            Invoke-Sync -Root $root | Out-Null
 
-    It 'adds no exclude line when an ignore rule already covers settings.local.json' {
-        $root = New-AllowRepo -Config '{ "paths": { "knowledgeRoot": "Knowledge" } }' -Settings '{}'
-        New-Item -ItemType Directory -Path (Join-Path $root 'Knowledge') -Force | Out-Null
-        git -C $root init -q
-        Set-Content -LiteralPath (Join-Path $root '.gitignore') -Value '.claude/settings.local.json'
+            git -C $root check-ignore -q --no-index -- .claude/settings.local.json
+            $LASTEXITCODE | Should -Be 0
+            $exclude = Get-Content -LiteralPath (Join-Path $root '.git' 'info' 'exclude')
+            @($exclude | Where-Object { $_ -eq '/.claude/settings.local.json' }).Count | Should -Be 1
+        }
 
-        Invoke-Sync -Root $root | Out-Null
+        It 'adds no exclude line when an ignore rule already covers settings.local.json' {
+            $root = New-AllowRepo -Config '{ "paths": { "knowledgeRoot": "Knowledge" } }' -Settings '{}'
+            New-Item -ItemType Directory -Path (Join-Path $root 'Knowledge') -Force | Out-Null
+            git -C $root init -q
+            $LASTEXITCODE | Should -Be 0
+            Set-Content -LiteralPath (Join-Path $root '.gitignore') -Value '.claude/settings.local.json'
 
-        $exclude = Get-Content -LiteralPath (Join-Path $root '.git' 'info' 'exclude') -ErrorAction SilentlyContinue
-        @($exclude | Where-Object { $_ -eq '/.claude/settings.local.json' }).Count | Should -Be 0
+            Invoke-Sync -Root $root | Out-Null
+
+            $exclude = Get-Content -LiteralPath (Join-Path $root '.git' 'info' 'exclude') -ErrorAction SilentlyContinue
+            @($exclude | Where-Object { $_ -eq '/.claude/settings.local.json' }).Count | Should -Be 0
+        }
     }
 
     It 'writes no settings.local.json when the knowledge folder is not there, or with -Check' {

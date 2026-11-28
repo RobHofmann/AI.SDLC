@@ -28,7 +28,7 @@ unit-testable without creating a real pull request (see New-PullRequest.Tests.ps
 live in PullRequestDescription.psm1, which Update-PullRequest.ps1 shares.
 
 Every rule this script applies, and the one it cannot apply for you (linking the PR to its issue
-with `Fixes #42`), is written out in the github-pull-requests skill.
+with `Fixes #n`), is written out in the github-pull-requests skill.
 Check-PrHygiene.ps1 is the build-side backstop for the same traps.
 
 .PARAMETER Title
@@ -60,7 +60,7 @@ omitted, the real `gh` CLI is used. Tests pass a fake to exercise the flow offli
 
 Make PR creation pass the description as a file and verify the read-back.
 
-Fixes #42
+Fixes #n
 
 ## Change
 
@@ -174,7 +174,7 @@ function New-PullRequest {
     Write-Information "PR $id created with verified description ($actualLength content chars). URL: $($pr.PSObject.Properties['url'].Value)" -InformationAction Continue
 
     # Back-edge reminder: a PR is an artifact of its story, so the story should show it.
-    # GitHub links the PR to its issue when the description says "Fixes #42", so the
+    # GitHub links the PR to its issue when the description says "Fixes #n", so the
     # reminder checks for that line and nudges the caller when it is missing.
     $storyKey = Get-AiSdlcBranchStoryKey -Branch $head
     $storyHint = if ($storyKey) { $storyKey } else { 'its story' }

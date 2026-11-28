@@ -24,6 +24,15 @@ The gates of the core and of the packs are on the [shared gate list](../core/.ap
 - Checks: It reads every file except `CHANGELOG.md` and the sync manifest, and fails on an old skill name from `config/retired-skill-names.txt`. It does not check a name that is not on that list. Exit 2 means the list is missing or a line in it is not a pair of names. Exit 3 means no file is left to read.
 - Fix: Replace the old skill name with its new name, as the retired list gives it.
 
+### No shared example closes an issue by a real-looking number
+
+- Clause: AI-SDLC
+- Mode: Blocking
+- Runs in: pre-push hook, pull request action, local run
+- Script: `tools/Check-ClosingKeywordExamples.ps1`
+- Checks: It reads the shared files and fails on a closing keyword such as Fixes, with a hash sign and digits after it. It skips `CHANGELOG.md`, the sync manifest and the test files. A bare mention or a branch name passes. Exit 2 means a file cannot be read, and exit 3 means no file is left to read.
+- Fix: Write the issue number as the placeholder `#n`, which GitHub never links, so a quoted example closes no issue.
+
 ### The skill list names every skill and agent of every package
 
 - Clause: AI-SDLC

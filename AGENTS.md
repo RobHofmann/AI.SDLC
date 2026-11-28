@@ -58,6 +58,9 @@ an edit of the copy. `tools/Test-Consumers.ps1` still shows a change the way a p
   `AISDLC_PRIVATE_TERMS` in CI. Here the gate runs with `-Required`, so a missing list fails. It prints
   the file, the line and the rule number, never the text. Read repository facts from `aisdlc.json`
   through `AiSdlcConfig.psm1` instead, and use made-up names in examples (`Contoso`, `contoso/portal`, `#42`).
+- **An example after a closing keyword writes the issue as `#n`**, as in `Fixes #n`, because a quoted
+  real number closes that issue. `tools/Check-ClosingKeywordExamples.ps1` blocks the build on it; the
+  rule is in `.claude/skills/ai-sdlc-handbook/references/language.md`.
 - **A pull request from a fork gets no secrets**: run `Check-PrivateTerms.ps1 -Required` on its branch before you merge it.
 - **A script lives in the `scripts/` folder of a skill**, so APM installs it with the skill. A gate
   is listed in the `gates.json` of its skill, and the runner runs only the gates of installed packs.
@@ -88,6 +91,7 @@ an edit of the copy. `tools/Test-Consumers.ps1` still shows a change the way a p
 pwsh tools/Invoke-PesterParallel.ps1                    # every test file in its own process, in parallel
 pwsh core/.apm/skills/ai-sdlc-gates/scripts/Check-PrivateTerms.ps1 -Required   # no private term anywhere
 pwsh tools/Check-RetiredSkillNames.ps1                  # no shared file names a retired skill
+pwsh tools/Check-ClosingKeywordExamples.ps1             # no shared example closes an issue by number
 pwsh tools/Update-SkillCatalog.ps1 -Check               # the skill catalog is current
 pwsh tools/Build-GateCatalog.ps1 -Check                 # the gate list pages match the gates
 pwsh tools/Update-SyncManifest.ps1 -Check               # the sync manifest is current
@@ -113,11 +117,13 @@ step. That step runs every core, pack and repo gate once. `Test-Consumers.ps1` n
 3. Add a line to `CHANGELOG.md` under the version this pull request releases, never under
    `Unreleased`. When the newest heading has no tag yet, add to it. Otherwise start a new heading
    `## vX.Y.Z - <date>`. Raise Z for a fix or a change in `tools/`. Raise Y for a new skill, gate or
-   behaviour. Raise X for a change a consumer must act on. List a step for a consumer under the exact
+   behaviour. Raise X for any change a consumer must act on. That is the chosen rule, also where upstream raises X
+   only for a full overhaul. v2.0.0 asks every consumer to act on the gate contract and the renamed
+   skills. List a step for a consumer under the exact
    line `What a consumer does when it takes this release:`, then a blank line and a list; the update
    pull request reads only that line. Set `version` in every `apm.yml` to the
    same version; `tools/Check-PackageVersion.ps1` fails the build when one differs. Then open a pull
-   request with `Fixes #42`, so the merge closes the issue. `main` only changes
+   request with `Fixes #n`, so the merge closes the issue. `main` only changes
    through a pull request with green checks; the owner's merge is the approval.
 4. A release is an annotated tag on `main` whose message names the issue, and a GitHub release on that
    tag. Write the message as `Release v1.2.0 for #42`, because git drops a line that starts with `#`. The

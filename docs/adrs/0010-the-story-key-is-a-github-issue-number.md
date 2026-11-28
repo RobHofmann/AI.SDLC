@@ -46,7 +46,7 @@ to find in text than a key with a project prefix:
 - In YAML a bare `#` starts a comment, so `story: #42` reads as an empty value (YAML spec).
 
 GitHub links `#42` to the issue in the same repository and `owner/repo#42` across repositories. A
-branch made from an issue gets the name `42-short-name`. A pull request body with `Fixes #42` closes
+branch made from an issue gets the name `42-short-name`. A pull request body with `Fixes #n` closes
 the issue on merge (GitHub docs).
 
 ## Decision
@@ -58,7 +58,7 @@ the issue on merge (GitHub docs).
 | Text | `#42`, or `owner/repo#42` across repositories |
 | Branch | `42-short-name`, also under a folder such as `feature/42-x`; a bug branch may be the bare `42` |
 | Front matter | `story: "#42"`, always quoted |
-| Pull request body | `Fixes #42`; an update pull request says `Refs owner/AI.SDLC#42` |
+| Pull request body | `Fixes #n`; an update pull request says `Refs owner/AI.SDLC#42` |
 | Test marker | `#42`, for example `[Trait("Story", "#42")]` |
 
 **2. One pattern, read through one function.** `Get-AiSdlcStoryPattern` in `AiSdlcConfig.psm1` returns
@@ -72,7 +72,7 @@ segment of the branch starts with `<digits>-`. It never matches a bare number el
 **4. Gates are kind to the YAML trap.** A gate accepts an unquoted number, `story: 42`, as `#42`. It
 reports `story:` with an empty value as an error with a `FIX:` line that says to quote the key.
 
-**5. A closed issue is done, and a person closes it.** `Fixes #42` closes the issue when the owner
+**5. A closed issue is done, and a person closes it.** `Fixes #n` closes the issue when the owner
 merges, which is the owner's act at Checkpoint Bravo. The agent never closes an issue itself (clause C09).
 
 **6. A key of another repository counts only for an accepted repository.** `tracker.acceptedRepositories`

@@ -56,6 +56,10 @@ run name is `run-name: ${{ github.workflow }} ${{ github.ref_name }} ${{ github.
   may deploy to it (deployment branch policy).
 - **Secrets live in GitHub secrets**, never in a workflow file or a file in the repository. A cloud login
   uses OpenID Connect with `id-token: write`, not a stored key.
+- **Wait on a readiness check, never on a fixed sleep.** Poll the health endpoint or the state of the
+  resource with a time limit. Then a slow start does not fail the run, and a fast one does not wait.
+- **No fixed paths.** Build each path from `github.workspace` or a step output, never from a folder
+  that exists only on one runner.
 - **Build once, deploy the artifact.** The build uploads one artifact; every deploy job downloads that
   artifact. No deploy job builds again.
 - **The pull request workflow** triggers on `pull_request` to the main branch. Its `ai-sdlc` job checks

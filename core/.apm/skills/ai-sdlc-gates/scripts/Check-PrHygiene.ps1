@@ -47,7 +47,7 @@
     pwsh .claude/skills/ai-sdlc-gates/scripts/Check-PrHygiene.ps1
 
 .EXAMPLE
-    pwsh .claude/skills/ai-sdlc-gates/scripts/Check-PrHygiene.ps1 -PrTitle "Add a field" -PrDescription "Fixes #42 ..." -PrId 17
+    pwsh .claude/skills/ai-sdlc-gates/scripts/Check-PrHygiene.ps1 -PrTitle "Add a field" -PrDescription "Refs #42 ..." -PrId 17
 #>
 [CmdletBinding()]
 param(
@@ -67,7 +67,7 @@ if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
 $storyPattern = Get-AiSdlcStoryPattern -RepoRoot $RepoRoot
 $config = Get-AiSdlcConfig -RepoRoot $RepoRoot
 $keyHint = if ($config.tracker.keyPattern) { 'story key (tracker.keyPattern)' } else { 'story key (#42)' }
-$keyExample = if ($config.tracker.keyPattern) { '' } else { ' (Fixes #42)' }
+$keyExample = if ($config.tracker.keyPattern) { '' } else { ' (Fixes #n)' }
 
 function Fail([string]$msg) { Write-Output $msg; exit 1 }
 function Unknown([string]$msg) {
