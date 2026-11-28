@@ -22,7 +22,15 @@
     "pipelinesFolder": ".github/workflows",
     "codeAnalysisPipeline": ".github/workflows/pr.yml",
     "knowledgeRoot": "../Knowledge",
-    "privateTermsFile": ""
+    "privateTermsFile": "",
+    "sourceRoots": [
+      "core",
+      "packs"
+    ],
+    "sourceExtensions": [
+      ".ps1",
+      ".psm1"
+    ]
   },
   "commands": {
     "test": "./tools/Invoke-PesterParallel.ps1 -Path core, packs, tools",

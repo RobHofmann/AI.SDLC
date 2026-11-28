@@ -250,8 +250,10 @@ Each entry names its issue, as `#42`.
     set the flag.
   - `agents.writers`. The writer list in `Check-AgentHygiene.ps1` is a security boundary. A setting in
     `aisdlc.json` would let a pull request give write tools to any agent.
-  - `paths.sourceRoots` is ported, but AI.SDLC does not set it for itself yet. Setting it would turn on
-    the completeness gate for every push here, which is the owner's call.
+  - `paths.sourceRoots` is ported.
+- AI.SDLC sets `paths.sourceRoots` to `core` and `packs` in its own `aisdlc.json`, with `.ps1` and
+  `.psm1` as source files (#104). So the completeness gate now runs on every push here. A changed
+  script under `.apm/` needs a changed test in the mirrored folder under its package `tests/`.
 - Every allow rule for a script names that script exactly (security, #103). `Sync-AllowRules.ps1`
   writes a rule for each gate as its entry runs it: the exact script and the exact arguments, with no
   star. So every gate runs without a prompt, and `Sync-AllowRules.ps1` itself runs without one only
