@@ -98,7 +98,7 @@ $script:TestConfig = [ordered]@{
                 reason = 'Cosmos partition key path /userId. A partition key path is fixed for the life of the container.'
             }
         )
-        portalAppComponent     = 'Demo/src/Portal.Demo/Components/App.razor'
+        appComponent           = 'Demo/src/Portal.Demo/Components/App.razor'
     }
 }
 

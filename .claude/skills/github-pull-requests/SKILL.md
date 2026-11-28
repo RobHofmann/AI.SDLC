@@ -48,6 +48,8 @@ only. Both are in [the pull request path and the Copilot review](references/pr-p
 - The helper opens the pull request as a draft (`gh pr create --draft`) and puts a `## Before you publish`
   block at the top of the description, once. The block tells the person to read and test the change
   before they publish it. Only the person publishes the draft, with Ready for review (ADR 0024).
+  Do not write that block in the description you pass. The helper removes every `## Before you publish`
+  section of the caller, whatever its text, and adds the standard one once.
 - The helper passes the description as a file (`gh pr create --body-file <file>`). It reads the PR back
   with `gh pr view --json`, and throws on a lost line, a cut-off or an empty description.
 - Right after the create, the helper asks Copilot for the first review with `Request-CopilotReview.ps1

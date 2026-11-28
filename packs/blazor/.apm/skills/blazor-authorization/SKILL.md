@@ -20,7 +20,7 @@ themselves when they review a security-relevant diff without agents.
 
 ## When it applies
 
-- the portal's `Routes.razor`, or its `App.razor` (`dotnet.portalAppComponent` in aisdlc.json)
+- the app's `Routes.razor`, or its `App.razor` (`dotnet.appComponent` in aisdlc.json)
 - any `*.razor` with `@attribute [Authorize`
 - any authorization requirement or its handler, usually in a shared security project under the source
   root (`paths.sourceRoot`)

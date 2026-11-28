@@ -196,8 +196,23 @@ function ConvertTo-GateCommandArgument {
     return (@($parts) -join ' ')
 }
 
+function ConvertTo-ShellRule {
+    # A package entry becomes a Bash and a PowerShell rule, unless it already names its shell.
+    param([string]$Entry)
+    if ($Entry -match '^(Bash|PowerShell)\(.+\)$') { return @($Entry) }
+    return @("Bash($Entry)", "PowerShell($Entry)")
+}
+
 $wanted = [System.Collections.Generic.List[string]]::new()
+$wantedAsk = [System.Collections.Generic.List[string]]::new()
+$retiredRules = [System.Collections.Generic.List[string]]::new()
 $refused = [System.Collections.Generic.List[string]]::new()
+# A rule that a release retired is never written again, also when an older pack still lists it (#108).
+foreach ($package in $packages) {
+    foreach ($entry in @($package.RetiredAllow)) {
+        foreach ($rule in (ConvertTo-ShellRule -Entry ([string]$entry))) { if (-not $retiredRules.Contains($rule)) { $retiredRules.Add($rule) } }
+    }
+}
 foreach ($package in $packages) {
     $entries = [System.Collections.Generic.List[string]]::new()
     # Each gate runs without a prompt, as its gate entry runs it: the exact script and the exact
@@ -219,8 +234,14 @@ foreach ($package in $packages) {
             if (-not $refused.Contains($entry)) { $refused.Add($entry) }
             continue
         }
-        $rules = if ($entry -match '^(Bash|PowerShell)\(.+\)$') { @($entry) } else { @("Bash($entry)", "PowerShell($entry)") }
-        foreach ($rule in $rules) { if (-not $wanted.Contains($rule)) { $wanted.Add($rule) } }
+        foreach ($rule in (ConvertTo-ShellRule -Entry $entry)) {
+            if (-not $wanted.Contains($rule) -and -not $retiredRules.Contains($rule)) { $wanted.Add($rule) }
+        }
+    }
+    # An ask rule prompts even where an allow rule matches, so it narrows a wide allow rule, such as the
+    # push of a story branch, back to the one form that is safe.
+    foreach ($entry in @($package.Ask)) {
+        foreach ($rule in (ConvertTo-ShellRule -Entry ([string]$entry))) { if (-not $wantedAsk.Contains($rule)) { $wantedAsk.Add($rule) } }
     }
 }
 foreach ($entry in $refused) {
@@ -241,9 +262,34 @@ if (Test-Path -LiteralPath $settingsPath -PathType Leaf) {
     }
 }
 $allowed = @(if ($settings['permissions'] -and $settings['permissions']['allow']) { $settings['permissions']['allow'] })
-$missing = @($wanted | Where-Object { $_ -notin $allowed })
+$asked = @(if ($settings['permissions'] -and $settings['permissions']['ask']) { $settings['permissions']['ask'] })
+$missing = @($wanted | Where-Object { $_ -cnotin $allowed })
+$missingAsk = @($wantedAsk | Where-Object { $_ -cnotin $asked })
 # Only a shell rule runs a script, so a Read or Edit rule under .claude/skills is left alone.
 $wildcards = @($allowed | Where-Object { [string]$_ -match '^(?:Bash|PowerShell)\(' -and [string]$_ -match $scriptsWildcard })
+$retiredFound = @($allowed | Where-Object { [string]$_ -cin $retiredRules })
+# A push rule that no package wrote, such as one of the repository or of an old release, may let a push
+# reach the main branch without a prompt. The ask rules narrow only the push rules of the packages (#108).
+$widePush = @($allowed | Where-Object { [string]$_ -cnotin $wanted -and [string]$_ -cnotin $retiredFound -and [string]$_ -match '^(?:Bash|PowerShell)\(\s*git\s+(?:-C\s+\S+\s+)?push\b' })
+
+# A rule that names the folder of a skill a release retired, .claude/skills/<old>/, runs a script that is
+# gone. The installed sync manifest lists the retired names. A folder of that name that is still there
+# keeps its rules.
+$retiredSkills = @()
+$manifestPath = Join-Path $SkillsRoot 'ai-sdlc-gates' 'sync-manifest.json'
+if (Test-Path -LiteralPath $manifestPath -PathType Leaf) {
+    try {
+        $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json -AsHashtable
+        if ($manifest.Contains('retired') -and $manifest['retired']) { $retiredSkills = @($manifest['retired'].Keys) }
+    }
+    catch { Write-Host "Rules of retired skills not checked: $manifestPath is not valid JSON." -ForegroundColor Yellow }
+}
+$stale = @($allowed | Where-Object {
+        $rule = [string]$_
+        $rule -cnotin $wanted -and @([regex]::Matches($rule, '\.claude/skills/(?<skill>[A-Za-z0-9_.-]+)/') | Where-Object {
+                $_.Groups['skill'].Value -in $retiredSkills -and -not (Test-Path -LiteralPath (Join-Path $SkillsRoot $_.Groups['skill'].Value))
+            }).Count -gt 0
+    })
 
 if (-not $Check) { Sync-KnowledgeDirectory }
 
@@ -252,8 +298,9 @@ if ($packages.Count -eq 0) {
     exit 3
 }
 
-if ($missing.Count -eq 0 -and $wildcards.Count -eq 0) {
-    Write-Host "Allow rules OK: .claude/settings.json holds the $($wanted.Count) rule(s) of $($packages.Count) installed package part(s), and no rule ends in a wildcard over a scripts folder."
+$drift = $missing.Count + $missingAsk.Count + $wildcards.Count + $retiredFound.Count + $widePush.Count
+if ($drift -eq 0 -and $stale.Count -eq 0) {
+    Write-Host "Allow rules OK: .claude/settings.json holds the $($wanted.Count) allow rule(s) and $($wantedAsk.Count) ask rule(s) of $($packages.Count) installed package part(s), no retired rule, and no rule that ends in a wildcard over a scripts folder."
     exit 0
 }
 
@@ -262,18 +309,40 @@ if ($Check) {
         Write-Host "Allow rules: .claude/settings.json misses $($missing.Count) rule(s) of the installed packages:" -ForegroundColor Red
         foreach ($rule in $missing) { Write-Host "  $rule" }
     }
+    if ($missingAsk.Count -gt 0) {
+        Write-Host "Allow rules: permissions.ask in .claude/settings.json misses $($missingAsk.Count) ask rule(s), so an allow rule next to them lets a wider command run without a prompt:" -ForegroundColor Red
+        foreach ($rule in $missingAsk) { Write-Host "  $rule" }
+    }
     if ($wildcards.Count -gt 0) {
         Write-Host "Allow rules: .claude/settings.json holds $($wildcards.Count) rule(s) that end in a wildcard over a scripts folder, so a new script there runs without a prompt:" -ForegroundColor Red
         foreach ($rule in $wildcards) { Write-Host "  $rule" }
     }
+    if ($retiredFound.Count -gt 0) {
+        Write-Host "Allow rules: .claude/settings.json holds $($retiredFound.Count) retired rule(s) that let a wide command run without a prompt, such as a push to the main branch:" -ForegroundColor Red
+        foreach ($rule in $retiredFound) { Write-Host "  $rule" }
+    }
+    if ($widePush.Count -gt 0) {
+        Write-Host "Allow rules: .claude/settings.json holds $($widePush.Count) push rule(s) that no package wrote, so a push may reach the main branch without a prompt. Remove them by hand:" -ForegroundColor Red
+        foreach ($rule in $widePush) { Write-Host "  $rule" }
+    }
+    if ($stale.Count -gt 0) {
+        Write-Host "Allow rules: .claude/settings.json also holds $($stale.Count) rule(s) of retired skills, which a run without -Check removes:"
+        foreach ($rule in $stale) { Write-Host "  $rule" }
+    }
+    if ($drift -eq 0) { exit 0 }
     Write-Host 'FIX: Run pwsh .claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1 and commit .claude/settings.json.' -ForegroundColor Red
     exit 1
 }
 
+foreach ($rule in $widePush) {
+    Write-Host "Allow rule kept, remove it by hand: '$rule' is a push rule that no package wrote, so a push may reach the main branch without a prompt." -ForegroundColor Yellow
+}
 if (-not $settings['permissions']) { $settings['permissions'] = [ordered]@{} }
-$settings['permissions']['allow'] = @($allowed | Where-Object { $_ -cnotin $wildcards }) + $missing
+$settings['permissions']['allow'] = @($allowed | Where-Object { $_ -cnotin $wildcards -and $_ -cnotin $retiredFound -and $_ -cnotin $stale }) + $missing
+if ($wantedAsk.Count -gt 0 -or $asked.Count -gt 0) { $settings['permissions']['ask'] = @($asked) + $missingAsk }
 New-Item -ItemType Directory -Path (Split-Path -Parent $settingsPath) -Force | Out-Null
 $json = (ConvertTo-Json -InputObject $settings -Depth 20) -replace "`r`n", "`n"
 [IO.File]::WriteAllText($settingsPath, "$json`n", [Text.UTF8Encoding]::new($false))
-Write-Host "Allow rules written: added $($missing.Count) rule(s) of the installed packages to .claude/settings.json, and removed $($wildcards.Count) rule(s) that end in a wildcard over a scripts folder. Commit that file."
+Write-Host ("Allow rules written: added $($missing.Count) allow rule(s) and $($missingAsk.Count) ask rule(s) of the installed packages to .claude/settings.json. " +
+    "It removed $($wildcards.Count) rule(s) that end in a wildcard over a scripts folder, $($retiredFound.Count) retired rule(s) and $($stale.Count) rule(s) of retired skills. Commit that file.")
 exit 0

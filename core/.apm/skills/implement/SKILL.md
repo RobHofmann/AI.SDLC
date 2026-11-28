@@ -115,8 +115,8 @@ the plan may be a few lines in this thread. Only the story file depends on size 
      and `test-analyzer`. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in
      Copilot), and each reads the convention skills of the changed files from the table in
      `code-conventions`. Add `security-reviewer` on Opus 5.5 (model `opus` in Claude Code,
-     `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC, secrets, network access, outbound
-     calls, JS interop or request logging.
+     `claude-opus-5.5` in Copilot) when the diff touches a security area, as
+     [the review step of orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md) lists them.
 
    Keep the reports apart: never merge or rerank them into one list. If you cannot run agents, do both
    reviews yourself. Answer the three questions of the `spec-reviewer` agent as one report. Then load
@@ -135,7 +135,9 @@ the plan may be a few lines in this thread. Only the story file depends on size 
    `run-preflight` on that commit, so a green run writes the receipt `temp/preflight/<tree>.json`. Do
    not run any of those steps here, before or after it: a second commit has no receipt, and the push
    hook refuses it.
-9. **Push, pull request.** Push the story branch that `wrap-up` committed. Open the pull
+9. **Push, pull request.** Push the story branch that `wrap-up` committed, with
+    `git push origin <branch>`. That form runs without a prompt for a branch that starts with the story
+    number; any other push asks a person. Open the pull
     request through the pull request skill of the installed pack (`New-PullRequest.ps1` in
     `github-pull-requests`), or update the one that is open (`Update-PullRequest.ps1`). The script
     opens it as a draft with your own `gh` login, asks Copilot for the first review, and its body says `Fixes #42`. No

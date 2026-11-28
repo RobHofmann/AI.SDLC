@@ -121,7 +121,7 @@ Use `api-contract-conventions` when a change affects a controller, route, reques
 
 JSON bodies use PascalCase under `DOTNET-01`. Query and path parameters use snake_case.
 
-Controllers stay thin and cover one domain each. Successful business results use `200`, while real errors use `ProblemDetails`.
+Controllers stay thin and cover one domain each. A response uses its standard status code, such as `200`, `201` with a `Location` header or `204`, and a real error uses `ProblemDetails` ([ADR 0029](../adrs/0029-standard-status-codes.md)).
 
 Move the OpenAPI spec under `specs/` when its endpoint moves.
 

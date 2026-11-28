@@ -7,7 +7,7 @@ description: >
   Checkpoint Bravo, from write-docs, which wrap-up runs for implement, refactor and the other loops. It reads and runs the doc
   gates in check mode; it never edits a page and never gives a verdict.
 model: sonnet
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, PowerShell
 skills:
   - docs-wiki-conventions
 ---

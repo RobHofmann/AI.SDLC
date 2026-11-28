@@ -79,8 +79,9 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
 - `allow` lists the commands the skills of the package run. `Sync-AllowRules.ps1` writes each one into
   `.claude/settings.json` as a `Bash(...)` and a `PowerShell(...)` rule; an entry that names its shell is
   written as it is. Each gate gets a rule with its exact arguments and no star. A rule names its script
-  exactly: no `scripts/Check-*`, no whole shell. The advisory core gate runs it with `-Check`; the
-  handbook page `layout.md` has the full rule.
+  exactly: no `scripts/Check-*`, no whole shell. `ask` lists commands that always ask, and
+  `retiredAllow` lists rules that a release took back. The advisory core gate runs it with `-Check`;
+  the handbook page `layout.md` has the full rule.
 
 ## Exit codes
 

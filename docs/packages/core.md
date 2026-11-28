@@ -173,9 +173,9 @@ through `Get-AiSdlcMainBranch` in `AiSdlcConfig.psm1`. It falls back to `origin/
 `origin/HEAD` when that ref is not in the clone. `ChangedFiles.psm1` lists the files a change touched, for
 every gate that judges the change.
 
-`Invoke-Gate.ps1` runs one gate script in GitHub Actions or locally and produces a clear result.
+`Invoke-Gate.ps1` runs one gate script in GitHub Actions or locally and produces a clear result. It is Blocking when `-Mode` is not given, so a step that forgets the mode cannot hide a finding.
 
-`Invoke-PesterGate.ps1` runs Pester tests under the supplied paths.
+`Invoke-PesterGate.ps1` runs Pester tests under the supplied paths. An agent that runs it directly gets a prompt, because it would run any test file. The runners call it without a prompt ([the allow rules in layout.md](../../core/.apm/skills/ai-sdlc-handbook/references/layout.md)).
 
 ### Documentation tools
 
@@ -257,7 +257,7 @@ GitHub Copilot ignores the `if` field of a hook and runs every hook entry in tur
 
 `Invoke-AutolearnHook.ps1` flags a correction and asks for `capture-learning`. When the user only asks the agent to update its advice, it adds a softer note with two lesson questions and no flag. Its phrase lists are tested with their "no" forms too. On the first prompt of a session it counts the open lesson proposals in `temp/autolearn/pending.md`, and never shows their text.
 
-`Sync-AllowRules.ps1` writes the commands that each installed package lists under `allow` in its `gates.json` into `.claude/settings.json`. It also writes a rule for each gate with the exact script and arguments of its entry, and no star. So `Sync-AllowRules.ps1` runs without a prompt only with `-Check`. It never writes a rule with a star glued to a file name in a scripts folder, such as `scripts/Check-*`. Such a rule would also let a new script run without a prompt. It removes such a rule that an older release wrote, and `-Check` reports one. It also writes the full path of the knowledge folder into `permissions.additionalDirectories` of `.claude/settings.local.json`, which stays on one machine. It does so only for a folder below the parent folder of the repository that no link leads to. Any other knowledge folder is skipped with a FIX line. `Initialize-AiSdlc.ps1` and `Update-AiSdlc.ps1` run it, and an advisory gate runs it with `-Check`.
+`Sync-AllowRules.ps1` writes the commands that each installed package lists under `allow` in its `gates.json` into `.claude/settings.json`. It also writes a rule for each gate with the exact script and arguments of its entry, and no star. So `Sync-AllowRules.ps1` runs without a prompt only with `-Check`. It never writes a rule with a star glued to a file name in a scripts folder, such as `scripts/Check-*`. Such a rule would also let a new script run without a prompt. It removes such a rule that an older release wrote, and `-Check` reports one. It writes the `ask` list of a package into `permissions.ask`, so a story branch push runs without a prompt and any other push asks. It removes each rule of a `retiredAllow` list, such as `git push origin *`, and each rule of a retired skill folder. The runner rules name their exact arguments. It also writes the full path of the knowledge folder into `permissions.additionalDirectories` of `.claude/settings.local.json`, which stays on one machine. It does so only for a folder below the parent folder of the repository that no link leads to. Any other knowledge folder is skipped with a FIX line. `Initialize-AiSdlc.ps1` and `Update-AiSdlc.ps1` run it, and an advisory gate runs it with `-Check`.
 
 `Sync-AgentsFile.ps1`, which `Update-AiSdlc.ps1` runs, moves a root `CLAUDE.md` that only imports `AGENTS.md` to `.claude/CLAUDE.md`. Copilot reads a root `CLAUDE.md` and its import, so it loaded `AGENTS.md` twice.
 

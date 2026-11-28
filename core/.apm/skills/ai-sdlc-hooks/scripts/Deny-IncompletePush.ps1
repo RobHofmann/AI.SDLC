@@ -672,8 +672,10 @@ if (-not $ReceiptRoot -and $targetInstalls) {
         $ReceiptRoot = Join-Path $targetRoot $receiptFolder
     }
     catch {
-        Write-Deny ('This push is refused because aisdlc.json cannot be read as AI-SDLC settings (it is not valid JSON, ' +
-            'or it is not a settings object with paths.preflightReceipts). Fix aisdlc.json, commit, and push again.')
+        $why = @("$($_.Exception.Message)" -split '\r?\n' | Where-Object { $_.Trim() })[0]
+        Write-Deny ('This push is refused because aisdlc.json cannot be read as AI-SDLC settings. ' +
+            'It may not be valid JSON, it may miss paths.preflightReceipts, or it may name a source folder outside the repository. ' +
+            "The reason: $why. Fix aisdlc.json, commit, and push again.")
         exit 0
     }
 }

@@ -448,3 +448,84 @@ Describe 'Test-Consumers -Upgrade' {
         $r.ApmCalls | Should -BeNullOrEmpty
     }
 }
+Describe 'The settings of the test consumers' {
+    BeforeAll {
+        $script:Repo = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
+        $script:GateNames = @(Get-ChildItem -Path (Join-Path $script:Repo 'core'), (Join-Path $script:Repo 'packs') -Recurse -Force -Filter gates.json -File |
+                Where-Object { $_.FullName -match '[\\/]\.apm[\\/]skills[\\/][^\\/]+[\\/]gates\.json$' } |
+                ForEach-Object { @((Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json -AsHashtable)['gates']) } |
+                Where-Object { $_ } | ForEach-Object { [string]$_['name'] })
+        $script:Configs = @(Get-ChildItem -LiteralPath (Join-Path $script:Repo 'test-consumers') -Directory | ForEach-Object {
+                $file = Join-Path $_.FullName 'aisdlc.json'
+                if (Test-Path -LiteralPath $file) { [pscustomobject]@{ Name = $_.Name; Config = (Get-Content -LiteralPath $file -Raw | ConvertFrom-Json -AsHashtable) } }
+            })
+    }
+
+    It 'names only gates that exist in gateModes, because an unknown name is ignored without a word' -Tag '#105' {
+        $unknown = foreach ($consumer in $script:Configs) {
+            foreach ($name in @(if ($consumer.Config['gateModes']) { $consumer.Config['gateModes'].Keys })) {
+                if ($name -cnotin $script:GateNames) { "$($consumer.Name): $name" }
+            }
+        }
+        @($unknown) | Should -BeNullOrEmpty
+    }
+
+    It 'runs the layer gate as Blocking in a consumer that sets dotnet.layers, also over every reference' -Tag '#105' {
+        $layerGate = 'A project reference that the change adds points to a lower layer of `dotnet.layers`'
+        $consumer = @($script:Configs | Where-Object { $_.Config['dotnet'] -and $_.Config['dotnet']['layers'] -and $_.Config['gateModes'] -and $_.Config['gateModes'][$layerGate] -eq 'Blocking' })
+        $consumer.Count | Should -BeGreaterThan 0
+        $all = @($consumer[0].Config['repoGates'] | Where-Object { $_['script'] -like '*/Check-ProjectLayerOrder.ps1' -and $_['mode'] -eq 'Blocking' -and $_['args']['All'] })
+        $all.Count | Should -Be 1 -Because 'a test consumer has no base branch, so only -All judges the references for real'
+    }
+
+    Context 'the fixtures pass the gate they are set up for, and a broken copy fails it' {
+        BeforeAll {
+            $script:Pwsh = Join-Path $PSHOME ($IsWindows ? 'pwsh.exe' : 'pwsh')
+            $script:LayerGate = Join-Path $script:Repo 'packs' 'dotnet' '.apm' 'skills' 'dotnet-gates' 'scripts' 'Check-ProjectLayerOrder.ps1'
+            $script:BicepGate = Join-Path $script:Repo 'packs' 'bicep' '.apm' 'skills' 'bicep-conventions' 'scripts' 'Check-BicepConventions.ps1'
+            function Copy-Fixture {
+                param([string]$Name)
+                $copy = Join-Path ([IO.Path]::GetTempPath()) ('tc-fixture-' + [guid]::NewGuid().ToString('n'))
+                Copy-Item -LiteralPath (Join-Path $script:Repo 'test-consumers' $Name) -Destination $copy -Recurse
+                return $copy
+            }
+        }
+
+        It 'passes the layer gate over every reference of the full consumer, and fails a reference that points up' -Tag '#105' {
+            & $script:Pwsh -NoProfile -File $script:LayerGate -RepoRoot (Join-Path $script:Repo 'test-consumers' 'full') -All *> $null
+            $LASTEXITCODE | Should -Be 0
+
+            $copy = Copy-Fixture -Name 'full'
+            try {
+                $api = Join-Path $copy 'src' 'Api' 'Api.csproj'
+                $reference = '  <ItemGroup>' + "`n" + '    <ProjectReference Include="..\Web\Web.csproj" />' + "`n" + '  </ItemGroup>' + "`n" + '</Project>'
+                (Get-Content -LiteralPath $api -Raw).Replace('</Project>', $reference) | Set-Content -LiteralPath $api -NoNewline
+                & $script:Pwsh -NoProfile -File $script:LayerGate -RepoRoot $copy -All *> $null
+                $LASTEXITCODE | Should -Be 1
+            }
+            finally { Remove-Item -LiteralPath $copy -Recurse -Force -ErrorAction SilentlyContinue }
+        }
+
+        It 'passes the role ID gate on the platform consumer, and fails a role ID typed in a template' -Tag '#105' {
+            & $script:Pwsh -NoProfile -File $script:BicepGate -RepoRoot (Join-Path $script:Repo 'test-consumers' 'platform') -Rule RoleId *> $null
+            $LASTEXITCODE | Should -Be 0
+
+            $copy = Copy-Fixture -Name 'platform'
+            try {
+                Add-Content -LiteralPath (Join-Path $copy 'infra' 'main.bicep') -Value "`nvar typed = 'acdd72a7-3385-48ef-bd42-f606fba81ae7'"
+                & $script:Pwsh -NoProfile -File $script:BicepGate -RepoRoot $copy -Rule RoleId *> $null
+                $LASTEXITCODE | Should -Be 1
+            }
+            finally { Remove-Item -LiteralPath $copy -Recurse -Force -ErrorAction SilentlyContinue }
+        }
+    }
+
+    It 'runs the role ID gate as Blocking in a consumer that sets bicep.roleLookupFiles, with a lookup file that exists' -Tag '#105' {
+        $roleGate = 'Role IDs come from the lookup files that aisdlc.json names'
+        $consumer = @($script:Configs | Where-Object { $_.Config['bicep'] -and $_.Config['bicep']['roleLookupFiles'] -and $_.Config['gateModes'] -and $_.Config['gateModes'][$roleGate] -eq 'Blocking' })
+        $consumer.Count | Should -BeGreaterThan 0
+        foreach ($file in @($consumer[0].Config['bicep']['roleLookupFiles'])) {
+            Join-Path $script:Repo 'test-consumers' $consumer[0].Name $file | Should -Exist
+        }
+    }
+}

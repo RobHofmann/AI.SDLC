@@ -82,8 +82,8 @@ From the start to the open pull request the work runs on its own, as
    `test-analyzer`. Both run on Sonnet 5.5 (model `sonnet` in Claude Code, `claude-sonnet-5.5` in
    Copilot), and each reads the convention skills of the changed files from the table in
    `code-conventions`. Add `security-reviewer` on Opus 5.5 (model `opus` in Claude Code,
-   `claude-opus-5.5` in Copilot) when the diff touches auth, RBAC, secrets, network access, outbound
-   calls, JS interop or request logging. If you cannot run agents, review the diff yourself. Load
+   `claude-opus-5.5` in Copilot) when the diff touches a security area, as
+   [the review step of orchestration.md](/.claude/skills/ai-sdlc-handbook/references/orchestration.md) lists them. If you cannot run agents, review the diff yourself. Load
    [code-conventions](/.claude/skills/code-conventions/SKILL.md), the convention skills of the changed
    files and each topic skill that fits, such as `blazor-authorization`.
    A refactor keeps the behaviour, so it runs no `spec-reviewer`. Fix each finding or decline it with a reason, and run the checks again. A finding tagged
@@ -94,7 +94,7 @@ From the start to the open pull request the work runs on its own, as
    `write-docs` (with the `docs-reviewer` agent) when the move changed a name a docs page cites, and the
    ADR check through `write-adr`. It runs the lessons step, commits, and runs `run-preflight` on that
    commit until it is green, which writes the receipt the push hook asks for. Do not run any of those
-   steps here. Then push the story branch, and open or update the pull request with the evidence record as its
+   steps here. Then push the story branch with `git push origin <branch>`, and open or update the pull request with the evidence record as its
    description. This runs on its own and with no prompt, through the pull request skill of the
    installed pack (`github-pull-requests`). Use `New-PullRequest.ps1` for a new pull request, or
    `Update-PullRequest.ps1` for one that is open. Never

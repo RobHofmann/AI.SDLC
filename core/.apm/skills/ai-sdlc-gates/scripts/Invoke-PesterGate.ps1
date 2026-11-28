@@ -11,8 +11,13 @@
 
         "repoGates": [
           { "name": "Repository script tests", "script": ".claude/skills/ai-sdlc-gates/scripts/Invoke-PesterGate.ps1",
-            "clause": "C04", "mode": "Blocking", "args": { "Path": [ "tools" ] } }
+            "clause": "C04", "mode": "Blocking", "args": { "Path": [ "tools" ] },
+            "checks": "It runs every Pester test file under `tools/`, and it fails when a test fails. Exit 2 means Pester 5 is missing, the folder does not exist, or it holds no test.",
+            "fix": "Run the failing test locally with Invoke-Pester, then fix the script or the test." }
         ]
+
+    Every entry needs a "checks" text and a "fix" text; Invoke-LocalGates.ps1 does not run an entry
+    without both.
 
     The tests then run in the pre-push hook (for a Blocking gate), in the pull request pipeline and in a
     local run, like every other gate. It prints each failed test indented as "file:line  name", which is

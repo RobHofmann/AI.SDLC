@@ -23,16 +23,10 @@ module vnet 'br/modules:network/virtualnetworks:2024.01.18.2-main' = { ... }
 
 ## A deployment name stays within 64 characters
 
-Azure stops a deployment whose name is longer than 64 characters. A module name made from the parent
-deployment name and a resource group name can grow past that. So cut both parts:
-
-```bicep
-name: format('{0}-{1}', take('${deployment().name}', 45), take(resourceGroupName, 15))
-```
-
-The two parts and the hyphen give at most 61 characters. The deployment-name rule in
-[house-style.md](house-style.md) joins this one: a helper, or the inline form from `deployment().name`,
-must keep the name within the same 64 characters.
+Azure stops a deployment whose name is longer than 64 characters, and a fixed name makes two runs share
+one deployment history. There is one form: the helper that `bicep.deploymentNameHelper` names, or the
+inline form from `deployment().name` with a fixed module suffix. The deployment-name rule in
+[house-style.md](house-style.md) holds both and how to cut them.
 
 ## Resource names follow one pattern
 

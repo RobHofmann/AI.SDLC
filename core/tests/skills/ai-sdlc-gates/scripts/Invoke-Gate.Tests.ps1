@@ -67,6 +67,13 @@ Describe 'Invoke-Gate' {
         $r.Output | Should -Not -Match '##vso'
     }
 
+    It 'is Blocking when -Mode is not given, so a finding fails the build' -Tag '#105' {
+        $gate = New-FakeGate -Root $script:Root -ExitCode 1
+        $out = & $script:ScriptUnderTest -Script $gate -Clause 'C99' -What 'a test rule' *>&1 | Out-String
+        $LASTEXITCODE | Should -Be 1
+        $out | Should -Match '(?m)^::error title=a test rule::'
+    }
+
     It 'includes the clause and label in the annotation' {
         $gate = New-FakeGate -Root $script:Root -ExitCode 1
         $r = Invoke-Wrapper -Gate $gate -Mode 'Blocking'

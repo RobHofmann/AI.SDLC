@@ -21,15 +21,20 @@ sits in the `## Constitution (dotnet)` part of `AGENTS.md`.
   goes through `dotnet.wireNameAllowlist` in `aisdlc.json`, and every entry carries the reason. Drift
   between the code and the OpenAPI spec is not covered by this gate.
 
-## DOTNET-02: Controllers are thin, one domain each, and only an error is non-200
+## DOTNET-02: Controllers are thin, one domain each, and status codes keep their standard meaning
 
 - **Statement:** A controller composes IDs, calls services, and returns responses; business logic lives
-  in services. One domain per controller. A business result that is not an error returns 200 with the
-  result in the body; a non-200 code is kept for real errors, through `ProblemDetails`.
-- **Rationale:** It keeps the API surface the same everywhere. It also keeps the error handling of
-  every client reliable, because a client can treat any non-200 answer as an error.
+  in services. One domain per controller. A response uses the standard HTTP status code: 200 for a
+  read, 201 with a `Location` header for a create, 204 for a success without a body. A real error goes
+  through `ProblemDetails`, such as 400 for invalid input, 404 for an unknown resource in the URL and
+  409 for a conflict with the current state. A result that the caller expects, such as "already gone",
+  is a success and never a 4xx.
+- **Rationale:** Every HTTP client and tool reads the standard codes the same way (RFC 9110). A client
+  still handles every error in one place, because every error, and only an error, is a 4xx or 5xx with
+  `ProblemDetails`.
 - **Enforcement:** code review - active. The detail is in [api.md](api.md) and in the
-  [api-contract-conventions skill](../SKILL.md).
+  [api-contract-conventions skill](../SKILL.md). ADR 0029 of AI.SDLC holds the reasons for the status
+  codes.
 
 ## DOTNET-03: A project reference is used in code and points to a lower layer
 

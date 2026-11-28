@@ -4,9 +4,9 @@ kind: knowledge
 user-invocable: false
 description: >
   The code rules for every language, written once: reuse before you build, build only what the story
-  needs, two scope cases, comments that say why (C10), no new warning, the convention skill of each
+  needs, two scope cases, a split for a big story, comments that say why (C10), no new warning, the convention skill of each
   file type and one severity scale for every reviewer. Use when writing, planning or reviewing code in
-  any language, at the plan, build and review steps. Do NOT use for the rules of one language (its
+  any language. Do NOT use for the rules of one language (its
   convention skill) or to run the gates (run-preflight).
 ---
 
@@ -35,6 +35,14 @@ page wins.
 2. **A finding has nothing to do with the story.** Draft a new story for it and leave the code alone.
    An agent that cannot write work items puts the draft in its report, and the calling skill hands it
    to `write-story`.
+
+## Small pull requests
+
+One story makes one pull request. Before the build starts, the builder checks the size of the story.
+A story with more than 5 acceptance criteria is too big (ADR 0023 of AI.SDLC). So is a plan whose parts
+can each ship and be reviewed on their own. In an older story that keeps the old form, the limit is 8.
+Then the builder proposes a split and builds nothing until a person decides. `Check-PrSize.ps1` warns
+above `pullRequest.sizeLimit` in `aisdlc.json`; no line count stops a build.
 
 ## While you write
 

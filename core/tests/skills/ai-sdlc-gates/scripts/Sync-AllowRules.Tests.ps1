@@ -169,6 +169,144 @@ Describe 'Sync-AllowRules' {
         $result.Settings.permissions.allow.Count | Should -Be 3
     }
 
+    Context 'ask rules, which prompt even when an allow rule matches' {
+        BeforeAll {
+            $script:AskManifest = @{ 'ai-sdlc-gates' = @{ package = 'core'; allow = @('git push origin 1*'); ask = @('git push origin * *') } }
+        }
+
+        It 'writes each ask entry of an installed package into permissions.ask, in both shells' -Tag '#108' {
+            $root = New-AllowRepo -Manifests $script:AskManifest
+
+            $result = Invoke-Sync -Root $root
+
+            $result.Code | Should -Be 0
+            $result.Settings.permissions.allow | Should -Be @('Bash(git push origin 1*)', 'PowerShell(git push origin 1*)')
+            $result.Settings.permissions.ask | Should -Be @('Bash(git push origin * *)', 'PowerShell(git push origin * *)')
+        }
+
+        It 'fails the check when an ask rule is missing, because the allow rule next to it is then too wide' -Tag '#108' {
+            $settings = '{ "permissions": { "allow": [ "Bash(git push origin 1*)", "PowerShell(git push origin 1*)" ] } }'
+            $root = New-AllowRepo -Manifests $script:AskManifest -Settings $settings
+
+            $result = Invoke-Sync -Root $root -Check
+
+            $result.Code | Should -Be 1
+            $result.Output | Should -Match ([regex]::Escape('Bash(git push origin * *)'))
+            $result.Settings.permissions.Contains('ask') | Should -BeFalse
+        }
+
+        It 'keeps the ask rules the repository added' -Tag '#108' {
+            $settings = '{ "permissions": { "ask": [ "Bash(rm *)" ] } }'
+            $root = New-AllowRepo -Manifests $script:AskManifest -Settings $settings
+
+            (Invoke-Sync -Root $root).Settings.permissions.ask | Should -Be @('Bash(rm *)', 'Bash(git push origin * *)', 'PowerShell(git push origin * *)')
+        }
+    }
+
+    Context 'a wide rule that a release retired' {
+        BeforeAll {
+            $script:RetiredManifest = @{ 'ai-sdlc-gates' = @{ package = 'core'; allow = @('git status *'); retiredAllow = @('git push origin *', 'git push', 'pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 *') } }
+            $script:RetiredSettings = '{ "permissions": { "allow": [ "Bash(make *)", "Bash(git status *)", "PowerShell(git status *)", "Bash(git push origin *)", "PowerShell(git push)", "PowerShell(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 *)" ] } }'
+        }
+
+        It 'removes the retired rules in both shells, and keeps the rest' -Tag '#108' {
+            $root = New-AllowRepo -Manifests $script:RetiredManifest -Settings $script:RetiredSettings
+
+            $result = Invoke-Sync -Root $root
+
+            $result.Code | Should -Be 0
+            $result.Settings.permissions.allow | Should -Be @('Bash(make *)', 'Bash(git status *)', 'PowerShell(git status *)')
+            $result.Output | Should -Match '3 retired rule\(s\)'
+        }
+
+        It 'reports each retired rule as drift under -Check, and writes nothing' -Tag '#108' {
+            $root = New-AllowRepo -Manifests $script:RetiredManifest -Settings $script:RetiredSettings
+
+            $result = Invoke-Sync -Root $root -Check
+
+            $result.Code | Should -Be 1
+            $result.Output | Should -Match ([regex]::Escape('Bash(git push origin *)'))
+            $result.Output | Should -Match ([regex]::Escape('PowerShell(git push)'))
+            $result.Output | Should -Match ([regex]::Escape('PowerShell(pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-LocalGates.ps1 *)'))
+            $result.Settings.permissions.allow.Count | Should -Be 6
+        }
+
+        It 'never writes a retired rule, also when a package still lists it in allow' -Tag '#108' {
+            $root = New-AllowRepo -Manifests @{ 'ai-sdlc-gates' = @{ package = 'core'; allow = @('git status *', 'git push origin *'); retiredAllow = @('git push origin *') } }
+
+            $allow = (Invoke-Sync -Root $root).Settings.permissions.allow
+
+            $allow | Should -Not -Contain 'Bash(git push origin *)'
+            $allow | Should -Contain 'Bash(git status *)'
+        }
+    }
+
+    It 'reports an allow rule of the repository that lets a push reach the main branch: <Rule>' -Tag '#108' -ForEach @(
+        @{ Rule = 'Bash(git push *)' }
+        @{ Rule = 'Bash(git push:*)' }
+        @{ Rule = 'PowerShell(git push origin main)' }
+        @{ Rule = 'Bash(git -C * push *)' }
+    ) {
+        $settings = '{ "permissions": { "allow": [ "Bash(git status *)", "PowerShell(git status *)", "' + $Rule + '" ] } }'
+        $root = New-AllowRepo -Settings $settings
+
+        $result = Invoke-Sync -Root $root -Check
+
+        $result.Code | Should -Be 1
+        $result.Output | Should -Match ([regex]::Escape($Rule))
+    }
+
+    Context 'a skill that a release retired' {
+        BeforeAll {
+            function Add-RetiredManifest {
+                param([string]$Root, [string]$Text = '{ "retired": { "old-skill": "new-skill" }, "packages": {} }')
+                Set-Content -LiteralPath (Join-Path $Root '.claude' 'skills' 'ai-sdlc-gates' 'sync-manifest.json') -Value $Text -Encoding utf8
+            }
+            $script:OldSkillSettings = '{ "permissions": { "allow": [ "Bash(make *)", "Bash(old-skill *)", "Bash(pwsh .claude/skills/old-skill/scripts/Run.ps1 *)", "PowerShell(pwsh .claude/skills/old-skill/scripts/Run.ps1 *)", "Bash(git status *)", "PowerShell(git status *)" ] } }'
+        }
+
+        It 'drops the rules that name the folder of the retired skill, and keeps the rest' -Tag '#105' {
+            $root = New-AllowRepo -Settings $script:OldSkillSettings
+            Add-RetiredManifest -Root $root
+
+            $result = Invoke-Sync -Root $root
+
+            $result.Code | Should -Be 0
+            $result.Settings.permissions.allow | Should -Be @('Bash(make *)', 'Bash(old-skill *)', 'Bash(git status *)', 'PowerShell(git status *)')
+            $result.Output | Should -Match '2 rule\(s\) of retired skills'
+        }
+
+        It 'keeps the rule when a folder of that name is installed' -Tag '#105' {
+            $root = New-AllowRepo -Settings $script:OldSkillSettings
+            Add-RetiredManifest -Root $root
+            New-Item -ItemType Directory -Path (Join-Path $root '.claude' 'skills' 'old-skill') -Force | Out-Null
+
+            (Invoke-Sync -Root $root).Settings.permissions.allow | Should -Contain 'Bash(pwsh .claude/skills/old-skill/scripts/Run.ps1 *)'
+        }
+
+        It 'keeps every rule and says so when the sync manifest is not valid JSON' -Tag '#105' {
+            $root = New-AllowRepo -Settings $script:OldSkillSettings
+            Add-RetiredManifest -Root $root -Text '{ not json'
+
+            $result = Invoke-Sync -Root $root
+
+            $result.Code | Should -Be 0
+            $result.Output | Should -Match 'Rules of retired skills not checked'
+            $result.Settings.permissions.allow | Should -Contain 'Bash(pwsh .claude/skills/old-skill/scripts/Run.ps1 *)'
+        }
+
+        It 'names the rule under -Check, writes nothing and does not fail' -Tag '#105' {
+            $root = New-AllowRepo -Settings $script:OldSkillSettings
+            Add-RetiredManifest -Root $root
+
+            $result = Invoke-Sync -Root $root -Check
+
+            $result.Code | Should -Be 0
+            $result.Output | Should -Match ([regex]::Escape('Bash(pwsh .claude/skills/old-skill/scripts/Run.ps1 *)'))
+            $result.Settings.permissions.allow.Count | Should -Be 6
+        }
+    }
+
     It 'keeps the rules the repository added and the rest of the settings, and adds no rule twice' {
         $settings = '{ "permissions": { "allow": [ "Bash(make *)", "Bash(git status *)" ] }, "hooks": { "Stop": [] } }'
         $root = New-AllowRepo -Settings $settings
@@ -362,8 +500,12 @@ Describe 'Allow rules of the shipped packages' {
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
         # The test lives at core/tests/skills/ai-sdlc-gates/scripts, five folders below the repository root.
         $script:Source = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..' '..' '..' '..' '..')).Path
-        $script:Manifests = @(Get-ChildItem -Path (Join-Path $script:Source 'core'), (Join-Path $script:Source 'packs') -Recurse -Force -Filter gates.json -File |
-                Where-Object { $_.FullName -match '[\\/]\.apm[\\/]skills[\\/][^\\/]+[\\/]gates\.json$' })
+        # Test-Consumers.ps1 copies this test into an installed consumer, which has no package source.
+        $script:IsSource = (Test-Path -LiteralPath (Join-Path $script:Source 'core' '.apm')) -and (Test-Path -LiteralPath (Join-Path $script:Source 'packs'))
+        $script:Manifests = if (-not $script:IsSource) { @() } else {
+            @(Get-ChildItem -Path (Join-Path $script:Source 'core'), (Join-Path $script:Source 'packs') -Recurse -Force -Filter gates.json -File |
+                    Where-Object { $_.FullName -match '[\\/]\.apm[\\/]skills[\\/][^\\/]+[\\/]gates\.json$' })
+        }
         $script:Wildcard = '\.claude[\\/]skills[\\/]\S*\*'
         # A test consumer runs this file next to the installed script, where no package source exists.
         $script:NoSource = -not (Test-Path -LiteralPath (Join-Path $script:Source 'core' '.apm'))
@@ -389,6 +531,85 @@ Describe 'Allow rules of the shipped packages' {
         if (-not (Test-Path -LiteralPath $settings)) { Set-ItResult -Skipped -Because 'this copy has no .claude/settings.json'; return }
         $allow = @((Get-Content -LiteralPath $settings -Raw | ConvertFrom-Json -AsHashtable)['permissions']['allow'])
         @($allow | Where-Object { [string]$_ -match $script:Wildcard }) | Should -BeNullOrEmpty
+    }
+
+    Context 'the push and runner rules, in the core source and in the committed settings' {
+        BeforeAll {
+            # A rule matches the whole command, and its star matches any text, spaces and colons too.
+            function Test-RuleMatch {
+                param([string[]]$Rules, [string]$Command)
+                foreach ($rule in $Rules) {
+                    if ($rule -notmatch '^(?:(?:Bash|PowerShell)\((?<body>.*)\)|(?<body>.*))$') { continue }
+                    $pattern = '^' + ([regex]::Escape($Matches['body']) -replace '\\\*', '.*') + '$'
+                    if ($Command -match $pattern) { return $true }
+                }
+                return $false
+            }
+            $script:RuleSets = @()
+            if (-not $script:IsSource) { return }
+            $core = Get-Content -LiteralPath (Join-Path $script:Source 'core' '.apm' 'skills' 'ai-sdlc-gates' 'gates.json') -Raw | ConvertFrom-Json -AsHashtable
+            $script:RuleSets = @(
+                @{ Name = 'core gates.json'; Allow = @($core['allow']); Ask = @($core['ask']) }
+            )
+            $settingsPath = Join-Path $script:Source '.claude' 'settings.json'
+            if (Test-Path -LiteralPath $settingsPath) {
+                $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json -AsHashtable
+                $script:RuleSets += @{ Name = '.claude/settings.json'; Allow = @($settings['permissions']['allow']); Ask = @($settings['permissions']['ask']) }
+            }
+        }
+
+        It 'never lets a push that can reach the main branch run without a prompt: <Command>' -Tag '#108' -ForEach @(
+            @{ Command = 'git push' }
+            @{ Command = 'git push origin main' }
+            @{ Command = 'git push origin master' }
+            @{ Command = 'git push origin HEAD:main' }
+            @{ Command = 'git push origin +main' }
+            @{ Command = 'git push origin 1x:main' }
+            @{ Command = 'git push origin 1x main' }
+            @{ Command = 'git push origin 1x --all' }
+            @{ Command = 'git push origin 1x --force' }
+            @{ Command = 'git push -f origin 1x' }
+            @{ Command = 'git push -u origin main' }
+            @{ Command = 'git push --set-upstream origin main' }
+            @{ Command = 'git push --set-upstream origin 1x:main' }
+            @{ Command = 'git push origin 1x${IFS}main' }
+            @{ Command = "git push origin 1x`tmain" }
+            @{ Command = 'git push origin 1x,main' }
+            @{ Command = 'git push origin 1x\:main' }
+            @{ Command = "git push origin '1x main'" }
+            @{ Command = 'git push origin 1x@{u}' }
+            @{ Command = "git push origin 1x`nmain" }
+            @{ Command = 'git push origin +1x' }
+            @{ Command = 'git push origin 1.2.0' }
+            @{ Command = 'git push origin 1x!' }
+        ) {
+            if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
+            foreach ($set in $script:RuleSets) {
+                $allowed = Test-RuleMatch -Rules $set.Allow -Command $Command
+                $asked = Test-RuleMatch -Rules $set.Ask -Command $Command
+                ($allowed -and -not $asked) | Should -BeFalse -Because "$($set.Name) must ask before: $Command"
+            }
+        }
+
+        It 'lets the push of a story branch run without a prompt: <Command>' -Tag '#108' -ForEach @(
+            @{ Command = 'git push origin 105-half-ported-rules' }
+            @{ Command = 'git push --set-upstream origin 42-short-name' }
+        ) {
+            if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
+            foreach ($set in $script:RuleSets) {
+                Test-RuleMatch -Rules $set.Allow -Command $Command | Should -BeTrue -Because "$($set.Name) allows a story branch push"
+                Test-RuleMatch -Rules $set.Ask -Command $Command | Should -BeFalse -Because "$($set.Name) does not ask for it"
+            }
+        }
+
+        It 'names the exact arguments of each runner rule, with no wildcard' -Tag '#108' {
+            if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
+            foreach ($set in $script:RuleSets) {
+                $runners = @($set.Allow | Where-Object { [string]$_ -match 'Invoke-(LocalGates|Preflight)\.ps1' })
+                $runners.Count | Should -BeGreaterThan 0
+                @($runners | Where-Object { [string]$_ -match '\*' }) | Should -BeNullOrEmpty -Because "$($set.Name) names each runner call exactly"
+            }
+        }
     }
 
     It 'lets every gate of every package run without a prompt in a fresh consumer' -Tag '#103' {

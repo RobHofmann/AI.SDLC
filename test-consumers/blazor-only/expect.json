@@ -17,6 +17,7 @@
     ".claude/skills/test-first-dotnet",
     ".claude/skills/dotnet-gates",
     ".claude/skills/bicep-conventions",
-    ".claude/skills/github-pull-requests"
+    ".claude/skills/github-pull-requests",
+    ".claude/skills/razor-conventions/scripts/Check-RazorAttributePlacement.ps1"
   ]
 }

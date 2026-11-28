@@ -251,16 +251,67 @@ Describe 'PullRequestDescription' {
             @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('## Summary', 'text', 'tail'))
         }
 
-        It 'does not remove partial block text' {
-            $lines = @('## Before you publish', '', '* This pull request is a draft. Check it.', 'tail')
+        It 'removes a caller section with other text, up to the next heading' -Tag '#105' {
+            $lines = @('## Before you publish', '', '* Check it yourself first.', '', '## Summary', '', '* one')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('## Summary', '', '* one'))
+        }
+
+        It 'removes the heading in any case, with spaces after it' -Tag '#105' {
+            $lines = @('## before YOU publish  ', '* mine', '## Summary', '* one')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('## Summary', '* one'))
+        }
+
+        It 'keeps one block when the standard block is there twice' -Tag '#105' {
+            $lines = $script:Block + @('## Summary') + $script:Block
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('## Summary'))
+        }
+
+        It 'removes a section in the middle up to the next level 1 or 2 heading, with a level 3 heading inside it' -Tag '#105' {
+            $lines = @('## Summary', '* one', '## Before you publish', '* mine', '### Detail', '* also mine', '# Evidence', '* two', '## Tests', '* three')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('## Summary', '* one', '# Evidence', '* two', '## Tests', '* three'))
+        }
+
+        It 'removes a section at the end, and keeps the blank line before it' -Tag '#105' {
+            $lines = @('## Summary', '* one', '', '## Before you publish', '* mine')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('## Summary', '* one', ''))
+        }
+
+        It 'keeps a level 3 heading of that name' -Tag '#105' {
+            $lines = @('## Summary', '### Before you publish', '* kept')
 
             @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + $lines)
         }
 
-        It 'matches the block case-sensitive' {
-            $lines = @($script:Block | ForEach-Object { $_.ToUpperInvariant() })
+        It 'keeps the heading inside a <Fence> code fence, with the whole fence' -Tag '#105' -ForEach @(
+            @{ Fence = '```' }
+            @{ Fence = '~~~' }
+        ) {
+            $lines = @('## Summary', $Fence, '## Before you publish', '* example', $Fence, '* after')
 
-            @(Add-PrPublishCheck -Lines $lines).Count | Should -Be ($script:Block.Count + $lines.Count)
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + $lines)
+        }
+
+        It 'does not end the section on a heading inside a fence inside the section' -Tag '#105' {
+            $lines = @('## Before you publish', '```', '## Tests', '```', '* mine', '## Summary', '* one')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('## Summary', '* one'))
+        }
+
+        It 'removes a heading indented up to 3 spaces, and ends the section at an indented heading' -Tag '#105' {
+            $lines = @('   ## Before you publish', '* mine', '  ## Tests', '* three')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + @('  ## Tests', '* three'))
+        }
+
+        It 'keeps a line indented 4 spaces, which is code' -Tag '#105' {
+            $lines = @('## Summary', '    ## Before you publish', '* kept')
+
+            @(Add-PrPublishCheck -Lines $lines) | Should -Be ($script:Block + $lines)
         }
 
         It 'returns just the block for no lines' {

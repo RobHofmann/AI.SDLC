@@ -3,7 +3,7 @@ name: razor-conventions
 kind: knowledge
 user-invocable: false
 description: >
-  The Razor rules for a Blazor component and the two gates that hold them: attributes on their own
+  The Razor rules for a Blazor component and the gate that holds them: attributes on their own
   line, no interface over a state class, no inline style block, one document root, state change
   events, null API results, dispose, and Razor security. Use when writing or reviewing a .razor file or
   a component's state class, or when a Razor gate failed. Do NOT use for a .css file (css-conventions)
@@ -15,7 +15,7 @@ description: >
 A Blazor component in this codebase follows one shape, so reviewers do not have to teach it one pull
 request at a time. This skill holds the Razor rules: the markup and the `@code` block of a component.
 The rules that can be checked by a script are gates in this skill's `scripts/` folder, registered in
-`gates.json` for the `blazor` pack. Both read the source root from `aisdlc.json`, and exit 2 when it
+`gates.json` for the `blazor` pack. The gate reads the source root from `aisdlc.json`, and exits 2 when it
 is not configured.
 
 The `blazor` pack brings the `css` and `javascript` packs, so `css-conventions` covers the style
@@ -30,20 +30,22 @@ sheets of a component and `javascript-conventions` its JavaScript modules.
   a page of the repository, not in a shared file. When none names it, follow the components next to
   your change.
 
-## The two gates
+## The gate
 
 | Script | Mode | What it checks |
 |---|---|---|
-| `Check-RazorConventions.ps1` | Blocking | No `I*State` interface over a state class, no inline `<style>` block, and no `<!DOCTYPE` outside the one document root in `dotnet.portalAppComponent` of `aisdlc.json` |
-| `Check-RazorAttributePlacement.ps1` | Blocking | `[Parameter]`, `[CascadingParameter]`, `[Inject]` and the other component attributes sit on their own line, above the member |
+| `Check-RazorConventions.ps1` | Blocking | No `I*State` interface over a state class, no inline `<style>` block, no `<!DOCTYPE` outside the one document root in `dotnet.appComponent` of `aisdlc.json` (any `App.razor` when it is empty), and `[Parameter]`, `[CascadingParameter]`, `[Inject]` and the other component attributes on their own line above the member |
 
 ```bash
 pwsh .claude/skills/razor-conventions/scripts/Check-RazorConventions.ps1
-pwsh .claude/skills/razor-conventions/scripts/Check-RazorAttributePlacement.ps1
 ```
 
 ## The rules no script checks
 
+- **File order:** `@page`, the other directives, `@inject`, the markup, one `@code` block.
+- **Component code lives in the `@code` block**, never in a `.razor.cs` file.
+- **A form is an `EditForm`** with a FluentValidation validator component, a `ValidationMessage`, and the
+  team's own input wrappers or Blazor input components.
 - **Subscribe to a state change the same way as the other components.** The handler property returns
   a new delegate each time it is read, so `-=` removes nothing. For a singleton state, store the
   delegate in a field first, so `+=` and `-=` use the same object.

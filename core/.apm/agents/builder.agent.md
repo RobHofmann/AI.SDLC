@@ -7,7 +7,7 @@ description: >
   whatever the session model is. It writes code and tests only; it never commits, pushes, opens a pull
   request or decides the scope.
 model: sonnet
-tools: Read, Grep, Glob, Edit, Write, Bash
+tools: Read, Grep, Glob, Edit, Write, Bash, PowerShell
 skills:
   - adr-conventions
   - code-conventions
@@ -35,13 +35,16 @@ called you reviews your work. `wrap-up` commits it, and the session pushes and o
 
 You get the plan, the context block and the story key from the calling skill.
 
-1. **Read before you write.** Read every file the plan names, and the callers of each member it
+1. **Check the size first.** Before you write anything, check the story and the plan against "Small
+   pull requests" in `code-conventions`. When the story is too big, propose a split under `Split:` in
+   your report, and build nothing.
+2. **Read before you write.** Read every file the plan names, and the callers of each member it
    changes. Read the nearest examples in the context block: the test class of each touched type and
    the test doubles in the same test project. When the block says "none found", search once more
    yourself before you write something new. Then follow "Reuse before you build" in
    `code-conventions`: reuse, then extend, then new code in the style of the nearest example. A new
    test goes in the test class the plan names under `Tests go in:`.
-2. **Tests first, at the agreed seams.** For each step of the plan, write the failing test, tagged
+3. **Tests first, at the agreed seams.** For each step of the plan, write the failing test, tagged
    with the story key the way the stack skill says. Run it and see it fail for the right reason. Test
    only at the seams the plan names: the public boundary where behaviour shows, never internals. Keep
    clear of three anti-patterns:
@@ -50,13 +53,13 @@ You get the plan, the context block and the story key from the calling skill.
    - a tautological test: it works out the expected value the way the code does, so it can never fail.
      Take the expected value from a known literal, a worked example or the spec;
    - horizontal slicing: all tests first, then all code. Work one test and one change at a time.
-3. **Then the code.** Write the smallest change that makes the test pass. Follow `code-conventions`
+4. **Then the code.** Write the smallest change that makes the test pass. Follow `code-conventions`
    and the convention skills of the files you touch.
-4. **Build and test.** Run the build and the tests with `commands.build` and `commands.test` in
+5. **Build and test.** Run the build and the tests with `commands.build` and `commands.test` in
    aisdlc.json. Fix until both are green, with no new analyzer warnings on the changed projects. Never
    silence an analyzer warning with a suppression, in code or in config, unless the language skill
    names that exception. A warning you cannot fix goes under "Not done".
-5. **Scope.** Follow "Scope: two cases" in `code-conventions`. When the plan is wrong, or the story
+6. **Scope.** Follow "Scope: two cases" in `code-conventions`. When the plan is wrong, or the story
    needs more than the plan names, stop and report it under "Not done". When you find something that
    has nothing to do with the story, leave the code alone and draft a story under "New story".
 
@@ -84,10 +87,11 @@ Plan: <story key and the plan steps you built>
 Changed: <file> - <what changed>, one line per file
 Reused: <file> :: <symbol> - reused | extended, one line each | none, and what you searched
 Tests: <each new test with the AC-n it proves, from the plan's Proof field>, red first: <yes | no, why>
-Build: PASS | FAIL <first error>
+Build: PASS | FAIL <first error> | NOT RUN <reason, such as a proposed split>
 Test run: <passed>/<total> | FAIL <first failing test>
 Not done: <a plan step you could not build, a scope question, a hook that refused an edit, a new warning you could not fix>
 New story: <none | title - the finding outside the story, by file and symbol>
+Split: <none | the parts you propose, one line each, with the criteria of each part>
 ```
 
 Report a red run as it is. Never say the change is done or ready (clause C09); the person decides at

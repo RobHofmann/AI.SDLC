@@ -73,8 +73,11 @@ for this. That script can change only the title and the description, never a sta
    passes it in, because the agent has no shell. The review agents `code-reviewer` and `test-analyzer`
    ask whether it is built right. Each one reads the convention skills of the changed files from the
    table in `code-conventions`. The spec review belongs to `implement`; `refactor` keeps the
-   behaviour, so it runs only the code review. `security-reviewer` joins when the diff touches auth, RBAC, secrets, network access, outbound calls,
-   JS interop or request logging. Where the agents cannot run, the skill reviews the diff itself. Nothing is committed before `wrap-up`, so the diff comes from the working
+   behaviour, so it runs only the code review. `security-reviewer` joins when the diff touches a security area. These are
+   auth, RBAC, secrets, network access, workflow secrets and variables, outbound calls, JS interop,
+   request logging, deserialization of outside data and error responses. So is a change that builds a
+   query, command or filter from input: SQL, a shell or process argument, an OData or search filter.
+   This is the one list of the security areas; the skills link here. Where the agents cannot run, the skill reviews the diff itself. Nothing is committed before `wrap-up`, so the diff comes from the working
    tree: `git add --intent-to-add .`, then `git diff $(git merge-base origin/main HEAD)`.
 6. The findings are fixed and checked again.
 7. The evidence record is written. Then `wrap-up` runs, the single owner of the steps that finish a

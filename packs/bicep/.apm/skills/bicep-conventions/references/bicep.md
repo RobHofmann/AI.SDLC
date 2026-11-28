@@ -89,7 +89,7 @@ resource resourceName 'type@version' = {
 module moduleName 'path/to/module.bicep' = {
   // Properties in this order:
   scope: managementGroup()      // Scope declaration first
-  name: 'deploymentName'        // REQUIRED - enables deployment tracking in Azure Portal
+  name: deploymentName          // REQUIRED, never a fixed name: see house-style.md, Deployment names
   params: { }                   // Module input parameters
 }
 ```

@@ -153,7 +153,7 @@ $script:Defaults = [ordered]@{
         graphifyBenchmarkCases = ''
         externalContractPaths  = @()
         wireNameAllowlist      = @()
-        portalAppComponent     = ''
+        appComponent           = ''
         routePageFolders       = @('docs/api/')
     }
     docs           = [ordered]@{
@@ -260,6 +260,20 @@ function Resolve-AiSdlcSourceRoot {
     $comparison = if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
     $inside = $full.Equals($root, $comparison) -or $full.StartsWith($root + [IO.Path]::DirectorySeparatorChar, $comparison)
     if (-not $inside) { throw "the folder '$Path' is outside the repository" }
+    # A gate joins the raw folder to the root, and the system follows a link before it applies a '..'
+    # after it. So every folder on the raw way is checked too, not only the normalised path (#105).
+    if ([IO.Path]::IsPathRooted($Path)) {
+        if (@($Path -split '[\\/]') -contains '..') { throw "the folder '$Path' holds a '..' part, so a link before it may point outside the repository" }
+    }
+    else {
+        $raw = $root
+        foreach ($segment in @($Path -split '[\\/]' | Where-Object { $_ -and $_ -ne '.' })) {
+            if ($segment -eq '..') { $raw = [IO.Path]::GetDirectoryName($raw); if (-not $raw) { break }; continue }
+            $raw = Join-Path $raw $segment
+            $item = Get-Item -LiteralPath $raw -Force -ErrorAction SilentlyContinue
+            if ($item -and $item.Attributes.HasFlag([IO.FileAttributes]::ReparsePoint)) { throw "the folder '$Path' is a link, so it may point outside the repository" }
+        }
+    }
     $walk = $full
     while ($walk.Length -gt $root.Length) {
         $item = Get-Item -LiteralPath $walk -Force -ErrorAction SilentlyContinue
@@ -291,6 +305,13 @@ function Get-AiSdlcConfig {
     }
 
     $config = Merge-AiSdlcDefaults -Defaults $script:Defaults -Values $values
+    # A pull request can change aisdlc.json, so every caller gets a source folder inside the repository.
+    foreach ($key in 'sourceRoot', 'sourceRoots') {
+        foreach ($value in @($config['paths'][$key] | Where-Object { $_ })) {
+            try { Resolve-AiSdlcSourceRoot -RepoRoot $RepoRoot -Path ([string]$value) | Out-Null }
+            catch { throw "$file paths.$key '$value': $($_.Exception.Message)" }
+        }
+    }
     $config['packs'] = Get-AiSdlcApmPack -RepoRoot $RepoRoot
     $config['repoRoot'] = (Resolve-Path -LiteralPath $RepoRoot).ProviderPath
     $config['configFile'] = if ($values) { $file } else { $null }
@@ -568,6 +589,8 @@ function Get-AiSdlcPackage {
             DocUnits    = @($data.docUnits | Where-Object { $_ })
             DocFacts    = if ($data.docFacts) { Join-Path $folder $data.docFacts } else { $null }
             Allow       = @($data.allow | Where-Object { $_ })
+            Ask         = @($data.ask | Where-Object { $_ })
+            RetiredAllow = @($data.retiredAllow | Where-Object { $_ })
         }
     }
 }

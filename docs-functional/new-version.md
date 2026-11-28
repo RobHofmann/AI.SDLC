@@ -38,6 +38,13 @@ person reviews and merges it.
 - Version 2.0.0 changes how the pull request build reads a gate. A blocking gate that could not check
   now fails the build, so the first update can turn a green pull request red. Read the `FIX:` line of
   each such gate, or set the gate softer in `gateModes` and say why ([how a gate answers](gate-results.md)).
+- Version 2.0.0 asks you more often before a command runs. The agent pushes a branch whose name starts
+  with the story number without asking. It asks you before any other push, such as a push to `main`.
+  It runs the gate runners without asking only with the options the skills use.
+- Version 2.0.0 stops a `paths.sourceRoot` or `paths.sourceRoots` folder outside your repository, or one
+  reached through a link. Every gate then fails with the reason, so move the folder inside.
+- A workflow step of your own that calls `Invoke-Gate.ps1` without `-Mode` now blocks the build on a
+  finding. Pass `-Mode Advisory` where a warning is enough.
 - A tag with a suffix, such as `v1.1.0-rc.1`, is a pre-release. A consumer can pin it to test a
   change, and the update workflow skips it.
 - A tag whose message names no issue gives an update pull request without an issue key. The script says so, and the story check then fails it.
@@ -57,8 +64,9 @@ person reviews and merges it.
   `pwsh .claude/skills/ai-sdlc-hooks/scripts/Find-RetiredSkillNames.ps1` to list each of those lines
   with the new name, and change them in the update pull request. When the new name is an internal step,
   the line says so, because a person cannot type it. When there is one, it names the command to type instead, such as `/grill-me`. `Update-AiSdlc.ps1` prints the same list.
-  The list leaves out your decision records (`paths.adrFolder`, `docs/adrs` by default). An ADR records a
-  decision as it was made, so you do not change the names in it.
+  In your decision records (`paths.adrFolder`, `docs/adrs` by default) it lists only a path. That is the
+  target of a link or a `relates:` entry, because the link checks fail on it. An ADR records a decision
+  as it was made, so you do not change the names in its text.
 - The skill check fails a skill of your own whose description the model loads and that holds more
   than 450 characters. Every session loads that text, so keep it short: say when to use the skill, and
   move the rest into the body. A skill that only a person starts, with `disable-model-invocation: true`,
