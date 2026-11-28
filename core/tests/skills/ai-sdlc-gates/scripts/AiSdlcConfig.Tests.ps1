@@ -626,6 +626,7 @@ Describe 'AiSdlcConfig' {
             New-Item -ItemType Directory -Path (Join-Path $target 'src') -Force | Out-Null
             try {
                 New-Item -ItemType SymbolicLink -Path (Join-Path $root 'link') -Target $target -ErrorAction SilentlyContinue | Out-Null
+                if ($IsWindows -and -not (Test-Path -LiteralPath (Join-Path $root 'link'))) { New-Item -ItemType Junction -Path (Join-Path $root 'link') -Target $target -ErrorAction SilentlyContinue | Out-Null }
                 if (-not (Test-Path -LiteralPath (Join-Path $root 'link'))) {
                     Set-ItResult -Skipped -Because 'this machine cannot create a symbolic link'
                     return
@@ -642,6 +643,7 @@ Describe 'AiSdlcConfig' {
             New-Item -ItemType Directory -Path (Join-Path $target 'x') -Force | Out-Null
             try {
                 New-Item -ItemType SymbolicLink -Path (Join-Path $root 'lnk') -Target (Join-Path $target 'x') -ErrorAction SilentlyContinue | Out-Null
+                if ($IsWindows -and -not (Test-Path -LiteralPath (Join-Path $root 'lnk'))) { New-Item -ItemType Junction -Path (Join-Path $root 'lnk') -Target (Join-Path $target 'x') -ErrorAction SilentlyContinue | Out-Null }
                 if (-not (Test-Path -LiteralPath (Join-Path $root 'lnk'))) {
                     Set-ItResult -Skipped -Because 'this machine cannot create a symbolic link'
                     return
@@ -650,6 +652,12 @@ Describe 'AiSdlcConfig' {
                 { Resolve-AiSdlcSourceRoot -RepoRoot $root -Path 'lnk/../sub' } | Should -Throw '*link*'
             }
             finally { Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue }
+        }
+
+        It 'refuses an absolute folder with a .. part' -Tag '#105' {
+            $root = New-ConfigRepo -Json '{}'
+
+            { Resolve-AiSdlcSourceRoot -RepoRoot $root -Path (Join-Path $root 'sub' '..' 'sub') } | Should -Throw "*'..' part*"
         }
 
         It 'lets Get-AiSdlcConfig read a source root inside the repository' -Tag '#105' {

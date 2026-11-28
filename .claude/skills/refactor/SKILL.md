@@ -94,7 +94,7 @@ From the start to the open pull request the work runs on its own, as
    `write-docs` (with the `docs-reviewer` agent) when the move changed a name a docs page cites, and the
    ADR check through `write-adr`. It runs the lessons step, commits, and runs `run-preflight` on that
    commit until it is green, which writes the receipt the push hook asks for. Do not run any of those
-   steps here. Then push the story branch, and open or update the pull request with the evidence record as its
+   steps here. Then push the story branch with `git push origin <branch>`, and open or update the pull request with the evidence record as its
    description. This runs on its own and with no prompt, through the pull request skill of the
    installed pack (`github-pull-requests`). Use `New-PullRequest.ps1` for a new pull request, or
    `Update-PullRequest.ps1` for one that is open. Never

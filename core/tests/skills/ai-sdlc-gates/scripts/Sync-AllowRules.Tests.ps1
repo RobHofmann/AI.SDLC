@@ -245,6 +245,7 @@ Describe 'Sync-AllowRules' {
         @{ Rule = 'Bash(git push *)' }
         @{ Rule = 'Bash(git push:*)' }
         @{ Rule = 'PowerShell(git push origin main)' }
+        @{ Rule = 'Bash(git -C * push *)' }
     ) {
         $settings = '{ "permissions": { "allow": [ "Bash(git status *)", "PowerShell(git status *)", "' + $Rule + '" ] } }'
         $root = New-AllowRepo -Settings $settings

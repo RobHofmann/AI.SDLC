@@ -262,7 +262,10 @@ function Resolve-AiSdlcSourceRoot {
     if (-not $inside) { throw "the folder '$Path' is outside the repository" }
     # A gate joins the raw folder to the root, and the system follows a link before it applies a '..'
     # after it. So every folder on the raw way is checked too, not only the normalised path (#105).
-    if (-not [IO.Path]::IsPathRooted($Path)) {
+    if ([IO.Path]::IsPathRooted($Path)) {
+        if (@($Path -split '[\\/]') -contains '..') { throw "the folder '$Path' holds a '..' part, so a link before it may point outside the repository" }
+    }
+    else {
         $raw = $root
         foreach ($segment in @($Path -split '[\\/]' | Where-Object { $_ -and $_ -ne '.' })) {
             if ($segment -eq '..') { $raw = [IO.Path]::GetDirectoryName($raw); if (-not $raw) { break }; continue }

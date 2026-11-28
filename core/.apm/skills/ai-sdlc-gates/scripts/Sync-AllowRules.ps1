@@ -270,7 +270,7 @@ $wildcards = @($allowed | Where-Object { [string]$_ -match '^(?:Bash|PowerShell)
 $retiredFound = @($allowed | Where-Object { [string]$_ -cin $retiredRules })
 # A push rule that no package wrote, such as one of the repository or of an old release, may let a push
 # reach the main branch without a prompt. The ask rules narrow only the push rules of the packages (#108).
-$widePush = @($allowed | Where-Object { [string]$_ -cnotin $wanted -and [string]$_ -cnotin $retiredFound -and [string]$_ -match '^(?:Bash|PowerShell)\(\s*git\s+push\b' })
+$widePush = @($allowed | Where-Object { [string]$_ -cnotin $wanted -and [string]$_ -cnotin $retiredFound -and [string]$_ -match '^(?:Bash|PowerShell)\(\s*git\s+(?:-C\s+\S+\s+)?push\b' })
 
 # A rule that names the folder of a skill a release retired, .claude/skills/<old>/, runs a script that is
 # gone. The installed sync manifest lists the retired names. A folder of that name that is still there
@@ -334,6 +334,9 @@ if ($Check) {
     exit 1
 }
 
+foreach ($rule in $widePush) {
+    Write-Host "Allow rule kept, remove it by hand: '$rule' is a push rule that no package wrote, so a push may reach the main branch without a prompt." -ForegroundColor Yellow
+}
 if (-not $settings['permissions']) { $settings['permissions'] = [ordered]@{} }
 $settings['permissions']['allow'] = @($allowed | Where-Object { $_ -cnotin $wildcards -and $_ -cnotin $retiredFound -and $_ -cnotin $stale }) + $missing
 if ($wantedAsk.Count -gt 0 -or $asked.Count -gt 0) { $settings['permissions']['ask'] = @($asked) + $missingAsk }
