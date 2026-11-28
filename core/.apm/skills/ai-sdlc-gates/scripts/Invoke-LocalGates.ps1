@@ -98,12 +98,14 @@
             Invoke-PostEditCheck.ps1 runs it for an edited file with one of those extensions.
 
     With -IncludeToolTests the runner runs the Pester tests in the scripts folder of every package
-    that runs, and in the folder of each repository gate.
+    that runs, and in the folder of each repository gate. An installed package holds no tests (ADR
+    0015), so only a test consumer that tools/Test-Consumers.ps1 set up finds package tests there.
 
     Where a gate runs follows from its mode. The pre-push git hook runs the Blocking gates
     (-BlockingOnly), unless a passing pre-flight receipt covers the tip commit of each pushed ref. The
-    shared pull request action (assets/actions/ai-sdlc-pr) and a local run run every gate; an Advisory
-    gate reports but never fails either one. -List prints this for each gate. A
+    shared pull request action (assets/actions/ai-sdlc-pr) runs every gate. A local run runs every gate
+    whose inputs the change touches, and every gate with -All. An Advisory gate reports but never fails
+    either one. -List prints this for each gate. A
     repository gate that runs Pester tests can use Invoke-PesterGate.ps1 from this folder as its script.
 
     In GitHub Actions (GITHUB_ACTIONS is true) the runner reports each gate the way Invoke-Gate.ps1
@@ -126,7 +128,8 @@
     Optional path to a merged coverage report, for the gates that need one.
 
 .PARAMETER IncludeToolTests
-    Also run the Pester tests of the gate scripts of every package that runs.
+    Also run the Pester tests next to the gate scripts of every package that runs. An installed package
+    has none; tools/Test-Consumers.ps1 copies them in.
 
 .PARAMETER SkipTests
     Leave out the gates that run Pester tests: a gate whose script is Invoke-PesterGate.ps1 or

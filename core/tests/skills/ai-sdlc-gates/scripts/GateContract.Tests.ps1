@@ -63,6 +63,7 @@ Describe 'Every gate keeps the exit-code contract' {
             'Check-StoryBackEdges.ps1'          = @(2, 3)
             'Check-McpToken.ps1'                = @(3)
             'Check-RetiredSkillNames.ps1'       = @(2, 3)
+            'Check-ClosingKeywordExamples.ps1'  = @(3)
             'Update-SkillCatalog.ps1'           = @(2, 3)
             'Update-SyncManifest.ps1'           = @(2, 3)
             'Check-SharedAgentsPartSize.ps1'    = @(2, 3)

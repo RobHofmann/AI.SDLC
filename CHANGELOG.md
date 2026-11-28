@@ -27,12 +27,12 @@ Each entry names its issue, as `#42`.
 - The new core skill `code-conventions` holds the code rules for every language once: reuse before you
   build, build only what the story needs, two scope cases, the comment rule of C10 and no new warning.
   It also holds one severity scale, HIGH and MEDIUM, with no LOW. Its page `skills-by-file-type.md`
-  names the convention skill of each file type. `csharp-generation-smells` keeps only the C# and Razor
+  names the convention skill of each file type. `csharp-conventions` keeps only the C# and Razor
   rules, and links to it. The `builder` and `architect` agents preload it (#55).
 - `code-reviewer`, `test-analyzer` and `security-reviewer` move from the dotnet pack to core, and
   review every language. Each preloads `code-conventions` and reads the rules of each changed file type
-  from its table. The C# checks move into `csharp-generation-smells`, with a new security page, and the
-  Razor checks into `blazor-conventions`. The dotnet pack ships no agent. The names do not change, so a
+  from its table. The C# checks move into `csharp-conventions`, with a new security page, and the
+  Razor checks into `razor-conventions`. The dotnet pack ships no agent. The names do not change, so a
   consumer with the dotnet pack gets each agent once, now from core. ADR 0017 records the move (#56).
 - `walk-substrate` runs the new `Find-NearestExample.ps1` for a C# or Razor change. It names the test
   class of each touched type and the test doubles of its dependencies, or says "none found". The
@@ -184,8 +184,8 @@ Each entry names its issue, as `#42`.
   fifteen code style rules of the house style to warning, and `code-style-block.md` says how to take
   it (#77).
 - Clause C04 says a test proves the team's own logic, not what a framework already does. One
-  registration test without the container is the only wiring test. The constitution moves to version
-  1.1 ([ADR 0026](docs/adrs/0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md)). `csharp.md`
+  registration test without the container is the only wiring test
+  ([ADR 0026](docs/adrs/0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md)). `csharp.md`
   gets a Test style section, and `test-first-dotnet` and the `test-analyzer` agent follow it (#78).
 - A skill description that the model loads has at most 450 characters; `Check-SkillHygiene.ps1` fails
   a longer one. A skill with `disable-model-invocation: true` keeps the 1024 limit. The gate looks for
@@ -301,13 +301,83 @@ Each entry names its issue, as `#42`.
 - The `Invoke-PesterGate.ps1` help example has the `checks` and `fix` texts that the runner needs (#105).
 - The `full` and `platform` test consumers run the layer gate and the role ID gate as Blocking (#105).
 - The source-only allow rule tests skip in an installed consumer, so the test consumers pass (#103).
+- No shared example writes a closing keyword with a real-looking issue number. Each one now writes
+  `Fixes #n`, which GitHub never links, so a quoted example closes no issue. `language.md` and
+  `AGENTS.md` say the form. The new repository gate `tools/Check-ClosingKeywordExamples.ps1` blocks a
+  closing keyword with a bare number in a shared file. The history in this file keeps its old
+  examples (#99).
+- The README, the handbook, the gate skills and the docs say what this release does: exit 3, the three
+  gates that always run Blocking, a local run that checks only what a change touches, and `v2.0.0` as
+  the pin. The constitution names the McpToken, TestShape, DocRowContent and DocLastChecked gates
+  under their clauses, and stays at version 1.3 (#106).
+- `powershell-conventions` asks for the story key as a tag on a new Pester `It`.
+  `github-actions-conventions` asks for a readiness check instead of a fixed sleep, and for no fixed
+  paths (#106).
+- `Sync-AllowRules.Tests.ps1` runs git without the global and system git config of the machine, so a
+  global ignore rule no longer fails it (#106).
+- `AGENTS.md` records the version rule: raise X for any change a consumer must act on. This release
+  is v2.0.0, because the gate contract and the renamed skills ask every consumer to act (#106).
+- Left out of upstream v2.6.0 to v2.20.0 on purpose, each with its reason (#106):
+  - Jira, Atlassian and Azure DevOps parts: the board, sprint and status settings, the Atlassian MCP
+    server with its tools and steps, the build policies on a draft, the `az` output and token fixes,
+    and the Azure Pipelines resources, variable groups and locks. AI.SDLC runs on GitHub Issues and
+    GitHub Actions, where these parts have no meaning.
+  - The rest of the upstream Azure Pipelines house style. Its two general lessons, a readiness check
+    and no fixed paths, are now rules in `github-actions-conventions`; the rest names Azure Pipelines
+    only.
+  - Client parts: the client platform and certificate packs with their scripts and steps, the
+    SharePoint skill and setting, the firewall skills with their comment exception, the Azure resource
+    naming skill with its settings, and the dev-branch deployment skill. They hold client facts, or
+    they are skills that AI.SDLC does not ship.
+  - Consumer tools: the registration and re-pin tools, with the step count in their pull request
+    text, and the upgrade run that reads real consumers. AI.SDLC keeps no list of consumers; #92
+    ported the reader of the consumer steps.
+  - Temporary consumer state: the gates set Advisory until the consumers are clean, and the test that
+    pins that list.
+  - Research pages per language and for architecture: they count client code (#55).
+  - A deny list for code names in shared files: the private term list lives outside this repository.
+  - Removing the gate entry of `Sync-AllowRules.ps1 -Check`: clause C12 names that check.
+  - The warning on a description over 6,000 characters, and the step that removes the registration
+    tests: later upstream releases replaced both.
+  - Renaming `-Strict` to `-FailOnFinding`: a `repoGates` entry that passes `-Strict` would crash. The
+    core entry passes `-Strict`, so the extra rules run by default (#104).
+  - The new core clauses C17 and C18 and the pack clause BLAZOR-01: a framework rule with no clause
+    carries `AI-SDLC` (#47).
+  - A Blocking `Check-TestShape.ps1`: like every new gate of this release, it is Advisory, so it stops
+    no push (#79).
+  - The gate contract test in a small valid repository: the pull request build of AI.SDLC is the
+    valid case, and the test covers the empty repository (#46).
+  - A story key only in the branch or the title: a key in the pull request body still counts, because
+    GitHub links a pull request to its issue through `Fixes #n` there (ADR 0010).
+  - The coverage of `tools/` sent to SonarCloud: AI.SDLC has no SonarCloud project.
+  - The completeness skip of a change with only comments or whitespace: a `No-Test` or `No-Docs`
+    trailer with the reason `no-behaviour-change` covers such a change (#60).
+  - The test speed-ups with `Copy-TestTree`: they change no behaviour, and
+    `tools/Invoke-PesterParallel.ps1` already runs each test file in its own process.
+  - The upstream version rule, a major version only for a full overhaul: see the `AGENTS.md` line
+    above.
 
 What a consumer does when it takes this release:
 
+- The person who reviews a pull request reads each `No-Test`, `No-Docs` and `No-ADR` trailer and its
+  reason. The gate prints each waiver it used, but it checks only the form of the reason, never that
+  it is true (#60).
 - A Blocking gate that exits 2 in your pull request workflow now fails it. Read the first run after
-  the update: give each gate what it needs (a full-depth checkout for gitleaks, `paths.sourceRoot` and
-  `paths.testRoot` for the .NET gates, `coverage-file` for the coverage gate), or set the gate to
-  Advisory or Off in `gateModes` and say why in the pull request.
+  the update and give each gate what it needs: a full-depth checkout for gitleaks, `paths.sourceRoot`
+  and `paths.testRoot` for the .NET gates, `coverage-file` for the coverage gate. You may set another
+  gate to Advisory or Off in `gateModes`, and say why in the pull request. Three gates always run
+  Blocking, whatever `gateModes` says: the secret scan (gitleaks), the private-terms gate and the
+  sync manifest check (#46, #49).
+- A plain local pre-flight now checks only what the change touches, and the dotnet pre-flight then
+  skips the coverage ratchet. Run `Invoke-Preflight.ps1 -Full` when you need the ratchet before a
+  push; the pull request build always runs it (#48, #81).
+- On a build runner of your own, install PSScriptAnalyzer 1.21.0 or newer. Without it the
+  PSScriptAnalyzer gate exits 2, which is a warning, because the gate is Advisory (#72).
+- Write each path glob in `aisdlc.json`, such as the `inputs` of a gate, in the exact case of the
+  folder names. A Linux runner matches a glob case by case, so a glob in the wrong case matches no
+  file there, and the gate does not start (#48).
+- The glossary check of `grilling` reads `glossary.md` in the folder of `paths.functionalDocs`. Add
+  that page when you want the check; without it the check is skipped (#64).
 - A public repository: a pull request from a fork now fails on the private-terms gate, because it gets
   no secrets. Before you merge one, run `Check-PrivateTerms.ps1 -Required` on its branch with the list.
 - Give every entry of your own `repoGates` a `checks` and a `fix` text, and a name that says what
@@ -359,8 +429,10 @@ What a consumer does when it takes this release:
 - With the dotnet pack, `Check-SharedParts.ps1` exits 2 when `paths.sourceRoot` lies outside the
   repository. Point it at a folder inside the repository (#83).
 - You may set `pullRequest.sizeLimit`, `dotnet.layers`, `dotnet.credentialHelper`,
-  `dotnet.baseException` and `bicep.roleLookupFiles` in `aisdlc.json`; without them the new gates
-  report not applicable. The new gates are Advisory, so none of them stops a push.
+  `dotnet.baseException`, `bicep.roleLookupFiles`, `bicep.registryAlias` and
+  `bicep.deploymentNameHelper` in `aisdlc.json`. Without its key, a new gate reports not applicable,
+  and the new gates are Advisory, so none of them stops a push. Only `bicep-conventions` reads the two
+  last keys (#87).
 - Run `pwsh .claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1` on the update branch and commit
   `.claude/settings.json`. It removes the old `scripts/Check-*` rules. A gate run with other arguments
   than its entry, such as `-Path`, now asks for a prompt, and so does a script of your own with a

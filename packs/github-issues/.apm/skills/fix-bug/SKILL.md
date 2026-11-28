@@ -7,7 +7,7 @@ description: >
   Take an existing GitHub issue for a bug or incident from report to a framed fix: triage it, say what
   a person must add before it is refined, or frame the fix of a refined bug for implement. Use when
   the user says "triage #42", "is this a real bug?", "can you reproduce this?", "is this a duplicate",
-  "fix #42" or "this defect is confirmed, go fix it". Do NOT use to log a new bug (write-story), for
+  "fix #n" or "this defect is confirmed, go fix it". Do NOT use to log a new bug (write-story), for
   new behaviour (implement) or a cleanup (refactor).
 ---
 

@@ -79,7 +79,7 @@ function Add-PrPublishCheck {
     The description lines.
 
     .EXAMPLE
-    Add-PrPublishCheck -Lines @('## Summary', 'Fixes #42')
+    Add-PrPublishCheck -Lines @('## Summary', 'Fixes #n')
     #>
     param([AllowEmptyCollection()][string[]]$Lines = @())
 

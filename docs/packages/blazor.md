@@ -5,7 +5,7 @@ units:
 
 # blazor
 
-The `blazor` package provides checks and guidance for portal authorization and the Razor conventions of a Blazor component. It includes one blocking gate, a script, and a test. Its `apm.yml` lists the [css](css.md) and [javascript](javascript.md) packs as APM dependencies, so a Blazor repository gets their skills too ([ADR 0025](../adrs/0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md)).
+The `blazor` package provides checks and guidance for portal authorization and the Razor conventions of a Blazor component. It includes one blocking gate and its script; the test of the script stays in AI.SDLC ([ADR 0015](../adrs/0015-the-tests-of-a-shared-package-live-outside-the-installed-package.md)). Its `apm.yml` lists the [css](css.md) and [javascript](javascript.md) packs as APM dependencies, so a Blazor repository gets their skills too ([ADR 0025](../adrs/0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md)).
 
 ## What it contains
 

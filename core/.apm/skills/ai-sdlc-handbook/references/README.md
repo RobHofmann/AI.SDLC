@@ -144,7 +144,7 @@ installs that pack; the [layout page](layout.md) lists the packs.
 
 | Skill | Package | Purpose | How it works | Use it (example) |
 |---|---|---|---|---|
-| `/fix-bug` | github-issues | Take an existing bug, request or incident from report to a framed fix | Reads the state first. Not triaged: builds a tight feedback loop that goes red on the bug, commits the red test on the bug branch, classifies, prioritises, checks for duplicates, and stops at Checkpoint Alpha with a triage comment. Triaged, not refined: says what a person must add. Refined: frames the fix and hands off to `/implement`. A new bug item is `/write-story`. | "triage #42"; "is this a duplicate?"; "fix #42" |
+| `/fix-bug` | github-issues | Take an existing bug, request or incident from report to a framed fix | Reads the state first. Not triaged: builds a tight feedback loop that goes red on the bug, commits the red test on the bug branch, classifies, prioritises, checks for duplicates, and stops at Checkpoint Alpha with a triage comment. Triaged, not refined: says what a person must add. Refined: frames the fix and hands off to `/implement`. A new bug item is `/write-story`. | "triage #42"; "is this a duplicate?"; "fix #n" |
 
 ### Cross-cutting (any phase; mostly Lead / any)
 

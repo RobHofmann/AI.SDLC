@@ -10,12 +10,13 @@ approves a story or another document, before it is written to an issue or a page
 - **One way of working in every repository.** The skills, the agents and the gates come from this
   repository, so a developer who knows one repository knows them all. The core is the way of
   working; a pack adds what one technology needs ([what a pack adds](packs.md)).
-- **Gates that give the same answer on your machine and in the workflow.** A push runs the blocking
+- **Gates that run the same scripts on your machine and in the workflow.** A push runs the blocking
   gates first, so a broken change stops before the pull request. A green pull request build means
   every blocking gate really checked. A blocking gate that could not check fails the build, and a
   gate with nothing to check shows as `N/A`. A repository can make a shared gate stricter, softer or
-  Off in its own `aisdlc.json`, and every run shows that choice. The secret scan always stays on
-  ([how a gate answers](gate-results.md)). Core also warns about a pull request above the size limit of
+  Off in its own `aisdlc.json`, and every run shows that choice. Three gates always run Blocking: the
+  secret scan, the private-terms gate and the sync manifest check. A local run checks only what the change
+  touches, and there a gate that could not check is a warning ([how a gate answers](gate-results.md)). Core also warns about a pull request above the size limit of
   the repository. It also warns about a PowerShell script that skips the exit code check of a tool. A
   PSScriptAnalyzer finding and a dead comment in YAML or PowerShell get a warning too.
 - **Docs that stay complete and true.** Every repository has a technical and a functional layer, and

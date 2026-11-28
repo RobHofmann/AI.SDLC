@@ -79,13 +79,14 @@ Each package declares its gates in its `gates.json`. The runner, `Invoke-LocalGa
 |---|---|
 | The pre-push hook | The Blocking gates, unless a passing pre-flight receipt covers the tree of the tip commit of each pushed ref (`Test-PushReceipt.ps1`). None for a push that only deletes refs or sends commits the remote already has |
 | The pull request workflow, through the shared composite action `ai-sdlc-gates/assets/actions/ai-sdlc-pr` | Every gate; an Advisory gate is a warning, and a Blocking gate that could not check fails the job |
-| A local run of `Invoke-LocalGates.ps1` | Every gate; an Advisory gate never fails the run |
+| A local run of `Invoke-LocalGates.ps1` | Every gate whose `inputs` the change touches, and every gate with `-All`; a gate left out shows `NOT TOUCHED`. An Advisory gate never fails the run, and a Blocking gate that could not check (exit 2) is a warning |
 
 A gate with `requires: CoverageFile`, such as C04, runs only when the runner gets `-CoverageFile`. The
 dotnet pre-flight runs `Check-Coverage.ps1` itself after its test run. The shared composite action
 passes `-CoverageFile` when the workflow gives it the `coverage-file` input. The pre-push hook does not run C04.
 
-The composite action runs the same gates as a local run, so a repository lists no gate steps by hand.
+The composite action runs the same gate scripts as a local run, but always all of them. So a
+repository lists no gate steps by hand.
 The pull request workflow calls it as `uses: ./.claude/skills/ai-sdlc-gates/assets/actions/ai-sdlc-pr`,
 after `actions/checkout` with `fetch-depth: 0`. Before the gates it installs the pinned APM, runs
 `apm audit --ci` and `apm install --frozen`. Then it installs the pinned gitleaks. The C03 gate
@@ -146,7 +147,7 @@ the sync check, but not for the gate runner. So it ships no gate (ADR 0025).
 | `paths.solution`, `paths.sourceRoot`, `paths.testRoot`, `paths.runSettings`, `paths.coverageBaseline`, `paths.packagesProps` | The .NET solution, its code, its tests and its coverage setup, for the `dotnet` pack. `Get-AiSdlcConfig` refuses a `paths.sourceRoot` or `paths.sourceRoots` folder outside the repository or behind a link | none |
 | `paths.sourceRoots` | More source folders, as a list, for the change completeness gate. It reads them next to `paths.sourceRoot`. A package folder such as `core` or `packs` maps a script under `.apm/` to its test under `tests/` | none |
 | `commands.build` / `commands.test` / `commands.testChanged` | How to build and test the repository. The pre-flight runs `commands.test` from the repository root, unless a pack pre-flight runs the tests itself, as the dotnet pack does. A scoped pre-flight runs `commands.testChanged` in its place when it is set; a test command that exits 3 ran no test and shows `N/A` | none |
-| `tracker` | The issue repository (`tracker.repository`, `owner/name`; empty means the `origin` remote), an own key pattern (`tracker.keyPattern`), the `refined` and `to-refine` labels, the size label prefix (`size:`), the labels and the data model patterns, for the `github-issues` pack. `tracker.acceptedRepositories` lists other repositories, as `owner/name`, whose issues may anchor a pull request here, such as the AI.SDLC source for an update pull request | `refined`, `to-refine`, `size:`; no accepted repositories |
+| `tracker` | The issue repository (`tracker.repository`, `owner/name`; empty means the `origin` remote), an own key pattern (`tracker.keyPattern`), the `refined` and `to-refine` labels, the size label prefix (`size:`), the in-review label that `move-story` adds (`tracker.inReviewLabel`), the labels and the data model patterns, for the `github-issues` pack. `tracker.acceptedRepositories` lists other repositories, as `owner/name`, whose issues may anchor a pull request here, such as the AI.SDLC source for an update pull request | `refined`, `to-refine`, `size:`, `in-review`; no accepted repositories |
 | `github` | The repository (`github.repository`, `owner/name`; empty means the `origin` remote) and the main branch (`github.trunk`). It is the one setting for the main branch: the gates, the pre-flight and the test runner compare a change with `origin/<trunk>` through `Get-AiSdlcMainBranch` | `main` |
 | `sonarcloud` | The SonarCloud organization and project key, for the `sonarcloud` pack | none |
 | `css` | The token prefix (`css.tokenPrefix`, such as `--brand-`) and the colour scheme files (`css.colourSchemeFiles`, a list of paths), read by `css-conventions`, for the `css` pack. A key that is not set means: use what the style sheets next to the change use | none |
@@ -168,10 +169,10 @@ dependencies:
   apm:
     - git: https://github.com/RobHofmann/AI.SDLC
       path: core
-      ref: v1.0.0
+      ref: v2.0.0
     - git: https://github.com/RobHofmann/AI.SDLC
       path: packs/bicep
-      ref: v1.0.0
+      ref: v2.0.0
 targets: [claude]
 ```
 

@@ -33,8 +33,8 @@
     applies and the change still fails.
 
     NEVER PASSES BLIND. If a story key is present but the issue cannot be read (gh is missing, the token is
-    missing, or the repository cannot be reached), the gate exits 2: it could not check. The workflow shows
-    that as a warning, never as a pass. An issue that does not exist is exit 1. It is not applicable (exit 3) only when there
+    missing, or the repository cannot be reached), the gate exits 2: it could not check. The gate is
+    Blocking, so exit 2 fails the pull request build; it is never a pass. An issue that does not exist is exit 1. It is not applicable (exit 3) only when there
     is no PR context at all (no story key, source branch, title, body or PR number), so a normal local
     `Invoke-LocalGates` run does not trip it; the live local check is the check-pr-contract skill.
 
@@ -57,7 +57,7 @@
     from the pull request event; it is empty locally, where there is no pull request.
 
 .PARAMETER PrDescription
-    The pull request body. Read for a story key after the title, for example "Fixes #42".
+    The pull request body. Read for a story key after the title, for example "Fixes #n".
 
 .PARAMETER PrNumber
     The pull request number. When no other place carries a key, the issues the PR closes are read from it.
@@ -126,7 +126,7 @@ $modelPatterns = @($tracker.dataModelPatterns | Where-Object { $_ })
 
 function Fail([string]$msg) {
     Write-Output $msg
-    Write-Output "FIX: Put the issue key (#NNN) in the branch name (42-short-name), the pull request title, or its body (Fixes #42), and make sure that issue is labelled '$refinedLabel'. A key of another repository (owner/repo#NNN) needs that repository in tracker.acceptedRepositories. A data-model change also needs an ADR whose story matches."
+    Write-Output "FIX: Put the issue key (#NNN) in the branch name (42-short-name), the pull request title, or its body (Fixes #n), and make sure that issue is labelled '$refinedLabel'. A key of another repository (owner/repo#NNN) needs that repository in tracker.acceptedRepositories. A data-model change also needs an ADR whose story matches."
     exit 1
 }
 function Unknown([string]$msg) {
@@ -366,7 +366,7 @@ function Invoke-PrStoryContractGate {
         if (-not $StoryKey -and -not $SourceBranch -and -not $PrTitle -and -not $PrDescription -and -not $PrNumber) {
             NotApplicable "PR-story contract gate: not applicable, no PR context (no story key, source branch, title, body or PR number)."
         }
-        Fail "No story key (#NNN) found. Looked in the story key passed in, the PR source branch '$SourceBranch', the PR title, the PR body and the issues the PR closes, in that order. Name the branch for its issue (e.g. 1234-short-name), or write the key in the PR title or body (Fixes #1234)."
+        Fail "No story key (#NNN) found. Looked in the story key passed in, the PR source branch '$SourceBranch', the PR title, the PR body and the issues the PR closes, in that order. Name the branch for its issue (e.g. 1234-short-name), or write the key in the PR title or body (Fixes #n)."
     }
 
     $key = $found.Key

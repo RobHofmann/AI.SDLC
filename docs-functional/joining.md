@@ -26,7 +26,7 @@ pwsh tools/Add-AiSdlcConsumer.ps1 -TargetRepo ../portal
 ```
 
 Then open an issue for the setup. Commit what the script staged on a branch named with its number,
-such as `12-ai-sdlc-setup`, and open a pull request with `Fixes #12`. The pull request workflow fails
+such as `12-ai-sdlc-setup`, and open a pull request with `Fixes #n` for that issue. The pull request workflow fails
 a pull request with no issue key. After the first push, make the workflow required, as the next
 section says.
 

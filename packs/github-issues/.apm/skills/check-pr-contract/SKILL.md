@@ -23,7 +23,7 @@ reference or a missing ADR is caught at the keyboard, not later in the workflow.
 
 **A gate that can't check the contract is not a gate.** This check never passes blind: if GitHub
 cannot be read or a referenced issue cannot be resolved, it reports BLOCKED in a session. The CI form exits 2,
-which the workflow shows as a warning, never as a pass.
+which fails the pull request build, because the gate is Blocking. It is never a pass.
 
 ## Standing rules
 
@@ -94,14 +94,14 @@ that is a key passed in, the PR source branch, the PR title, the PR body, then t
 a repository outside `tracker.acceptedRepositories` exits 1; an accepted one is read with `gh issue view <n> -R owner/repo`. It checks
 that the issue is labelled `refined`, open or closed, through `gh issue view`, and applies the domain-model -> ADR check in
 the repository. An issue that does not exist exits 1. When GitHub cannot be read (no gh, no token, or no
-access to the repository) it exits 2. The workflow shows that as a warning, never as a pass. Its mode is Blocking,
-set in `gates.json`. The local runner (`Invoke-LocalGates.ps1`) lists
-it too, where it is a no-op (no PR context). So this skill and the CI gate apply the same rule, interactively and headlessly.
+access to the repository) it exits 2. Its mode is Blocking, set in `gates.json`, so exit 2 fails the pull request build; it is
+never a pass. The local runner (`Invoke-LocalGates.ps1`) lists
+it too, where it exits 3 and shows `N/A` (no PR context). So this skill and the CI gate apply the same rule, interactively and headlessly.
 
 ## Failure modes
 
 - **No issue key in the branch, the title or the body** -> BLOCKED. Recommend adding the `#NNNN` reference, for example
-  `Fixes #1234` in the body. The CI gate `Check-PrStoryContract.ps1` fails the pull request without it.
+  `Fixes #n` in the body. The CI gate `Check-PrStoryContract.ps1` fails the pull request without it.
 - **Branch with no key** -> `wrap-up` step 0 stops before the pre-flight. Rename the branch
   (`git branch -m <number>-<topic>`).
 - **Story not dev-active** -> BLOCKED. The issue is closed or not labelled `refined`, so it is not ready

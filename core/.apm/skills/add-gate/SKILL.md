@@ -21,8 +21,8 @@ the advisory-then-blocking path.
 
 A rule that lives only in text drifts; a rule with a gate holds. This skill makes adding a gate cheap,
 so a recurring mistake becomes a check rather than a hope. **A gate that can't check the contract is
-not a gate.** A gate that cannot reach what it needs to check fails closed: it exits 2 and warns,
-and never passes silently. A gate that only sometimes runs is documented as such.
+not a gate.** A gate that cannot reach what it needs to check fails closed: it exits 2 and never
+passes silently. For a Blocking gate, exit 2 fails the pull request build. A gate that only sometimes runs is documented as such.
 
 ## Standing rules
 

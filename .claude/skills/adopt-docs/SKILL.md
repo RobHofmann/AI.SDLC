@@ -105,7 +105,7 @@ Two rules hold in every run of every skill, and each is defined in one place:
 ## Failure modes
 
 - **A draft is pasted in whole** -> a subagent wrote it from a facts file, a partial view of the code.
-  Copy only the lines you checked against the source (C09).
+  Copy only the lines you checked against the source (C07).
 - **A page loses a fact while it is rewritten for the reading level** -> the page reads better and is
   now wrong. That is worse than hard to read. Compare each rewritten page with the old one before the
   next page.

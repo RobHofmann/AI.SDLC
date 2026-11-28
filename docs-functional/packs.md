@@ -29,8 +29,8 @@ Each pack can bring any of these, and the core picks them up by itself:
 
 | Pack | Install it when | What it adds, in short |
 |---|---|---|
-| `dotnet` | the repository has a .NET solution | C# rules and their security checks, an opt-in `.editorconfig` block that lets the build warn on a style break, test-first, ten gates, the code graph, a page per project. A local pre-flight builds and tests only the projects a change reaches; the gates also warn about a test without its Arrange, Act and Assert markers, a project reference that is unused or points the wrong way, and code that builds its own copy of a shared part |
-| `blazor` | the repository has a Blazor app | the Razor and authorization conventions, and two gates on the components; it brings `css` and `javascript` with it |
+| `dotnet` | the repository has a .NET solution | C# rules and their security checks, an opt-in `.editorconfig` block that lets the build warn on a style break, test-first, 11 gates, the code graph, a page per project. A local pre-flight builds and tests only the projects a change reaches; the gates also warn about a test without its Arrange, Act and Assert markers, a project reference that is unused or points the wrong way, and code that builds its own copy of a shared part |
+| `blazor` | the repository has a Blazor app | the Razor and authorization conventions, and one gate on the components; it brings `css` and `javascript` with it |
 | `css` | the repository has style sheets, also without Blazor | the CSS conventions |
 | `javascript` | the repository has browser JavaScript, also without Blazor | the JavaScript conventions |
 | `bicep` | the repository has Bicep templates | the Bicep conventions and house style, the Bicep pre-flight, a page per building block, and two warnings: a module pinned to `latest` and a role ID typed by hand |

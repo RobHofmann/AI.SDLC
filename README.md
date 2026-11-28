@@ -26,7 +26,7 @@ An agent writes code fast. Without a process it also skips the tests, forgets th
 
 - **Two human checkpoints, nothing in between.** You approve the story before it is written to the tracker (**Checkpoint Alpha**). You review the pull request (**Checkpoint Bravo**). Between the two, the agent plans, builds test-first, reviews, documents and opens the pull request on its own.
 - **You stay in charge.** The agent shows you the evidence, and you make the call ([C09](core/.apm/skills/ai-sdlc-handbook/references/constitution.md)).
-- **Gates that give the same answer everywhere.** Every check is a script that runs the same way in the pre-push hook, in the local pre-flight and in CI. Exit 0 passes, 1 fails, 2 says "could not check", and 2 never counts as a pass.
+- **Gates that run the same scripts everywhere.** Every check is a script that the pre-push hook, the local pre-flight and CI run. Exit 0 passes, 1 is a finding, 2 says "could not check", and 3 says "not applicable" (`N/A`). A Blocking gate that exits 2 fails the pull request build; locally it is a warning. A local run starts only the gates whose inputs a change touches, and CI or `-All` runs them all.
 - **Docs that stay true.** Every repository has a technical and a functional layer of markdown, with a page for every part of the code. A gate keeps them one linked wiki ([C05](core/.apm/skills/ai-sdlc-handbook/references/constitution.md)).
 - **Plain English.** A team member who is not a native speaker gets every page on the first read, and a gate checks it ([C11](core/.apm/skills/ai-sdlc-handbook/references/constitution.md)). Chat follows your language.
 - **One source for every rule.** A rule is written once and linked from everywhere else, so two texts never disagree ([C12](core/.apm/skills/ai-sdlc-handbook/references/constitution.md)).
@@ -81,13 +81,13 @@ dependencies:
   apm:
     - git: https://github.com/RobHofmann/AI.SDLC
       path: core
-      ref: v1.0.0
+      ref: v2.0.0
     - git: https://github.com/RobHofmann/AI.SDLC
       path: packs/github
-      ref: v1.0.0
+      ref: v2.0.0
     - git: https://github.com/RobHofmann/AI.SDLC
       path: packs/github-issues
-      ref: v1.0.0
+      ref: v2.0.0
 targets: [claude]
 ```
 
@@ -137,7 +137,7 @@ Contributions are welcome. Start with [AGENTS.md](AGENTS.md): it holds the rules
 
 ## 🏷️ Releasing
 
-1. Every change has an issue with the `refined` label. Its pull request says `Fixes #42`, so the merge closes the issue. Keep its `refined` label: an update pull request in a consumer names it as `Refs RobHofmann/AI.SDLC#42`, and the story check accepts a closed issue with that label.
+1. Every change has an issue with the `refined` label. Its pull request says `Fixes #n`, so the merge closes the issue. Keep its `refined` label: an update pull request in a consumer names it as `Refs RobHofmann/AI.SDLC#42`, and the story check accepts a closed issue with that label.
 2. After the merge, tag `main` with an annotated tag whose message names the issue: `git tag -a v1.2.0 -m "Release v1.2.0 for #42"`. Do not start the message with `#`: git drops a tag message line that starts with `#`. Push the tag and publish a GitHub release on it.
 
 When a consumer must do something to take a release, the CHANGELOG entry lists it under one exact line: `What a consumer does when it takes this release:`. A blank line and a `- ` list follow it. Use that line also for a step that holds for one pack only. The update pull request reads only that line, and `tools/Check-ChangelogConsumerSteps.Tests.ps1` fails on any other line that starts with "What a consumer".
@@ -157,7 +157,7 @@ MIT. See [LICENSE](LICENSE). Parts adapted from other projects keep their own li
 ## 🙏 Credits
 
 - [Microsoft APM](https://github.com/microsoft/apm) - the Agent Package Manager that installs it
-- [mattpocock/skills](https://github.com/mattpocock/skills) - the grilling, handoff and wait-what skills, and several methods
+- [mattpocock/skills](https://github.com/mattpocock/skills) - the grilling, grill-me, handoff and wait-what skills, and several methods
 - [humanlayer/skills](https://github.com/humanlayer/skills) - the "Merge danger" part of the evidence record
 - [ECC](https://github.com/affaan-m/ECC) - the shape of several agents and the compact suggestion hook
 - [i-have-adhd](https://github.com/ayghri/i-have-adhd) - ideas in the language rules

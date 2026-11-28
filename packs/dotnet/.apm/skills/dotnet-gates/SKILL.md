@@ -23,9 +23,9 @@ except the C04 ratchet, which fails (exit 1) without a baseline.
 | Gate | Script | Mode | What it checks |
 |---|---|---|---|
 | C10 docs | `Check-XmlDocs.ps1` | Advisory | Each added public or protected declaration in a `.cs` file outside the test root has a `///` doc comment |
-| Story traits | `Check-StoryTraits.ps1` | Blocking | Every test class carries a well-formed `[Trait("Story", ...)]`; the gate runs with `-Strict`, so an untagged class fails too |
+| Story traits | `Check-StoryTraits.ps1` | Blocking | Each test class and test method that the change adds carries a well-formed `[Trait("Story", ...)]`; the gate runs with `-Strict`, so an untagged one fails too, and older drift is listed without failing |
 | DOTNET-01 | `Check-ApiPascalCase.ps1` | Blocking | Every `[JsonPropertyName]` under the source root is PascalCase and needed; the allowed exceptions are in `dotnet.wireNameAllowlist` and `dotnet.externalContractPaths` |
-| Doc drift | `Check-DocDrift.ps1` | Blocking | A reference page still names what the code has: constants, files, routes and services |
+| Doc drift | `Check-DocDrift.ps1` | Blocking | A reference page still names what the code has: constants, files, routes and services. It judges the lines a change adds or changes, and lists older drift without failing |
 | Spec drift | `Check-SpecDrift.ps1` | Advisory | A changed endpoint that a spec describes moved with its spec |
 | C04 shape | `Check-TestShape.ps1` | Advisory | Each xUnit test method the change adds or edits has the Arrange, Act and Assert markers once, in order |
 | DOTNET-03 | `Check-ProjectReferenceUse.ps1` | Advisory | An added project reference is used: the project uses a namespace of the target |

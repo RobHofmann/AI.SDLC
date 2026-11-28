@@ -13,8 +13,9 @@ description: >
 # AI-SDLC gates
 
 A gate is a script that checks one rule and reports through its exit code. Each gate is an entry in a
-`gates.json` or in `repoGates`, never a workflow step. `Invoke-LocalGates.ps1` runs them all: on every
-push, in a local run and in the pull request workflow. The core gates, the runner and the modules sit in `scripts/`.
+`gates.json` or in `repoGates`, never a workflow step. `Invoke-LocalGates.ps1` runs the Blocking gates on
+a push, the touched gates in a local run (all with `-All`) and all of them in the pull request workflow.
+There a Blocking gate that exits 2 fails; a local run and the push hook warn. The core gates, the runner and the modules sit in `scripts/`.
 
 ## Run them
 
@@ -34,8 +35,9 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
   `apm.yml` does not list runs no gate.
 - **A gate reads repository paths from `aisdlc.json`** through `AiSdlcConfig.psm1`: the docs roots,
   the solution, the ADR folder, the coverage baseline. A gate never names a repository's folders.
-- **`-IncludeToolTests`** runs the Pester tests in the `scripts/` folder of every package that runs,
-  and of each repository gate. The pre-flight does not pass it; a repository tests its own gates as add-gate says.
+- **`-IncludeToolTests`** runs the Pester tests next to the scripts of each package and repository gate.
+  An installed package has none (ADR 0015); only `tools/Test-Consumers.ps1` copies them in. The
+  pre-flight does not pass it; a repository tests its own gates as add-gate says.
 - **The private-terms gate** (`Check-PrivateTerms.ps1`) runs in a public repository, by `visibility` or by GitHub Actions.
   It names a finding by file, line and rule number, never by the matched text ([layout](/.claude/skills/ai-sdlc-handbook/references/layout.md)).
 
@@ -55,11 +57,9 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
 
 - `gates` may be empty. Each entry needs a unique `name` that says what passes, a `clause` (a core
   clause, a pack clause or `AI-SDLC`), a `checks` text and a `fix` text. The runner fails an entry
-  without them, or with a name used twice, and does not run it. It prints `checks` before the output
-  of a gate that failed, and under each gate with `-List`. The [gate list](references/gate-catalog.md)
-  shows every gate with both texts.
-- `requires: CoverageFile` runs the gate only when the runner gets `-CoverageFile`. The shared
-  composite action passes it when the workflow gives it the `coverage-file` input.
+  without a `checks` or a `fix` text, or with a name used twice, and does not run it. It prints `checks`
+  before the output of a gate that failed, and with `-List`; the [gate list](references/gate-catalog.md) has both.
+- `requires: CoverageFile` runs the gate only with `-CoverageFile`, which the shared action passes from the `coverage-file` input.
 - `inputs` is an optional list of path globs, such as `**/*.md`. A local run starts the gate only when
   the change touches a file that matches, or the skill folder of its script; otherwise it shows
   `NOT TOUCHED`. Every gate runs on a delete, a change to the gate setup, an unreadable change, with
@@ -67,8 +67,8 @@ pwsh .claude/skills/ai-sdlc-gates/scripts/Invoke-Preflight.ps1              # th
 - `mode` is Blocking, Advisory or Off. No run, hook or pre-flight starts an Off gate. A repository
   sets the mode of a shared gate in `gateModes` of its own `aisdlc.json`, in any letter case. The
   summary shows where the mode comes from in its Source column. The secret scan, the private-terms gate
-  and the sync manifest check always run Blocking. In a push hook a gate counts as Off only once the setting is in
-  every pushed commit.
+  and the sync manifest check always run Blocking. A push hook counts a gate as Off only once every
+  pushed commit has the setting.
 - `setup` runs from `Initialize-AiSdlc.ps1` in `ai-sdlc-hooks`, for each package that runs.
 - `preflight` runs from `Invoke-Preflight.ps1`. It returns rows with Check, Status and Detail, and a
   FAIL row fails the pre-flight and writes no receipt.

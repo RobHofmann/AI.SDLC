@@ -322,6 +322,9 @@ on its own judgement:
 It surfaces the evidence (a test name, a response, a gate result) and leaves the sign-off to a human. This is the same boundary the authors honour (draft,
 never publish), applied to verification: **surface, don't decide.**
 
+The one status move a skill makes is the in-review label of `move-story` (github-issues pack). It adds
+the label only after the person publishes the draft and GitHub shows that it is published (ADR 0022).
+
 ## The body sections
 
 ```

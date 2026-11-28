@@ -58,7 +58,7 @@ only. Both are in [the pull request path and the Copilot review](references/pr-p
   test and every check result. It also holds every review finding, fixed or declined with the reason,
   the ADRs, and what was not checked. It ends with a `## Merge danger` part: the door (one-way or
   two-way) and the blast radius in one word, as the evidence record in orchestration.md shows.
-- The description says `Fixes #42` for the story of the branch, so GitHub links the PR to the issue and
+- The description says `Fixes #n` for the story of the branch, so GitHub links the PR to the issue and
   closes it on the merge. The helper reminds you when the line is missing.
 - Nothing in the title, description, branch or commits names an AI tool.
 
@@ -96,7 +96,7 @@ They and `Wait-WorkflowRun.ps1` share `PullRequestFeedback.psm1`: it makes the `
 thread came from. For any other workflow run, wait with `Wait-WorkflowRun.ps1 -RunId <ids> -Wait`, never a sleep loop.
 It says `approval` when a run waits for a reviewer of an environment; that is a person's step.
 
-Check that the story shows its PR: GitHub links them through `Fixes #42`. Otherwise put the PR URL on the story
+Check that the story shows its PR: GitHub links them through `Fixes #n`. Otherwise put the PR URL on the story
 through `write-story` in update mode (github-issues pack). The change is not done while the story does not show its PR.
 
 ## Sources

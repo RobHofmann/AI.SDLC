@@ -82,9 +82,9 @@ Keep `draft-reviewer` read-only. It must never create, edit, or comment on an is
 
 Keep `check-pr-contract` read-only. It must never edit the PR, the issue, or code.
 
-Preserve its rule that it never passes blind. When the issue cannot be read, the session form reports BLOCKED and the CI form exits 2, a warning.
+Preserve its rule that it never passes blind. When the issue cannot be read, the session form reports BLOCKED and the CI form exits 2. The gate is Blocking, so that fails the pull request build.
 
-Keep the blocking and advisory gate scopes defined in `gates.json`. Both gates must remain no-ops in their stated local contexts.
+Keep the blocking and advisory gate scopes defined in `gates.json`. Both gates must keep exiting 3 (`N/A`) in their stated local contexts.
 
 Update the matching `*.Tests.ps1` file when changing a gate script.
 
