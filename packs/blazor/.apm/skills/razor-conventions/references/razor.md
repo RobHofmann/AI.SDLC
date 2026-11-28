@@ -1,7 +1,7 @@
 # Razor rules
 
 This page is the reference for the Razor components of a Blazor Server app. The short rules and the
-two gates sit in [the razor-conventions skill](../SKILL.md). A repository keeps its design system, its
+gate sit in [the razor-conventions skill](../SKILL.md). A repository keeps its design system, its
 CSS variables and the name of its API client on a page of its own. The rules for the style sheet of a
 component are in [css-conventions](/.claude/skills/css-conventions/SKILL.md).
 
@@ -11,13 +11,50 @@ These rules often live only in the code, so reviewers have to teach them one by 
 down here.
 
 - **Put attributes on their own line**, above the member, not in front of it. This covers `[Parameter]`,
-  `[CascadingParameter]`, `[Inject]` and the rest. The blazor gate `Check-RazorAttributePlacement.ps1`
+  `[CascadingParameter]`, `[Inject]` and the rest. This holds also for a member with no access modifier or with `required`. The blazor gate `Check-RazorConventions.ps1`
   checks it.
 
   ```razor
   [Parameter]
   public RenderFragment ChildContent { get; set; }
   ```
+
+- **Keep the parts of a Razor file in a fixed order.** A page starts with `@page`. Then come the other
+  directives, such as `@using` and `@attribute`, and then the `@inject` lines. The markup follows, and
+  the file ends with one `@code` block.
+
+  ```razor
+  @page "/orders"
+  @using MyApp.Orders
+  @attribute [Authorize]
+  @inject OrderListState State
+
+  <h1>Orders</h1>
+
+  @code {
+  }
+  ```
+
+- **Keep component code in the `@code` block.** Blazor lets a component keep its C# code in a separate
+  partial class file, such as `OrderList.razor.cs`. Do not do this. The C# code of a component goes in
+  the `@code` block at the end of the `.razor` file. Source: Microsoft Learn, ASP.NET Core Razor
+  components, the parts on the `@code` block and on partial class support.
+
+- **Build a form as an `EditForm` with a validator component.** The rules of the form come from a
+  FluentValidation validator, which a validator component connects to the form. Each field is one of
+  the team's own input wrappers, which put the design system look on a Blazor input, or a Blazor input
+  component. A `ValidationMessage` shows the error for one field. Source: Microsoft Learn, ASP.NET Core
+  Blazor forms overview, the part on `EditForm`.
+
+  ```razor
+  <EditForm Model="@order" OnValidSubmit="@SaveOrder">
+      <FluentValidator Validator="Validator" />
+      <BrandInputText @bind-Value="order.Name" />
+      <ValidationMessage For="@(() => order.Name)" />
+  </EditForm>
+  ```
+
+  Not this: a plain `<form @onsubmit="SaveOrder">` with an `<input class="form-control" @bind="order.Name" />`.
 
 - **Do not put an interface over a state class.** A `*State` class is registered and injected as the
   class itself. Do not add an `I*State` interface, not even to mock it in a test. Use the real state
@@ -77,7 +114,7 @@ down here.
 
 ## Related
 
-- [The razor-conventions skill](../SKILL.md) - the short rules and the two gates that hold them.
+- [The razor-conventions skill](../SKILL.md) - the short rules and the gate that holds them.
 - [CSS rules](/.claude/skills/css-conventions/references/css.md) - the style sheet of a component.
 - [The blazor-authorization skill](/.claude/skills/blazor-authorization/SKILL.md) - authorization checks in the same app.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - clause C01, and clause C10 on doc comments and comments.

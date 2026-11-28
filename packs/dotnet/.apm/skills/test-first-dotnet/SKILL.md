@@ -3,7 +3,7 @@ name: test-first-dotnet
 kind: knowledge
 user-invocable: false
 description: >
-  How tests are written first and coverage is measured in a .NET repository: red, green, refactor;
+  How tests are written first and coverage is measured in a .NET repository: red then green;
   xUnit and Moq; tests that mirror src/; the Story trait; Arrange, Act and Assert markers; the
   coverage ratchet and 80% on new code. Use when writing or changing C# behaviour and its tests,
   mapping acceptance criteria to tests, reading a coverage result, or when test-analyzer reviews a
@@ -20,8 +20,11 @@ The `test-analyzer` agent reads it from the table of file types in `code-convent
 
 1. **Red.** Write the test for one acceptance criterion first, and run it. See it fail, for the reason
    you expect. A test written after the code tends to encode the bug as the intended behaviour.
-2. **Green.** Write the least code that makes it pass.
-3. **Refactor.** Clean up with the tests green. Then take the next criterion.
+2. **Green.** Write the least code that makes it pass. Then take the next criterion.
+
+Cleaning up is not part of the loop; it moves to the review step. Write only the code the current test
+needs: no helper, option or overload that no criterion asks for. The review step finds what needs
+cleaning, and the loop fixes it there. A clean-up that grows beyond the story becomes a `refactor` story.
 
 A defect fix starts with a failing test that reproduces the defect.
 
@@ -57,9 +60,11 @@ the seam that reaches the bug. The plan then names that seam.
   per story.
 - **Layout.** Test projects under the test root (`paths.testRoot` in aisdlc.json) mirror the source
   root (`paths.sourceRoot`), for example `tests/Shared.StockLevel.Tests` for `src/Shared.StockLevel/`.
-- **Story trait.** Every new test class carries `[Trait("Story","#42")]` with the story key, the
-  number of the issue (`owner/repo#42` for an issue in another repository). `LEGACY-0` marks a test
-  class that predates the rule. `Check-StoryTraits.ps1` blocks a class without one.
+- **Story trait.** Put `[Trait("Story","#42")]` with the story key on each new test method. The key is
+  the number of the issue (`owner/repo#42` for an issue in another repository). A new test class for a
+  type that had none carries it on the class instead. `Check-StoryTraits.ps1` blocks a new test class or
+  method with no real Story key on itself or its class. It never judges older tests, and `LEGACY-0`
+  does not count on new ones.
   There is no per-criterion `AC` trait; the plan says which test proves each criterion. The `✅ Acceptance Criteria` section of the story, or `✅ Success Criteria` in an older story, holds the criteria.
 - **AAA markers.** Every test has `// Arrange`, `// Act` and `// Assert`; C10 keeps them, and
   `Check-TestShape.ps1` checks them. A test project needs no doc comments. A pure construction test may merge `// Arrange` and `// Act`.
@@ -105,7 +110,8 @@ mark a criterion done on your own judgement (C09); show the test and leave the s
 - [C# conventions, Testing](/.claude/skills/csharp-conventions/references/csharp.md) - the full test style.
 - [Run pre-flight](/.claude/skills/run-preflight/SKILL.md) - running the PR checks locally.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - C04, C09, C10.
-- The seams rule and the anti-patterns come from `skills/engineering/tdd/SKILL.md` in
+- The seams rule, the anti-patterns, the loop without a refactor step and "no speculative features"
+  come from `skills/engineering/tdd/SKILL.md` in
   [mattpocock/skills](https://github.com/mattpocock/skills), MIT licence, Copyright (c) 2026 Matt Pocock.
 
 ## Standing rules

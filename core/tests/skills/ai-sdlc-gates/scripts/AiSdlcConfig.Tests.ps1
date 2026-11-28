@@ -624,11 +624,32 @@ Describe 'AiSdlcConfig' {
             $root = New-ConfigRepo -Json '{ "paths": { "sourceRoot": "link/src" } }'
             $target = Join-Path ([IO.Path]::GetTempPath()) ('aisdlc-target-' + [guid]::NewGuid().ToString('n'))
             New-Item -ItemType Directory -Path (Join-Path $target 'src') -Force | Out-Null
-            New-Item -ItemType SymbolicLink -Path (Join-Path $root 'link') -Target $target -ErrorAction SilentlyContinue | Out-Null
+            try {
+                New-Item -ItemType SymbolicLink -Path (Join-Path $root 'link') -Target $target -ErrorAction SilentlyContinue | Out-Null
+                if (-not (Test-Path -LiteralPath (Join-Path $root 'link'))) {
+                    Set-ItResult -Skipped -Because 'this machine cannot create a symbolic link'
+                    return
+                }
 
-            if (Test-Path -LiteralPath (Join-Path $root 'link')) {
                 { Get-AiSdlcConfig -RepoRoot $root } | Should -Throw '*paths.sourceRoot*link*'
             }
+            finally { Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue }
+        }
+
+        It 'refuses a link that a later .. segment hides, because the system follows the link first' -Tag '#105' {
+            $root = New-ConfigRepo -Json '{}'
+            $target = Join-Path ([IO.Path]::GetTempPath()) ('aisdlc-target-' + [guid]::NewGuid().ToString('n'))
+            New-Item -ItemType Directory -Path (Join-Path $target 'x') -Force | Out-Null
+            try {
+                New-Item -ItemType SymbolicLink -Path (Join-Path $root 'lnk') -Target (Join-Path $target 'x') -ErrorAction SilentlyContinue | Out-Null
+                if (-not (Test-Path -LiteralPath (Join-Path $root 'lnk'))) {
+                    Set-ItResult -Skipped -Because 'this machine cannot create a symbolic link'
+                    return
+                }
+
+                { Resolve-AiSdlcSourceRoot -RepoRoot $root -Path 'lnk/../sub' } | Should -Throw '*link*'
+            }
+            finally { Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue }
         }
 
         It 'lets Get-AiSdlcConfig read a source root inside the repository' -Tag '#105' {

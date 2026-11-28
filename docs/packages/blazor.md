@@ -5,7 +5,7 @@ units:
 
 # blazor
 
-The `blazor` package provides checks and guidance for portal authorization and the Razor conventions of a Blazor component. It includes two blocking gates, scripts, and tests. Its `apm.yml` lists the [css](css.md) and [javascript](javascript.md) packs as APM dependencies, so a Blazor repository gets their skills too ([ADR 0025](../adrs/0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md)).
+The `blazor` package provides checks and guidance for portal authorization and the Razor conventions of a Blazor component. It includes one blocking gate, a script, and a test. Its `apm.yml` lists the [css](css.md) and [javascript](javascript.md) packs as APM dependencies, so a Blazor repository gets their skills too ([ADR 0025](../adrs/0025-a-pack-that-needs-another-pack-lists-it-as-an-apm-dependency.md)).
 
 ## What it contains
 
@@ -32,6 +32,9 @@ The `razor-conventions` skill lives at `packs/blazor/.apm/skills/razor-conventio
 It covers these component rules:
 
 - Put attributes on their own line.
+- Keep the parts of a Razor file in a fixed order, with one `@code` block.
+- Keep component code in the `@code` block, never in a `.razor.cs` file.
+- Build a form as an `EditForm` with a validator component and a `ValidationMessage`.
 - Do not place an interface over a state class.
 - Do not use an inline style block.
 - Use one document root.
@@ -52,20 +55,15 @@ The reference page `razor.md` lives at `packs/blazor/.apm/skills/razor-conventio
 
 The gate configuration lives at `packs/blazor/.apm/skills/razor-conventions/gates.json`.
 
-It defines these blocking gates:
+It defines this blocking gate:
 
-- `Razor components have no interface over a state class, no inline style block and no document type`
-- `Component attributes sit on their own line above the member they mark`
+- `Components have no inline style block, I*State interface or DOCTYPE outside the app component, and attributes sit above members`
 
 ### Scripts and tests
 
-`Check-RazorAttributePlacement.ps1` checks that component attributes appear on their own line above the member it marks.
+`Check-RazorConventions.ps1` enforces the mechanical component conventions from `razor.md`.
 
-It lives at `packs/blazor/.apm/skills/razor-conventions/scripts/Check-RazorAttributePlacement.ps1`.
-
-Its test file is `packs/blazor/tests/skills/razor-conventions/scripts/Check-RazorAttributePlacement.Tests.ps1`.
-
-`Check-RazorConventions.ps1` enforces the mechanical portal component conventions from `razor.md`.
+It fails on an `I*State` interface, an inline style block, a `<!DOCTYPE` outside the app component, and an attribute that shares a line with its member. It reads the app component from `dotnet.appComponent` in `aisdlc.json`, and exits 2 while the old key `dotnet.portalAppComponent` is set.
 
 It lives at `packs/blazor/.apm/skills/razor-conventions/scripts/Check-RazorConventions.ps1`.
 

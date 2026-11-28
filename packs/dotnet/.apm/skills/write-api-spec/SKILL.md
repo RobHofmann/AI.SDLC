@@ -37,8 +37,9 @@ Load the `api-contract-conventions` skill. It holds the wire rules this spec mus
 - **Base standard:** the Zalando RESTful API Guidelines defaults, with one deviation.
 - **JSON body properties are PascalCase (DOTNET-01).** Query and path parameters are snake_case; a shipped
   parameter keeps the wire name it already has, because renaming it breaks callers.
-- **A business result that is not an error returns 200 (DOTNET-02).** Real errors are
-  `application/problem+json` (`ProblemDetails`).
+- **Each response has its standard status code (DOTNET-02),** such as 200, 201 with `Location`, or
+  204. A result the caller expects is never a 4xx. Real errors are `application/problem+json`
+  (`ProblemDetails`).
 - **One domain per spec and per controller.**
 
 ## The spec file is plain OpenAPI YAML (no front-matter)
@@ -90,7 +91,7 @@ The spec joins the artifact graph indirectly, via an already front-matter'd arti
 - **Check before asserting.** Check reused types, endpoints, and auth policies against the code
   first. If you cannot confirm one, mark it as a decision or open question, not a fact.
 - **PascalCase JSON bodies (DOTNET-01); never PascalCase parameters.** Body properties are PascalCase; new query/path parameters are snake_case (e.g. `page_size`), but match the existing wire name of a shipped parameter (some are camelCase like `runType`) rather than renaming it. See [api.md](/.claude/skills/api-contract-conventions/references/api.md).
-- **Errors are `problem+json`; success is 200 (DOTNET-02).** Do not model business results as 4xx.
+- **Errors are `problem+json`; a success uses its standard 2xx code, such as 200, 201 or 204 (DOTNET-02).** Do not model an expected result as 4xx.
 - **No front-matter inside the OpenAPI file.** The graph edge lives on the story doc or ADR, not the spec.
 - **Match to the node shape.** Per [node-templates.md](/.claude/skills/ai-sdlc-handbook/references/node-templates.md), the
   contract's why is the annotated difference from an upstream node. Note in the spec where and why the wire
@@ -103,7 +104,7 @@ The spec joins the artifact graph indirectly, via an already front-matter'd arti
 ## Failure modes
 
 - **A type is reused from memory rather than read** -> the spec then describes a shape the code does not have. The build silently differs from the contract. Check the model, or mark it an open question.
-- **A business result is modelled as a 4xx** -> "no results", "already applied", "not allowed" are 200 responses with a body (DOTNET-02). Only errors use `problem+json`.
+- **An expected result is modelled as a 4xx** -> "no results" and "already applied" are 200 responses with a body. A delete of something already gone is 204 (DOTNET-02). Only errors use `problem+json`.
 - **A body property is written camelCase to match a parameter style** -> bodies are PascalCase (DOTNET-01). The two conventions differ on purpose and mixing them is the slip the PascalCase gate catches.
 - **A shipped parameter gets renamed to fit the convention** -> renaming a live query parameter is a breaking change. Match the wire name it already has, even when it is camelCase like `runType`, and use snake_case for new ones.
 - **Graph front-matter is added to the OpenAPI file** -> it is plain OpenAPI. The edge belongs on the story doc or the ADR; front-matter inside the YAML breaks it as a spec.

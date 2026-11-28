@@ -4,7 +4,7 @@ kind: knowledge
 user-invocable: false
 description: >
   The wire rules for the REST API: PascalCase JSON bodies (DOTNET-01), snake_case query and path
-  parameters, thin controllers with one domain each (DOTNET-02), 200 for a business result,
+  parameters, thin controllers with one domain each (DOTNET-02), the standard status codes,
   ProblemDetails for real errors, and a spec that moves with its endpoint. Use when a change touches a
   controller action, a route or a request or response shape, or when a spec is reviewed. Do NOT use to
   write the spec itself (write-api-spec).
@@ -37,10 +37,13 @@ The full rules are in the pages under Sources.
 
 ## Status codes
 
-- A business result that is not an error, such as "already gone", returns **200 OK** with the result
-  in the body.
-- A non-200 code is kept for real errors: auth, validation, server. A service throws a typed domain
-  exception and the middleware turns it into `ProblemDetails` (`application/problem+json`).
+- A success uses its standard code: 200 for a read, 201 with a `Location` header for a create, 204
+  for a success without a body.
+- A result that the caller expects, such as "already gone", is a success and never a 4xx. A delete of
+  something already gone answers 204.
+- A real error is a 4xx or 5xx: 400 for invalid input (not 422), and 401 or 403 for auth. 404 is for an
+  unknown resource in the URL, and 409 for a conflict with the current state. A service throws a typed
+  domain exception and the middleware turns it into `ProblemDetails` (`application/problem+json`).
 
 ## The spec
 
@@ -55,7 +58,7 @@ The full rules are in the pages under Sources.
 
 ## Sources
 
-- [API conventions](references/api.md) - the full REST reference, with the status codes and why a business result returns 200.
+- [API conventions](references/api.md) - the full REST reference, with the table of status codes.
 - [Dotnet clauses](references/clauses.md) - clauses DOTNET-01 and DOTNET-02 in full.
 - [Constitution](/.claude/skills/ai-sdlc-handbook/references/constitution.md) - the core clauses and how pack clause IDs work.
 

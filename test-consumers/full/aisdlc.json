@@ -29,5 +29,43 @@
   "github": {
     "repository": "contoso/test-consumer",
     "trunk": "main"
-  }
+  },
+  "dotnet": {
+    "layers": [
+      {
+        "name": "Api",
+        "projects": [
+          "src/Api/*.csproj"
+        ]
+      },
+      {
+        "name": "Web",
+        "projects": [
+          "src/Web/*.csproj"
+        ]
+      },
+      {
+        "name": "Tests",
+        "projects": [
+          "tests/**/*.csproj"
+        ]
+      }
+    ]
+  },
+  "gateModes": {
+    "A project reference that the change adds points to a lower layer of `dotnet.layers`": "Blocking"
+  },
+  "repoGates": [
+    {
+      "name": "Every project reference points to a lower layer of `dotnet.layers`",
+      "script": ".claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1",
+      "clause": "DOTNET-03",
+      "mode": "Blocking",
+      "args": {
+        "All": true
+      },
+      "checks": "It runs the layer gate of the dotnet pack with `-All`, so it judges every project reference of the fixture. A test consumer has no base branch, so the pack entry cannot see what a change adds. Exit 2 means the setting has the wrong shape, and exit 3 means there is no reference.",
+      "fix": "Point the reference at a project in a lower layer, or correct `dotnet.layers` in `aisdlc.json`."
+    }
+  ]
 }

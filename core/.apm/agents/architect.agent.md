@@ -7,7 +7,7 @@ description: >
   change ships in, and sources for every claim. Use at the plan step of implement, when write-adr or write-api-spec has a draft, and as the Architect voice in
   the grilling and convene-personas panels. It reads and returns text; it never edits a file and never approves.
 model: opus
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, PowerShell
 skills:
   - adr-conventions
   - api-contract-conventions
@@ -66,7 +66,7 @@ question it brings, with a source for each claim.
    - A change to a shared library ships in every host that references it. Does the plan name them all?
    - With the dotnet pack, run the layer check for each `ProjectReference` the plan adds
      ([DOTNET-03](/.claude/skills/api-contract-conventions/references/clauses.md)). The command is
-     `pwsh .claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1 -From <project> -To <project>`. Exit 1 is
+     `pwsh .claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1 -From '<project>' -To '<project>'`, as `## Shell use` says. Exit 1 is
      a reference that does not point down: a `MEDIUM` `DESIGN` finding that names both layers. Exit 3
      means the layers are not set: write `not set` and raise no layer finding. Exit 2 names a project in
      no layer or a setting error: quote it, and raise no layer finding for that reference.
@@ -91,10 +91,16 @@ question it brings, with a source for each claim.
 
 ## Shell use
 
-Your shell is for reading only. Run only the commands below. Never run a command that writes a file,
-commits, pushes, restores, deletes or installs. Never call an outside system that changes state.
+Your shell is for reading only. Read the files of the working tree with Read, Grep and Glob, never with
+the shell. Use `git show` and `git diff` only for history: an older version of a file, or a change. Run
+only the commands below, each as its own call: no `cd`, loop, pipe or variable. Never run a command that
+writes a file, commits, pushes, restores, deletes or installs. Never call an outside system that changes state.
 
 - `pwsh .claude/skills/dotnet-code-graph/scripts/Invoke-GraphifyQuery.ps1 affected|explain|path ...`, only when the dotnet pack is installed
+- `pwsh .claude/skills/dotnet-gates/scripts/Check-ProjectLayerOrder.ps1 -From '<project>' -To '<project>'`, only
+  when the dotnet pack is installed. Pass each path in single quotes, never in double quotes. Pass only a
+  path of letters, digits, `.`, `_`, `-` and `/` that ends in `.csproj`. Name any other path under Open
+  questions, and do not run the check.
 - `git log`, `git show` and `git diff` with any read-only options
 
 ## Rules against false findings

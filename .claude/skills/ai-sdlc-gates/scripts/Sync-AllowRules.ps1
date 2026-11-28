@@ -268,6 +268,9 @@ $missingAsk = @($wantedAsk | Where-Object { $_ -cnotin $asked })
 # Only a shell rule runs a script, so a Read or Edit rule under .claude/skills is left alone.
 $wildcards = @($allowed | Where-Object { [string]$_ -match '^(?:Bash|PowerShell)\(' -and [string]$_ -match $scriptsWildcard })
 $retiredFound = @($allowed | Where-Object { [string]$_ -cin $retiredRules })
+# A push rule that no package wrote, such as one of the repository or of an old release, may let a push
+# reach the main branch without a prompt. The ask rules narrow only the push rules of the packages (#108).
+$widePush = @($allowed | Where-Object { [string]$_ -cnotin $wanted -and [string]$_ -cnotin $retiredFound -and [string]$_ -match '^(?:Bash|PowerShell)\(\s*git\s+push\b' })
 
 # A rule that names the folder of a skill a release retired, .claude/skills/<old>/, runs a script that is
 # gone. The installed sync manifest lists the retired names. A folder of that name that is still there
@@ -295,7 +298,7 @@ if ($packages.Count -eq 0) {
     exit 3
 }
 
-$drift = $missing.Count + $missingAsk.Count + $wildcards.Count + $retiredFound.Count
+$drift = $missing.Count + $missingAsk.Count + $wildcards.Count + $retiredFound.Count + $widePush.Count
 if ($drift -eq 0 -and $stale.Count -eq 0) {
     Write-Host "Allow rules OK: .claude/settings.json holds the $($wanted.Count) allow rule(s) and $($wantedAsk.Count) ask rule(s) of $($packages.Count) installed package part(s), no retired rule, and no rule that ends in a wildcard over a scripts folder."
     exit 0
@@ -317,6 +320,10 @@ if ($Check) {
     if ($retiredFound.Count -gt 0) {
         Write-Host "Allow rules: .claude/settings.json holds $($retiredFound.Count) retired rule(s) that let a wide command run without a prompt, such as a push to the main branch:" -ForegroundColor Red
         foreach ($rule in $retiredFound) { Write-Host "  $rule" }
+    }
+    if ($widePush.Count -gt 0) {
+        Write-Host "Allow rules: .claude/settings.json holds $($widePush.Count) push rule(s) that no package wrote, so a push may reach the main branch without a prompt. Remove them by hand:" -ForegroundColor Red
+        foreach ($rule in $widePush) { Write-Host "  $rule" }
     }
     if ($stale.Count -gt 0) {
         Write-Host "Allow rules: .claude/settings.json also holds $($stale.Count) rule(s) of retired skills, which a run without -Check removes:"

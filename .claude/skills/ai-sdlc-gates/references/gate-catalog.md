@@ -286,23 +286,14 @@ A gate that fails or cannot check prints its checks text before its own output. 
 
 ## blazor
 
-### Razor components have no interface over a state class, no inline style block and no document type
+### Components have no inline style block, I*State interface or DOCTYPE outside the app component, and attributes sit above members
 
 - Clause: AI-SDLC
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/razor-conventions/scripts/Check-RazorConventions.ps1`
-- Checks: It scans the source root for an `I*State` interface, an inline `<style>` block in a `.razor` file and a `<!DOCTYPE` outside the app component. It does not check attribute placement, which has its own gate. Exit 2 means `paths.sourceRoot` is not set, and exit 3 means the source folder is missing or holds no `.razor` and no `.cs` file.
-- Fix: Use the state class itself, move the styles into a `.razor.css` file, and keep the document type only in the app component.
-
-### Component attributes sit on their own line above the member they mark
-
-- Clause: AI-SDLC
-- Mode: Blocking
-- Runs in: pre-push hook, pull request action, local run
-- Script: `.claude/skills/razor-conventions/scripts/Check-RazorAttributePlacement.ps1`
-- Checks: It scans the source root for a component attribute that shares a line with the member below it. It does not check the other rules of `Check-RazorConventions.ps1`. Exit 2 means `paths.sourceRoot` is not set, and it never exits 3.
-- Fix: Move the attribute onto its own line above its member.
+- Checks: It reads the `.razor` and `.cs` files under `paths.sourceRoot`. It fails on an `I*State` interface, an inline `<style>` block and a `<!DOCTYPE` outside the app component. It also fails on an attribute on the same line as its member. Exit 2 means `paths.sourceRoot` is not set or the old key `dotnet.portalAppComponent` is still set, and exit 3 means there is no file to read.
+- Fix: Use the state class, move each style to the `.razor.css` file, keep the DOCTYPE in the app component, and put each attribute above its member.
 
 ## dotnet
 

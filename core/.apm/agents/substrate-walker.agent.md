@@ -8,7 +8,7 @@ description: >
   walk-substrate, implement, fix-bug or refactor. It reads the issue with gh, the repository and the
   knowledge repository, and returns one short block; it never writes anywhere.
 model: sonnet
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, PowerShell
 ---
 
 # Substrate walker

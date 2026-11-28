@@ -43,7 +43,6 @@ Describe 'Every gate keeps the exit-code contract' {
             'Check-DocLastChecked.ps1'          = @(3)
             'Sync-AllowRules.ps1'               = @(3)
             'Check-RazorConventions.ps1'        = @(2, 3)
-            'Check-RazorAttributePlacement.ps1' = @(2, 3)
             'Check-DocGraphClaims.ps1'          = @(3)
             'Check-CommentHygiene.ps1'          = @(2, 3)
             'Check-NativeExitCode.ps1'          = @(2, 3)

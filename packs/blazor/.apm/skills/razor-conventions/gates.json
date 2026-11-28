@@ -1,9 +1,12 @@
 {
   "package": "blazor",
   "gates": [
-    { "name": "Razor components have no interface over a state class, no inline style block and no document type", "script": "scripts/Check-RazorConventions.ps1", "clause": "AI-SDLC", "mode": "Blocking", "checks": "It scans the source root for an `I*State` interface, an inline `<style>` block in a `.razor` file and a `<!DOCTYPE` outside the app component. It does not check attribute placement, which has its own gate. Exit 2 means `paths.sourceRoot` is not set, and exit 3 means the source folder is missing or holds no `.razor` and no `.cs` file.", "fix": "Use the state class itself, move the styles into a `.razor.css` file, and keep the document type only in the app component." },
-    { "name": "Component attributes sit on their own line above the member they mark", "script": "scripts/Check-RazorAttributePlacement.ps1", "clause": "AI-SDLC", "mode": "Blocking", "checks": "It scans the source root for a component attribute that shares a line with the member below it. It does not check the other rules of `Check-RazorConventions.ps1`. Exit 2 means `paths.sourceRoot` is not set, and it never exits 3.", "fix": "Move the attribute onto its own line above its member." }
+    { "name": "Components have no inline style block, I*State interface or DOCTYPE outside the app component, and attributes sit above members", "script": "scripts/Check-RazorConventions.ps1", "clause": "AI-SDLC", "mode": "Blocking", "checks": "It reads the `.razor` and `.cs` files under `paths.sourceRoot`. It fails on an `I*State` interface, an inline `<style>` block and a `<!DOCTYPE` outside the app component. It also fails on an attribute on the same line as its member. Exit 2 means `paths.sourceRoot` is not set or the old key `dotnet.portalAppComponent` is still set, and exit 3 means there is no file to read.", "fix": "Use the state class, move each style to the `.razor.css` file, keep the DOCTYPE in the app component, and put each attribute above its member." }
   ],
   "allow": [
+  ],
+  "retiredAllow": [
+    "pwsh -NoProfile -File .claude/skills/razor-conventions/scripts/Check-RazorAttributePlacement.ps1",
+    "pwsh .claude/skills/razor-conventions/scripts/Check-RazorAttributePlacement.ps1"
   ]
 }

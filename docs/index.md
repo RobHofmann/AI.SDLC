@@ -34,6 +34,7 @@ One entry per page (relative link plus a one-sentence summary), grouped by area.
 - [ADR 0026: A test proves the team's own logic, not the framework's](./adrs/0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md) - Clause C04 asked for tests of changed code, but did not say what a test should prove.
 - [ADR 0027: A model-visible skill description has at most 450 characters](./adrs/0027-a-model-visible-skill-description-has-at-most-450-characters.md) - Claude Code and GitHub Copilot load the name and description of every skill the model can pick into each session.
 - [ADR 0028: A repository sets its .NET layer order, and a new reference points down](./adrs/0028-a-repository-sets-its-dotnet-layer-order-and-a-new-reference-points-down.md) - A .NET solution often keeps its projects in layers: a kernel at the bottom, then the domain, then the hosts.
+- [ADR 0029: An API uses the standard status codes](./adrs/0029-standard-status-codes.md) - DOTNET-02 said that a business result that is not an error returns 200 with the result in the body.
 - [Architecture Decision Records](./adrs/README.md) - This folder records the key technical decisions for AI.SDLC itself.
 
 ## General

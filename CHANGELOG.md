@@ -261,6 +261,46 @@ Each entry names its issue, as `#42`.
   or `scripts/Run.ps1*`, is never written, and neither is a rule that opens a whole shell. The script
   removes such a wildcard rule from `.claude/settings.json`, and `-Check` reports one. The other
   scripts are listed as `scripts/Run.ps1 *`, which matches the bare command and its arguments only.
+- No allow rule lets a push reach the main branch (security, #108). `git push`, `git push origin *`,
+  `git push --set-upstream origin *` and `git push -u origin *` are gone. A push runs without a prompt
+  only as `git push origin <branch>` or `git push --set-upstream origin <branch>` for a branch that
+  starts with a digit, the story number. A new `ask` list in `gates.json` makes any extra argument,
+  refspec or shell character after the branch ask a person, and `Sync-AllowRules.ps1` writes it into
+  `permissions.ask`. The runner rules `Invoke-LocalGates.ps1 *` and `Invoke-Preflight.ps1 *` are
+  replaced by the exact argument sets the skills use, and `Invoke-PesterGate.ps1 *`, which ran any
+  test file, is gone. A new `retiredAllow` list names the old rules: the script removes them, and
+  `-Check` fails on one. `-Check` also fails on a `git push` rule that no package wrote.
+- `Sync-AllowRules.ps1` also removes a rule that names the folder of a retired skill, and `-Check`
+  lists it without failing (#105).
+- `Get-AiSdlcConfig` refuses a `paths.sourceRoot` or `paths.sourceRoots` folder outside the repository
+  or behind a link, also a link that a later `..` hides, so every gate gets a folder inside it
+  (security, #105). The push hook names the reason when it refuses on that.
+- `Invoke-Gate.ps1` is Blocking when `-Mode` is not given, as in upstream (#105).
+- The two Razor gates are one: `Check-RazorConventions.ps1` now also checks that a component attribute
+  sits on its own line above its member, and `Check-RazorAttributePlacement.ps1` is gone. The key
+  `dotnet.portalAppComponent` is renamed to `dotnet.appComponent`. The Razor rules add the file order,
+  the `@code` block and the `EditForm` with a validator (#105).
+- DOTNET-02 now asks for the standard status codes: 201 with `Location` for a create, 204 for a
+  success without a body, and 4xx through `ProblemDetails` only for a real error
+  ([ADR 0029](docs/adrs/0029-standard-status-codes.md), #105).
+- `Find-RetiredSkillNames.ps1` reads the paths in a decision record, such as a link target or a
+  `relates:` entry, and skips a generated docs index (#105).
+- `Add-PrPublishCheck` removes every `## Before you publish` section of the caller, whatever its text,
+  up to the next heading of level 1 or 2 (#105).
+- `fix-pr-feedback` stops for the person on a fix that would break a house rule or add a package. The
+  builder checks the story size first and proposes a split above 5 criteria. `test-first-dotnet` is
+  red then green, with the Story trait on each new test method (#105).
+- The security areas that call the `security-reviewer` are listed once, in `orchestration.md`, with
+  deserialization, error responses and a query, command or filter built from input (#105).
+- C04 says that validators stay in the coverage measurement, and that the wiring lines of a mixed file
+  need no test of their own; constitution 1.3. The `code-reviewer` notes it (#105).
+- The `architect` may run the layer check, with quoted and checked paths and no `cd`, loop or pipe.
+  `architect`, `builder`, `docs-reviewer` and `substrate-walker` list the `PowerShell` tool (#105).
+- The Bicep pages keep one deployment-name form: the helper, or `deployment().name` with a fixed module
+  suffix (#105).
+- The `Invoke-PesterGate.ps1` help example has the `checks` and `fix` texts that the runner needs (#105).
+- The `full` and `platform` test consumers run the layer gate and the role ID gate as Blocking (#105).
+- The source-only allow rule tests skip in an installed consumer, so the test consumers pass (#103).
 
 What a consumer does when it takes this release:
 
@@ -330,6 +370,21 @@ What a consumer does when it takes this release:
   only the areas it names. Expect new findings on a branch that relied on the old rules (#104).
 - Check your own pages for the HTML codes of an em-dash, and your own ADRs and specs for a missing
   `because` reason or `intent.assumption`. Both gates now fail on them (#104).
+- Run `Sync-AllowRules.ps1` on the update branch and commit `.claude/settings.json`. It removes the
+  wide push and runner rules and adds the ask rules. Push a story branch as `git push origin <branch>`;
+  any other push, a runner call with other options and `Invoke-PesterGate.ps1` now ask for a prompt.
+  `-Check` fails on a `git push` rule of your own: remove it, or the push may reach `main` (#108).
+- Move a `paths.sourceRoot` or `paths.sourceRoots` folder that lies outside the repository, or behind a
+  link, to a folder inside it. Every gate that reads the settings now fails until you do (#105).
+- When one of your own tests lists each file that `AiSdlcConfig.psm1` reads, such as a test of the
+  inputs of a build job, add the new read `Get-Item -LiteralPath $walk` of `Resolve-AiSdlcSourceRoot` (#105).
+- A workflow step of your own that calls `Invoke-Gate.ps1` without `-Mode` now blocks. Pass
+  `-Mode Advisory` where a warning is enough (#105).
+- With the blazor pack, rename `dotnet.portalAppComponent` to `dotnet.appComponent` in `aisdlc.json`.
+  The Razor gate exits 2 while the old key is there. A `gateModes` entry or a doc of your own that names
+  the attribute placement gate must use the name of the one Razor gate (#105).
+- With the dotnet pack, a new endpoint follows the standard status codes of DOTNET-02. A client of
+  your own that reads only 200 as a success must accept every 2xx code (#105).
 
 
 ## v1.5.1 - 2026-11-26

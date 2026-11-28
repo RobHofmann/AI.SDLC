@@ -71,6 +71,7 @@ clear. The `adr-conventions` skill holds the full rules, and the `write-adr` ski
 | [0026](0026-a-test-proves-the-teams-own-logic-not-the-frameworks.md) | A test proves the team's own logic, not the framework's | Accepted |
 | [0027](0027-a-model-visible-skill-description-has-at-most-450-characters.md) | A model-visible skill description has at most 450 characters | Accepted |
 | [0028](0028-a-repository-sets-its-dotnet-layer-order-and-a-new-reference-points-down.md) | A repository sets its .NET layer order, and a new reference points down | Accepted |
+| [0029](0029-standard-status-codes.md) | An API uses the standard status codes | Accepted |
 
 ## Related
 

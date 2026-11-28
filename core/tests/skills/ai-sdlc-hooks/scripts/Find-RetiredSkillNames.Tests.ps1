@@ -200,6 +200,96 @@ Describe 'Find-RetiredSkillNames' {
         $r.Output | Should -Match 'no file of the repository uses an old skill name'
     }
 
+    Context 'a decision record' {
+        BeforeAll {
+            $script:AdrNote = ' (a path in a decision record: change the path, not the decision)'
+            $script:SkillPath = '.claude/skills/old-skill/references/clean-code.md'
+            $script:AdrLines = @(
+                '---'
+                'story: "#1"'
+                'step: old-skill'
+                'relates:'
+                "  smells: ../../$script:SkillPath"
+                'because: the old-skill rules'
+                '---'
+                'We call old-skill here.'
+                ''
+                'A [old-skill](../guide.md) link.'
+                ''
+                'See `[x](../../.claude/skills/old-skill/SKILL.md)` in code.'
+                'Text old-agent only.'
+                "A [rules](../../$script:SkillPath) link."
+                'More old-skill text.'
+                ''
+                '[smells]: ../../.claude/skills/old-skill/SKILL.md'
+            ) -join "`n"
+        }
+
+        It 'lists only a path of an ADR: a link target, a definition and a relates entry' -Tag '#105' {
+            $root = New-ConsumerRepo -Files @{ 'docs/adrs/0001-x.md' = "$script:AdrLines`n" }
+            $r = Invoke-Finder -Root $root
+            $r.Code | Should -Be 0
+            foreach ($line in 5, 14, 17) {
+                $r.Output | Should -Match ("docs/adrs/0001-x\.md:$line  old-skill -> new-skill" + [regex]::Escape($script:AdrNote))
+            }
+            foreach ($line in 3, 6, 8, 10, 12, 13, 15) {
+                $r.Output | Should -Not -Match "docs/adrs/0001-x\.md:$line  "
+            }
+        }
+
+        It 'lists intent.hypothesis but not intent.assumption' -Tag '#105' {
+            $root = New-ConsumerRepo -Files @{
+                'docs/adrs/0002-x.md' = "---`nintent:`n  assumption: the old-skill stays`n  hypothesis: .claude/skills/old-skill/a.md`n---`n# ADR`n"
+            }
+            $r = Invoke-Finder -Root $root
+            $r.Output | Should -Match ([regex]::Escape('docs/adrs/0002-x.md:4  old-skill -> new-skill'))
+            $r.Output | Should -Not -Match 'docs/adrs/0002-x\.md:3  '
+        }
+
+        It 'reports one finding on the right line: <Name>' -Tag '#105' -ForEach @(
+            @{ Name = 'a relates list entry'; Line = 3; Text = "---`nrelates:`n  - ../../.claude/skills/old-skill/SKILL.md`n---`n# ADR`n" }
+            @{ Name = 'a relates list entry with a key'; Line = 3; Text = "---`nrelates:`n  - spec: ../../.claude/skills/old-skill/SKILL.md`n---`n# ADR`n" }
+            @{ Name = 'a link whose text wraps to the next line'; Line = 4; Text = "# ADR`n`nSee [the old`nrules](../../.claude/skills/old-skill/SKILL.md) now.`n" }
+            @{ Name = 'a link in an ADR without front matter'; Line = 3; Text = "# ADR`n`nSee [rules](../../.claude/skills/old-skill/SKILL.md).`n" }
+        ) {
+            $root = New-ConsumerRepo -Files @{ 'docs/adrs/0003-x.md' = $Text }
+            $r = Invoke-Finder -Root $root
+            ([regex]::Matches($r.Output, 'docs/adrs/0003-x\.md:')).Count | Should -Be 1
+            $r.Output | Should -Match "docs/adrs/0003-x\.md:$Line  old-skill -> new-skill"
+        }
+
+        It 'does not list a link inside a code fence of an ADR' -Tag '#105' -ForEach @('```', '~~~') {
+            $text = "# ADR`n`n$_`n[x](../../.claude/skills/old-skill/SKILL.md)`n$_`n"
+            $root = New-ConsumerRepo -Files @{ 'docs/adrs/0004-x.md' = $text }
+            $r = Invoke-Finder -Root $root
+            $r.Output | Should -Match 'no file of the repository uses an old skill name'
+        }
+    }
+
+    Context 'a docs index' {
+        BeforeAll {
+            $builder = Join-Path $script:ScriptFolder '..' '..' 'ai-sdlc-gates' 'scripts' 'Build-DocsIndex.ps1'
+            $header = [regex]::Match((Get-Content -LiteralPath $builder -Raw), '(?m)^\$generatedHeader = ''(?<h>[^'']+)''').Groups['h'].Value
+            $script:IndexHeader = "<!-- $header -->"
+        }
+
+        It 'skips a generated docs index and still lists a page with the same text' -Tag '#105' {
+            $root = New-ConsumerRepo -Files @{
+                'docs/index.md' = "$script:IndexHeader`n# Index`n`nRun ``old-skill`` first.`n"
+                'docs/guide.md' = "# Guide`n`nRun ``old-skill`` first.`n"
+            }
+            $r = Invoke-Finder -Root $root
+            $r.Output | Should -Match ([regex]::Escape('docs/guide.md:3  old-skill -> new-skill'))
+            $r.Output | Should -Not -Match 'docs/index\.md'
+        }
+
+        It 'reads an index.md written by hand' -Tag '#105' {
+            $root = New-ConsumerRepo -Files @{ 'docs/index.md' = "# Index`n`nRun ``old-skill`` first.`n" }
+            $r = Invoke-Finder -Root $root
+            $r.Output | Should -Match ([regex]::Escape('docs/index.md:3  old-skill -> new-skill'))
+        }
+    }
+
     It 'changes no file' {
         $root = New-ConsumerRepo -Files @{ 'CLAUDE.md' = "Use ``old-skill``.`n" }
         Invoke-Finder -Root $root | Out-Null

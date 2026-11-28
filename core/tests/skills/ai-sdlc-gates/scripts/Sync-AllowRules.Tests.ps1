@@ -241,6 +241,20 @@ Describe 'Sync-AllowRules' {
         }
     }
 
+    It 'reports an allow rule of the repository that lets a push reach the main branch: <Rule>' -Tag '#108' -ForEach @(
+        @{ Rule = 'Bash(git push *)' }
+        @{ Rule = 'Bash(git push:*)' }
+        @{ Rule = 'PowerShell(git push origin main)' }
+    ) {
+        $settings = '{ "permissions": { "allow": [ "Bash(git status *)", "PowerShell(git status *)", "' + $Rule + '" ] } }'
+        $root = New-AllowRepo -Settings $settings
+
+        $result = Invoke-Sync -Root $root -Check
+
+        $result.Code | Should -Be 1
+        $result.Output | Should -Match ([regex]::Escape($Rule))
+    }
+
     Context 'a skill that a release retired' {
         BeforeAll {
             function Add-RetiredManifest {
@@ -558,6 +572,10 @@ Describe 'Allow rules of the shipped packages' {
             @{ Command = 'git push origin 1x\:main' }
             @{ Command = "git push origin '1x main'" }
             @{ Command = 'git push origin 1x@{u}' }
+            @{ Command = "git push origin 1x`nmain" }
+            @{ Command = 'git push origin +1x' }
+            @{ Command = 'git push origin 1.2.0' }
+            @{ Command = 'git push origin 1x!' }
         ) {
             if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
             foreach ($set in $script:RuleSets) {

@@ -229,7 +229,7 @@ the model of the session is. Claude Code, Copilot CLI and Copilot in VS Code all
 | `spec-reviewer` | core | Product Manager, QA | `opus` | the review step of `implement`, next to the code review; not `refactor` |
 | `code-reviewer` | core | Lead, Developer | `sonnet` | the review step; `refactor`; `update-constitution` check mode |
 | `test-analyzer` | core | QA | `sonnet` | the review step of `implement` and `refactor` (a bug fix from `fix-bug` reaches it inside `implement`) |
-| `security-reviewer` | core | Lead | `opus` | the review step when auth, RBAC, secrets, network access, outbound calls, JS interop or request logging move; `grilling` and `/convene-personas` panels |
+| `security-reviewer` | core | Lead | `opus` | the review step when a diff touches a security area, as the review step of [orchestration.md](orchestration.md) lists them; `grilling` and `/convene-personas` panels |
 
 Why each agent uses its model, and which model to pick for a skill, is in
 [pattern.md](pattern.md#the-model-of-each-step). Sonnet is enough for the main session, because the

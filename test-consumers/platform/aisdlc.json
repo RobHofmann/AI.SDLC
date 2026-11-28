@@ -27,5 +27,13 @@
   "github": {
     "repository": "contoso/test-consumer",
     "trunk": "main"
+  },
+  "bicep": {
+    "roleLookupFiles": [
+      "infra/roles.json"
+    ]
+  },
+  "gateModes": {
+    "Role IDs come from the lookup files that aisdlc.json names": "Blocking"
   }
 }

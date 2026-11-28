@@ -143,7 +143,7 @@ the sync check, but not for the gate runner. So it ships no gate (ADR 0025).
 | `visibility` | `private` or `public`. The private-terms gate runs only on a `public` repository | `private` |
 | `docs.lastCheckedMaxAgeDays` | A positive whole number switches on a warning for every `Last checked: <date>` in `AGENTS.md` and the doc layers that is older than this many days. The local gate run and the pre-push hook show it, and it never fails a push. Any other value counts as off. | `0` (off) |
 | `docs.units` / `docs.unitExclude` | The units that need a page, when the list of the packs does not fit, and the unit paths left out on purpose | the packs' list / none |
-| `paths.solution`, `paths.sourceRoot`, `paths.testRoot`, `paths.runSettings`, `paths.coverageBaseline`, `paths.packagesProps` | The .NET solution, its code, its tests and its coverage setup, for the `dotnet` pack | none |
+| `paths.solution`, `paths.sourceRoot`, `paths.testRoot`, `paths.runSettings`, `paths.coverageBaseline`, `paths.packagesProps` | The .NET solution, its code, its tests and its coverage setup, for the `dotnet` pack. `Get-AiSdlcConfig` refuses a `paths.sourceRoot` or `paths.sourceRoots` folder outside the repository or behind a link | none |
 | `paths.sourceRoots` | More source folders, as a list, for the change completeness gate. It reads them next to `paths.sourceRoot`. A package folder such as `core` or `packs` maps a script under `.apm/` to its test under `tests/` | none |
 | `commands.build` / `commands.test` / `commands.testChanged` | How to build and test the repository. The pre-flight runs `commands.test` from the repository root, unless a pack pre-flight runs the tests itself, as the dotnet pack does. A scoped pre-flight runs `commands.testChanged` in its place when it is set; a test command that exits 3 ran no test and shows `N/A` | none |
 | `tracker` | The issue repository (`tracker.repository`, `owner/name`; empty means the `origin` remote), an own key pattern (`tracker.keyPattern`), the `refined` and `to-refine` labels, the size label prefix (`size:`), the labels and the data model patterns, for the `github-issues` pack. `tracker.acceptedRepositories` lists other repositories, as `owner/name`, whose issues may anchor a pull request here, such as the AI.SDLC source for an update pull request | `refined`, `to-refine`, `size:`; no accepted repositories |
@@ -152,7 +152,7 @@ the sync check, but not for the gate runner. So it ships no gate (ADR 0025).
 | `css` | The token prefix (`css.tokenPrefix`, such as `--brand-`) and the colour scheme files (`css.colourSchemeFiles`, a list of paths), read by `css-conventions`, for the `css` pack. A key that is not set means: use what the style sheets next to the change use | none |
 | `javascript` | The name of the cleanup helper that removes a listener when its element leaves the page (`javascript.cleanupHelper`), read by `javascript-conventions`, for the `javascript` pack. A key that is not set means: use the helper that the modules next to the change use | none |
 | `knowledge` | The knowledge repository (`knowledge.repository`, `owner/name`). The setup offers `gh repo clone` into `paths.knowledgeRoot` when the folder is missing | none |
-| `dotnet` | The code graph benchmark, the external contract paths, the wire name allow list, the portal app component and the API page folders, for the `dotnet` pack. `dotnet.folders.contracts`, `.exceptions` and `.options` name the folders for a new interface, exception and options class, which `csharp-conventions` reads; a key that is not set means: follow the types next to the change. `dotnet.layers` is the layer order of the solution, bottom layer first: a list of objects with a `name` and `projects`, a list of path globs to project files (ADR 0028). Without it the layer gate reports not applicable. `dotnet.credentialHelper` and `dotnet.baseException` name the shared credential helper type and the shared base exception type that `Check-SharedParts.ps1` reads; an empty key skips its rule | none |
+| `dotnet` | The code graph benchmark, the external contract paths, the wire name allow list, the app component (`appComponent`) and the API page folders, for the `dotnet` pack. `dotnet.folders.contracts`, `.exceptions` and `.options` name the folders for a new interface, exception and options class, which `csharp-conventions` reads; a key that is not set means: follow the types next to the change. `dotnet.layers` is the layer order of the solution, bottom layer first: a list of objects with a `name` and `projects`, a list of path globs to project files (ADR 0028). Without it the layer gate reports not applicable. `dotnet.credentialHelper` and `dotnet.baseException` name the shared credential helper type and the shared base exception type that `Check-SharedParts.ps1` reads; an empty key skips its rule | none |
 | `pullRequest.sizeLimit` / `pullRequest.sizeExclude` | The most changed lines (added plus removed) a pull request has before `Check-PrSize.ps1` warns, a whole number above 0, and the path globs of the files that do not count. The gate reads both at the merge base, so a change cannot raise its own limit. Without a limit the gate reports not applicable | none |
 | `bicep` | For the `bicep` pack: `bicep.roleLookupFiles`, the paths of the files that hold the role definition IDs, which the role ID gate reads (without it the rule reports not applicable). `bicep.registryAlias`, the module registry alias, and `bicep.deploymentNameHelper`, the helper function for deployment names, are read by `bicep-conventions` only. A key that is not set means: follow the files next to the change | none |
 | `repoGates` | The repository's own gates, each with a name that says what passes, a script, a mode (Blocking, Advisory or Off), a clause (a core clause, a pack clause or `AI-SDLC`), a `checks` text and a `fix` text | none |
@@ -214,6 +214,27 @@ without `-Check`, still asks. A rule must name its script. A star glued to a fil
 such a rule, and it removes one that an older release wrote. Any other rule the repository wrote itself
 stays. The advisory core gate runs it with `-Check` and names a missing rule or a wildcard rule. To
 change a shared rule, change the `gates.json` of the skill in AI.SDLC.
+
+Three more lists in a `gates.json` narrow what runs without a prompt:
+
+- `ask` lists commands that always ask a person, also when an allow rule matches them. Claude Code reads
+  an ask rule before an allow rule, and a star matches any text, spaces and colons too. So the core
+  allows `git push origin <digit>*`, a story branch, and asks for any extra argument, refspec or shell
+  character after it. A push to `main` always asks, also when a hook is broken. The agent push hook
+  `Deny-IncompletePush.ps1` and the git pre-push hook refuse a push to `main` as a second guard. A rule
+  cannot match a literal `*`, so a glob after the branch is left to those hooks.
+- `retiredAllow` lists rules that a release took back, such as `git push origin *` and the runners with
+  a star. The script never writes them, removes them from `.claude/settings.json`, and `-Check` fails
+  on one.
+- A rule that names the folder of a skill a release retired, `.claude/skills/<old>/`, is removed too,
+  when the installed `sync-manifest.json` lists `<old>` and no such folder exists. `-Check` lists it
+  without failing.
+
+The runners `Invoke-LocalGates.ps1` and `Invoke-Preflight.ps1` run without a prompt only with the
+argument sets the skills use, such as `-SkipTests`. Any other call asks, and so does
+`Invoke-PesterGate.ps1`, which would run any test file. The runners still run the scripts that
+`repoGates` in `aisdlc.json` names, and an agent can edit those. So the edit permission is the real
+limit: a repository that lets the agent edit without a prompt also lets it run that code.
 
 ## Developing against a local clone
 

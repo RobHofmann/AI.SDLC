@@ -70,8 +70,10 @@ function Add-PrPublishCheck {
     Returns the description lines with the "Before you publish" block at the top, exactly once.
 
     .DESCRIPTION
-    A copy of the full block found lower down is removed first. It is matched line by line and
-    case-sensitive. Partial block text stays as it is.
+    A full copy of the standard block lower down is removed first. Then every "## Before you publish"
+    section of the caller is removed, whatever its text, up to the next heading of level 1 or 2. The
+    heading may be in any case and indented up to 3 spaces. A heading inside a code fence is text, so it
+    stays. Then the standard block goes at the top once.
 
     .PARAMETER Lines
     The description lines.
@@ -98,7 +100,28 @@ function Add-PrPublishCheck {
         }
     }
 
-    return [string[]]@($block + $rest)
+    # A caller may write its own version of the section. It is removed too, so the person reads one.
+    $kept = [System.Collections.Generic.List[string]]::new()
+    $inSection = $false
+    $fence = $null
+    foreach ($line in $rest) {
+        if ($fence) {
+            if ($line -match "^ {0,3}$([regex]::Escape([string]$fence[0])){$($fence.Length),}\s*$") { $fence = $null }
+        }
+        elseif ($line -match '^ {0,3}(`{3,}|~{3,})') {
+            $fence = $Matches[1]
+        }
+        elseif ($line -match '^ {0,3}##[ \t]+Before you publish\s*$') {
+            $inSection = $true
+            continue
+        }
+        elseif ($inSection -and $line -match '^ {0,3}#{1,2}(\s|$)') {
+            $inSection = $false
+        }
+        if (-not $inSection) { $kept.Add($line) }
+    }
+
+    return [string[]]@($block + $kept)
 }
 
 function Assert-PrDescriptionLength {

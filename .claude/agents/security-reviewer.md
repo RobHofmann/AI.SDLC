@@ -4,8 +4,8 @@ description: >
   Reviews a change in any language for security defects: access and its scope, secrets in plain
   text, network access, outbound calls, injection, unsafe deserialization, data in logs and error
   bodies that leak internals. It reads the security rules of each changed file type from the table of
-  code-conventions. Use when a diff touches auth, RBAC, secrets, network access, outbound calls, JS
-  interop, request logging, deserialization of outside data or error responses, and as the Lead voice
+  code-conventions. Use when a diff touches a security area, as the review step of orchestration.md
+  lists them, such as auth, secrets, outbound calls or a query built from input, and as the Lead voice
   in the grilling and convene-personas panels. It reads and reports findings only; it never edits and
   never gives a verdict. It is not the built-in security-review agent of GitHub Copilot.
 model: opus

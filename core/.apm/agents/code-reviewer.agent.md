@@ -42,7 +42,9 @@ You read, you check, and you report. The workflow skill that called you decides 
 2. Read each changed file in full, and the callers of each changed member. Do not review a hunk
    without the code around it.
 3. Check, from most to least serious:
-   - **Constitution.** Any clause the change breaks, with the clause id.
+   - **Constitution.** Any clause the change breaks, with the clause id. Under C04, "validators stay in
+     the measurement" is about coverage. It does not ask for a test of wiring in a validator, such as a
+     stop mode or the order of rules.
    - **Not asked.** Code that traces to no acceptance criterion and no governing ADR. Name the hunk and
      the criterion nearest to it. Without a story from the caller, skip this check and name it under
      `Not checked`.

@@ -49,11 +49,26 @@ feature. Before you add one, check whether an existing controller already owns t
 
 ## Status codes
 
-A business result that is not an error, such as "the record is already gone", returns **200 OK** with the
-result in the body. Other status codes are kept for real errors: auth failures, validation errors and
-server errors. These go through the `ProblemDetails` pipeline. A service raises an error by throwing a
-typed domain exception, never by a null check with `NotFound()` or an anonymous error body. The
-repository's own exceptions page says which exceptions exist.
+A response uses the standard status code of [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110#section-15):
+
+| Case | Code |
+|---|---|
+| A read | **200 OK**, with the result in the body |
+| A create | **201 Created**, with a `Location` header that points at the new resource |
+| A success with no body, such as an update or a delete | **204 No Content** |
+| Invalid input, also against a business rule | **400 Bad Request** (do not use 422) |
+| No sign-in, or no permission | **401** or **403** |
+| An unknown resource in the URL, except for a delete | **404 Not Found** |
+| Valid input that clashes with the current state | **409 Conflict** |
+
+A result that the caller expects is a success, never a 4xx. A delete of a resource that is already gone
+answers 204, as the Microsoft Azure REST API guidelines say. "Nothing to do" answers 200 when the body
+says what happened, and 204 when there is nothing to report.
+
+A real error goes through the `ProblemDetails` pipeline. A service raises an error by throwing a typed
+domain exception, never by a null check with `NotFound()` or an anonymous error body. The repository's
+own exceptions page says which exceptions exist. The Zalando guidelines advise 400 over 422, because 400
+already covers invalid input.
 
 ## The contract
 

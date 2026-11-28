@@ -13,7 +13,7 @@ code. A detailed convention belongs on a conventions page, and a single decision
 hook, skill, code review. The status is active, or deferred with the planned target. A deferred check
 is tracked debt, not a wish.
 
-**Version:** 1.2
+**Version:** 1.3
 
 ## Clause IDs
 
@@ -115,8 +115,9 @@ clause in each session.
   owns and can test. The run settings file (`paths.runSettings`) scopes the measurement on the
   collecting side. The exclusions of the code-quality service scope it on the other side, for example
   `sonar.coverage.exclusions` in SonarCloud. Both use one shared list of left-out files, such as UI components, browser scripts,
-  program start-up and dependency wiring. Business logic, controllers, services, validators and
-  repositories are never left out.
+  program start-up and dependency wiring, for example `*ServiceCollectionExtensions.cs`. Business logic,
+  controllers, services, validators and repositories stay in the measurement. A file that mixes rules
+  and wiring stays in too, and its wiring lines need no test of their own.
 - **Rationale:** Coverage protects against regressions and is the basis for acceptance-criteria
   coverage. A bar that no gate measures is read by nobody. A report that also counts third-party
   packages and test projects gives a figure that means nothing. So the fix is the denominator and the
@@ -134,7 +135,7 @@ clause in each session.
   Where the dotnet pack is installed, `Check-StoryTraits.ps1 -Strict` (blocking) fails a test class with
   no Story trait or with a malformed story key - active. Code review - active for "tests exist". The
   line between own logic and framework behaviour is upheld in code review and by the `test-analyzer`
-  agent - active. No gate can tell own logic from wiring, so none is planned.
+  and `code-reviewer` agents - active. No gate can tell own logic from wiring, so none is planned.
 - **Short form:** Changed code ships with mirrored tests that prove the team's own logic, not the
   framework's. Total line coverage must not drop below the baseline in `paths.coverageBaseline`, where
   the repository sets one.
