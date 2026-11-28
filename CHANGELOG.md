@@ -222,6 +222,45 @@ Each entry names its issue, as `#42`.
 - New pack clause DOTNET-04 and the Advisory gate `Check-SharedParts.ps1`: settings through options,
   `HttpClient` from the factory, the credential from `dotnet.credentialHelper` and exceptions from
   `dotnet.baseException`. `AiSdlcConfig.psm1` gains `Resolve-AiSdlcSourceRoot` (#83).
+- `Check-ChangeCompleteness.ps1` counts a test only in the test folder that mirrors the changed
+  project, or the package `tests/` folder of a script under `.apm/` (ADR 0015). A change in two
+  projects needs a test change in both. A deleted file needs no test, but still needs its docs. An ADR
+  clears only the doc areas whose paths it names. The gate reads `paths.sourceRoots` next to
+  `paths.sourceRoot`. It exits 2 when the change cannot be listed, also when `CHANGED_FILES` is set and
+  git cannot read HEAD (#104).
+- `Check-PrStoryContract.ps1` counts an ADR only when this pull request adds or changes it. An older
+  ADR of the same story no longer clears a new data-model change (#104).
+- `Check-DocEmDashes.ps1` also finds the HTML codes that draw an em-dash: the named entity mdash and
+  the numeric forms 8212 and hexadecimal 2014. `Check-StoryTraits.ps1` finds a test class inside a
+  block namespace. In a local run, `Test-GitleaksBaseline.ps1` also scans the staged files, so a
+  secret that is staged but not committed fails the gate (C03, #104).
+- `Check-ArtifactGraph.ps1` runs its `because.<edge>` and `intent.assumption` rules in every gate run:
+  the core gate entry passes `-Strict` (#104).
+- Nine more gates exit 3 when they check nothing: `Check-DocDrift.ps1`, `Check-DocEmDashes.ps1`,
+  `Check-DocCoverage.ps1`, `Check-LocalPackages.ps1`, `Check-ArtifactGraph.ps1`, `Check-DocsWiki.ps1`,
+  `Check-DocRowContent.ps1`, `Check-RazorConventions.ps1` and `tools/Check-RetiredSkillNames.ps1` (#104).
+- Left out of the upstream gate rules on purpose (#104):
+  - `-ExcludePath` on the em-dash and line-number gates. It only stops a skill fault from failing two
+    gates in AI.SDLC itself, and no consumer sees it.
+  - Moving the orphan check from `Check-DocsWiki.ps1` to `Build-DocsIndex.ps1 -Check`. Clause C05 names
+    `Check-DocsWiki.ps1` as the orphan check, so the move is a clause change.
+  - `runsIn`. The code graph gate is Advisory and exits 3 where there is no graph, so a pull request
+    build already shows it as not applicable.
+  - `blocksAgentPush`. The agent push hook names the completeness gate itself, and no other gate would
+    set the flag.
+  - `agents.writers`. The writer list in `Check-AgentHygiene.ps1` is a security boundary. A setting in
+    `aisdlc.json` would let a pull request give write tools to any agent.
+  - `paths.sourceRoots` is ported.
+- AI.SDLC sets `paths.sourceRoots` to `core` and `packs` in its own `aisdlc.json`, with `.ps1` and
+  `.psm1` as source files (#104). So the completeness gate now runs on every push here. A changed
+  script under `.apm/` needs a changed test in the mirrored folder under its package `tests/`.
+- Every allow rule for a script names that script exactly (security, #103). `Sync-AllowRules.ps1`
+  writes a rule for each gate as its entry runs it: the exact script and the exact arguments, with no
+  star. So every gate runs without a prompt, and `Sync-AllowRules.ps1` itself runs without one only
+  with `-Check`. A rule with a star glued to a path under `.claude/skills`, such as `scripts/Check-*`
+  or `scripts/Run.ps1*`, is never written, and neither is a rule that opens a whole shell. The script
+  removes such a wildcard rule from `.claude/settings.json`, and `-Check` reports one. The other
+  scripts are listed as `scripts/Run.ps1 *`, which matches the bare command and its arguments only.
 
 What a consumer does when it takes this release:
 
@@ -282,6 +321,15 @@ What a consumer does when it takes this release:
 - You may set `pullRequest.sizeLimit`, `dotnet.layers`, `dotnet.credentialHelper`,
   `dotnet.baseException` and `bicep.roleLookupFiles` in `aisdlc.json`; without them the new gates
   report not applicable. The new gates are Advisory, so none of them stops a push.
+- Run `pwsh .claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1` on the update branch and commit
+  `.claude/settings.json`. It removes the old `scripts/Check-*` rules. A gate run with other arguments
+  than its entry, such as `-Path`, now asks for a prompt, and so does a script of your own with a
+  `Check-` name in a shared scripts folder. Add an exact rule of your own when it should not (#103).
+- A data-model change now needs an ADR that the same pull request adds or changes, or a `No-ADR`
+  trailer. The completeness gate now wants the test in the mirrored test project, and an ADR clears
+  only the areas it names. Expect new findings on a branch that relied on the old rules (#104).
+- Check your own pages for the HTML codes of an em-dash, and your own ADRs and specs for a missing
+  `because` reason or `intent.assumption`. Both gates now fail on them (#104).
 
 
 ## v1.5.1 - 2026-11-26

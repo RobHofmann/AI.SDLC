@@ -76,9 +76,20 @@ Describe 'Check-RetiredSkillNames' {
         $root = New-SharedRepo -Files @{
             'core/.apm/skills/ai-sdlc-gates/sync-manifest.json' = "{ ""retired"": { ""old-skill"": ""new-skill"" } }`n"
             'CHANGELOG.md'                                      = "- ``old-skill`` is now ``new-skill``.`n"
+            'README.md'                                         = "A page that names no retired skill.`n"
         }
         $r = Invoke-Gate -Root $root
         $r.Code | Should -Be 0 -Because $r.Output
+    }
+
+    It 'exits 3 when only the sync manifest and CHANGELOG.md are left to read' {
+        $root = New-SharedRepo -Files @{
+            'core/.apm/skills/ai-sdlc-gates/sync-manifest.json' = "{ ""retired"": { ""old-skill"": ""new-skill"" } }`n"
+            'CHANGELOG.md'                                      = "- ``old-skill`` is now ``new-skill``.`n"
+        }
+        $r = Invoke-Gate -Root $root
+        $r.Code | Should -Be 3 -Because $r.Output
+        $r.Output | Should -Match '(?m)^Not applicable: no file is left to read'
     }
 
     It 'says it could not check, with a FIX line, when the retired list is missing or malformed, and passes when it holds no names' -Tag '#46' {

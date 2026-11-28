@@ -13,6 +13,10 @@
     ChangedFiles.psm1), measured against the base ref. It reads only the .cs files under the test root
     (paths.testRoot in aisdlc.json) that the change touched. Older code in a touched file is left alone.
 
+    Test classes are found at the top level of a file, inside a block namespace (`namespace X { ... }`,
+    also nested) and in a file-scoped namespace (`namespace X;`). A class nested in another class is not
+    a top-level class and is left out.
+
     A class counts as a test class when its body contains a test attribute: [Fact] or [Theory] in xUnit,
     [Test], [TestCase] or [TestCaseSource] in NUnit, [TestMethod] or [DataTestMethod] in MSTest. Mocks,
     fixtures, and other helper types are ignored.
@@ -103,6 +107,7 @@ $legacyKey = 'LEGACY-0'
 $testMethodPattern = '\[[^\]]*?\b(?:Fact|Theory|Test|TestCase|TestCaseSource|TestMethod|DataTestMethod)\b'
 $classDeclPattern = '^\s*(?:public|internal|private|protected|sealed|static|abstract|partial|\s)*\bclass\s+([A-Za-z_]\w*)'
 $storyTraitPattern = '(?:Trait|Property|TestProperty)\s*\(\s*"Story"\s*,\s*"([^"]*)"\s*\)'
+$blockNamespacePattern = '^namespace\s+[\w.]+\s*(?:\{.*|//.*)?$'
 $attributeOnlyPattern = '^\[.*\]\s*(?://.*)?$'
 
 $untagged = [System.Collections.Generic.List[object]]::new()
@@ -123,6 +128,9 @@ foreach ($rel in @($change.Files)) {
     $lines = Get-Content -LiteralPath $full
 
     $depth = 0
+    # Brace depth after the open brace of each block namespace. A top-level class sits at that many levels.
+    $nsLevels = [System.Collections.Generic.Stack[int]]::new()
+    $nsPending = $false
     $current = $null
     $block = [System.Collections.Generic.List[object]]::new()
     $classes = [System.Collections.Generic.List[object]]::new()
@@ -145,7 +153,7 @@ foreach ($rel in @($change.Files)) {
                     }
                 })
 
-            if ($classMatch.Success -and $depth -eq 0) {
+            if ($classMatch.Success -and $depth -eq $nsLevels.Count) {
                 $current = [pscustomobject]@{
                     Name     = $classMatch.Groups[1].Value
                     Line     = $lineNo
@@ -180,11 +188,21 @@ foreach ($rel in @($change.Files)) {
                     $malformed.Add([pscustomobject]@{ File = $rel; Line = $trait.Line; Text = $trait.Text })
                 }
             }
+            # A file-scoped namespace ends in ';' and opens no brace, so it never matches here.
+            if ($trimmed -match $blockNamespacePattern) { $nsPending = $true }
             $block.Clear()
         }
 
-        $depth += ([regex]::Matches($line, '\{')).Count
-        $depth -= ([regex]::Matches($line, '\}')).Count
+        foreach ($brace in [regex]::Matches($line, '[{}]')) {
+            if ($brace.Value -eq '{') {
+                $depth++
+                if ($nsPending) { $nsLevels.Push($depth); $nsPending = $false }
+            }
+            else {
+                $depth--
+                if ($nsLevels.Count -gt 0 -and $depth -lt $nsLevels.Peek()) { [void]$nsLevels.Pop() }
+            }
+        }
         if ($depth -lt 0) { $depth = 0 }
     }
 

@@ -8,8 +8,6 @@
     { "name": "Role IDs come from the lookup files that aisdlc.json names", "script": "scripts/Check-BicepConventions.ps1", "clause": "BICEP-02", "mode": "Advisory", "args": {"Rule":"RoleId"}, "checks": "It reads the `.bicep` and `.bicepparam` files and reports each line outside the lookup files that holds a GUID from them. A comment is not read. Exit 2 means a lookup file is missing or holds no GUID. Exit 3 means `bicep.roleLookupFiles` is not set or there is no Bicep file.", "fix": "Read each role ID from the lookup file that `bicep.roleLookupFiles` names, and never type the GUID again." }
   ],
   "allow": [
-    "az bicep build *",
-    "pwsh -NoProfile -File .claude/skills/bicep-conventions/scripts/Check-BicepConventions.ps1 *",
-    "pwsh .claude/skills/bicep-conventions/scripts/Check-BicepConventions.ps1 *"
+    "az bicep build *"
   ]
 }

@@ -72,7 +72,7 @@ because:
 - `intent` is optional: the why, made traversable (see "Intent: the why as a structured edge"). Its
   `hypothesis` is the upstream-why edge, a repo path or a URL.
 - `relates` is optional: edges to other artifacts. `because` is optional: a one-line reason per
-  `relates` edge.
+  `relates` edge. The gate needs it on an `adr` or `spec` edge.
 - Keep each value alone on its line. The artifact-graph gate reads a trailing `# ...` comment as part
   of the value.
 - `relates` values are either **repo-relative paths** (checked to exist) or **URLs**. The gate does not
@@ -91,21 +91,21 @@ to end. They are produced by the `grilling` questioning that comes before drafti
   A repo path is resolve-checked; a URL is not checked. This is what lets the chain
   hypothesis -> PRD -> story -> ADR -> code be walked. Without it, the upstream why never enters the graph.
 - **`intent.assumption`** is the single riskiest belief the work rests on, stated so it can be shown false.
-  Free text. Under `-Strict` the gate asks for it on a `discovery` or `elaboration` artifact.
+  Free text. The gate run asks for it on a `discovery` or `elaboration` artifact.
 - **`intent.decision-drivers`** are the forces that drove the chosen approach. Free text list; the gate does
   not check it.
 - **`because.<edge>`** is a one-line reason a given `relates` edge exists, keyed by the same edge name. It
   tells a reader a `relates.adr` (a decision link) from a `relates.docs` (a reference).
 
-Enforcement of the why follows the advisory-then-blocking pattern: by default it is **not required**, so
-existing artifacts stay green while the graph fills up. Run the linter with **`-Strict`** to enforce
-two things, and that is the mode the gate switches to once the graph is full:
+The gate run enforces the why, because its entry in `gates.json` passes `-Strict`:
 
 - every intent-bearing edge (`adr`, `spec`) carries a non-empty `because.<edge>` reason; and
 - every artifact in a why-bearing phase (`discovery`, `elaboration`) carries a non-empty `intent.assumption`.
 
+A direct run of the linter without `-Strict` does not check these two rules. A repository that backfills
+reasons can use that run to see the other findings first.
 The second is the soft enforcement of the questioning. Those phases are where the `grilling` questioning
-runs, so an artifact written there without that questioning has no captured assumption, and `-Strict` flags
+runs, so an artifact written there without that questioning has no captured assumption, and the gate flags
 it. The author fills `intent.assumption` from the user's grilling answers; the user does not type it.
 
 The code-to-story tie at the far end of the chain is a story trait on each test, not front-matter.
@@ -165,12 +165,12 @@ aisdlc.json) and the specs folder (`paths.specsRoot`). It checks every artifact 
 2. `phase` is present and one of the known phases.
 3. Each `relates.*` repo path resolves to a file in the repo. A URL is not checked.
 4. `intent.hypothesis`, when present as a repo path, resolves to a file. A URL is not checked.
-5. Under `-Strict` only: every intent-bearing `relates` edge (`adr`, `spec`) carries a non-empty
+5. Under `-Strict`: every intent-bearing `relates` edge (`adr`, `spec`) carries a non-empty
    `because.<edge>` reason, and every `discovery` or `elaboration` artifact carries a non-empty
-   `intent.assumption`. Without `-Strict` this is advisory, so the build stays green while the graph
-   fills up.
+   `intent.assumption`. The gate entry passes `-Strict`; a direct run without it skips this rule.
 
-It exits non-zero (fails the build) on any violation, and does nothing on artifacts that have not opted in.
+It exits 1 on any violation and does nothing on artifacts that have not opted in. It exits 3 when no
+artifact has opted in, because there is no graph to check.
 
 ## Intended required edges (target, tightened as use grows)
 

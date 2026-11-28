@@ -15,8 +15,8 @@
     git does not track (git ls-files). A path outside the repository is not checked: it is the form of
     a local AI.SDLC clone, which the handbook says never to commit.
 
-    Exit 0 when every local path inside the repository is in git, 1 on any finding, 2 when apm.yml is
-    missing or git cannot answer.
+    Exit codes: 0 when every local path inside the repository is in git, 1 on any finding, 2 when
+    apm.yml is missing or git cannot answer, 3 when apm.yml and apm.lock.yaml name no local package.
 
 .PARAMETER RepoRoot
     The repository root. Defaults to the folder that holds aisdlc.json, found from this script.
@@ -75,6 +75,11 @@ if (Test-Path -LiteralPath $lockFile) {
         $name = if ($e.name) { $e.name } elseif ($e.repo_url) { $e.repo_url } else { $e.local_path }
         $packages.Add([pscustomobject]@{ Source = 'apm.lock.yaml'; Name = $name; Path = $e.local_path })
     }
+}
+
+if ($packages.Count -eq 0) {
+    Write-Host 'Not applicable: apm.yml and apm.lock.yaml name no local package.'
+    exit 3
 }
 
 $rootFull = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/')

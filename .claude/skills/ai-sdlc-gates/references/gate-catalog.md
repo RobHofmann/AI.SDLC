@@ -12,7 +12,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Test-GitleaksBaseline.ps1`
-- Checks: It scans the commits of the change with the pinned gitleaks rules and fails on a finding that `gitleaks-baseline.json` does not hold. It does not read the findings that the baseline already holds. Exit 2 means git or gitleaks is missing in a local run, and GitHub Actions exits 1 in that case. It never exits 3.
+- Checks: It scans the commits of the change with the pinned gitleaks rules, and in a local run also the staged files. It fails on a finding that `gitleaks-baseline.json` does not hold, and never on one that the baseline holds. Exit 2 means git or gitleaks is missing in a local run (GitHub Actions exits 1 then), and it never exits 3.
 - Fix: Remove the secret and replace it, or add a finding that is not a secret to `gitleaks-baseline.json` with `Create-GitleaksBaseline.ps1`.
 
 ### Docs cite no source line numbers
@@ -31,7 +31,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-ArtifactGraph.ps1`
-- Checks: It reads each doc that sets `story:` in its front matter and checks the story key, the phase and the `relates` paths. It skips a doc with no `story:`, and it does not check a URL. Exit 2 means none of the artifact roots exists, and it never exits 3.
+- Checks: It reads each doc that sets `story:` in its front matter and checks the story key, the phase and the `relates` paths. It also needs a `because` reason on each `adr` and `spec` edge, and an `intent.assumption` on a discovery or elaboration doc. It skips a doc with no `story:`, and it does not check a URL. Exit 2 means none of the artifact roots exists, and exit 3 means no doc declares a story.
 - Fix: Correct the front matter field that the output names, such as the story key, the phase or a path.
 
 ### Docs have no orphan page, isolated page or broken relative link
@@ -41,7 +41,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Runs in: pre-push hook, pull request action, local run
 - Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocsWiki.ps1`
-- Checks: It reads every page of the doc layers and fails on a broken relative link, an orphan page or an isolated page. It does not check external links or whether an index is current. Exit 2 means none of the doc layers exists, and it never exits 3.
+- Checks: It reads every page of the doc layers and fails on a broken relative link, an orphan page or an isolated page. It does not check external links or whether an index is current. Exit 2 means none of the doc layers exists, and exit 3 means the doc layers hold no markdown page.
 - Fix: Link the page from a related page, or correct the broken link so that it points at a file that exists.
 
 ### Each doc index matches what `Build-DocsIndex.ps1` makes from the current pages
@@ -61,7 +61,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Runs in: pre-push hook, pull request action, local run
 - Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocEmDashes.ps1`
-- Checks: It scans `AGENTS.md` and the doc layers for the em-dash character (U+2014). It does not check source files. Exit 2 means a path passed with `-Path` or the doc layers do not exist, and it never exits 3.
+- Checks: It scans `AGENTS.md` and the doc layers for the em-dash character (U+2014). It also finds the HTML codes that draw it: the named entity mdash, the decimal form 8212 and the hexadecimal form 2014. It does not check source files. Exit 2 means a path passed with `-Path` or the doc layers do not exist, and exit 3 means there is no page to read.
 - Fix: Replace each em-dash with a comma, a colon or a hyphen with a space on each side.
 
 ### The agents file stays within its line and word limit
@@ -89,7 +89,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-LocalPackages.ps1`
-- Checks: It reads each local path in `apm.yml` and `apm.lock.yaml`, and fails on a path that is missing or that git does not track. It does not check a path outside the repository. Exit 2 means `apm.yml` is missing or git cannot answer, and it never exits 3.
+- Checks: It reads each local path in `apm.yml` and `apm.lock.yaml`, and fails on a path that is missing or that git does not track. It does not check a path outside the repository. Exit 2 means `apm.yml` is missing or git cannot answer, and exit 3 means apm.yml and apm.lock.yaml name no local package.
 - Fix: Add the package folder to git, or remove its line from `apm.yml` and its entry from `apm.lock.yaml`.
 
 ### The shared parts of the agents file match the installed packages
@@ -148,7 +148,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Runs in: pre-push hook, pull request action, local run
 - Runs locally when the change touches: `**/*.md`, or the skill or tool folder of its script
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocRowContent.ps1`
-- Checks: It scans the docs for an empty claim, an empty table row, a template fragment, an empty table and a path from one machine. It does not judge whether a fact is true. Exit 2 means none of the doc roots exists, and it never exits 3.
+- Checks: It scans the docs for an empty claim, an empty table row, a template fragment, an empty table and a path from one machine. It does not judge whether a fact is true. Exit 2 means none of the doc roots exists, and exit 3 means the doc roots hold no markdown page.
 - Fix: Delete the empty row or line, or write the fact that it should hold.
 
 ### A change to source also changes its mirrored tests and its docs
@@ -157,7 +157,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Advisory
 - Runs in: pull request action (as a warning), local run
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-ChangeCompleteness.ps1`
-- Checks: It reads the changed files and reports a source change with no changed test file. It also reports a source area whose docs and ADRs did not change. A commit trailer `No-Test` or `No-Docs` with a listed reason clears the files of its own commit, and the output names each waiver. Exit 3 means no behaviour file changed, and it never exits 2.
+- Checks: It reports a changed source file with no test change in its mirrored test folder, but not a deleted file. It also reports a source area whose docs did not change and that no changed ADR names. A `No-Test` or `No-Docs` commit trailer with a listed reason clears the files of its own commit. Exit 2 means the change could not be listed, and exit 3 means no changed or deleted file carries behaviour.
 - Fix: Add the test and the doc page of the area, or run wrap-up, which writes a `No-Test` or `No-Docs` trailer after the reviewer agrees.
 
 ### The pull request names a story, and its description is not empty or cut off
@@ -193,7 +193,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/ai-sdlc-gates/scripts/Check-DocCoverage.ps1`
-- Checks: It checks that each doc layer holds an index and a page, and that each unit has a technical page. The packs or `docs.units` name the units, and a decision record never counts as a page. A missing layer is a finding, so it never exits 2 and it never exits 3.
+- Checks: It checks that each doc layer holds an index and a page, and that each unit has a technical page. The packs or `docs.units` name the units, and a decision record never counts as a page. A missing layer is a finding, so it never exits 2. Exit 3 means no doc layer is set and no unit is named.
 - Fix: Write the page that the output names, or run the adopt-docs skill to draft each missing page.
 
 ### No doc page was last checked longer ago than `docs.lastCheckedMaxAgeDays`
@@ -292,7 +292,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/razor-conventions/scripts/Check-RazorConventions.ps1`
-- Checks: It scans the source root for an `I*State` interface, an inline `<style>` block in a `.razor` file and a `<!DOCTYPE` outside the app component. It does not check attribute placement, which has its own gate. Exit 2 means `paths.sourceRoot` is not set, and it never exits 3.
+- Checks: It scans the source root for an `I*State` interface, an inline `<style>` block in a `.razor` file and a `<!DOCTYPE` outside the app component. It does not check attribute placement, which has its own gate. Exit 2 means `paths.sourceRoot` is not set, and exit 3 means the source folder is missing or holds no `.razor` and no `.cs` file.
 - Fix: Use the state class itself, move the styles into a `.razor.css` file, and keep the document type only in the app component.
 
 ### Component attributes sit on their own line above the member they mark
@@ -330,7 +330,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/dotnet-gates/scripts/Check-StoryTraits.ps1`
-- Checks: It reads only the lines that the change adds, in the test files under `paths.testRoot`. It fails on a test class or method that the change adds with no Story trait, and on a malformed key on an added line. LEGACY-0 stays allowed on older code, but never covers code that the change adds. Exit 2 means `paths.testRoot` is not set or there is no merge base, and it never exits 3.
+- Checks: It reads only the lines that the change adds, in the test files under `paths.testRoot`. It fails on a test class or method that the change adds with no Story trait, and on a malformed key on an added line. It finds a test class at the top level and in a block or file-scoped namespace, and LEGACY-0 never covers code that the change adds. Exit 2 means `paths.testRoot` is not set or there is no merge base, and it never exits 3.
 - Fix: Add a Story trait with the story key, such as `#42`, to the test class, or correct the malformed key.
 
 ### Test methods that the change adds or edits keep the Arrange, Act and Assert markers in order
@@ -397,7 +397,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/dotnet-gates/scripts/Check-DocDrift.ps1`
-- Checks: It judges only the lines that the change adds, changes or removes, and lists older drift as not blocking. It fails on a constant or service that the change adds and the page lacks, or on a cited name that the change removed. It also fails on a bad name on a page line that the change adds. Exit 2 means `paths.sourceRoot` is not set or there is no merge base, and it never exits 3.
+- Checks: It judges only the lines that the change adds, changes or removes, and lists older drift as not blocking. It fails on a constant or service that the change adds and the page lacks, or on a cited name that the change removed. It also fails on a bad name on a page line that the change adds. Exit 2 means `paths.sourceRoot` is not set or there is no merge base, and exit 3 means no documentation page matched.
 - Fix: Update the page to name the code as it is now, or remove the reference to a file or a name that is gone.
 
 ### Line coverage stays at the baseline, and a gain of a point is written to the baseline file
@@ -417,7 +417,7 @@ A gate that fails or cannot check prints its checks text before its own output. 
 - Mode: Blocking
 - Runs in: pre-push hook, pull request action, local run
 - Script: `.claude/skills/check-pr-contract/scripts/Check-PrStoryContract.ps1`
-- Checks: It finds the story key in the branch, title, body or closing issues, and reads the issue with `gh`. It checks that the issue has the refined label. A data-model change needs an ADR for the story, or a commit with a `No-ADR` trailer that gives a why. Exit 2 means `gh` or its token is missing, and exit 3 means there is no pull request context.
+- Checks: It finds the story key in the branch, title, body or closing issues, and checks with `gh` that the issue has the refined label. A data-model change needs an ADR for the story that the pull request adds or changes. An older ADR of the same story does not count, but a `No-ADR` commit trailer with a why does. Exit 2 means `gh` or its token is missing, and exit 3 means there is no pull request context.
 - Fix: Name a refined issue in the branch, the title or the body, and add an ADR for a data-model change, or a `No-ADR` trailer.
 
 ### Each issue that an ADR names points back at that ADR

@@ -25,7 +25,10 @@
          default; pass -Strict to turn isolated pages into build-failing violations. gates.json passes it.
 
     This checker deliberately does NOT verify index drift (that is Build-DocsIndex.ps1 in -Check mode)
-    nor artifact-graph front-matter (that is Check-ArtifactGraph.ps1). Exits non-zero on any violation.
+    nor artifact-graph front-matter (that is Check-ArtifactGraph.ps1).
+
+    Exit codes: 0 clean, 1 on any violation, 2 when none of the doc layers exists, 3 when the doc layers
+    hold no markdown page.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script. The wiki layers come from paths.docsRoots in aisdlc.json.
@@ -104,6 +107,11 @@ foreach ($layer in $layers) {
             Text     = Remove-Code (Get-Content -LiteralPath $file.FullName -Raw)
         })
     }
+}
+
+if ($pages.Count -eq 0) {
+    Write-Host 'Not applicable: no markdown page in the doc layers, so there is no wiki to check.'
+    exit 3
 }
 
 $violations = [System.Collections.Generic.List[string]]::new()

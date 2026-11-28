@@ -21,7 +21,9 @@
     A decision record is never counted as a page, because an ADR records a decision and not a part.
     To leave a unit out on purpose, list its path under docs.unitExclude in aisdlc.json.
 
-    Exit 0 clean, 1 a finding. The adopt-docs skill turns the findings into pages.
+    Exit codes: 0 clean, 1 a finding, 3 not applicable (no doc layer is set and no unit is named, so
+    there is nothing to check). A layer that is set but missing is a finding, so it exits 1, not 2.
+    The adopt-docs skill turns the findings into pages.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script.
@@ -48,6 +50,14 @@ $ErrorActionPreference = 'Stop'
 $layerFindings = @(Get-DocLayerFinding -RepoRoot $RepoRoot)
 $coverage = @(Get-DocCoverage -RepoRoot $RepoRoot)
 $missing = @($coverage | Where-Object { $_.Pages.Count -eq 0 })
+
+# A layer that is set but missing is a finding. Only a repository that sets no layer at all and
+# names no unit has nothing to hold against the docs, so the gate does not apply to it.
+$layerSettings = (Get-AiSdlcConfig -RepoRoot $RepoRoot).paths
+if (-not $AsObject -and -not [string]$layerSettings.technicalDocs -and -not [string]$layerSettings.functionalDocs -and $coverage.Count -eq 0) {
+    Write-Host 'Not applicable: no doc layer is set in aisdlc.json (paths.technicalDocs and paths.functionalDocs are empty) and no unit is named.'
+    exit 3
+}
 
 if ($AsObject) {
     return [pscustomobject]@{

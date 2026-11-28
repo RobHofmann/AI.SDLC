@@ -25,7 +25,8 @@
 
     Exit 0 clean, or only older drift; 1 drift the change caused, with -FailOnDrift; 2 could not check
     (aisdlc.json names no paths.sourceRoot, or the change cannot be told because there is no merge base,
-    also in a local run; the output has a FIX: line). It never judges every page instead. Exit 3 is not used.
+    also in a local run; the output has a FIX: line). It never judges every page instead. Exit 3 means no documentation page matched,
+    so there is nothing to hold against the code.
 
     Advisory by default; -FailOnDrift exits non-zero. What it checks, what it deliberately does not, the
     measured coverage and the alternatives that were tried and rejected are all in
@@ -306,8 +307,8 @@ foreach ($docPath in $docPaths) {
 }
 
 if ($filesByDoc.Count -eq 0) {
-    Write-Host 'No documentation pages matched.' -ForegroundColor Yellow
-    exit 0
+    Write-Host 'Not applicable: no documentation page matched, so there is nothing to hold against the code.'
+    exit 3
 }
 
 $findings = [System.Collections.Generic.List[object]]::new()

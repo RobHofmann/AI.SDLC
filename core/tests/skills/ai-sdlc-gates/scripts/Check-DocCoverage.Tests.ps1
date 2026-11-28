@@ -171,6 +171,27 @@ Describe 'Check-DocCoverage' {
         }
     }
 
+    Context 'nothing to check' {
+        It 'exits 3 when no doc layer is configured and no unit is named' {
+            $root = New-CoverageRepo
+            $config = [ordered]@{ paths = [ordered]@{ technicalDocs = ''; functionalDocs = '' } }
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value ($config | ConvertTo-Json) -Encoding utf8
+            Set-AiSdlcTestPack -Root $root -Packs @()
+
+            $r = Invoke-Gate -Root $root
+
+            $r.ExitCode | Should -Be 3
+            $r.Output | Should -Match '(?m)^Not applicable: '
+        }
+
+        It 'still fails when a layer is configured but its folder is missing' {
+            $root = New-CoverageRepo
+            Remove-Item -LiteralPath (Join-Path $root 'docs-functional') -Recurse -Force
+
+            (Invoke-Gate -Root $root).ExitCode | Should -Be 1
+        }
+    }
+
     Context 'the work list' {
         It 'returns the findings as objects with -AsObject, and does not exit' {
             $root = New-CoverageRepo -Files @{ 'building-blocks/vwan-infra/main.bicep' = "param x string`n" }

@@ -87,7 +87,7 @@ These were checked, not assumed. Each one decides where something lives.
    in one skill that the others call. Shapes: [pattern.md](pattern.md).
 9. **The why is data, not only text.** Front matter carries `intent:` (hypothesis, assumption, decision
    drivers) and `because:` on a link. A hypothesis and a journey are repository artifacts with front
-   matter, not pages that live only in an outside wiki. `Check-ArtifactGraph.ps1 -Strict` can need the `because`.
+   matter, not pages that live only in an outside wiki. The gate `Check-ArtifactGraph.ps1` needs the `because` on an `adr` or `spec` edge.
 10. **Personas are generic roles in one registry.** Analyst, Product Manager, Architect, Scrum Master,
     Developer, QA, Tech Writer, Operations engineer, Lead, and Designer / UX. They live in [personas.md](personas.md) as
     plain markdown, read by `grilling`, `convene-personas` and every skill's role line. No character names,

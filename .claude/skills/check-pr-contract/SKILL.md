@@ -47,7 +47,7 @@ Two rules hold in every run of every skill, and each is defined in one place:
    touches it, or makes a decision that passes the three tests of `adr-conventions`, it needs an ADR.
    When the decision misses a test, a `No-ADR: <why>` commit trailer takes its place. An ADR in the ADR folder
    (`paths.adrFolder`) has `story: "<key>"` in its front matter, in quotes, because a bare `#` starts a
-   YAML comment. A link from the story to an ADR alone is not enough, because the CI gate reads only the ADR files. Whether a change is key is not always mechanical: where it is unclear, this
+   YAML comment. The ADR must be one that this pull request adds or changes: an older ADR of the same story does not govern a new change. A link from the story to an ADR alone is not enough, because the CI gate reads only the ADR files. Whether a change is key is not always mechanical: where it is unclear, this
    skill asks rather than guessing (surface, don't decide).
 
 ## Process
@@ -61,8 +61,8 @@ Two rules hold in every run of every skill, and each is defined in one place:
    (the same in Claude Code and Copilot), and read its state, labels and links. If GitHub cannot be
    read or the key does not resolve, stop and report BLOCKED with the reason; do not pass.
 3. **Look at the diff for data-model / key changes.** From the branch diff, see whether changed
-   files fall in the domain-model area or otherwise mean an architectural decision. If so, look in the ADR
-   folder for an ADR with `story: "<key>"` in its front matter.
+   files fall in the domain-model area or otherwise mean an architectural decision. If so, look among the
+   changed files in the ADR folder for an ADR with `story: "<key>"` in its front matter.
 4. **Assemble and return the verdict**, attention first, under ~3KB. Never edit the PR, the story, or the
    code; recommend the fix and point at the skill that writes it.
 

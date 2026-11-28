@@ -15,9 +15,22 @@
     "PowerShell(./script.ps1 *)", is written as it is. The script reads the core and every pack that
     apm.yml lists, through Get-AiSdlcPackage.
 
-    It only adds rules. A rule the repository added itself stays, and so does a rule of a package that
-    is no longer installed; remove those by hand. The rest of .claude/settings.json, such as the hooks
-    APM writes, is never changed.
+    Each gate in the "gates" array of a gates.json also gets its own rules, so every gate runs without a
+    prompt as its entry runs it: pwsh .claude/skills/<skill>/scripts/<Script>.ps1 with the exact
+    arguments of the entry, such as -Check, and the same with -NoProfile -File. The rule has no star.
+    So Sync-AllowRules.ps1 -Check runs without a prompt, but the form that writes .claude/settings.json
+    still asks a person.
+
+    A rule must name its script exactly. A rule with a star glued to a path under .claude/skills, such as
+    scripts/Check-*, scripts/Run.ps1* or skills/*/scripts, would also let a new or changed script run
+    without a person seeing a prompt. A rule that opens a whole shell, such as Bash(*) or pwsh *, is just
+    as wide. The script never writes such an entry from a package; it prints it as "Allow rule not
+    written". It removes a wildcard rule over a scripts folder from .claude/settings.json, because an
+    older release wrote it there, and -Check reports it as drift.
+
+    It adds rules and removes only those wildcard rules. A rule the repository added itself stays, and so
+    does a rule of a package that is no longer installed; remove those by hand. The rest of
+    .claude/settings.json, such as the hooks APM writes, is never changed.
 
     Without -Check it also lets the agent read the knowledge repository. When the folder in
     paths.knowledgeRoot exists, its absolute path goes into permissions.additionalDirectories of
@@ -32,11 +45,12 @@
     through a link are skipped with a FIX line, because aisdlc.json must not open a folder elsewhere to
     the agent. The exit code stays 0.
 
-    With -Check it writes nothing. It exits 1 when a rule of an installed package is missing. The
-    knowledge folder is not checked, because CI never has it.
+    With -Check it writes nothing. It exits 1 when a rule of an installed package is missing, or when a
+    rule ends in a wildcard over a scripts folder. The knowledge folder is not checked, because CI never
+    has it.
 
-    Exit codes follow the gate contract: 0 in sync (or written), 1 a rule missing, 2 could not check, 3
-    not applicable (no installed package part).
+    Exit codes follow the gate contract: 0 in sync (or written), 1 a rule missing or a wildcard rule over
+    a scripts folder, 2 could not check, 3 not applicable (no installed package part).
 
 .PARAMETER RepoRoot
     The repository root. Defaults to the folder that holds aisdlc.json, found from the current location.
@@ -160,12 +174,57 @@ function Sync-KnowledgeDirectory {
     Protect-LocalSetting
 }
 
+# A star glued to a path under .claude/skills, such as scripts/Check-*, scripts/Run.ps1* or
+# skills/*/scripts, also matches a script that nobody reviewed, so such a rule is never allowed (#103).
+$scriptsWildcard = '\.claude[\\/]skills[\\/]\S*\*'
+# A rule that opens a whole shell, such as Bash(*) or pwsh *, is never written from a package either.
+$wholeShell = '^(?:(?:Bash|PowerShell)\(\s*\*\s*\)|(?:(?:Bash|PowerShell)\()?\s*(?:pwsh|powershell|bash|sh|cmd)(?:\.exe)?\s+\*\s*\)?)$'
+
+function ConvertTo-GateCommandArgument {
+    # The arguments exactly as the gate entry passes them, so the rule allows that one command and no
+    # other. A script that also writes files, such as Sync-AllowRules.ps1 without -Check, then still asks.
+    param($Arguments)
+
+    $parts = foreach ($key in @($Arguments.Keys | Sort-Object)) {
+        if ($key -notmatch '^\w+$') { return $null }
+        $value = $Arguments[$key]
+        if ($value -is [bool]) { if ($value) { "-$key" }; continue }
+        $items = @($value | ForEach-Object { [string]$_ })
+        if (@($items | Where-Object { $_ -notmatch '^[\w./-]+$' }).Count -gt 0) { return $null }
+        "-$key $($items -join ',')"
+    }
+    return (@($parts) -join ' ')
+}
+
 $wanted = [System.Collections.Generic.List[string]]::new()
+$refused = [System.Collections.Generic.List[string]]::new()
 foreach ($package in $packages) {
-    foreach ($entry in @($package.Allow)) {
+    $entries = [System.Collections.Generic.List[string]]::new()
+    # Each gate runs without a prompt, as its gate entry runs it: the exact script and the exact
+    # arguments, with no star.
+    if ($package.Skill -match '^[\w.-]+$') {
+        foreach ($gate in @($package.Gates)) {
+            $gateScript = ([string]$gate.script).Replace('\', '/')
+            if ($gateScript -notmatch '^scripts/[\w.-]+\.ps1$') { continue }
+            $arguments = if ($gate.args) { ConvertTo-GateCommandArgument -Arguments $gate.args } else { '' }
+            if ($null -eq $arguments) { continue }
+            $command = (".claude/skills/$($package.Skill)/$gateScript " + $arguments).TrimEnd()
+            $entries.Add("pwsh -NoProfile -File $command")
+            $entries.Add("pwsh $command")
+        }
+    }
+    foreach ($entry in @($package.Allow)) { $entries.Add([string]$entry) }
+    foreach ($entry in $entries) {
+        if ($entry -match $scriptsWildcard -or $entry -match $wholeShell) {
+            if (-not $refused.Contains($entry)) { $refused.Add($entry) }
+            continue
+        }
         $rules = if ($entry -match '^(Bash|PowerShell)\(.+\)$') { @($entry) } else { @("Bash($entry)", "PowerShell($entry)") }
         foreach ($rule in $rules) { if (-not $wanted.Contains($rule)) { $wanted.Add($rule) } }
     }
+}
+foreach ($entry in $refused) {
+    Write-Host "Allow rule not written: '$entry' holds a wildcard over a scripts folder or opens a whole shell. Name the script exactly, as in scripts/Run.ps1 *." -ForegroundColor Yellow
 }
 
 $settingsPath = Join-Path $RepoRoot '.claude' 'settings.json'
@@ -183,6 +242,8 @@ if (Test-Path -LiteralPath $settingsPath -PathType Leaf) {
 }
 $allowed = @(if ($settings['permissions'] -and $settings['permissions']['allow']) { $settings['permissions']['allow'] })
 $missing = @($wanted | Where-Object { $_ -notin $allowed })
+# Only a shell rule runs a script, so a Read or Edit rule under .claude/skills is left alone.
+$wildcards = @($allowed | Where-Object { [string]$_ -match '^(?:Bash|PowerShell)\(' -and [string]$_ -match $scriptsWildcard })
 
 if (-not $Check) { Sync-KnowledgeDirectory }
 
@@ -191,22 +252,28 @@ if ($packages.Count -eq 0) {
     exit 3
 }
 
-if ($missing.Count -eq 0) {
-    Write-Host "Allow rules OK: .claude/settings.json holds the $($wanted.Count) rule(s) of $($packages.Count) installed package part(s)."
+if ($missing.Count -eq 0 -and $wildcards.Count -eq 0) {
+    Write-Host "Allow rules OK: .claude/settings.json holds the $($wanted.Count) rule(s) of $($packages.Count) installed package part(s), and no rule ends in a wildcard over a scripts folder."
     exit 0
 }
 
 if ($Check) {
-    Write-Host "Allow rules: .claude/settings.json misses $($missing.Count) rule(s) of the installed packages:" -ForegroundColor Red
-    foreach ($rule in $missing) { Write-Host "  $rule" }
+    if ($missing.Count -gt 0) {
+        Write-Host "Allow rules: .claude/settings.json misses $($missing.Count) rule(s) of the installed packages:" -ForegroundColor Red
+        foreach ($rule in $missing) { Write-Host "  $rule" }
+    }
+    if ($wildcards.Count -gt 0) {
+        Write-Host "Allow rules: .claude/settings.json holds $($wildcards.Count) rule(s) that end in a wildcard over a scripts folder, so a new script there runs without a prompt:" -ForegroundColor Red
+        foreach ($rule in $wildcards) { Write-Host "  $rule" }
+    }
     Write-Host 'FIX: Run pwsh .claude/skills/ai-sdlc-gates/scripts/Sync-AllowRules.ps1 and commit .claude/settings.json.' -ForegroundColor Red
     exit 1
 }
 
 if (-not $settings['permissions']) { $settings['permissions'] = [ordered]@{} }
-$settings['permissions']['allow'] = @($allowed) + $missing
+$settings['permissions']['allow'] = @($allowed | Where-Object { $_ -cnotin $wildcards }) + $missing
 New-Item -ItemType Directory -Path (Split-Path -Parent $settingsPath) -Force | Out-Null
 $json = (ConvertTo-Json -InputObject $settings -Depth 20) -replace "`r`n", "`n"
 [IO.File]::WriteAllText($settingsPath, "$json`n", [Text.UTF8Encoding]::new($false))
-Write-Host "Allow rules written: added $($missing.Count) rule(s) of the installed packages to .claude/settings.json. Commit that file."
+Write-Host "Allow rules written: added $($missing.Count) rule(s) of the installed packages to .claude/settings.json, and removed $($wildcards.Count) rule(s) that end in a wildcard over a scripts folder. Commit that file."
 exit 0

@@ -375,7 +375,7 @@ Describe 'The pull request feedback loop' {
                 return
             }
             $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
-            $settings.permissions.allow | Should -Contain "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/$Script*)" -Because 'the pull request loop runs it without a prompt. Run pwsh .claude/skills/ai-sdlc-hooks/scripts/Initialize-AiSdlc.ps1, which writes the allow rules of the installed packs into .claude/settings.json, then commit that file'
+            $settings.permissions.allow | Should -Contain "Bash(pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/$Script *)" -Because 'the pull request loop runs it without a prompt. Run pwsh .claude/skills/ai-sdlc-hooks/scripts/Initialize-AiSdlc.ps1, which writes the allow rules of the installed packs into .claude/settings.json, then commit that file'
         }
     }
 }

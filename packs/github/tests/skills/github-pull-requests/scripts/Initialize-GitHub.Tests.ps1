@@ -20,7 +20,7 @@ Describe 'Initialize-GitHub' {
     It 'lists the pull request scripts in the allow list of its gates.json' {
         $allow = (Get-Content -LiteralPath (Join-Path $script:ScriptFolder '..' 'gates.json') -Raw | ConvertFrom-Json).allow
         foreach ($name in 'Get-PullRequestFeedback.ps1', 'Reply-PullRequestThread.ps1', 'Wait-WorkflowRun.ps1', 'New-PullRequest.ps1', 'Update-PullRequest.ps1') {
-            $allow | Should -Contain "pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/$name*"
+            $allow | Should -Contain "pwsh -NoProfile -File .claude/skills/github-pull-requests/scripts/$name *"
         }
     }
 

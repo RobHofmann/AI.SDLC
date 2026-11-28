@@ -25,7 +25,8 @@
       [emptytable] a table header and separator with no rows under them.
       [machinepath] an absolute path from somebody's machine, which resolves for nobody else.
 
-    Advisory by default; -FailOnFinding exits non-zero.
+    Advisory by default; -FailOnFinding exits 1 on a finding. Exit 2 means none of the doc roots exists,
+    and exit 3 means the doc roots hold no markdown page.
 
 .PARAMETER RepoRoot
     Repository root. Defaults to the folder that holds aisdlc.json, found from this script.
@@ -93,6 +94,11 @@ foreach ($relative in $DocRoots) {
     $full = Join-Path $RepoRoot $relative
     if (-not (Test-Path -LiteralPath $full)) { continue }
     foreach ($file in (Get-ChildItem -LiteralPath $full -Recurse -Filter *.md -File)) { $pages.Add($file) }
+}
+
+if ($pages.Count -eq 0) {
+    Write-Host 'Not applicable: no markdown page in the doc roots, so there is no row to check.'
+    exit 3
 }
 
 $findings = [System.Collections.Generic.List[object]]::new()

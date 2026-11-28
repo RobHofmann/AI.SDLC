@@ -18,9 +18,10 @@
          repository fails, because the gate would otherwise accept an issue nobody here tracks. The update
          pull request that takes an AI.SDLC release is the case this is for: it names the release issue of AI.SDLC.
       2. If the PR changes domain-model files (tracker.dataModelPatterns in aisdlc.json), a governing ADR
-         exists: an ADR in paths.adrFolder whose front-matter `story:` matches the PR's story key. A new ADR
-         added in the same PR counts only when its story matches; merely touching some unrelated ADR file does
-         not. This half is repo-side and needs no GitHub read.
+         exists: an ADR in paths.adrFolder that this pull request adds or changes, whose front-matter `story:`
+         matches the PR's story key. An older ADR of the same story, which the pull request leaves alone,
+         does not govern this change, and neither does a deleted ADR or an ADR of another story. This half
+         is repo-side and needs no GitHub read.
 
     WAIVER. Not every data-model change rests on a decision that needs an ADR. So a data-model change with
     no governing ADR passes when a commit of the pull request, after the base, ends with the trailer
@@ -62,7 +63,9 @@
     The pull request number. When no other place carries a key, the issues the PR closes are read from it.
 
 .PARAMETER ChangedFiles
-    Newline-separated list of changed file paths (the PR diff). Used for the domain-model -> ADR check.
+    Newline-separated list of changed file paths (the PR diff), with / or \ in the paths. Used for the
+    domain-model -> ADR check: it finds the data-model change, and it names the only ADR files that can
+    govern it (those the pull request adds or changes, which still exist).
 
 .PARAMETER BaseRef
     The ref whose commits the No-ADR waiver skips. Defaults to PR_BASE_SHA, else origin/ plus
@@ -265,24 +268,27 @@ function Test-TouchesModel([string]$changed) {
     return $false
 }
 
-function Find-AdrGovernance([string]$key) {
-    # An ADR governs this change only if its front-matter story matches the key. A new ADR in this PR is
-    # present on disk in the checkout, so this scan finds it too; merely touching any ADR file is not
-    # enough (that let an unrelated ADR edit satisfy the gate).
+function Find-AdrGovernance([string]$key, [string]$changed) {
+    # An ADR governs this change only if this pull request adds or changes it AND its front-matter story
+    # matches the key. An older ADR of the same story was a decision for earlier work, so it must not
+    # satisfy the gate for a new data-model change. A deleted ADR is gone and does not count.
     $traps = [System.Collections.Generic.List[string]]::new()
     $invalid = [System.Collections.Generic.List[string]]::new()
-    $adrDir = Join-Path $RepoRoot $aiSdlc.paths.adrFolder
-    if (Test-Path $adrDir) {
-        foreach ($adr in (Get-ChildItem -Path $adrDir -Filter *.md -File)) {
-            $text = Get-Content -LiteralPath $adr.FullName -Raw
-            $fm = [regex]::Match($text, '\A\s*---\r?\n(.*?)\r?\n---\r?\n', 'Singleline')
-            if (-not $fm.Success) { continue }
-            $story = Get-AdrStory $fm.Groups[1].Value
-            if (-not $story) { continue }
-            if ($story.Status -eq 'empty') { $traps.Add($adr.Name); continue }
-            if ($story.Status -eq 'invalid') { $invalid.Add("$($adr.Name) ('$($story.Value)')"); continue }
-            if ($story.Key -eq $key) { return [pscustomobject]@{ Governed = $true; Traps = @(); Invalid = @() } }
-        }
+    $adrPrefix = ([string]$aiSdlc.paths.adrFolder).Replace('\', '/').Trim('/') + '/'
+    foreach ($line in ($changed -split '\r?\n')) {
+        $f = $line.Trim().Replace('\', '/')
+        if (-not $f -or -not $f.StartsWith($adrPrefix, [StringComparison]::OrdinalIgnoreCase) -or -not $f.EndsWith('.md', [StringComparison]::OrdinalIgnoreCase)) { continue }
+        $path = Join-Path $RepoRoot $f
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        $name = Split-Path -Leaf $path
+        $text = Get-Content -LiteralPath $path -Raw
+        $fm = [regex]::Match($text, '\A\s*---\r?\n(.*?)\r?\n---\r?\n', 'Singleline')
+        if (-not $fm.Success) { continue }
+        $story = Get-AdrStory $fm.Groups[1].Value
+        if (-not $story) { continue }
+        if ($story.Status -eq 'empty') { $traps.Add($name); continue }
+        if ($story.Status -eq 'invalid') { $invalid.Add("$name ('$($story.Value)')"); continue }
+        if ($story.Key -eq $key) { return [pscustomobject]@{ Governed = $true; Traps = @(); Invalid = @() } }
     }
     return [pscustomobject]@{ Governed = $false; Traps = $traps.ToArray(); Invalid = $invalid.ToArray() }
 }
@@ -388,7 +394,7 @@ function Invoke-PrStoryContractGate {
     }
 
     if ($ChangedFiles -and (Test-TouchesModel $ChangedFiles)) {
-        $governance = Find-AdrGovernance $key
+        $governance = Find-AdrGovernance $key $ChangedFiles
         if (-not $governance.Governed) {
             if ($governance.Traps.Count -gt 0) {
                 Write-Output ("ADR front matter with an empty 'story:' value: {0}. An unquoted # starts a YAML comment, so the key is lost." -f ($governance.Traps -join ', '))
@@ -404,7 +410,7 @@ function Invoke-PrStoryContractGate {
                 Ok "PR-story contract OK: $key (read from $from, '$refinedLabel', dev-active). Waiver used: $($waiver.Used). The domain-model change has no ADR; the reviewer judges the why."
             }
             $noTrailer = if ($waiver.Reason) { "No No-ADR trailer applies, because $($waiver.Reason)." } else { 'No commit of this pull request carries a valid No-ADR trailer.' }
-            Fail "This PR changes domain-model files (tracker.dataModelPatterns in aisdlc.json) but no governing ADR was found: no ADR under $($aiSdlc.paths.adrFolder)/ has front-matter 'story: `"$key`"' (a new ADR added in this PR counts only when its story matches). $noTrailer A data-model change requires an ADR (constitution C01), or a No-ADR: <why> commit trailer when the decision needs no ADR. Only wrap-up writes that trailer, after the architect agent agrees."
+            Fail "This PR changes domain-model files (tracker.dataModelPatterns in aisdlc.json) but no governing ADR was found: no ADR under $($aiSdlc.paths.adrFolder)/ has front-matter 'story: `"$key`"' (only an ADR that this PR adds or changes counts; an older ADR of the same story does not govern this change, so add or update an ADR in this PR with that story). $noTrailer A data-model change requires an ADR (constitution C01), or a No-ADR: <why> commit trailer when the decision needs no ADR. Only wrap-up writes that trailer, after the architect agent agrees."
         }
         Ok "PR-story contract OK: $key (read from $from, '$refinedLabel', dev-active); domain-model change governed by an ADR."
     }

@@ -21,7 +21,8 @@
     so a consumer can find a folder an older version left behind. CHANGELOG.md is not scanned, because
     its entries are history.
 
-    Exit codes follow the gate contract: 0 nothing found, 1 a finding, 2 could not check.
+    Exit codes follow the gate contract: 0 nothing found, 1 a finding, 2 could not check,
+    3 no file is left to read under the folders to scan.
 
 .PARAMETER RepoRoot
     The AI.SDLC repository root. Defaults to the folder above this script.
@@ -88,6 +89,11 @@ $files = foreach ($p in $Path) {
     elseif (Test-Path -LiteralPath $full) { Get-ChildItem -LiteralPath $full -Recurse -File -Force }
 }
 $files = @($files | Where-Object { $_.Name -ne 'sync-manifest.json' -and $_.Name -ne 'CHANGELOG.md' })
+
+if ($files.Count -eq 0) {
+    Write-Host 'Not applicable: no file is left to read under the folders to scan.'
+    exit 3
+}
 
 $findings = [System.Collections.Generic.List[object]]::new()
 foreach ($file in $files) {

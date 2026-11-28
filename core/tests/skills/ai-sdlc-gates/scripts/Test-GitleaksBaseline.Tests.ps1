@@ -30,7 +30,7 @@ Describe 'Test-GitleaksBaseline' {
         } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $script:PinFile
 
         function Invoke-Scan {
-            param([hashtable]$Options = @{}, [switch]$NoBaseline, [switch]$NotARepository)
+            param([hashtable]$Options = @{}, [switch]$NoBaseline, [switch]$NotARepository, [switch]$Stage)
             if ($NotARepository) {
                 $work = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
                 New-Item -ItemType Directory -Path $work -Force | Out-Null
@@ -39,6 +39,10 @@ Describe 'Test-GitleaksBaseline' {
             if (-not $NoBaseline) {
                 $name = if ($Options.ContainsKey('BaselineFileName')) { $Options['BaselineFileName'] } else { 'gitleaks-baseline.json' }
                 Set-Content -LiteralPath (Join-Path $work $name) -Value '[]'
+            }
+            if ($Stage) {
+                Set-Content -LiteralPath (Join-Path $work 'staged.txt') -Value 'staged, not committed'
+                git -C $work add staged.txt
             }
             Push-Location $work
             try {
@@ -308,6 +312,85 @@ Describe 'Test-GitleaksBaseline' {
 
         $LASTEXITCODE | Should -Be 0
         Should -Invoke gitleaks -Times 1 -Exactly -ParameterFilter { $args -contains "--log-opts=$Trunk..HEAD" }
+    }
+
+    Context 'staged files, which no commit holds yet' {
+        It 'scans the staged files after the commits in a local run, with the rules, the baseline and --redact' {
+            $r = Invoke-Scan -Stage
+
+            $r.Code | Should -Be 0 -Because $r.Output
+            $r.Output | Should -Match 'Scanning the 1 staged file\(s\)'
+            Should -Invoke gitleaks -Times 1 -Exactly -ParameterFilter { $args[0] -eq 'detect' }
+            Should -Invoke gitleaks -Times 1 -Exactly -ParameterFilter {
+                $line = $args -join ' '
+                $args[0] -eq 'git' -and ($args -contains '--staged') -and ($args -contains '--redact') -and ($args -contains '--exit-code=99') -and $line -match '--config ' -and $line -match ('--baseline-path ' + [regex]::Escape((Join-Path $r.Work 'gitleaks-baseline.json'))) -and $args[-1] -eq $r.Work
+            }
+        }
+
+        It 'scans the staged files without a baseline when the repository has none' {
+            Invoke-Scan -Stage -NoBaseline | Out-Null
+
+            Should -Invoke gitleaks -Times 1 -Exactly -ParameterFilter { $args[0] -eq 'git' -and ($args -notcontains '--baseline-path') -and ($args -contains '--redact') }
+        }
+
+        It 'exits 1 and says the staged files hold the secret when only the staged scan finds one' {
+            Mock gitleaks { $global:LASTEXITCODE = if ($args[0] -eq 'git') { 99 } else { 0 } }
+
+            $r = Invoke-Scan -Stage
+
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'does not hold, in the staged files'
+            $r.Output | Should -Match 'git restore --staged'
+            $r.Output | Should -Match '(?m)^FIX: '
+        }
+
+        It 'exits 1 and names the commits when only the commit scan finds a secret' {
+            Mock gitleaks { $global:LASTEXITCODE = if ($args[0] -eq 'detect') { 99 } else { 0 } }
+
+            $r = Invoke-Scan -Stage
+
+            $r.Code | Should -Be 1
+            $r.Output | Should -Match 'does not hold, in the commits'
+        }
+
+        It 'exits 1 when the staged scan itself fails' {
+            Mock gitleaks { $global:LASTEXITCODE = if ($args[0] -eq 'git') { 3 } else { 0 } }
+
+            $r = Invoke-Scan -Stage
+
+            $r.Code | Should -Be 1
+        }
+
+        It 'could not check, and never passes, when git cannot list the staged files' -Tag '#104' {
+            Mock git { $global:LASTEXITCODE = 128 } -ParameterFilter { $args -contains '--cached' }
+
+            $r = Invoke-Scan -Stage
+
+            $r.Code | Should -Be 2
+            $r.Output | Should -Match 'could not list the staged files'
+            $r.Output | Should -Match '(?m)^FIX: '
+        }
+
+        It 'runs no staged scan when nothing is staged' {
+            $r = Invoke-Scan
+
+            $r.Output | Should -Not -Match 'staged file'
+            Should -Invoke gitleaks -Times 0 -Exactly -ParameterFilter { $args[0] -eq 'git' }
+        }
+
+        It 'runs no staged scan in GitHub Actions' {
+            $env:GITHUB_ACTIONS = 'true'
+
+            Invoke-Scan -Stage | Out-Null
+
+            Should -Invoke gitleaks -Times 0 -Exactly -ParameterFilter { $args[0] -eq 'git' }
+        }
+
+        It 'runs no staged scan when -LogOpts is given' {
+            Invoke-Scan -Stage -Options @{ LogOpts = 'HEAD^1..HEAD' } | Out-Null
+
+            Should -Invoke gitleaks -Times 0 -Exactly -ParameterFilter { $args[0] -eq 'git' }
+        }
     }
 
     It 'is the blocking C03 gate of the core, so Invoke-LocalGates.ps1 runs it everywhere' {

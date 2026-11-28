@@ -75,6 +75,14 @@ Describe 'Check-DocRowContent' {
         $r.ExitCode | Should -Be 0
     }
 
+    It 'exits 3 when the doc roots exist but hold no markdown page' {
+        $root = New-Repo -Files @{ 'docs/.gitkeep' = ''; 'docs-functional/.gitkeep' = '' }
+
+        $r = Invoke-RowContent -ScriptArgs @{ RepoRoot = $root }
+
+        $r.ExitCode | Should -Be 3 -Because $r.Output
+        $r.Output | Should -Match '(?m)^Not applicable: no markdown page in the doc roots'
+    }
     It 'leaves a row alone whose cells are all code, because it is a mapping and not a description' {
         $root = New-Repo -Files @{
             'docs/thing.md' = "# Thing`n`n| From | To |`n| --- | --- |`n| ``AlphaService`` | ``BetaService`` |"
