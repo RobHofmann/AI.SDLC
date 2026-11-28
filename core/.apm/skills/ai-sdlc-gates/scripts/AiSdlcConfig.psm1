@@ -291,6 +291,13 @@ function Get-AiSdlcConfig {
     }
 
     $config = Merge-AiSdlcDefaults -Defaults $script:Defaults -Values $values
+    # A pull request can change aisdlc.json, so every caller gets a source folder inside the repository.
+    foreach ($key in 'sourceRoot', 'sourceRoots') {
+        foreach ($value in @($config['paths'][$key] | Where-Object { $_ })) {
+            try { Resolve-AiSdlcSourceRoot -RepoRoot $RepoRoot -Path ([string]$value) | Out-Null }
+            catch { throw "$file paths.$key '$value': $($_.Exception.Message)" }
+        }
+    }
     $config['packs'] = Get-AiSdlcApmPack -RepoRoot $RepoRoot
     $config['repoRoot'] = (Resolve-Path -LiteralPath $RepoRoot).ProviderPath
     $config['configFile'] = if ($values) { $file } else { $null }
@@ -568,6 +575,8 @@ function Get-AiSdlcPackage {
             DocUnits    = @($data.docUnits | Where-Object { $_ })
             DocFacts    = if ($data.docFacts) { Join-Path $folder $data.docFacts } else { $null }
             Allow       = @($data.allow | Where-Object { $_ })
+            Ask         = @($data.ask | Where-Object { $_ })
+            RetiredAllow = @($data.retiredAllow | Where-Object { $_ })
         }
     }
 }

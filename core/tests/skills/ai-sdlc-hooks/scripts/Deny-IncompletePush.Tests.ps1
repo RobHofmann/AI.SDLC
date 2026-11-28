@@ -452,6 +452,18 @@ exit 0
             $unchecked | Should -Match 'no green pre-flight'
         }
 
+        It 'refuses the push when aisdlc.json points paths.sourceRoot outside the repository, and says why' -Tag '#105' {
+            $root = Join-Path -Path $TestDrive -ChildPath 'outside-root-repo'
+            New-Item -ItemType Directory -Path $root -Force | Out-Null
+            git -C $root init --quiet -b main
+            Set-Content -LiteralPath (Join-Path $root 'aisdlc.json') -Value '{ "paths": { "sourceRoot": "../outside" } }'
+
+            $out = & $script:ScriptUnderTest -Payload (New-Payload -Command 'git push') -CheckScript $script:CleanCheck -CurrentBranch 'feature/1-x' -HeadTree $script:GreenTree -RepoRoot $root *>&1 | Out-String
+
+            $out | Should -Match '"permissionDecision":"deny"'
+            $out | Should -Match 'outside the repository'
+        }
+
         It 'denies on an exit code other than 0, 2 or 3, as on exit 1' -Tag '#46' {
             $r = Invoke-Hook -Payload (New-Payload -Command 'git push') -CheckScript $script:OddCode -Tree $script:GreenTree
             $r.Output | Should -Match '"permissionDecision":"deny"'

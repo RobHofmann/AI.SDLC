@@ -66,8 +66,9 @@
     Short human label used in the message (e.g. "no em-dash characters").
 
 .PARAMETER Mode
-    Advisory (default) emits a warning and exits 0. Blocking emits an error and exits 1, also for exit 2
-    of the gate and for a crash.
+    Blocking (default) emits an error and exits 1, also for exit 2 of the gate and for a crash. Advisory
+    emits a warning and exits 0. A gate run without -Mode blocks, so a step that forgets the mode cannot
+    hide a finding.
 
 .PARAMETER GateArgs
     Remaining arguments are passed through verbatim to the gate script (e.g. -RepoRoot <path>, or
@@ -85,7 +86,7 @@ param(
     [Parameter(Mandatory)][string]$Script,
     [Parameter(Mandatory)][string]$Clause,
     [Parameter(Mandatory)][string]$What,
-    [ValidateSet('Advisory', 'Blocking')][string]$Mode = 'Advisory',
+    [ValidateSet('Advisory', 'Blocking')][string]$Mode = 'Blocking',
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$GateArgs
 )
 

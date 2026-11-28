@@ -610,5 +610,31 @@ Describe 'AiSdlcConfig' {
                 { Resolve-AiSdlcSourceRoot -RepoRoot $root -Path 'link' } | Should -Throw '*link*'
             }
         }
+
+        It 'makes Get-AiSdlcConfig refuse a <Key> that leaves the repository' -Tag '#105' -ForEach @(
+            @{ Key = 'sourceRoot'; Json = '{ "paths": { "sourceRoot": "../outside" } }' }
+            @{ Key = 'sourceRoots'; Json = '{ "paths": { "sourceRoots": [ "sub", "../outside" ] } }' }
+        ) {
+            $root = New-ConfigRepo -Json $Json
+
+            { Get-AiSdlcConfig -RepoRoot $root } | Should -Throw "*paths.$Key*outside the repository*"
+        }
+
+        It 'makes Get-AiSdlcConfig refuse a source root that is a link' -Tag '#105' -Skip:(-not $IsWindows -and -not (Get-Command ln -ErrorAction SilentlyContinue)) {
+            $root = New-ConfigRepo -Json '{ "paths": { "sourceRoot": "link/src" } }'
+            $target = Join-Path ([IO.Path]::GetTempPath()) ('aisdlc-target-' + [guid]::NewGuid().ToString('n'))
+            New-Item -ItemType Directory -Path (Join-Path $target 'src') -Force | Out-Null
+            New-Item -ItemType SymbolicLink -Path (Join-Path $root 'link') -Target $target -ErrorAction SilentlyContinue | Out-Null
+
+            if (Test-Path -LiteralPath (Join-Path $root 'link')) {
+                { Get-AiSdlcConfig -RepoRoot $root } | Should -Throw '*paths.sourceRoot*link*'
+            }
+        }
+
+        It 'lets Get-AiSdlcConfig read a source root inside the repository' -Tag '#105' {
+            $root = New-ConfigRepo -Json '{ "paths": { "sourceRoot": "sub", "sourceRoots": [ "sub/deeper", "missing" ] } }'
+
+            (Get-AiSdlcConfig -RepoRoot $root).paths.sourceRoot | Should -Be 'sub'
+        }
     }
 }

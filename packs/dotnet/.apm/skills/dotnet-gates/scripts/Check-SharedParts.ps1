@@ -87,7 +87,8 @@ Import-Module (Join-Path $aiSdlcGates 'ChangedFiles.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'CSharpCodeView.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'DotnetTestScope.psm1') -Force
 if (-not $RepoRoot) { $RepoRoot = Find-AiSdlcRepoRoot -StartPath $PSScriptRoot }
-if (-not $BaseRef) { $BaseRef = Get-AiSdlcMainBranch -RepoRoot $RepoRoot }
+# A bad aisdlc.json makes the config read throw; the check of paths.sourceRoot below reports it as exit 2.
+if (-not $BaseRef) { $BaseRef = try { Get-AiSdlcMainBranch -RepoRoot $RepoRoot } catch { 'origin/main' } }
 
 $credentialTypes = @(
     'AuthorizationCodeCredential', 'AzureCliCredential', 'AzureDeveloperCliCredential', 'AzurePipelinesCredential',
