@@ -43,6 +43,8 @@ person reviews and merges it.
   It runs the gate runners without asking only with the options the skills use.
 - Version 2.0.0 stops a `paths.sourceRoot` or `paths.sourceRoots` folder outside your repository, or one
   reached through a link. Every gate then fails with the reason, so move the folder inside.
+- A workflow step of your own that calls `Invoke-Gate.ps1` without `-Mode` now blocks the build on a
+  finding. Pass `-Mode Advisory` where a warning is enough.
 - A tag with a suffix, such as `v1.1.0-rc.1`, is a pre-release. A consumer can pin it to test a
   change, and the update workflow skips it.
 - A tag whose message names no issue gives an update pull request without an issue key. The script says so, and the story check then fails it.

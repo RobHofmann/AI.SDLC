@@ -175,7 +175,7 @@ every gate that judges the change.
 
 `Invoke-Gate.ps1` runs one gate script in GitHub Actions or locally and produces a clear result. It is Blocking when `-Mode` is not given, so a step that forgets the mode cannot hide a finding.
 
-`Invoke-PesterGate.ps1` runs Pester tests under the supplied paths.
+`Invoke-PesterGate.ps1` runs Pester tests under the supplied paths. An agent that runs it directly gets a prompt, because it would run any test file. The runners call it without a prompt ([the allow rules in layout.md](../../core/.apm/skills/ai-sdlc-handbook/references/layout.md)).
 
 ### Documentation tools
 

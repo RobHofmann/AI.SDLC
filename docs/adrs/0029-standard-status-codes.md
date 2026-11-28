@@ -6,7 +6,7 @@ intent:
   assumption: "an API that uses the standard status codes is read the same way by every client and tool, and its clients still handle every error in one place"
   decision-drivers:
     - "the old rule, only an error is non-200, clashed with the base standard of the dotnet pack, which uses 201 and 204"
-    - "working endpoints answer 201 or 204 while their client treats every 2xx answer as a success"
+    - "upstream reports that working endpoints answer 201 or 204 while their client treats every 2xx answer as a success"
     - "every HTTP client and guideline reads the standard codes the same way"
     - "a client handles errors in one place only when every error, and only an error, is a 4xx or 5xx"
 relates:
@@ -37,9 +37,10 @@ code other than 200 was kept for real errors. The aim was that a client could tr
 than 200 as an error.
 
 That rule clashed with the base standard of the dotnet pack. The Zalando guidelines ask for the most
-specific code, such as 201 for a create and 204 for a success without a body. Working endpoints already
-answered 201 or 204, while their clients treated every 2xx answer as a success. So the rule was broken
-in practice, and the reason behind it did not need the rule.
+specific code, such as 201 for a create and 204 for a success without a body. Upstream reports that
+working endpoints of a consumer already answered 201 or 204, while their clients treated every 2xx
+answer as a success. That fact has one source, the upstream release note, and this repository cannot
+check it. It is not needed for the decision: the clash with the base standard is enough.
 
 Upstream changed the rule in its release v2.18.0. This port brings the change over.
 
@@ -72,8 +73,12 @@ Upstream changed the rule in its release v2.18.0. This port brings the change ov
 
 - RFC 9110, HTTP Semantics, sections 9.3.3 (POST) and 9.3.5 (DELETE), and section 15 on status codes:
   https://www.rfc-editor.org/rfc/rfc9110
-- Microsoft Azure REST API guidelines: a delete answers 204, also when the resource is already gone.
-- Zalando RESTful API guidelines: use the most specific status code, and 400 over 422.
+- Microsoft Azure REST API guidelines: a delete answers 204, also when the resource is already gone:
+  https://github.com/microsoft/api-guidelines/blob/vNext/azure/Guidelines.md
+- Zalando RESTful API guidelines: use the most specific status code, and 400 over 422:
+  https://opensource.zalando.com/restful-api-guidelines/#http-status-codes
+- Upstream release v2.18.0 and its decision record, read by the port; single source for the
+  consumer fact in the context.
 
 ## Related
 
