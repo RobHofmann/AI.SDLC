@@ -362,16 +362,22 @@ Describe 'Allow rules of the shipped packages' {
         Import-Module (Join-Path $PSScriptRoot 'DocToolTestHarness.psm1') -Force
         # The test lives at core/tests/skills/ai-sdlc-gates/scripts, five folders below the repository root.
         $script:Source = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..' '..' '..' '..' '..')).Path
-        $script:Manifests = @(Get-ChildItem -Path (Join-Path $script:Source 'core'), (Join-Path $script:Source 'packs') -Recurse -Force -Filter gates.json -File |
-                Where-Object { $_.FullName -match '[\\/]\.apm[\\/]skills[\\/][^\\/]+[\\/]gates\.json$' })
+        # Test-Consumers.ps1 copies this test into an installed consumer, which has no package source.
+        $script:IsSource = (Test-Path -LiteralPath (Join-Path $script:Source 'core' '.apm')) -and (Test-Path -LiteralPath (Join-Path $script:Source 'packs'))
+        $script:Manifests = if (-not $script:IsSource) { @() } else {
+            @(Get-ChildItem -Path (Join-Path $script:Source 'core'), (Join-Path $script:Source 'packs') -Recurse -Force -Filter gates.json -File |
+                    Where-Object { $_.FullName -match '[\\/]\.apm[\\/]skills[\\/][^\\/]+[\\/]gates\.json$' })
+        }
         $script:Wildcard = '\.claude[\\/]skills[\\/]\S*\*'
     }
 
     It 'finds the package manifests to check' -Tag '#103' {
+        if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
         $script:Manifests.Count | Should -BeGreaterThan 5
     }
 
     It 'has no allow entry in a package source that ends in a wildcard over a scripts folder' -Tag '#103' {
+        if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
         $bad = foreach ($manifest in $script:Manifests) {
             $data = Get-Content -LiteralPath $manifest.FullName -Raw | ConvertFrom-Json -AsHashtable
             foreach ($entry in @($data['allow'])) { if ([string]$entry -match $script:Wildcard) { "$($manifest.FullName): $entry" } }
@@ -387,6 +393,7 @@ Describe 'Allow rules of the shipped packages' {
     }
 
     It 'lets every gate of every package run without a prompt in a fresh consumer' -Tag '#103' {
+        if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
         $root = Join-Path ([IO.Path]::GetTempPath()) ('sar-fresh-' + [guid]::NewGuid().ToString('n'))
         New-Item -ItemType Directory -Path $root -Force | Out-Null
         try {
