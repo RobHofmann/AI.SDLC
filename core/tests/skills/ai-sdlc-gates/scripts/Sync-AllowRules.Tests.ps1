@@ -506,15 +506,17 @@ Describe 'Allow rules of the shipped packages' {
                     Where-Object { $_.FullName -match '[\\/]\.apm[\\/]skills[\\/][^\\/]+[\\/]gates\.json$' })
         }
         $script:Wildcard = '\.claude[\\/]skills[\\/]\S*\*'
+        # A test consumer runs this file next to the installed script, where no package source exists.
+        $script:NoSource = -not (Test-Path -LiteralPath (Join-Path $script:Source 'core' '.apm'))
     }
 
     It 'finds the package manifests to check' -Tag '#103' {
-        if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
+        if ($script:NoSource) { Set-ItResult -Skipped -Because 'this copy is installed, so it has no package sources'; return }
         $script:Manifests.Count | Should -BeGreaterThan 5
     }
 
     It 'has no allow entry in a package source that ends in a wildcard over a scripts folder' -Tag '#103' {
-        if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
+        if ($script:NoSource) { Set-ItResult -Skipped -Because 'this copy is installed, so it has no package sources'; return }
         $bad = foreach ($manifest in $script:Manifests) {
             $data = Get-Content -LiteralPath $manifest.FullName -Raw | ConvertFrom-Json -AsHashtable
             foreach ($entry in @($data['allow'])) { if ([string]$entry -match $script:Wildcard) { "$($manifest.FullName): $entry" } }
@@ -523,6 +525,7 @@ Describe 'Allow rules of the shipped packages' {
     }
 
     It 'has no rule in the committed .claude/settings.json that ends in a wildcard over a scripts folder' -Tag '#103' {
+        if ($script:NoSource) { Set-ItResult -Skipped -Because 'this copy is installed, so it has no package sources'; return }
         $settings = Join-Path $script:Source '.claude' 'settings.json'
         if (-not (Test-Path -LiteralPath $settings)) { Set-ItResult -Skipped -Because 'this copy has no .claude/settings.json'; return }
         $allow = @((Get-Content -LiteralPath $settings -Raw | ConvertFrom-Json -AsHashtable)['permissions']['allow'])
@@ -609,7 +612,7 @@ Describe 'Allow rules of the shipped packages' {
     }
 
     It 'lets every gate of every package run without a prompt in a fresh consumer' -Tag '#103' {
-        if (-not $script:IsSource) { Set-ItResult -Skipped -Because 'this copy is an installed consumer, with no package source'; return }
+        if ($script:NoSource) { Set-ItResult -Skipped -Because 'this copy is installed, so it has no package sources'; return }
         $root = Join-Path ([IO.Path]::GetTempPath()) ('sar-fresh-' + [guid]::NewGuid().ToString('n'))
         New-Item -ItemType Directory -Path $root -Force | Out-Null
         try {
