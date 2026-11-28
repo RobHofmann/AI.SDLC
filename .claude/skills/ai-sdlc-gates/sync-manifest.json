@@ -324,7 +324,7 @@
         ".claude/skills/dotnet-gates/scripts/Invoke-DotnetPreflight.ps1": "948124cbe0fa49eb92d739ae7d6e5a42a041087e",
         ".claude/skills/dotnet-gates/SKILL.md": "144b64d4667cb060c81acfdb85352c6a7fdbfc20",
         ".claude/skills/nuget-vulnerability-remediation/SKILL.md": "671055021bf4305c9d7c7a5710e073fc868f5861",
-        ".claude/skills/test-first-dotnet/SKILL.md": "aae1eaefb3e73dfa56140ce91fcc6dbf94aa22a0",
+        ".claude/skills/test-first-dotnet/SKILL.md": "60a15831cdd4a87f0db3ad278475824dbf1905aa",
         ".claude/skills/write-api-spec/SKILL.md": "09ce0469033c237e232b0ea42de6a4af5ded0904"
       },
       "hooks": [

@@ -541,6 +541,8 @@ Describe 'Allow rules of the shipped packages' {
                 }
                 return $false
             }
+            $script:RuleSets = @()
+            if (-not $script:IsSource) { return }
             $core = Get-Content -LiteralPath (Join-Path $script:Source 'core' '.apm' 'skills' 'ai-sdlc-gates' 'gates.json') -Raw | ConvertFrom-Json -AsHashtable
             $script:RuleSets = @(
                 @{ Name = 'core gates.json'; Allow = @($core['allow']); Ask = @($core['ask']) }
